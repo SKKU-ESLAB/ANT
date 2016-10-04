@@ -1,0 +1,107 @@
+/* Copyright 2015-2016 CISS, and contributors. All rights reserved
+ * 
+ * Contact: Eunsoo Park <esevan.park@gmail.com>
+ *
+ * Licensed under the Apache License, Version 2.0(the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+#ifndef INC_SEGMENT_MANAGER_H_
+#define INC_SEGMENT_MANAGER_H_
+
+#include <stdint.h>
+#include <list>
+#include <mutex>
+#include <condition_variable>
+
+#define kSegMaxQueueSize 10485760
+#define kSegSize 512
+#define kSegQueueMax (kSegMaxQueueSize / kSegSize)
+
+#define kSegFreeThreshold 256
+
+#define kSegHeaderSize  4
+
+#define kSegLenOffset 0
+#define kSegLenMask 0x7FFF
+#define kSegFlagOffset  15
+#define kSegFlagMask 0x8000
+#define mGetSegLenBits(x)(((x) & kSegLenMask) >> kSegLenOffset)
+#define mGetSegFlagBits(x)(((x) & kSegFlagMask) >> kSegFlagOffset)
+#define mSetSegBits(x, dest, offset, mask)  do {\
+  dest |=((x << offset) & mask); \
+} while (0)
+#define mSetSegLenBits(x, dest) \
+    mSetSegBits(x, dest, kSegLenOffset, kSegLenMask)
+#define mSetSegFlagBits(x, dest) \
+    mSetSegBits(x, dest, kSegFlagOffset, kSegFlagMask)
+
+namespace cm {
+typedef enum {
+  kSegSend = 0,
+  kSegRecv = 1
+} SegQueueType;
+typedef enum {
+  kSegFlagMF = 1
+} SegFlagVal;
+
+typedef struct {
+  uint16_t seq_no;
+  uint16_t flag_len;
+  uint8_t data[kSegSize + kSegHeaderSize];
+} Segment;
+
+class SegmentManager {
+ public:
+  static SegmentManager *get_instance(void);
+
+  /* Used in protocol manager */
+  int send_to_segment_manager(uint8_t *data, size_t len);
+  uint8_t *recv_from_segment_manager(void *proc_data_handle);
+
+  void failed_sending(Segment *seg);
+  Segment *get_failed_sending(void);
+  void enqueue(SegQueueType type, Segment *seg);
+  Segment *dequeue(SegQueueType type);
+  
+  Segment *get_free_segment(void);
+  void free_segment(Segment *seg);
+  void free_segment_all(void);
+
+ private:
+  SegmentManager(void);
+
+  std::mutex seq_no_lock;
+  uint16_t seq_no;
+  uint16_t get_seq_no(uint16_t len);
+
+  /* When access to queue, lock should be acquired */
+  std::mutex lock[2];
+  std::mutex failed_lock;
+  std::condition_variable not_empty[2];
+  uint16_t next_seq_no[2];
+  std::list<Segment *> queue[2];
+  std::list<Segment *> failed;
+  std::list<Segment *> pending_queue[2];
+
+  std::mutex free_list_lock;
+  std::list<Segment *> free_list;
+  uint32_t free_list_size;
+
+  uint32_t queue_size[2];
+  void serialize_segment_header(Segment *seg);
+
+
+  void release_segment_from_free_list(uint32_t threshold);
+};
+} /* namespace cm */
+#endif  // INC_SEGMENT_MANAGER_H_
