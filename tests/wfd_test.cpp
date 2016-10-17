@@ -15,38 +15,28 @@
  * limitations under the License.
  */
 
-#ifndef INC_COMMUNICATOR_H_
-#define INC_COMMUNICATOR_H_
-#include <stdint.h>
-namespace cm {
+#include <wifi_control.h>
 
-enum CommErr {
-  kProtOk = 0,
-  kProtErr = -1,
-};
+#include <stdio.h>
 
-class Communicator {
- public:
-    static Communicator *get_instance(void);
+int main() {
+  int ret;
+  printf("Wifi_direct_server_up\n");
+  ret = wifi::wifi_direct_server_up();
+  printf("Return: %d\n", ret);
 
-    /**
-     * If data size is big, it is recommanded to use following
-     * libraries in a thread
-     */
-    int send_data(const void *buf, uint32_t len);
+  char buf[256];
+  printf("Wifi_direct_server_reset\n");
+  ret = wifi::wifi_direct_server_reset(buf, 256);
+  printf("Return: %d-%s\n", ret, buf);
+  
+  printf("Wifi_get_p2p_device_addr\n");
+  ret = wifi::wifi_get_p2p_device_addr(buf, 256);
+  printf("Return: %d-%s\n", ret, buf);
 
-    /**
-     * @param len: IN buffer length
-     * @param buf: OUT buffer read
-     * @return: Received bytes(<0 if error)
-     */
-    int recv_data(void **buf);
+  printf("Wifi_direct_server_down\n");
+  //ret = wifi::wifi_direct_server_down();
+  printf("Return: %d\n", ret);
 
-    void finalize(void);
-
- private:
-    Communicator(void);
-};
-
-} /* namespace cm */
-#endif  /* INC_COMMUNICATOR_H_ */
+  return 0;
+}

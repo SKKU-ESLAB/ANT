@@ -1,6 +1,6 @@
-/* Copyright 2015-2016 CISS, and contributors. All rights reserved
+/* Copyright 2016 Eunsoo Park (esevan.park@gmail.com). All rights reserved
  * 
- * Contact: Eunsoo Park <esevan.park@gmail.com>
+ * Contact: Eunsoo Park (esevan.park@gmail.com)
  *
  * Licensed under the Apache License, Version 2.0(the "License");
  * you may not use this file except in compliance with the License.
@@ -28,22 +28,73 @@
 
 
 namespace cm {
-typedef enum {
-  kNetSend = 0,
-  kNetRecv = 1
-} kNetQueueType;
-
 class NetworkManager {
  public:
   static NetworkManager *get_instance(void);
 
-  void install_network_adapter(NetworkAdapter *na);
-  void remove_network_adapter(NetworkAdapter *na);
+  void install_data_adapter(NetworkAdapter *na);
+  void remove_data_adapter(NetworkAdapter *na);
+
+  void install_control_adapter(NetworkAdapter *na);
+  void remove_control_adapter(NetworkAdapter *na);
+
+  void increase_adapter(void);
+  void decrease_adapter(void);
+
+
  private:
+  typedef enum {
+    kNetCtrl = 0,
+    kNetData = 1,
+    kNetMaxPort = 2
+  } PortType;
+
+  typedef enum {
+    kNetStatDiscon = 0,
+    kNetStatConnecting = 1,
+    kNetStatControl = 2,
+    kNetStatIncr = 3,
+    kNetStatDecr = 4,
+    kNetStatData = 5
+  } NetStat;
+
+  /* Ctrl header structure
+   * |--|----|Data|
+   *  CtrlReq (1B), DevId (2B) if Req >= 2, Data (-B) if Req == 4
+   */
+  typedef enum {
+    kCtrlReqOk = 0,
+    kCtrlReqFail = 1,
+    kCtrlReqIncr = 2,
+    kCtrlReqDecr = 3,
+    kCtrlReqPriv = 4 
+  } CtrlReq;
+
   NetworkManager(void);
 
-  std::mutex lock;
-  std::list<NetworkAdapter *> adapter_list;
+  unsigned short connecting_dev_id;
+  NetStat state;
+  NetStat prev_state;
+  std::mutex lock[kNetMaxPort];
+  std::list<NetworkAdapter *> adapter_list[kNetMaxPort];
+  NetworkAdapter *connecting_adapter;
+
+  std::thread *th_recver;
+
+  static void install_control_cb_wrapper(DevState st);
+  void install_control_cb(DevState st);
+  void connect_control_adapter(void);
+  void run_control_recver(void);
+  void send_control_data(const void *data, size_t len);
+  void network_closed(void);
+
+  NetworkAdapter *select_device(void);
+  
+  static void increase_adapter_cb_wrapper(DevState stat);
+  void increase_adapter_cb(DevState stat);
+
+  static void decrease_adapter_cb_wrapper(DevState stat);
+  void decrease_adapter_cb(DevState stat);
 };
 } /* namespace cm */
 #endif  /* INC_NETWORK_MANAGER_H_ */

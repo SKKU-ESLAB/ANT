@@ -1,6 +1,6 @@
-/* Copyright 2015-2016 CISS, and contributors. All rights reserved
+/* Copyright 2016 Eunsoo Park (esevan.park@gmail.com). All rights reserved
  * 
- * Contact: Eunsoo Park <esevan.park@gmail.com>
+ * Contact: Eunsoo Park (esevan.park@gmail.com)
  *
  * Licensed under the Apache License, Version 2.0(the "License");
  * you may not use this file except in compliance with the License.
@@ -18,6 +18,7 @@
 #include <segment_manager.h>
 #include <dbug_log.h>
 #include <protocol_manager.h>
+#include <network_manager.h>
 
 #include <stdlib.h>
 #include <string.h>
@@ -35,6 +36,7 @@ SegmentManager::SegmentManager(void) {
   next_seq_no[kSegRecv] = 0;
   free_list_size = 0;
   seq_no = 0;
+  queue_threshold = 0;
 }
 
 SegmentManager *SegmentManager::get_instance(void) {
@@ -53,15 +55,15 @@ uint16_t SegmentManager::get_seq_no(uint16_t len) {
 }
 
 void SegmentManager::serialize_segment_header(Segment *seg) {
-  uint16_t net_seq_no = htons(seg -> seq_no);
-  uint16_t net_flag_len = htons(seg -> flag_len);
+  uint16_t net_seq_no = htons(seg->seq_no);
+  uint16_t net_flag_len = htons(seg->flag_len);
 
-  memcpy(seg -> data, &net_seq_no, sizeof(uint16_t));
-  memcpy(seg -> data+2, &net_flag_len, sizeof(uint16_t));
+  memcpy(seg->data, &net_seq_no, sizeof(uint16_t));
+  memcpy(seg->data+2, &net_flag_len, sizeof(uint16_t));
 }
+
 int SegmentManager::send_to_segment_manager(uint8_t *data, size_t len) {
   assert(data != NULL && len > 0);
-
 
   uint32_t offset = 0;
   uint16_t num_of_segments =(uint16_t)((len + kSegSize - 1) / kSegSize);
@@ -74,21 +76,21 @@ int SegmentManager::send_to_segment_manager(uint8_t *data, size_t len) {
     Segment *seg = get_free_segment();
 
     /* Set segment length */
-    mSetSegLenBits(seg_len, seg -> flag_len);
+    mSetSegLenBits(seg_len, seg->flag_len);
 
     /* Set segment sequence number */
-    seg -> seq_no = allocated_seq_no++;
+    seg->seq_no = allocated_seq_no++;
 
     /* Set segment data */
-    memcpy(&(seg -> data[kSegHeaderSize]), data + offset, seg_len);
+    memcpy(&(seg->data[kSegHeaderSize]), data + offset, seg_len);
     offset += seg_len;
 
     /* Set segment MF flag */
-    if (offset < len) mSetSegFlagBits(kSegFlagMF, seg -> flag_len);
+    if (offset < len) mSetSegFlagBits(kSegFlagMF, seg->flag_len);
 
     /* Set segment header to data */
     serialize_segment_header(seg);
-    
+
     enqueue(kSegSend, seg);
   }
 
@@ -105,12 +107,12 @@ uint8_t *SegmentManager::recv_from_segment_manager(void *proc_data_handle) {
   bool cont = false;
 
   Segment *seg = dequeue(kSegRecv);
-  ProtocolManager::parse_header(&(seg -> data[kSegHeaderSize]), pd);
+  ProtocolManager::parse_header(&(seg->data[kSegHeaderSize]), pd);
 
-  if (unlikely(pd -> len == 0))
+  if (unlikely(pd->len == 0))
     return NULL;
 
-  serialized = reinterpret_cast<uint8_t *>(calloc(pd -> len, sizeof(uint8_t)));
+  serialized = reinterpret_cast<uint8_t *>(calloc(pd->len, sizeof(uint8_t)));
 
   data_size = mGetSegLenBits(seg->flag_len) - kProtHeaderSize;
   memcpy(serialized + offset,
@@ -118,7 +120,7 @@ uint8_t *SegmentManager::recv_from_segment_manager(void *proc_data_handle) {
          data_size);
   offset += data_size;
 
-  cont = (mGetSegFlagBits(seg -> flag_len) == kSegFlagMF);
+  cont = (mGetSegFlagBits(seg->flag_len) == kSegFlagMF);
 
   free_segment(seg);
 
@@ -126,57 +128,66 @@ uint8_t *SegmentManager::recv_from_segment_manager(void *proc_data_handle) {
     seg = dequeue(kSegRecv);
     data_size = mGetSegLenBits(seg->flag_len);
     memcpy(serialized + offset,
-           &(seg -> data[kSegHeaderSize]),
+           &(seg->data[kSegHeaderSize]),
            data_size);
-    cont =(mGetSegFlagBits(seg -> flag_len) == kSegFlagMF);
+    cont =(mGetSegFlagBits(seg->flag_len) == kSegFlagMF);
     offset += data_size;
     free_segment(seg);
   }
+
   return serialized;
 }
 
 void SegmentManager::enqueue(SegQueueType type, Segment *seg) {
+  assert(type < kSegMaxQueueType);
+
   std::unique_lock<std::mutex> lck(lock[type]);
   bool segment_enqueued = false;
 
-  if (seg -> seq_no == next_seq_no[type]) {
+  if (seg->seq_no == next_seq_no[type]) {
     next_seq_no[type]++;
     queue[type].push_back(seg);
     queue_size[type]++;
     segment_enqueued = true;
   } else {
-    assert(seg -> seq_no > next_seq_no[type]);
+    assert(seg->seq_no > next_seq_no[type]);
     std::list<Segment *>::iterator curr_it = pending_queue[type].begin();
 
-    /* First, we put a requested segment into pending queue */
+    /* First, if we received unsequential data, 
+     * we put a requested segment into pending queue */
     while (curr_it != pending_queue[type].end()) {
       Segment *walker = *curr_it;
-      assert(walker -> seq_no != seg -> seq_no);
+      assert(walker->seq_no != seg->seq_no);
 
-      if (walker -> seq_no > seg -> seq_no)
+      if (walker->seq_no > seg->seq_no)
         break;
 
       curr_it++;
     }
     pending_queue[type].insert(curr_it, seg);
 
-    /* Finally, we put all consequent segments into type queue */
-    curr_it = pending_queue[type].begin();
-    while (curr_it != pending_queue[type].end() &&
-           (*curr_it) -> seq_no == next_seq_no[type]) {
-      next_seq_no[type]++;
-      queue[type].push_back(*curr_it);
-      queue_size[type]++;
-      segment_enqueued = true;
-
-      std::list<Segment *>::iterator to_erase = curr_it++;
-      pending_queue[type].erase(to_erase);
-    }
-
   }
 
-  if (queue_size[type] % 10 == 0)
-    OPEL_DBG_WARN("[%d]Queue size:%d", type, queue_size[type]);
+  /* Finally, we put all consequent segments into type queue */
+  std::list<Segment *>::iterator curr_it = pending_queue[type].begin();
+  while (curr_it != pending_queue[type].end() &&
+         (*curr_it)->seq_no == next_seq_no[type]) {
+    next_seq_no[type]++;
+    queue[type].push_back(*curr_it);
+    queue_size[type]++;
+    segment_enqueued = true;
+
+    std::list<Segment *>::iterator to_erase = curr_it++;
+    pending_queue[type].erase(to_erase);
+  }
+
+  // Dynamic adapter control
+  if (type == kSegSend ) {
+    if (queue_size[type] > queue_threshold)
+      NetworkManager::get_instance()->increase_adapter();
+    else if (queue_size[type] == 0)
+      NetworkManager::get_instance()->decrease_adapter();
+  }
 
   if (segment_enqueued) not_empty[type].notify_all();
 }

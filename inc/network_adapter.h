@@ -1,6 +1,6 @@
-/* Copyright 2015-2016 CISS, and contributors. All rights reserved
+/* Copyright 2016 Eunsoo Park (esevan.park@gmail.com). All rights reserved
  * 
- * Contact: Eunsoo Park <esevan.park@gmail.com>
+ * Contact: Eunsoo Park (esevan.park@gmail.com)
  *
  * Licensed under the Apache License, Version 2.0(the "License");
  * you may not use this file except in compliance with the License.
@@ -26,7 +26,9 @@ typedef enum {
   kDevOff = 0,
   kDevOn = 1,
   kDevDiscon = 2,
-  kDevCon = 3
+  kDevDisconnecting = 3,
+  kDevConnecting = 4,
+  kDevCon = 5,
 } DevState;
 
 typedef enum {
@@ -38,24 +40,26 @@ typedef enum {
 typedef void (*DevStatCb)(DevState res);
 
 class NetworkAdapter {
+  friend class NetworkManager;
  public:
-  virtual void dev_switch(DevState stat, DevStatCb cb) final;
-
   NetworkAdapter();
   ~NetworkAdapter();
 
   DevState get_stat(void);
+  virtual void set_data_adapter(void) final;
+  virtual void set_control_adapter(void) final;
 
  protected:
   /**
-   * Should be implemented on a child class
+   * Followings should be implemented on a child class
    * return value is either true (on success) or false (on failure)
    * Don't worry about blocking operation.
-   * A same method is called at a single thread.
+   * A single method is called at a single thread.
    * If your adapter failed sending a packet, just return false.
    * Other adapters installed on the system is going to be in charge of it.
    */
   char dev_name[256];
+  uint16_t dev_id;
   virtual bool device_on(void) = 0;
   virtual bool device_off(void) = 0;
 
@@ -63,13 +67,25 @@ class NetworkAdapter {
   virtual bool close_connection(void) = 0;
 
   // If connection is closed, send and recv both should be failed
-  virtual bool send(const void *buf, size_t len) = 0;
-  virtual bool recv(void *buf, size_t len) = 0;
+  virtual int send(const void *buf, size_t len) = 0;
+  virtual int recv(void *buf, size_t len) = 0;
+
+  // Property information
+  virtual uint16_t get_id(void) = 0;
+  virtual void set_controllable(void) final;
+  virtual void on_control_recv(const void *buf, size_t len) = 0;
 
  private:
+  typedef enum {
+    kATUninitialized = 0,
+    kATInitialized = 1,
+    kATCtrlable = 2,
+    kATCtrl = 4,
+  } AdapterType;
   std::thread *th_sender;
   std::thread *th_recver;
 
+  int at;
   DevState stat;
   std::mutex dev_on_lock;
   std::mutex dev_off_lock;
@@ -81,9 +97,12 @@ class NetworkAdapter {
   DevStatCb make_connection_cb;
   DevStatCb close_connection_cb;
 
+  
   void run_sender(void);
   void run_recver(void);
 
+
+  virtual void dev_switch(DevState stat, DevStatCb cb) final;
   void dev_on(void);
   void dev_off(void);
 

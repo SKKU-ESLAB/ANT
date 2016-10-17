@@ -15,38 +15,37 @@
  * limitations under the License.
  */
 
-#ifndef INC_COMMUNICATOR_H_
-#define INC_COMMUNICATOR_H_
-#include <stdint.h>
+#include <tcp_server_over_wfd.h>
+#include <wifi_control.h>
+
 namespace cm {
+TCPServerOverWfdAdapter::TCPServerOverWfdAdapter(uint32_t id, int port) {
+  this->port = port;
+  this->id = id;
+}
 
-enum CommErr {
-  kProtOk = 0,
-  kProtErr = -1,
-};
+void TCPServerOverWfdAdapter::set_device_name(char *name) {
+  snprintf(dev_name, "%s", name);
+}
 
-class Communicator {
- public:
-    static Communicator *get_instance(void);
+uint32_t TCPServerOverWfdAdapter::get_id(void) {
+  return id;
+}
 
-    /**
-     * If data size is big, it is recommanded to use following
-     * libraries in a thread
-     */
-    int send_data(const void *buf, uint32_t len);
+bool TCPServerOverWfdAdapter::device_on(void) {
+  int ret = wifi::wifi_direct_server_up();
 
-    /**
-     * @param len: IN buffer length
-     * @param buf: OUT buffer read
-     * @return: Received bytes(<0 if error)
-     */
-    int recv_data(void **buf);
+  return ret==0;
+}
 
-    void finalize(void);
+bool TCPServerOverWfdAdapter::device_off(void) {
+  int ret = wifi::wifi_direct_server_down();
 
- private:
-    Communicator(void);
-};
+  return ret==0;
+}
 
-} /* namespace cm */
-#endif  /* INC_COMMUNICATOR_H_ */
+bool TCPServerOverWfdAdapter::make_connection(void) {
+
+}
+
+}

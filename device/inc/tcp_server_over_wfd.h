@@ -15,38 +15,34 @@
  * limitations under the License.
  */
 
-#ifndef INC_COMMUNICATOR_H_
-#define INC_COMMUNICATOR_H_
-#include <stdint.h>
+#ifndef DEVICE_INC_TCP_SERVER_OVER_WFD_H_
+#define DEVICE_INC_TCP_SERVER_OVER_WFD_H_
+
+#include <network_adapter.h>
+
+#include <dbug_log.h>
+
 namespace cm {
-
-enum CommErr {
-  kProtOk = 0,
-  kProtErr = -1,
-};
-
-class Communicator {
+class TCPServerOverWfdAdapter : public NetworkAdapter {
  public:
-    static Communicator *get_instance(void);
+  TCPServerOverWfdAdapter(uint32_t id, int port);
 
-    /**
-     * If data size is big, it is recommanded to use following
-     * libraries in a thread
-     */
-    int send_data(const void *buf, uint32_t len);
-
-    /**
-     * @param len: IN buffer length
-     * @param buf: OUT buffer read
-     * @return: Received bytes(<0 if error)
-     */
-    int recv_data(void **buf);
-
-    void finalize(void);
+  void set_device_name(char *name);
 
  private:
-    Communicator(void);
-};
+  int port;
+  uint32_t id;
 
-} /* namespace cm */
-#endif  /* INC_COMMUNICATOR_H_ */
+  char dev_name[256];
+
+  uint32_t get_id(void);
+  bool device_on(void);
+  bool device_off(void);
+  bool make_connection(void);
+  bool close_connection(void);
+  bool send(const void *buf, size_t len);
+  bool recv(void *buf, size_t len);
+};
+}  /* namespace cm */
+
+#endif  // DEVICE_INC_TCP_SERVER_OVER_WFD_H_

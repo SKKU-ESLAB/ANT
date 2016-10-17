@@ -1,4 +1,5 @@
-#include <test_adapter.h>
+//#include <test_adapter.h>
+#include <tcp_server_over_eth.h>
 #include <thread>
 #include <communicator.h>
 #include <network_adapter.h>
@@ -7,13 +8,6 @@
 #include <stdlib.h>
 
 using namespace cm;
-
-static NetworkAdapter *na = NULL;
-
-void dev_stat_cb(DevState stat) {
-  if (stat == kDevOn)
-    na->dev_switch(kDevCon, NULL);
-}
 
 void receiving_thread() {
   void *buf = NULL;
@@ -26,12 +20,15 @@ void receiving_thread() {
 
 int main() {
   Communicator *cm = Communicator::get_instance();
-  TestAdapter ta;
-  na = &ta;
+  TCPServerOverEthAdapter ca(1234, 1234);
+  TCPServerOverEthAdapter na(2345, 2345);
+  TCPServerOverEthAdapter na2(3456, 3456);
 
-  na->dev_switch(kDevOn, dev_stat_cb);
+  ca.set_control_adapter();
+  na.set_data_adapter();
+  na2.set_data_adapter();
 
-  char sending_buf[4096];
+  char sending_buf[8192];
   int ret;
 
   std::thread(receiving_thread).detach();

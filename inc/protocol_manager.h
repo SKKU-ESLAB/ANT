@@ -1,6 +1,6 @@
-/* Copyright 2015-2016 CISS, and contributors. All rights reserved
+/* Copyright 2016 Eunsoo Park (esevan.park@gmail.com). All rights reserved
  * 
- * Contact: Eunsoo Park <esevan.park@gmail.com>
+ * Contact: Eunsoo Park (esevan.park@gmail.com)
  *
  * Licensed under the Apache License, Version 2.0(the "License");
  * you may not use this file except in compliance with the License.

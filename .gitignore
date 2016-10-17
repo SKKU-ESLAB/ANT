@@ -3,3 +3,12 @@ cscope
 cscope.out
 *.o
 bin
+SelectiveConnection.IAB
+SelectiveConnection.IAD
+SelectiveConnection.IMB
+SelectiveConnection.IMD
+SelectiveConnection.PFI
+SelectiveConnection.PO
+SelectiveConnection.PR
+SelectiveConnection.PRI
+SelectiveConnection.PS

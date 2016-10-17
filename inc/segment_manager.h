@@ -1,6 +1,6 @@
-/* Copyright 2015-2016 CISS, and contributors. All rights reserved
+/* Copyright 2016 Eunsoo Park (esevan.park@gmail.com). All rights reserved
  * 
- * Contact: Eunsoo Park <esevan.park@gmail.com>
+ * Contact: Eunsoo Park (esevan.park@gmail.com)
  *
  * Licensed under the Apache License, Version 2.0(the "License");
  * you may not use this file except in compliance with the License.
@@ -23,9 +23,10 @@
 #include <mutex>
 #include <condition_variable>
 
-#define kSegMaxQueueSize 10485760
+#define kSegMaxQueueSize 104857600 // Maximum 100MB Queue
 #define kSegSize 512
-#define kSegQueueMax (kSegMaxQueueSize / kSegSize)
+#define kSegThreshold 512
+#define kSegQueueThreshold (kSegThreshold / 512)
 
 #define kSegFreeThreshold 256
 
@@ -48,7 +49,8 @@
 namespace cm {
 typedef enum {
   kSegSend = 0,
-  kSegRecv = 1
+  kSegRecv = 1,
+  kSegMaxQueueType = 2
 } SegQueueType;
 typedef enum {
   kSegFlagMF = 1
@@ -76,6 +78,7 @@ class SegmentManager {
   Segment *get_free_segment(void);
   void free_segment(Segment *seg);
   void free_segment_all(void);
+  uint32_t queue_threshold;
 
  private:
   SegmentManager(void);
@@ -85,19 +88,19 @@ class SegmentManager {
   uint16_t get_seq_no(uint16_t len);
 
   /* When access to queue, lock should be acquired */
-  std::mutex lock[2];
+  std::mutex lock[kSegMaxQueueType];
   std::mutex failed_lock;
-  std::condition_variable not_empty[2];
-  uint16_t next_seq_no[2];
-  std::list<Segment *> queue[2];
+  std::condition_variable not_empty[kSegMaxQueueType];
+  uint16_t next_seq_no[kSegMaxQueueType];
+  std::list<Segment *> queue[kSegMaxQueueType];
   std::list<Segment *> failed;
-  std::list<Segment *> pending_queue[2];
+  std::list<Segment *> pending_queue[kSegMaxQueueType];
 
   std::mutex free_list_lock;
   std::list<Segment *> free_list;
   uint32_t free_list_size;
 
-  uint32_t queue_size[2];
+  uint32_t queue_size[kSegMaxQueueType];
   void serialize_segment_header(Segment *seg);
 
 
