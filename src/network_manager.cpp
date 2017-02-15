@@ -62,7 +62,7 @@ void NetworkManager::network_closed(void) {
 
 void NetworkManager::run_control_recver(void) {
   char data[512] = {0, };
-  bool res = false;
+  int res = 0;
 
   while (true) {
     NetworkAdapter *na = adapter_list[kNetCtrl].front();
@@ -204,7 +204,7 @@ void NetworkManager::increase_adapter() {
 
   if (state <= kNetStatConnecting) {
     OPEL_DBG_ERR("Control port is not opened yet");
-    exit(1);
+    return;
   }
 
   OPEL_DBG_LOG("Increasing data adapter...");
