@@ -80,6 +80,8 @@ class SegmentManager {
   void free_segment_all(void);
   uint32_t queue_threshold;
 
+  void reset(void);
+
  private:
   SegmentManager(void);
 
@@ -103,8 +105,10 @@ class SegmentManager {
   uint32_t queue_size[kSegMaxQueueType];
   void serialize_segment_header(Segment *seg);
 
-
   void release_segment_from_free_list(uint32_t threshold);
+
+  void reset_send_queue(void);
+  void reset_recv_queue(void);
 };
 } /* namespace cm */
 #endif  // INC_SEGMENT_MANAGER_H_

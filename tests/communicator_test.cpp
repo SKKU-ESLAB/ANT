@@ -1,5 +1,6 @@
 //#include <test_adapter.h>
 #include <tcp_server_over_eth.h>
+#include <tcp_server_over_wfd.h>
 #include <thread>
 #include <communicator.h>
 #include <network_adapter.h>
@@ -22,7 +23,7 @@ int main() {
   Communicator *cm = Communicator::get_instance();
   TCPServerOverEthAdapter ca(1234, 1234);
   TCPServerOverEthAdapter na(2345, 2345);
-  TCPServerOverEthAdapter na2(3456, 3456);
+  TCPServerOverWfdAdapter na2(3456, 3456, "OPEL");
 
   ca.set_control_adapter();
   na.set_data_adapter();

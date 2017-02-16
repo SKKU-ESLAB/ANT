@@ -22,26 +22,37 @@
 
 #include <dbug_log.h>
 
+#include <sys/socket.h>
+#include <arpa/inet.h>
+#include <mutex>
+#include <condition_variable>
+
 namespace cm {
 class TCPServerOverWfdAdapter : public NetworkAdapter {
  public:
-  TCPServerOverWfdAdapter(uint32_t id, int port);
-
-  void set_device_name(char *name);
+  TCPServerOverWfdAdapter(uint32_t id, int port, char *dev_name);
 
  private:
   int port;
-  uint32_t id;
+  int cli_sock, serv_sock;
+  struct sockaddr_in saddr, caddr;
+
+  std::mutex dev_wait_lock;
+  std::condition_variable dev_connected;
 
   char dev_name[256];
 
-  uint32_t get_id(void);
+
+  uint16_t get_id(void);
+  bool dev_connected_wait(void);
   bool device_on(void);
   bool device_off(void);
   bool make_connection(void);
   bool close_connection(void);
-  bool send(const void *buf, size_t len);
-  bool recv(void *buf, size_t len);
+  int send(const void *buf, size_t len);
+  int recv(void *buf, size_t len);
+
+  void on_control_recv(const void *buf, size_t len);
 };
 }  /* namespace cm */
 

@@ -21,13 +21,15 @@
 #include <stddef.h>
 
 namespace wifi {
-int wifi_direct_server_up(void);
+int wifi_direct_server_up(char *device_name);
 int wifi_direct_server_down(void);
 int wifi_direct_server_reset(char *pin, size_t len);
 
 int wifi_get_p2p_device_addr(char *dev_addr, size_t len);
 int wifi_get_device_name(char *dev_name, size_t len);
 int wifi_set_device_name(char *dev_name, size_t len);
+
+int wifi_direct_ip_addr(char *ip_str, size_t len);
 
 /* Not allow to modify device information */
 // int wifi_set_manufacturer(char *manufacturer);

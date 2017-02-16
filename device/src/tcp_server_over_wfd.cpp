@@ -18,34 +18,192 @@
 #include <tcp_server_over_wfd.h>
 #include <wifi_control.h>
 
+#include <unistd.h>
+#include <string.h>
+#include <chrono>
+
 namespace cm {
-TCPServerOverWfdAdapter::TCPServerOverWfdAdapter(uint32_t id, int port) {
+TCPServerOverWfdAdapter::TCPServerOverWfdAdapter(uint32_t id, int port,
+                                                 char *dev_name){
   this->port = port;
-  this->id = id;
+  this->dev_id = id;
+  strncpy(this->dev_name, dev_name, 256);
+
+  cli_sock = 0;
+
+  memset(&saddr, 0, sizeof(saddr));
 }
 
-void TCPServerOverWfdAdapter::set_device_name(char *name) {
-  snprintf(dev_name, "%s", name);
-}
-
-uint32_t TCPServerOverWfdAdapter::get_id(void) {
-  return id;
+uint16_t TCPServerOverWfdAdapter::get_id(void) {
+  return dev_id;
 }
 
 bool TCPServerOverWfdAdapter::device_on(void) {
-  int ret = wifi::wifi_direct_server_up();
-
-  return ret==0;
+  return true;
 }
 
 bool TCPServerOverWfdAdapter::device_off(void) {
-  int ret = wifi::wifi_direct_server_down();
-
-  return ret==0;
+  return true;
 }
 
 bool TCPServerOverWfdAdapter::make_connection(void) {
+  char buf[512];
+  int ret;
 
+  OPEL_DBG_LOG("WFD Server up");
+
+  //Add P2P Group and be Group Owner
+  ret = wifi::wifi_direct_server_up(dev_name);
+  if (ret < 0) return false;
+
+  //Send WFD Device ADDR
+  ret = wifi::wifi_get_p2p_device_addr(buf, 256);
+  if (ret < 0) {
+    wifi::wifi_direct_server_down();
+    return false;
+  }
+  OPEL_DBG_LOG("WFD Server added : %s", buf);
+  send_ctrl_msg(buf, strlen(buf));
+
+  //Send WFD PIN
+  ret = wifi::wifi_direct_server_reset(buf, 256);
+  if (ret < 0) {
+    wifi::wifi_direct_server_down();
+    return false;
+  }
+  OPEL_DBG_LOG("WFD Server PIN: %s", buf);
+  send_ctrl_msg(buf, strlen(buf));
+
+  // Wait for the P2P Client
+  if (dev_connected_wait() == false) {
+    wifi::wifi_direct_server_down();
+    return false;
+  }
+  
+  // Get server's IP address and send IP addr
+  int ip_wait_it;
+  for (ip_wait_it = 0; ip_wait_it < 30; ip_wait_it++) {
+    ret = wifi::wifi_direct_ip_addr(buf, 256);
+    if (ret == 0) {
+      OPEL_DBG_LOG("IP:%s", buf);
+      break;
+    }
+
+    usleep(300000);
+  }
+
+  if (ret < 0) {
+    OPEL_DBG_WARN("IP is not set");
+    wifi::wifi_direct_server_down();
+    return false;
+  }
+  send_ctrl_msg(buf, strlen(buf));
+
+  // Wait for TCP connection (buf = IP Addr String)
+  serv_sock = socket(AF_INET, SOCK_STREAM, 0);
+
+  saddr.sin_family = AF_INET;
+  saddr.sin_addr.s_addr = inet_addr(buf);
+  saddr.sin_port = htons((uint16_t)port);
+  int reuse = 1;
+
+  if (setsockopt(serv_sock, SOL_SOCKET, SO_REUSEADDR, (char *)&reuse,
+                 sizeof(int)) == -1) {
+    OPEL_DBG_WARN("Socket setup failed");
+    wifi::wifi_direct_server_down();
+    return false;
+  }
+  
+  int err = bind(serv_sock, (struct sockaddr *)&saddr, sizeof(saddr));
+  if (err < 0) {
+    OPEL_DBG_WARN("Socket bind failed");
+    wifi::wifi_direct_server_down();
+    return false;
+  }
+
+  err = listen(serv_sock, 5);
+  if (err < 0) {
+    OPEL_DBG_WARN("Socket listen failed");
+    wifi::wifi_direct_server_down();
+    return false;
+  }
+
+  int caddr_len = sizeof(caddr);
+  cli_sock = accept(serv_sock, (struct sockaddr *)&caddr, (socklen_t *)caddr_len);
+  if (cli_sock < 0) {
+    OPEL_DBG_WARN("Accept failed");
+    wifi::wifi_direct_server_down();
+    return false;
+  }
+
+  return true;
+}
+
+bool TCPServerOverWfdAdapter::dev_connected_wait() {
+  std::unique_lock<std::mutex> lck(dev_wait_lock);
+  OPEL_DBG_LOG("Wait for WFD connected");
+  std::cv_status ret;
+  ret = dev_connected.wait_for(lck, std::chrono::seconds(10));
+
+  if (ret == std::cv_status::timeout) {
+    OPEL_DBG_LOG("Timed out");
+    return false;
+  }
+
+  return true;
+}
+
+bool TCPServerOverWfdAdapter::close_connection() {
+  close(cli_sock);
+  close(serv_sock);
+  
+  cli_sock = 0;
+  serv_sock = 0;
+
+  int ret = wifi::wifi_direct_server_down();
+  if (ret < 0) return false;
+
+  return true;
+}
+
+int TCPServerOverWfdAdapter::send(const void *buf, size_t len) {
+  int sent = 0;
+  if (cli_sock <= 0)
+    return -1;
+
+  while (sent < len) {
+    int sent_bytes = write(cli_sock, buf, len);
+    if (sent_bytes <= 0) {
+      OPEL_DBG_WARN("Cli sock closed");
+      return -1;
+    }
+
+    sent += sent_bytes;
+  }
+
+  return sent;
+}
+
+int TCPServerOverWfdAdapter::recv(void *buf, size_t len) {
+  int recved = 0;
+
+  if (cli_sock <= 0) return -1;
+
+  while (recved < len) {
+    int recv_bytes = read(cli_sock, buf, len);
+    if (recv_bytes <= 0) {
+      OPEL_DBG_WARN("Cli sock closed");
+      return -1;
+    }
+
+    recved += recv_bytes;
+  }
+
+  return recved;
+}
+
+void TCPServerOverWfdAdapter::on_control_recv(const void *buf, size_t len) {
+  dev_connected.notify_all();
 }
 
 }

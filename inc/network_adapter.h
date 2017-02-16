@@ -74,6 +74,7 @@ class NetworkAdapter {
   virtual uint16_t get_id(void) = 0;
   virtual void set_controllable(void) final;
   virtual void on_control_recv(const void *buf, size_t len) = 0;
+  virtual void send_ctrl_msg(const void *buf, int len) final;
 
  private:
   typedef enum {
@@ -106,8 +107,8 @@ class NetworkAdapter {
   void dev_on(void);
   void dev_off(void);
 
-  void connect(void);
-  void close(void);
+  void _connect(void);
+  void _close(void);
 
   void return_sending_failed_packet(void *segment);
 };

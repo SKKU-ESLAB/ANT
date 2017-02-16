@@ -58,6 +58,23 @@ void NetworkManager::remove_data_adapter(NetworkAdapter *na) {
 
 void NetworkManager::network_closed(void) {
   // Close data adapters here
+  NetworkAdapter *ca = adapter_list[kNetCtrl].front();
+  ca->stat = kDevDisconnecting;
+
+  std::list<NetworkAdapter *>::iterator it;
+
+  for (it = adapter_list[kNetData].begin();
+       it != adapter_list[kNetData].end();
+       ++it) {
+    NetworkAdapter *walker = *it;
+    walker->dev_switch(kDevDiscon, NULL);
+  }
+
+  ca->_close();
+
+  SegmentManager::get_instance()->reset();
+
+  state = kNetStatDiscon;
 }
 
 void NetworkManager::run_control_recver(void) {
@@ -69,6 +86,7 @@ void NetworkManager::run_control_recver(void) {
     assert(na != NULL);
 
     // Control data parsing
+    OPEL_DBG_LOG("Control recver activated");
     res = na->recv(data, 1);
     if (res <= 0) {
       OPEL_DBG_VERB("Control adapter has been closed");
@@ -110,10 +128,48 @@ void NetworkManager::run_control_recver(void) {
 
       na->dev_switch(kDevCon, increase_adapter_cb_wrapper);
     } else if (data[0] == kCtrlReqDecr) {
+    } else if (data[0] == kCtrlReqPriv) {
+      OPEL_DBG_LOG("Private data arrived");
+      uint16_t ndev_id;
+      uint16_t dev_id;
+      uint32_t nlen;
+      uint32_t len;
+
+      do {
+        res = na->recv(&ndev_id, 2);
+        if (res <= 0) break;
+
+        res = na->recv(&nlen, 4);
+        if (res <= 0) break;
+
+        dev_id = ntohs(ndev_id);
+        len = ntohl(nlen);
+        assert(len <= 512);
+
+        res = na->recv(data, len);
+        if (res <= 0) break;
+
+        std::list<NetworkAdapter *>::iterator it;
+        for (it = adapter_list[kNetData].begin();
+             it != adapter_list[kNetData].end();
+             ++it) {
+          NetworkAdapter *walker = *it;
+          if (walker->get_id() == dev_id) {
+            walker->on_control_recv(data, len);
+            break;
+          }
+        }
+      } while (false);
+
+      if (res <= 0) {
+        OPEL_DBG_VERB("Control adapter closed");
+        break;
+      }
     }
   }
 
   network_closed();
+  NetworkManager::get_instance()->connect_control_adapter();
 }
 
 void NetworkManager::send_control_data(const void *data, size_t len) {
@@ -122,8 +178,12 @@ void NetworkManager::send_control_data(const void *data, size_t len) {
     return;
   }
 
+  if (state != kNetStatIncr && state != kNetStatDecr) {
+    OPEL_DBG_WARN("Control data MUST BE sent in only increasing or decreasing adapters");
+    return;
+  }
+
   NetworkAdapter *na = adapter_list[kNetCtrl].front();
-  OPEL_DBG_LOG("Send ctrl data: %d", ((char*)data)[0]);
   na->send(data, len);
 }
 
@@ -134,8 +194,13 @@ void NetworkManager::install_control_cb(DevState res) {
   if (res == kDevCon) {
     NetworkManager::get_instance()->state = kNetStatControl;
     OPEL_DBG_VERB("Communicator successfully connected");
+    if (th_recver != NULL) {
+      delete th_recver;
+      th_recver = NULL;
+    }
     th_recver =
         new std::thread(std::bind(&NetworkManager::run_control_recver, this));
+    th_recver->detach();
   } else {
     sleep(1);
     NetworkManager::get_instance()->connect_control_adapter();

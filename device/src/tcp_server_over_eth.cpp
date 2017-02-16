@@ -72,6 +72,8 @@ bool TCPServerOverEthAdapter::device_off(void) {
 
 bool TCPServerOverEthAdapter::make_connection(void) {
   int caddr_len = sizeof(caddr);
+
+  send_ctrl_msg("Hi", strlen("Hi"));
   OPEL_DBG_WARN("Accepting...client");
   cli_sock = accept(serv_sock, (struct sockaddr *)&caddr, (socklen_t *)&caddr_len);
   if (cli_sock < 0) {
@@ -126,6 +128,14 @@ int TCPServerOverEthAdapter::recv(void *buf, size_t len) {
 }
 
 void TCPServerOverEthAdapter::on_control_recv(const void *buf, size_t len) {
+  char *msg = new char[len+1];
+
+  msg[len] = 0;
+  memcpy(msg, buf, len);
+  OPEL_DBG_LOG("Got : %s", msg);
+
+  delete[] msg;
+
   return;
 }
 

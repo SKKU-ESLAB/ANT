@@ -28,8 +28,17 @@
 
 
 namespace cm {
+typedef enum {
+  kCtrlReqOk = 0,
+  kCtrlReqFail = 1,
+  kCtrlReqIncr = 2,
+  kCtrlReqDecr = 3,
+  kCtrlReqPriv = 4 
+} CtrlReq;
+
 class NetworkManager {
  public:
+  
   static NetworkManager *get_instance(void);
 
   void install_data_adapter(NetworkAdapter *na);
@@ -40,8 +49,7 @@ class NetworkManager {
 
   void increase_adapter(void);
   void decrease_adapter(void);
-
-
+  void send_control_data(const void *data, size_t len);
  private:
   typedef enum {
     kNetCtrl = 0,
@@ -62,13 +70,6 @@ class NetworkManager {
    * |--|----|Data|
    *  CtrlReq (1B), DevId (2B) if Req >= 2, Data (-B) if Req == 4
    */
-  typedef enum {
-    kCtrlReqOk = 0,
-    kCtrlReqFail = 1,
-    kCtrlReqIncr = 2,
-    kCtrlReqDecr = 3,
-    kCtrlReqPriv = 4 
-  } CtrlReq;
 
   NetworkManager(void);
 
@@ -85,7 +86,6 @@ class NetworkManager {
   void install_control_cb(DevState st);
   void connect_control_adapter(void);
   void run_control_recver(void);
-  void send_control_data(const void *data, size_t len);
   void network_closed(void);
 
   NetworkAdapter *select_device(void);

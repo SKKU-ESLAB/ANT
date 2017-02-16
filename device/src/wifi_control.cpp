@@ -104,7 +104,7 @@ inline static int wifi_direct_p2p_group_add(char ret[], size_t len) {
 }
 
 inline static int wifi_direct_wpa_cli_pin_reset(char ret[], size_t len) {
-  char *const params[] = {"wpa_cli", "wps_pin", "any", NULL};
+  char *const params[] = {"wpa_cli", "wps_pin", "any", "12345670", NULL};
 
   assert(wpa_cli_intf_name[0] != '\0');
 
@@ -119,6 +119,7 @@ inline static int wifi_direct_wpa_cli_get_status(char ret[], size_t len) {
   return run_cli(ret, len, params);
 }
 
+/* Do not use this API */
 inline static int wifi_direct_ip_setup(void) {
   char *const params[] = {"ifconfig",
     wpa_cli_intf_name,
@@ -132,7 +133,16 @@ inline static int wifi_direct_ip_setup(void) {
   return run_cli(buf, 256, params, 1);
 }
 
-extern int wifi_direct_server_up(void) {
+static int wifi_set_device_name(char *dev_name, char *buf, int len) {
+  char *const params[] = {"wpa_cli",
+    "set",
+    "device_name",
+    dev_name,
+    NULL};
+
+  return run_cli(buf, len, params);
+}
+extern int wifi_direct_server_up(char *device_name) {
   char buf[1024];
   int ret;
 
@@ -140,6 +150,10 @@ extern int wifi_direct_server_up(void) {
     OPEL_DBG_LOG("WFD is already up-%s", wpa_cli_intf_name);
     return -1;
   }
+
+  ret = wifi_set_device_name(device_name, buf, 1024);
+  if (ret != 0)
+    return ret;
 
   ret = wifi_direct_p2p_group_add(buf, 1024);
   if (ret != 0)
@@ -184,7 +198,7 @@ extern int wifi_direct_server_up(void) {
     ptr = strtok_r(NULL, "\t \n\'", &ptrptr);
   }
 
-  return wifi_direct_ip_setup();
+  return ret;
 }
 
 extern int wifi_direct_server_down(void) {
@@ -250,6 +264,7 @@ extern int wifi_get_p2p_device_addr(char *dev_addr, size_t len) {
   }
 
   ret = wifi_direct_wpa_cli_get_status(buf, 1024);
+  //OPEL_DBG_LOG("Status: %s", buf);
   if (ret != 0)
     return ret;
 
@@ -279,5 +294,26 @@ extern int wifi_get_device_name(char *dev_name) {
 extern int wifi_set_device_name(char *dev_name) {
   // TODO(esevan): Implementation.
   return 0;
+}
+
+extern int wifi_direct_ip_addr(char *buf, size_t len) {
+  int ret = wifi_direct_wpa_cli_get_status(buf, 1024);
+  if (ret != 0)
+    return ret;
+  //OPEL_DBG_LOG("Status: %s", buf);
+
+  char *ptrptr;
+  char *ptr = strtok_r(buf, "\t \n\'", &ptrptr);
+  while (ptr != NULL) {
+    if (strstr(ptr, "ip_address")) {
+      sscanf(ptr, "%*[^=]=%s", buf);
+      OPEL_DBG_LOG("IP_Device_Addrress = %s", buf);
+      return 0;
+    }
+
+    ptr = strtok_r(NULL, "\t \n\'", &ptrptr);
+  }
+  OPEL_DBG_WARN("Get IP address failed");
+  return -1;
 }
 }  /* namespace wifi */

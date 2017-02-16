@@ -79,7 +79,7 @@ void NetworkAdapter::dev_switch(DevState stat, DevStatCb cb) {
       }
       this->stat = kDevDisconnecting;
       close_connection_cb = cb;
-      std::thread(std::bind(&NetworkAdapter::close, this)).detach();
+      std::thread(std::bind(&NetworkAdapter::_close, this)).detach();
       break;
     case kDevCon:
       if (this->stat > kDevDiscon) {
@@ -89,7 +89,7 @@ void NetworkAdapter::dev_switch(DevState stat, DevStatCb cb) {
 
       this->stat = kDevConnecting;
       make_connection_cb = cb;
-      std::thread(std::bind(&NetworkAdapter::connect, this)).detach();
+      std::thread(std::bind(&NetworkAdapter::_connect, this)).detach();
       break;
   }
 }
@@ -155,7 +155,7 @@ void NetworkAdapter::dev_off(void) {
   device_off_cb = NULL;
 }
 
-void NetworkAdapter::connect(void) {
+void NetworkAdapter::_connect(void) {
   if (stat != kDevConnecting)
     return;
   
@@ -183,13 +183,13 @@ void NetworkAdapter::connect(void) {
   make_connection_cb = NULL;
 }
 
-void NetworkAdapter::close(void) {
+void NetworkAdapter::_close(void) {
   if (stat != kDevDisconnecting)
     return;
 
   bool res = close_connection();
   if (res) {
-    if (at & kATCtrl == 0) {
+    if ((at & kATCtrl) == 0) {
       th_sender->join();
       th_recver->join();
 
@@ -222,9 +222,7 @@ void NetworkAdapter::run_sender(void) {
 
   while (true) {
     Segment *to_send;
-    if (likely((to_send = sm->get_failed_sending()) == NULL)) {
-      to_send = sm->dequeue(kSegSend);
-    }
+    to_send = sm->dequeue(kSegSend);
 
     size_t len = kSegHeaderSize + kSegSize;
     const void *data = to_send->data;
@@ -232,7 +230,7 @@ void NetworkAdapter::run_sender(void) {
     bool res = this->send(data, len);
     if (!res) {
       OPEL_DBG_WARN("Sending failed at %s (%s)", dev_name, strerror(errno));
-      sm->failed_sending(to_send);
+      sm->enqueue(kSegSend, to_send);
       break;
     }
     sm->free_segment(to_send);
@@ -268,4 +266,22 @@ void NetworkAdapter::run_recver(void) {
 void NetworkAdapter::set_controllable(void) {
   at = at | kATCtrlable;
 }
+
+void NetworkAdapter::send_ctrl_msg(const void *buf, int len) {
+  uint8_t req = kCtrlReqPriv;
+  uint16_t net_dev_id = htons(this->dev_id);
+  uint32_t net_len = htonl(len);
+
+  if ((at & kATCtrl) == kATCtrl) {
+    OPEL_DBG_WARN("Cannot transfer private data in control adapter");
+    return;
+  }
+
+  NetworkManager *nm = NetworkManager::get_instance();
+  nm->send_control_data(&req, 1);
+  nm->send_control_data(&net_dev_id, 2);
+  nm->send_control_data(&net_len, 4);
+  nm->send_control_data(buf, len);
+}
+
 }  /* namespace cm */

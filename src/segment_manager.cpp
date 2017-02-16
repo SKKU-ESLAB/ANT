@@ -259,4 +259,8 @@ Segment *SegmentManager::get_failed_sending(void) {
   return res;
 }
 
+void SegmentManager::reset(void) {
+  
+}
+
 }; /* namespace cm */

@@ -15,8 +15,8 @@
  * limitations under the License.
  */
 
-#ifndef DEVICE_INC_TCP_SERVER_OVER_WFD_H_
-#define DEVICE_INC_TCP_SERVER_OVER_WFD_H_
+#ifndef DEVICE_INC_TCP_SERVER_OVER_ETH_H_
+#define DEVICE_INC_TCP_SERVER_OVER_ETH_H_
 
 #include <network_adapter.h>
 
@@ -50,4 +50,4 @@ class TCPServerOverEthAdapter : public NetworkAdapter {
 };
 }  /* namespace cm */
 
-#endif  // DEVICE_INC_TCP_SERVER_OVER_WFD_H_
+#endif  // DEVICE_INC_TCP_SERVER_OVER_ETH_H_

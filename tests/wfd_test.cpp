@@ -18,11 +18,12 @@
 #include <wifi_control.h>
 
 #include <stdio.h>
+#include <string.h>
 
 int main() {
   int ret;
   printf("Wifi_direct_server_up\n");
-  ret = wifi::wifi_direct_server_up();
+  ret = wifi::wifi_direct_server_up("TEST");
   printf("Return: %d\n", ret);
 
   char buf[256];
@@ -33,6 +34,11 @@ int main() {
   printf("Wifi_get_p2p_device_addr\n");
   ret = wifi::wifi_get_p2p_device_addr(buf, 256);
   printf("Return: %d-%s\n", ret, buf);
+
+  int a;
+  scanf("%d", &a);
+  ret = wifi::wifi_direct_ip_addr(buf, 256);
+  printf("IP:%s(%d)", buf, strlen(buf));
 
   printf("Wifi_direct_server_down\n");
   //ret = wifi::wifi_direct_server_down();
