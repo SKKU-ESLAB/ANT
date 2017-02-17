@@ -30,6 +30,7 @@ int wifi_get_device_name(char *dev_name, size_t len);
 int wifi_set_device_name(char *dev_name, size_t len);
 
 int wifi_direct_ip_addr(char *ip_str, size_t len);
+int wifi_dhcp_close(void);
 
 /* Not allow to modify device information */
 // int wifi_set_manufacturer(char *manufacturer);

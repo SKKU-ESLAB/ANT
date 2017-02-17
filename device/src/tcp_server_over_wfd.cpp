@@ -18,6 +18,7 @@
 #include <tcp_server_over_wfd.h>
 #include <wifi_control.h>
 
+#include <errno.h>
 #include <unistd.h>
 #include <string.h>
 #include <chrono>
@@ -129,12 +130,15 @@ bool TCPServerOverWfdAdapter::make_connection(void) {
   }
 
   int caddr_len = sizeof(caddr);
-  cli_sock = accept(serv_sock, (struct sockaddr *)&caddr, (socklen_t *)caddr_len);
+  OPEL_DBG_WARN("Accepting client...");
+  cli_sock = accept(serv_sock, (struct sockaddr *)&caddr, (socklen_t *)&caddr_len);
   if (cli_sock < 0) {
-    OPEL_DBG_WARN("Accept failed");
+    OPEL_DBG_WARN("Accept failed %s", strerror(errno));
     wifi::wifi_direct_server_down();
     return false;
   }
+
+  wifi::wifi_dhcp_close();
 
   return true;
 }
