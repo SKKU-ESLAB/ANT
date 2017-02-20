@@ -15,7 +15,40 @@
  * limitations under the License.
  */
 
+#ifndef DEVICE_INC_RFCOMM_OVER_BT_H_
+#define DEVICE_INC_RFCOMM_OVER_BT_H_
+
 #include <network_adapter.h>
 
 #include <dbug_log.h>
 
+#include <network_adapter.h>
+
+#include <dbug_log.h>
+#include <sys/socket.h>
+#include <arpa/inet.h>
+
+namespace cm {
+class RfcommServerOverBt : public NetworkAdapter {
+ public:
+  RfcommServerOverBt (uint16_t id, char *svc_uuid, int port);
+
+ private:
+  int port;
+
+  int serv_sock, cli_sock;
+
+  char dev_name[256];
+
+  bool device_on(void);
+  bool device_off(void);
+  bool make_connection(void);
+  bool close_connection(void);
+  int send(const void *buf, size_t len);
+  int recv(void *buf, size_t len);
+  uint16_t get_id(void);
+  void on_control_recv(const void *buf, size_t len);
+};
+}  /* namespace cm */
+
+#endif  //DEVICE_INC_RFCOMM_OVER_BT_H_
