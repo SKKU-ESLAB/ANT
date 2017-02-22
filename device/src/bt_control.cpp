@@ -16,6 +16,8 @@
  */
 
 #include <bt_control.h>
+#include <unistd.h>
+#include <stddef.h>
 
 namespace bt {
 #define HCICONFIG_PATH "/usr/sbin/hciconfig"
@@ -61,6 +63,21 @@ static int run_cli(char *res_buf, size_t len, char *const params[]) {
     execv(HCICONFIG_PATH, params);
   }
 }
-void bt_init() {
+int hciconfig_piscan(char ret[], size_t len) {
+  char *const params[] = {"hciconfig", "hci0", "up", "piscan", NULL};
+
+  return run_cli(ret, len, params);
+}
+
+int hciconfig_pscan(char ret[], size_t len) {
+  char *const param[] = {"hciconfig", "hci0", "up", "pscan", NULL};
+
+  return run_cli(ret, len, params);
+}
+
+int hciconfig_down(char ret[], size_t len) {
+  char *const param[] = {"hciconfig", "hci0", "down", NULL};
+
+  return run_cli(ret, len, params);
 }
 }

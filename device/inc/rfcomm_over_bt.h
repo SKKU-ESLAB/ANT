@@ -21,12 +21,7 @@
 #include <network_adapter.h>
 
 #include <dbug_log.h>
-
-#include <network_adapter.h>
-
-#include <dbug_log.h>
-#include <sys/socket.h>
-#include <arpa/inet.h>
+#include <bluetooth/sdp.h>
 
 namespace cm {
 class RfcommServerOverBt : public NetworkAdapter {
@@ -35,6 +30,8 @@ class RfcommServerOverBt : public NetworkAdapter {
 
  private:
   int port;
+  sdp_session_t *session;
+  uuid_t svc_uuid;
 
   int serv_sock, cli_sock;
 
@@ -48,6 +45,13 @@ class RfcommServerOverBt : public NetworkAdapter {
   int recv(void *buf, size_t len);
   uint16_t get_id(void);
   void on_control_recv(const void *buf, size_t len);
+
+  int str2uuid(char *str, uuid_t *uuid);
+  void uuid2strn(uuid_t *uuid, char *str, int len);
+
+  int bt_register_service(void);
+  int bt_dynamic_bind_rc(void);
+  int bt_open(void);
 };
 }  /* namespace cm */
 

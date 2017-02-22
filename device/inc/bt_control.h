@@ -19,10 +19,9 @@
 #define DEVICE_INC_BT_CONTROL_H_
 
 namespace bt {
-void bt_server_init();
-int bt_open();
-int bt_close();
-int bt_accept();
+int hciconfig_piscan(char ret[], size_t len);
+int hciconfig_pscan(char ret[], size_t len);
+int hciconfig_down(char ret[], size_t len);
 } /* namespace bt */
 // Now bt handling code is workin under bluez 4.X.
 // Not support bluez 5.X version

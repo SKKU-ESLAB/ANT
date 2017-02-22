@@ -203,7 +203,7 @@ inline static int wifi_dhcp_setup(void) {
   assert(wpa_cli_intf_name[0] != '\0');
 
   // Generate dhcp configuration
-  int conf_fd = open(DHCPD_CONF_PATH, O_CREAT | O_WRONLY | O_TRUNC);
+  int conf_fd = open(DHCPD_CONF_PATH, O_CREAT | O_WRONLY | O_TRUNC, 0644);
   char script[512];
 
   sprintf(script, "start 192.168.49.20\n"\
@@ -311,6 +311,7 @@ extern int wifi_direct_server_down(void) {
 
 
   ret = wifi_direct_p2p_group_remove(buf, 1024);
+  OPEL_DBG_LOG(buf);
 
   char *ptrptr;
   char *ptr = strtok_r(buf, "\t \n\'", &ptrptr);
