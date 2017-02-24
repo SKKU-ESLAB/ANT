@@ -89,7 +89,7 @@ void NetworkManager::run_control_recver(void) {
     OPEL_DBG_LOG("Control recver activated");
     res = na->recv(data, 1);
     if (res <= 0) {
-      OPEL_DBG_VERB("Control adapter has been closed");
+      OPEL_DBG_ERR("Control adapter has been closed");
       break;
     }
 
@@ -283,7 +283,6 @@ void NetworkManager::increase_adapter() {
     return;
   }
 
-  OPEL_DBG_LOG("%d dev is upping", na->dev_id);
   unsigned char buf[512];
   buf[0] = kCtrlReqIncr;
   uint16_t ndev_id = htons(na->dev_id);

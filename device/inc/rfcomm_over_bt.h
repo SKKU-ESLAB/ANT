@@ -22,11 +22,12 @@
 
 #include <dbug_log.h>
 #include <bluetooth/sdp.h>
+#include <bluetooth/sdp_lib.h>
 
 namespace cm {
 class RfcommServerOverBt : public NetworkAdapter {
  public:
-  RfcommServerOverBt (uint16_t id, char *svc_uuid, int port);
+  RfcommServerOverBt (uint16_t id, char *svc_uuid);
 
  private:
   int port;
@@ -47,7 +48,7 @@ class RfcommServerOverBt : public NetworkAdapter {
   void on_control_recv(const void *buf, size_t len);
 
   int str2uuid(char *str, uuid_t *uuid);
-  void uuid2strn(uuid_t *uuid, char *str, int len);
+  int uuid2strn(uuid_t *uuid, char *str, int len);
 
   int bt_register_service(void);
   int bt_dynamic_bind_rc(void);

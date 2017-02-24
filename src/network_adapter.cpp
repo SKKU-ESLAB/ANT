@@ -73,7 +73,7 @@ void NetworkAdapter::dev_switch(DevState stat, DevStatCb cb) {
         return;
       }
 
-      if (this->stat == kDevConnecting) {
+      if (this->stat == kDevDisconnecting) {
         OPEL_DBG_WARN("Device is busy");
         return;
       }
@@ -99,10 +99,8 @@ void NetworkAdapter::set_data_adapter(void) {
     OPEL_DBG_WARN("Already initialized: %d", at & kATCtrl);
     return;
   }
-  OPEL_DBG_LOG("Data adapter installing");
   NetworkManager::get_instance()->install_data_adapter(this);
   at |= kATInitialized;
-  OPEL_DBG_LOG("Data adapter installed");
 }
 
 void NetworkAdapter::set_control_adapter(void) {
@@ -115,11 +113,8 @@ void NetworkAdapter::set_control_adapter(void) {
     OPEL_DBG_WARN("Not controllable adapter %d", dev_id);
     return;
   }
-  OPEL_DBG_LOG("Control adapter installing");
   NetworkManager::get_instance()->install_control_adapter(this);
   at |= kATCtrl | kATInitialized;
-
-  OPEL_DBG_LOG("Control adapter installed");
 }
 
 DevState NetworkAdapter::get_stat() {
@@ -187,11 +182,13 @@ void NetworkAdapter::_close(void) {
   if (stat != kDevDisconnecting)
     return;
 
+
   bool res = close_connection();
   if (res) {
     if ((at & kATCtrl) == 0) {
-      th_sender->join();
+      SegmentManager::get_instance()->notify_send_queue();
       th_recver->join();
+      th_sender->join();
 
       delete th_sender;
       delete th_recver;
@@ -222,19 +219,28 @@ void NetworkAdapter::run_sender(void) {
 
   while (true) {
     Segment *to_send;
-    to_send = sm->dequeue(kSegSend);
 
-    size_t len = kSegHeaderSize + kSegSize;
+    if (likely((to_send = sm->get_failed_sending()) == NULL))
+      to_send = sm->dequeue(kSegSend);
+
+    if (to_send == NULL) {
+      if (stat < kDevCon) break;
+      else continue;
+    }
+
+    int len = kSegHeaderSize + kSegSize;
     const void *data = to_send->data;
     //OPEL_DBG_LOG("to_send seq_no: %d", to_send->seq_no);
     bool res = this->send(data, len);
     if (!res) {
       OPEL_DBG_WARN("Sending failed at %s (%s)", dev_name, strerror(errno));
-      sm->enqueue(kSegSend, to_send);
+      return_sending_failed_packet(to_send);
       break;
     }
     sm->free_segment(to_send);
   }
+
+  dev_switch(kDevDiscon, NULL);
 }
 
 void NetworkAdapter::run_recver(void) {
@@ -243,13 +249,14 @@ void NetworkAdapter::run_recver(void) {
 
   while (true) {
     void *buf = reinterpret_cast<void *>(free_seg->data);
-    size_t len = kSegSize + kSegHeaderSize;
+    int len = kSegSize + kSegHeaderSize;
     int res = this->recv(buf, len);
     if (res < len) {
       OPEL_DBG_WARN("Recving failed at %s (%s)", dev_name, strerror(errno));
       sm->free_segment(free_seg);
       break;
     }
+
 
     uint16_t net_seq_no, net_flag_len;
     memcpy(&net_seq_no, buf, sizeof(uint16_t));
@@ -258,9 +265,12 @@ void NetworkAdapter::run_recver(void) {
     free_seg->seq_no = ntohs(net_seq_no);
     free_seg->flag_len = ntohs(net_flag_len);
 
+    OPEL_DBG_LOG("Recved:%d/%d(%d)", free_seg->seq_no, free_seg->flag_len, res);
     sm->enqueue(kSegRecv, free_seg);
     free_seg = sm->get_free_segment();
   }
+
+  dev_switch(kDevDiscon, NULL);
 }
 
 void NetworkAdapter::set_controllable(void) {

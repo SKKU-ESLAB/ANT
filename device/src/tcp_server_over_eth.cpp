@@ -139,6 +139,11 @@ void TCPServerOverEthAdapter::on_control_recv(const void *buf, size_t len) {
 }
 
 bool TCPServerOverEthAdapter::close_connection() {
+  close(cli_sock);
+  close(serv_sock);
+
+  cli_sock = 0;
+  serv_sock = 0;
   return true;
 }
 

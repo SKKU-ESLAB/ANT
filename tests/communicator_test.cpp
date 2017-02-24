@@ -1,4 +1,5 @@
 //#include <test_adapter.h>
+#include <rfcomm_over_bt.h>
 #include <tcp_server_over_eth.h>
 #include <tcp_server_over_wfd.h>
 #include <thread>
@@ -21,11 +22,13 @@ void receiving_thread() {
 
 int main() {
   Communicator *cm = Communicator::get_instance();
-  TCPServerOverEthAdapter ca(1234, 1234);
+  RfcommServerOverBt ca(1234, "150e8400-e29b-41d4-a716-446655440000");
+  RfcommServerOverBt na3(3333, "150e8400-1234-41d4-a716-446655440000");
   TCPServerOverEthAdapter na(2345, 2345);
   TCPServerOverWfdAdapter na2(3456, 3456, "OPEL");
 
   ca.set_control_adapter();
+  na3.set_data_adapter();
   na.set_data_adapter();
   na2.set_data_adapter();
 

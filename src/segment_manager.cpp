@@ -150,6 +150,8 @@ void SegmentManager::enqueue(SegQueueType type, Segment *seg) {
     queue_size[type]++;
     segment_enqueued = true;
   } else {
+    if (seg->seq_no <= next_seq_no[type])
+      OPEL_DBG_ERR("%d > %d, %s", seg->seq_no, next_seq_no[type], type == kSegSend? "Send":"Recv");
     assert(seg->seq_no > next_seq_no[type]);
     std::list<Segment *>::iterator curr_it = pending_queue[type].begin();
 
@@ -194,11 +196,18 @@ void SegmentManager::enqueue(SegQueueType type, Segment *seg) {
 
 Segment *SegmentManager::dequeue(SegQueueType type) {
   std::unique_lock<std::mutex> lck(lock[type]);
-  while (queue_size[type] == 0) {
+  if (queue_size[type] == 0) {
     not_empty[type].wait(lck);
   }
 
+  if (queue_size[type] == 0)
+    return NULL;
+
   Segment *ret = queue[type].front();
+  if (ret == NULL) {
+    OPEL_DBG_LOG("NULL");
+    return NULL;
+  }
   queue[type].pop_front();
   queue_size[type]--;
   return ret;
@@ -261,6 +270,10 @@ Segment *SegmentManager::get_failed_sending(void) {
 
 void SegmentManager::reset(void) {
   
+}
+
+void SegmentManager::notify_send_queue() {
+  not_empty[kSegSend].notify_all();
 }
 
 }; /* namespace cm */

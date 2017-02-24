@@ -21,6 +21,7 @@
 #include <arpa/inet.h>
 #include <errno.h>
 #include <string.h>
+#include <unistd.h>
 
 #include <bluetooth/sdp.h>
 #include <bluetooth/sdp_lib.h>
@@ -30,11 +31,11 @@
 #include <bluetooth/rfcomm.h>
 
 namespace cm {
-RfcommServerOverBt (uint16_t id, char *svc_uuid, int port) {
-  this->port = port;
+RfcommServerOverBt::RfcommServerOverBt(uint16_t id, char *svc_uuid) {
   this->dev_id = id;
 
-  str2uuid(svc_uuid, &(this->uuid));
+  str2uuid(svc_uuid, &(this->svc_uuid));
+  set_controllable();
 }
 bool RfcommServerOverBt::device_on() {
   return true;
@@ -96,18 +97,18 @@ int RfcommServerOverBt::bt_register_service() {
   char service_dsc[256];
   char service_prov[256];
   sdp_session_t *t_session = 0;
+  uuid_t root_uuid, l2cap_uuid, rfcomm_uuid;
+  sdp_list_t *l2cap_list = 0,
+             *rfcomm_list = 0,
+             *root_list = 0,
+             *proto_list = 0,
+             *access_proto_list = 0;
+  sdp_data_t *channel = 0;
+  sdp_record_t *record = sdp_record_alloc();
 
   int res = 0;
   do {
-    uuid_t root_uuid, l2cap_uuid, rfcomm_uuid;
-    sdp_list_t *l2cap_list = 0,
-               *rfcomm_list = 0,
-               *root_list = 0,
-               *proto_list = 0,
-               *access_proto_list = 0;
-    sdp_data_t *channel = 0;
 
-    sdp_record_t *record = sdp_record_alloc();
 
     //Set the general service ID
     sdp_set_service_id(record, svc_uuid);
@@ -115,7 +116,7 @@ int RfcommServerOverBt::bt_register_service() {
     // make the service record publicly browsable
     sdp_uuid16_create(&root_uuid, PUBLIC_BROWSE_GROUP);
     root_list = sdp_list_append(0, &root_uuid);
-    sdp_set_browse_group(record, root_list);
+    sdp_set_browse_groups(record, root_list);
 
     // Set l2cap information
     sdp_uuid16_create(&l2cap_uuid, L2CAP_UUID);
@@ -209,8 +210,7 @@ int RfcommServerOverBt::bt_open() {
     return -1;
   }
 
-  session = bt_register_service();
-  if (NULL == session) {
+  if (bt_register_service() < 0) {
     OPEL_DBG_WARN("Bluetooth sdp session creation failed(%s)", strerror(errno));
     return -1;
   }
@@ -223,5 +223,59 @@ int RfcommServerOverBt::bt_open() {
   return serv_sock;
 }
 
+int RfcommServerOverBt::send(const void *buf, size_t len) {
+  int sent = 0;
 
+  if (cli_sock <= 0)
+    return -1;
+
+  while (sent < len) {
+    int sent_bytes = write(cli_sock, buf, len);
+    if (sent_bytes <= 0) {
+      OPEL_DBG_WARN("Cli sock closed");
+      return -1;
+    }
+
+    sent += sent_bytes;
+  }
+
+  return sent;
+}
+
+int RfcommServerOverBt::recv(void *buf, size_t len) {
+  int recved = 0;
+
+  if (cli_sock <= 0)
+    return -1;
+
+  while (recved < len) {
+    int recv_bytes = read(cli_sock, buf, len);
+    if (recv_bytes <= 0) {
+      OPEL_DBG_WARN("Cli sock closed");
+      return -1;
+    }
+
+    recved += recv_bytes;
+  }
+
+  return recved;
+}
+
+uint16_t RfcommServerOverBt::get_id() {
+  return dev_id;
+}
+
+void RfcommServerOverBt::on_control_recv(const void *buf, size_t len) {
+  return;
+}
+
+bool RfcommServerOverBt::close_connection() {
+  close(cli_sock);
+  close(serv_sock);
+
+  cli_sock = 0;
+  serv_sock = 0;
+
+  return true;
+}
 }
