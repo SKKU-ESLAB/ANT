@@ -53,7 +53,8 @@ $ sudo touch /var/lib/misc/udhcpd.leases
 
 ## How to Build the Source Code
 ```
-$ mkdir bin obj ./device/obj
+// No need to make the new directories now (Already exists)
+$ mkdir bin obj ./device/obj 
 $ make
 ```
 Then you can find the binary file of the communicator test example,
