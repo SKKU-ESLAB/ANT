@@ -16,6 +16,41 @@ $ git clone https://github.com/sinban04/P2PForYourThings.git
 $ cd P2PForYourThings
 ```
 
+## Pre-requisite
+- Install Bluetooth library
+```
+$ sudo apt-get install libbluetooth-dev
+```
+
+Check your bluetooth version using
+```
+$ sudo vi /etc/systemd/system/dbus-org.bluez.service
+
+ExecStart=/usr/lib/bluetooth/bluetoothd --compat
+
+$ sudo systemctl daemon-reload
+$ sudo systemctl restart bluetooth
+$ sudo chmod 777 /var/run/sdp
+```
+
+- Check the wifi module support p2p
+```
+$ iw list
+```
+
+- Modify the wpa_supplicant.conf (/etc/wpa_supplicant/wpa_supplicant.conf)
+Add two parameters
+
+> update_config=1
+
+> driver_param=p2p_device=1
+
+- Install UDHCPD for wifi-direct
+```
+$ sudo apt-get install udhcpd
+$ sudo touch /var/lib/misc/udhcpd.leases
+```
+
 ## How to Build the Source Code
 ```
 $ mkdir bin obj ./device/obj
@@ -25,3 +60,16 @@ Then you can find the binary file of the communicator test example,
 which is in the tests/ directory.
 
 # Notes
+## Bluetooth Issues
+### Bluetooth Version Compatibility
+Check your bluetooth version using
+```
+$ sudo vi /etc/systemd/system/dbus-org.bluez.service
+
+ExecStart=/usr/lib/bluetooth/bluetoothd --compat
+
+$ sudo systemctl daemon-reload
+$ sudo systemctl restart bluetooth
+$ sudo chmod 777 /var/run/sdp
+```
+
