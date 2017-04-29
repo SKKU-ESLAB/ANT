@@ -103,5 +103,8 @@ When the bluetooth.target is masked, unmask it
 ```
 $ sudo systemctl unmask bluetooth
 ```
-
+Check the bluetoothd exists
+```
+$ ps -ef | grep bluetooth
+```
 
