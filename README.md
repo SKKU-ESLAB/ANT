@@ -7,3 +7,104 @@ NVIDIA Jetson-TX1
 
 # Android
 [P2PForYourThings-android](https://github.com/esevan/P2PForYourThings-android)
+
+
+# Quick Start
+## How to Get the Source Code
+```
+$ git clone https://github.com/sinban04/P2PForYourThings.git
+$ cd P2PForYourThings
+```
+
+## Pre-requisite
+- Install Bluetooth library
+```
+$ sudo apt-get install libbluetooth-dev
+```
+
+Check your bluetooth version using
+```
+$ sudo vi /etc/systemd/system/dbus-org.bluez.service
+
+ExecStart=/usr/lib/bluetooth/bluetoothd --compat
+
+$ sudo systemctl daemon-reload
+$ sudo systemctl restart bluetooth
+$ sudo chmod 777 /var/run/sdp
+```
+
+- Check the wifi module support p2p
+```
+$ iw list
+```
+
+- Modify the wpa_supplicant.conf (/etc/wpa_supplicant/wpa_supplicant.conf)
+Add two parameters
+
+> update_config=1
+
+> driver_param=p2p_device=1
+
+- Install UDHCPD for wifi-direct
+```
+$ sudo apt-get install udhcpd
+$ sudo touch /var/lib/misc/udhcpd.leases
+```
+
+## How to Build the Source Code
+```
+$ mkdir bin obj ./device/obj
+$ make
+```
+Then you can find the binary file of the communicator test example,
+which is in the tests/ directory.
+
+# Notes
+## Bluetooth Issues
+### Bluetooth Version Compatibility
+Check your bluetooth version using
+```
+$ sudo vi /etc/systemd/system/dbus-org.bluez.service
+
+ExecStart=/usr/lib/bluetooth/bluetoothd --compat
+
+$ sudo systemctl daemon-reload
+$ sudo systemctl restart bluetooth
+$ sudo chmod 777 /var/run/sdp
+```
+
+### Check the bluetooth HCI interface
+```
+$ hciconfig -a
+```
+
+### Change hci0 interface to Scan Mode 
+Set page scan and inquiry can (Discoverable)
+```
+$ sudo hciconfig hci0 piscan
+```
+
+### Change the hci0 interface name
+e.g., change the name of the bluetooth interface to 'pi'
+```
+$ sudo hciconfig hci0 name pi
+```
+
+### Turn on the interface
+```
+$ sudo hciconfig hci0 up
+```
+
+### Turn on the bluetoothd (For the case, it's off)
+```
+sudo service bluetooth start
+```
+When the bluetooth.target is masked, unmask it
+```
+$ sudo systemctl unmask bluetooth
+```
+Check the bluetoothd exists
+```
+$ ps -ef | grep bluetooth
+```
+
