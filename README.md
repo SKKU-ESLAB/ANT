@@ -60,6 +60,11 @@ $ make
 Then you can find the binary file of the communicator test example,
 which is in the tests/ directory.
 
+## How to Run
+```
+$ sudo ./bin/test
+```
+
 # Notes
 ## Bluetooth Issues
 ### Bluetooth Version Compatibility
