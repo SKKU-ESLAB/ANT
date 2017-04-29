@@ -126,6 +126,7 @@ int ProtocolManager::send_packet(uint8_t *serialized, uint32_t packet_size) {
   buf_test = *(serialized + packet_size - 1);
   free(serialized);
 #endif
+  // Hand over the data to the segment manager
   return sm -> send_to_segment_manager(serialized, packet_size);
 }
 

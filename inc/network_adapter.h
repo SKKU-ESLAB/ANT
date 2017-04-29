@@ -86,6 +86,11 @@ class NetworkAdapter {
   std::thread *th_sender;
   std::thread *th_recver;
 
+  /*
+   *  Attribute: it has the state of the adapter.
+   *  If it's control adapter, it has positive value, and
+   *  If it's adapter adapter, it's 0
+   */
   int at;
   DevState stat;
   std::mutex dev_on_lock;

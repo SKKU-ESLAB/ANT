@@ -137,21 +137,33 @@ uint8_t *SegmentManager::recv_from_segment_manager(void *proc_data_handle) {
 
   return serialized;
 }
-
+/*
+ * This function is the end of the sending logic.
+ * It enqeueus the data to the sending queue in order with the sequence number.
+ */
 void SegmentManager::enqueue(SegQueueType type, Segment *seg) {
   assert(type < kSegMaxQueueType);
-
+  
+  // Get lock for the queue
   std::unique_lock<std::mutex> lck(lock[type]);
   bool segment_enqueued = false;
 
+  /* If the sequence number is the right next one,
+   * It executes enqueuing logic normally.
+   */
   if (seg->seq_no == next_seq_no[type]) {
     next_seq_no[type]++;
     queue[type].push_back(seg);
     queue_size[type]++;
     segment_enqueued = true;
-  } else {
-    if (seg->seq_no <= next_seq_no[type])
+  }
+  /* If the sequence number is not the next expected one,
+   * It enqueues its segments to the pending queue, not normal queue.
+   */
+  else {
+    if (seg->seq_no <= next_seq_no[type]){
       OPEL_DBG_ERR("%d > %d, %s", seg->seq_no, next_seq_no[type], type == kSegSend? "Send":"Recv");
+    }
     assert(seg->seq_no > next_seq_no[type]);
     std::list<Segment *>::iterator curr_it = pending_queue[type].begin();
 
@@ -170,7 +182,10 @@ void SegmentManager::enqueue(SegQueueType type, Segment *seg) {
 
   }
 
-  /* Finally, we put all consequent segments into type queue */
+  /*  Finally, we put all consequent segments into type queue 
+   *  (If no segment in the pending queue matches to the next seq_no,
+   *  Then this process is just skipped.)
+   */
   std::list<Segment *>::iterator curr_it = pending_queue[type].begin();
   while (curr_it != pending_queue[type].end() &&
          (*curr_it)->seq_no == next_seq_no[type]) {
@@ -213,6 +228,9 @@ Segment *SegmentManager::dequeue(SegQueueType type) {
   return ret;
 }
 
+/*  This function returns a free segment from the list of free segments.
+ *  If there is no one available, allocate new one
+ */
 Segment *SegmentManager::get_free_segment(void) {
   std::unique_lock<std::mutex> lck(free_list_lock);
   Segment *ret = NULL;
@@ -238,11 +256,15 @@ void SegmentManager::release_segment_from_free_list(uint32_t threshold) {
     free_list_size--;
   }
 }
+
+/*  This function releases the segment which is not further used.
+ */
 void SegmentManager::free_segment(Segment *seg) {
   std::unique_lock<std::mutex> lck(free_list_lock);
   free_list.push_front(seg);
   free_list_size++;
 
+  // If the free list is big enough, release the half elements of the list
   if (unlikely(free_list_size > kSegFreeThreshold)) {
     release_segment_from_free_list(kSegFreeThreshold / 2);
   }

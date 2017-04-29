@@ -153,11 +153,17 @@ void NetworkAdapter::dev_off(void) {
 void NetworkAdapter::_connect(void) {
   if (stat != kDevConnecting)
     return;
-  
+  /*
+   *  make_connection() function is the function defined in each network adapter
+   */
   bool res = make_connection();
 
-  if (res) {
-    if ((at & kATCtrl) == 0) {
+  if (res) 
+  {
+    /*  Only if it's data adapter, run the sender & recver thread.
+     *  Control adapter uses other thread
+     */
+    if ((at & kATCtrl) == 0) {  // It's data adapter
       OPEL_DBG_LOG("Data adapter connected");
       th_sender =
           new std::thread(std::bind(&NetworkAdapter::run_sender, this));

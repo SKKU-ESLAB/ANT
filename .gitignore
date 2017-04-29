@@ -2,7 +2,8 @@ tags
 cscope
 cscope.out
 *.o
-bin
+bin/*
+!bin/.git_empty_file
 SelectiveConnection.IAB
 SelectiveConnection.IAD
 SelectiveConnection.IMB

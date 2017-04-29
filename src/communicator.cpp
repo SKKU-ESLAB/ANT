@@ -25,11 +25,12 @@
 #include <network_manager.h>
 
 /**
- * Memory Free Timing
+ * < Memory Free Timing >
+ * [*] Sending
  * When ProtocolManager::serialize() method is invoked, memory will be allocated.
  * ProtocolManager is in charge of allocating this memory.
  * SegmentManager is in charge of freeing this memory.
- * 
+ * [*] Receiving
  * SegmentManager invokes ProtocolManager::parse() with allocated serialized vector.
  * SegmentManager is in charge of allocating this memory.
  * After copying to application memory, serialized vector should be freed.
@@ -63,8 +64,9 @@ int Communicator::send_data(const void *buf, uint32_t len) {
   uint8_t *serialized_vector;
   uint32_t packet_size;
 
+  // Attach the protocol header to the payload
   ProtocolManager::data_to_protocol_data((const uint8_t *) buf, len, &pd);
-
+  // The serialized_vector buffer is allocated in here
   packet_size = ProtocolManager::serialize(&pd,
                                            (const uint8_t *)buf,
                                            curr_offset,
@@ -72,6 +74,7 @@ int Communicator::send_data(const void *buf, uint32_t len) {
                                            &serialized_vector);
   assert(serialized_vector != NULL && packet_size > 0);
 
+  // Hand over the data to the Protocol Manager
   sent_bytes = ProtocolManager::send_packet(serialized_vector, packet_size);
   if (unlikely(sent_bytes < 0)) {
     OPEL_DBG_ERR("Sending stopped(%u/%u) by %d",

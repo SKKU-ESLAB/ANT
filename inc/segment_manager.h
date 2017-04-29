@@ -47,15 +47,24 @@
     mSetSegBits(x, dest, kSegFlagOffset, kSegFlagMask)
 
 namespace cm {
+/*
+ *  Queue Type
+ */
 typedef enum {
   kSegSend = 0,
   kSegRecv = 1,
   kSegMaxQueueType = 2
 } SegQueueType;
+/*  Types of Flag
+ */
 typedef enum {
   kSegFlagMF = 1
 } SegFlagVal;
 
+/*
+ * Data Structure of Segment
+ * This is handled by Segment Manager.
+ */
 typedef struct {
   uint16_t seq_no;
   uint16_t flag_len;

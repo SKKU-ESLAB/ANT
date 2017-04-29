@@ -77,6 +77,8 @@ void NetworkManager::network_closed(void) {
   state = kNetStatDiscon;
 }
 
+/*  This function is the logic run by control receving thread.
+ */
 void NetworkManager::run_control_recver(void) {
   char data[512] = {0, };
   int res = 0;
@@ -92,7 +94,7 @@ void NetworkManager::run_control_recver(void) {
       OPEL_DBG_ERR("Control adapter has been closed");
       break;
     }
-
+    /*  If the control message is 'increase adapter', */
     if (data[0] == kCtrlReqIncr) {
       OPEL_DBG_VERB("DataIncr request arrived");
       res = na->recv(data, 2);
@@ -219,6 +221,7 @@ void NetworkManager::connect_control_adapter() {
 }
 
 void NetworkManager::install_control_adapter(NetworkAdapter *na) {
+  // Keep only one control adapter in connection 
   if (state > kNetStatDiscon || adapter_list[kNetCtrl].size() > 0) {
     OPEL_DBG_WARN("Control port already installed");
     return;
