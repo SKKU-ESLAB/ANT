@@ -114,3 +114,9 @@ Check the bluetoothd exists
 $ ps -ef | grep bluetooth
 ```
 
+## Wifi-Direct Issues
+### Remove the P2P group (Wifi-direct) on the wifi interface
+remove group p2p-wlan0-1 on the wifi interface wlan0
+```
+sudo wpa_cli -i wlan0 p2p_group_remove p2p-wlan0-1
+```
