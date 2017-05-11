@@ -37,6 +37,7 @@ SegmentManager::SegmentManager(void) {
   free_list_size = 0;
   seq_no = 0;
   queue_threshold = 0;
+  try_dequeue = 0;
 }
 
 SegmentManager *SegmentManager::get_instance(void) {
@@ -61,6 +62,7 @@ void SegmentManager::serialize_segment_header(Segment *seg) {
   memcpy(seg->data, &net_seq_no, sizeof(uint16_t));
   memcpy(seg->data+2, &net_flag_len, sizeof(uint16_t));
 }
+
 
 int SegmentManager::send_to_segment_manager(uint8_t *data, size_t len) {
   assert(data != NULL && len > 0);
@@ -143,7 +145,7 @@ uint8_t *SegmentManager::recv_from_segment_manager(void *proc_data_handle) {
  */
 void SegmentManager::enqueue(SegQueueType type, Segment *seg) {
   assert(type < kSegMaxQueueType);
-  
+
   // Get lock for the queue
   std::unique_lock<std::mutex> lck(lock[type]);
   bool segment_enqueued = false;
@@ -198,29 +200,45 @@ void SegmentManager::enqueue(SegQueueType type, Segment *seg) {
     pending_queue[type].erase(to_erase);
   }
 
-  // Dynamic adapter control
+  /*  Dynamic adapter control
+   *  Increase or Decrease the adapter with the queue's threshold 
+   */
   if (type == kSegSend ) {
-    if (queue_size[type] > queue_threshold)
+    if (queue_size[type] > queue_threshold){
       NetworkManager::get_instance()->increase_adapter();
-    else if (queue_size[type] == 0)
+      OPEL_DBG_LOG("Increase adapter!");
+    }
+    else if (queue_size[type] == 0){
       NetworkManager::get_instance()->decrease_adapter();
+      OPEL_DBG_LOG("Decrease Adapter!");
+    }
   }
 
   if (segment_enqueued) not_empty[type].notify_all();
 }
 
 Segment *SegmentManager::dequeue(SegQueueType type) {
+  __OPEL_FUNCTION_ENTER__;
   std::unique_lock<std::mutex> lck(lock[type]);
   if (queue_size[type] == 0) {
+    if(try_dequeue > 10){
+      try_dequeue = 0;
+      NetworkManager::get_instance()->decrease_adapter();
+      OPEL_DBG_LOG("Decrease adapter!");
+    } else {
+      try_dequeue++; 
+      OPEL_DBG_LOG("try_dequeue++");
+    }
     not_empty[type].wait(lck);
   }
 
-  if (queue_size[type] == 0)
+  if (queue_size[type] == 0){
     return NULL;
+  }
 
   Segment *ret = queue[type].front();
   if (ret == NULL) {
-    OPEL_DBG_LOG("NULL");
+    OPEL_DBG_LOG("Queue[%s] is NULL(empty)", type==0? "send":"recv");
     return NULL;
   }
   queue[type].pop_front();

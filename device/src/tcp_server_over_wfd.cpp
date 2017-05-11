@@ -28,6 +28,7 @@ TCPServerOverWfdAdapter::TCPServerOverWfdAdapter(uint32_t id, int port,
                                                  char *dev_name){
   this->port = port;
   this->dev_id = id;
+
   strncpy(this->dev_name, dev_name, 256);
 
   cli_sock = 0;
@@ -181,7 +182,7 @@ int TCPServerOverWfdAdapter::send(const void *buf, size_t len) {
       OPEL_DBG_WARN("Cli sock closed");
       return -1;
     }
-
+    OPEL_DBG_LOG("WFD] sent: %d\n", sent_bytes);
     sent += sent_bytes;
   }
 

@@ -66,6 +66,12 @@ class NetworkManager {
     kNetStatData = 5
   } NetStat;
 
+  typedef struct networkdevicestatus {
+    int num_bt;
+    int num_eth;
+    int num_wfd;
+  } netdevstat;
+
   /* Ctrl header structure
    * |--|----|Data|
    *  CtrlReq (1B), DevId (2B) if Req >= 2, Data (-B) if Req == 4
@@ -79,9 +85,11 @@ class NetworkManager {
   std::mutex lock[kNetMaxPort];
   std::list<NetworkAdapter *> adapter_list[kNetMaxPort];
   NetworkAdapter *connecting_adapter;
+  
 
   std::thread *th_recver;
 
+  bool is_data_adapter_on(void);
   static void install_control_cb_wrapper(DevState st);
   void install_control_cb(DevState st);
   void connect_control_adapter(void);
@@ -89,7 +97,8 @@ class NetworkManager {
   void network_closed(void);
 
   NetworkAdapter *select_device(void);
-  
+  NetworkAdapter *select_device_on(void);
+
   static void increase_adapter_cb_wrapper(DevState stat);
   void increase_adapter_cb(DevState stat);
 

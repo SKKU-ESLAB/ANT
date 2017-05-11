@@ -58,9 +58,7 @@ void Communicator::finalize(void) {
 int Communicator::send_data(const void *buf, uint32_t len) {
   uint32_t curr_offset = 0;
   int sent_bytes;
-
   ProtocolData pd;
-
   uint8_t *serialized_vector;
   uint32_t packet_size;
 

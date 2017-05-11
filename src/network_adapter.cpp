@@ -1,6 +1,8 @@
 /* Copyright 2016 Eunsoo Park (esevan.park@gmail.com). All rights reserved
  * 
- * Contact: Eunsoo Park (esevan.park@gmail.com)
+ * Contact: 
+ * Eunsoo Park (esevan.park@gmail.com)
+ * Injung Hwang (sinban04@gmail.com)
  *
  * Licensed under the Apache License, Version 2.0(the "License");
  * you may not use this file except in compliance with the License.
@@ -31,6 +33,7 @@ namespace cm {
 NetworkAdapter::NetworkAdapter() {
   at = kATUninitialized;
   stat = kDevDiscon;
+  
   device_on_cb = NULL;
   device_off_cb = NULL;
   make_connection_cb = NULL;
@@ -52,6 +55,9 @@ NetworkAdapter::~NetworkAdapter() {
     NetworkManager::get_instance()->remove_data_adapter(this);
 }
 
+/*  This function is the core function which manages the network adapter
+ *  This tries to make the adapter in the target state
+ */
 void NetworkAdapter::dev_switch(DevState stat, DevStatCb cb) {
   switch (stat) {
     case kDevOn:
@@ -82,6 +88,7 @@ void NetworkAdapter::dev_switch(DevState stat, DevStatCb cb) {
       std::thread(std::bind(&NetworkAdapter::_close, this)).detach();
       break;
     case kDevCon:
+      // Can connect the device only if it's in the disconnect state
       if (this->stat > kDevDiscon) {
         OPEL_DBG_WARN("Cannot connect this adapter: stat(%d)", this->stat);
         return;
@@ -95,24 +102,32 @@ void NetworkAdapter::dev_switch(DevState stat, DevStatCb cb) {
 }
 
 void NetworkAdapter::set_data_adapter(void) {
+  __OPEL_FUNCTION_ENTER__;
+  // Check if the adapter is initialized
   if (at == kATInitialized) {
     OPEL_DBG_WARN("Already initialized: %d", at & kATCtrl);
     return;
   }
+  // Install the adapter as the data adapter
   NetworkManager::get_instance()->install_data_adapter(this);
   at |= kATInitialized;
 }
 
+/*  This function sets the adapter as a control adapter
+ */
 void NetworkAdapter::set_control_adapter(void) {
+  // Check if the adapter is initialized
   if (at & kATInitialized) {
     OPEL_DBG_WARN("Already initialized: %d", at & kATCtrl);
     return;
   }
-
+  
+  // Check if the adapter is controllable
   if ((at & kATCtrlable) == 0) {
     OPEL_DBG_WARN("Not controllable adapter %d", dev_id);
     return;
   }
+  // Install the control adapter
   NetworkManager::get_instance()->install_control_adapter(this);
   at |= kATCtrl | kATInitialized;
 }
@@ -149,19 +164,21 @@ void NetworkAdapter::dev_off(void) {
   if (device_off_cb) device_off_cb(stat);
   device_off_cb = NULL;
 }
-
+/*  This function is connecting function of the adapter as the name says.
+ *  This is run by the independent thread created in the dev_switch() function. 
+ */
 void NetworkAdapter::_connect(void) {
+  // It should be in the connecting state, when it really tries to connect
   if (stat != kDevConnecting)
     return;
-  /*
-   *  make_connection() function is the function defined in each network adapter
+  /*  make_connection() function is the function defined in each network adapter
    */
   bool res = make_connection();
 
   if (res) 
   {
     /*  Only if it's data adapter, run the sender & recver thread.
-     *  Control adapter uses other thread
+     *  Control adapter uses other thread (control_recver_thread)
      */
     if ((at & kATCtrl) == 0) {  // It's data adapter
       OPEL_DBG_LOG("Data adapter connected");
@@ -204,7 +221,7 @@ void NetworkAdapter::_close(void) {
     }
 
     assert(th_sender == NULL && th_recver == NULL);
-
+    
     stat = kDevDiscon;
   }
   else
@@ -226,8 +243,9 @@ void NetworkAdapter::run_sender(void) {
   while (true) {
     Segment *to_send;
 
-    if (likely((to_send = sm->get_failed_sending()) == NULL))
+    if (likely((to_send = sm->get_failed_sending()) == NULL)){
       to_send = sm->dequeue(kSegSend);
+    }
 
     if (to_send == NULL) {
       if (stat < kDevCon) break;

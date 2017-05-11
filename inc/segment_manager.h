@@ -98,6 +98,7 @@ class SegmentManager {
   std::mutex seq_no_lock;
   uint16_t seq_no;
   uint16_t get_seq_no(uint16_t len);
+  uint8_t try_dequeue;  // # of try to dequeue
 
   /* When access to queue, lock should be acquired */
   std::mutex lock[kSegMaxQueueType];

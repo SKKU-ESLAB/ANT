@@ -1,6 +1,8 @@
 /* Copyright 2017 Eunsoo Park (esevan.park@gmail.com). All rights reserved
  * 
- * Contact: Eunsoo Park (esevan.park@gmail.com)
+ * Contact: 
+ * Eunsoo Park (esevan.park@gmail.com)
+ * Injung Hwang (sinbna04@gmail.com)
  *
  * Licensed under the Apache License, Version 2.0(the "License");
  * you may not use this file except in compliance with the License.
@@ -176,6 +178,7 @@ int RfcommServerOverBt::bt_dynamic_bind_rc() {
     sockaddr.rc_channel = tmp_port;
     err = bind(serv_sock, (struct sockaddr *)&sockaddr, sizeof(struct sockaddr_rc));
     if (!err) {
+      OPEL_DBG_LOG("BT port binded : %d", tmp_port);
       return tmp_port;
     }
 
@@ -226,8 +229,10 @@ int RfcommServerOverBt::bt_open() {
 int RfcommServerOverBt::send(const void *buf, size_t len) {
   int sent = 0;
 
-  if (cli_sock <= 0)
+  if (cli_sock <= 0){
+    OPEL_DBG_WARN("Socket closed\n");
     return -1;
+  }
 
   while (sent < len) {
     int sent_bytes = write(cli_sock, buf, len);
@@ -237,6 +242,7 @@ int RfcommServerOverBt::send(const void *buf, size_t len) {
     }
 
     sent += sent_bytes;
+    OPEL_DBG_LOG("BT %d] sent : %d\n", port, sent_bytes);
   }
 
   return sent;
@@ -270,6 +276,7 @@ void RfcommServerOverBt::on_control_recv(const void *buf, size_t len) {
 }
 
 bool RfcommServerOverBt::close_connection() {
+  __OPEL_FUNCTION_ENTER__;
   close(cli_sock);
   close(serv_sock);
 

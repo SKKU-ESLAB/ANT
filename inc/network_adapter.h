@@ -37,6 +37,13 @@ typedef enum {
   kHIG = 2
 } NaVal;
 
+typedef enum {
+  kBluetooth = 1,
+  kEthernet = 2,
+  kWifiDirect = 3 
+} NetworkDevice;
+
+
 typedef void (*DevStatCb)(DevState res);
 
 class NetworkAdapter {
@@ -83,6 +90,7 @@ class NetworkAdapter {
     kATCtrlable = 2,
     kATCtrl = 4,
   } AdapterType;
+
   std::thread *th_sender;
   std::thread *th_recver;
 
@@ -93,6 +101,7 @@ class NetworkAdapter {
    */
   int at;
   DevState stat;
+  int net_dev_type;   // Type of the network device (enum NetworkDevice)
   std::mutex dev_on_lock;
   std::mutex dev_off_lock;
   std::mutex connect_lock;
@@ -103,7 +112,8 @@ class NetworkAdapter {
   DevStatCb make_connection_cb;
   DevStatCb close_connection_cb;
 
-  
+  /*  The sender_thread and recver thread will run these functions.
+   */ 
   void run_sender(void);
   void run_recver(void);
 

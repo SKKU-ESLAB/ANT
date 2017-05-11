@@ -3,6 +3,7 @@ cscope
 cscope.out
 *.o
 bin/*
+dhcpd.conf
 !bin/.git_empty_file
 SelectiveConnection.IAB
 SelectiveConnection.IAD
