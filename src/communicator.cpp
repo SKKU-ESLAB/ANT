@@ -1,6 +1,8 @@
 /* Copyright 2016 Eunsoo Park (esevan.park@gmail.com). All rights reserved
  * 
- * Contact: Eunsoo Park (esevan.park@gmail.com)
+ * Contact
+ *  Eunsoo Park (esevan.park@gmail.com)
+ *  Injung Hwang (sinban04@gmail.com)
  *
  * Licensed under the Apache License, Version 2.0(the "License");
  * you may not use this file except in compliance with the License.
@@ -62,6 +64,7 @@ int Communicator::send_data(const void *buf, uint32_t len) {
   uint8_t *serialized_vector;
   uint32_t packet_size;
 
+  printf("length is %d\n", len); 
   // Attach the protocol header to the payload
   ProtocolManager::data_to_protocol_data((const uint8_t *) buf, len, &pd);
   // The serialized_vector buffer is allocated in here
@@ -79,8 +82,7 @@ int Communicator::send_data(const void *buf, uint32_t len) {
                  curr_offset,
                  len,
                  sent_bytes);
-  }
-
+  } 
   return sent_bytes;
 }
 

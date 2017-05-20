@@ -8,6 +8,8 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include <unistd.h>
+#include <fcntl.h>
 
 using namespace cm;
 
@@ -33,23 +35,48 @@ int main() {
 
   ca.set_control_adapter();
   na3.set_data_adapter();
-  na31.set_data_adapter();
-  na32.set_data_adapter();
+  //na31.set_data_adapter();
+  //na32.set_data_adapter();
 
   //na.set_data_adapter();
+  
   //na4.set_data_adapter();
   //na5.set_data_adapter();
-  na2.set_data_adapter();
+  
+  //na2.set_data_adapter();
 
   char sending_buf[8192];
-  int ret;
+  int ret, numbytes;
+  int fd, count; 
+  char *buffer; 
+  char input[100];
+  char file_dir[200];
+  
 
   std::thread(receiving_thread).detach();
 
-  while (true) {
-    printf("Send > ");
-    fgets(sending_buf, sizeof(sending_buf), stdin);
-    ret = cm -> send_data(sending_buf, strlen(sending_buf)+1);
+  while (true) { 
+    printf("file to send-> ");
+    //fgets(input, sizeof(input), stdin);
+   
+    scanf("%s",input);
+    sprintf(file_dir, "/home/pi/HOME_DIRECTORY/P2PForYourThings/%s",input);
+    fd = open(file_dir, O_RDONLY); 
+    if(fd < 0){
+      fprintf(stderr, "error! can't find the file\n");
+    } else {
+      buffer = (char*) calloc (100*1024*1024, sizeof(char));
+      if(buffer == NULL){
+        fprintf(stderr, "error while allocating buffer!\n");
+      } else {
+        count = read(fd, buffer, 100*1024*1024);
+        printf("read!: %d\n", count); 
+        ret = cm -> send_data(buffer, count+1);
+        free(buffer);
+      }
+      close(fd);
+    }
+    //ret = cm -> send_data(sending_buf, strlen(sending_buf)+1);
   }
 
   return 0;

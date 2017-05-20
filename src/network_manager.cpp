@@ -270,7 +270,6 @@ void NetworkManager::increase_adapter_cb_wrapper(DevState stat) {
 }
 
 void NetworkManager::increase_adapter() {
-  __OPEL_FUNCTION_ENTER__;
   // The adapter is already increasing adapter
   if (state == kNetStatIncr || state == kNetStatDecr) {
     OPEL_DBG_WARN("Data ports are busy");

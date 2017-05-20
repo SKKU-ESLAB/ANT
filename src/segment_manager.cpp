@@ -38,6 +38,9 @@ SegmentManager::SegmentManager(void) {
   seq_no = 0;
   queue_threshold = 0;
   try_dequeue = 0;
+
+  is_start = 0;
+  is_finish = 0;
 }
 
 SegmentManager *SegmentManager::get_instance(void) {
@@ -66,13 +69,16 @@ void SegmentManager::serialize_segment_header(Segment *seg) {
 
 int SegmentManager::send_to_segment_manager(uint8_t *data, size_t len) {
   assert(data != NULL && len > 0);
-
+  std::unique_lock<std::mutex> exp_lck(exp_lock);
+  
+  gettimeofday(&start, NULL);
   uint32_t offset = 0;
   uint16_t num_of_segments =(uint16_t)((len + kSegSize - 1) / kSegSize);
   assert((len + kSegSize - 1) / kSegSize < UINT16_MAX);
   /* Reserve sequence numbers to this thread */
   uint16_t allocated_seq_no = get_seq_no(num_of_segments);
   int seg_idx;
+  printf("# of segments : %d\n", num_of_segments);
   for (seg_idx = 0; seg_idx < num_of_segments; seg_idx ++) {
     uint16_t seg_len =(len - offset < kSegSize)? len - offset : kSegSize;
     Segment *seg = get_free_segment();
@@ -95,7 +101,13 @@ int SegmentManager::send_to_segment_manager(uint8_t *data, size_t len) {
 
     enqueue(kSegSend, seg);
   }
-
+  is_finish = 1;
+  OPEL_DBG_LOG("wait for lock release");
+  exp_wait.wait(exp_lck);
+  OPEL_DBG_LOG("lock released\n");
+  
+  gettimeofday(&end, NULL);
+  printf(" %ld s\n%ld us\n", (end.tv_sec - start.tv_sec), (end.tv_usec - start.tv_usec));
   return 0;
 }
 
@@ -145,7 +157,6 @@ uint8_t *SegmentManager::recv_from_segment_manager(void *proc_data_handle) {
  */
 void SegmentManager::enqueue(SegQueueType type, Segment *seg) {
   assert(type < kSegMaxQueueType);
-
   // Get lock for the queue
   std::unique_lock<std::mutex> lck(lock[type]);
   bool segment_enqueued = false;
@@ -217,17 +228,38 @@ void SegmentManager::enqueue(SegQueueType type, Segment *seg) {
   if (segment_enqueued) not_empty[type].notify_all();
 }
 
-Segment *SegmentManager::dequeue(SegQueueType type) {
-  __OPEL_FUNCTION_ENTER__;
+Segment *SegmentManager::dequeue(SegQueueType type) { 
   std::unique_lock<std::mutex> lck(lock[type]);
   if (queue_size[type] == 0) {
-    if(try_dequeue > 10){
+    /*
+    if(try_dequeue > 20){
       try_dequeue = 0;
       NetworkManager::get_instance()->decrease_adapter();
       OPEL_DBG_LOG("Decrease adapter!");
     } else {
       try_dequeue++; 
       OPEL_DBG_LOG("try_dequeue++");
+    }
+    */
+    
+    // This is just for experiment
+   /* 
+    OPEL_DBG_WARN("experiment!\n");
+    if(type == 0){ // sending queue
+      if(is_run == 1){ 
+        
+      }
+      else{
+        gettimeofday(&end, NULL);
+        printf(" %ld:%ld\n", (end.tv_sec - start.tv_sec), (end.tv_usec - end.tv_usec));
+      }
+      
+    }
+    */
+    if(is_finish == 1){
+      exp_wait.notify_one();
+      OPEL_DBG_LOG("notify one");
+      is_finish = 0;
     }
     not_empty[type].wait(lck);
   }

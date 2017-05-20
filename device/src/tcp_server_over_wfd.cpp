@@ -81,7 +81,7 @@ bool TCPServerOverWfdAdapter::make_connection(void) {
     wifi::wifi_direct_server_down();
     return false;
   }
-  
+  OPEL_DBG_LOG("Get server's IP\n"); 
   // Get server's IP address and send IP addr
   int ip_wait_it;
   for (ip_wait_it = 0; ip_wait_it < 30; ip_wait_it++) {

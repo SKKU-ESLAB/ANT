@@ -33,23 +33,50 @@ int main() {
 
   ca.set_control_adapter();
   na3.set_data_adapter();
-  na31.set_data_adapter();
-  na32.set_data_adapter();
+  //na31.set_data_adapter();
+  //na32.set_data_adapter();
 
-  //na.set_data_adapter();
+  na.set_data_adapter();
   //na4.set_data_adapter();
   //na5.set_data_adapter();
-  na2.set_data_adapter();
+  //na2.set_data_adapter();
 
   char sending_buf[8192];
-  int ret;
+  int ret, numbytes;
+  FILE *fp;
+  char *buffer; 
+  char input[100];
+  char file_dir[200];
+  
 
   std::thread(receiving_thread).detach();
 
-  while (true) {
-    printf("Send > ");
-    fgets(sending_buf, sizeof(sending_buf), stdin);
-    ret = cm -> send_data(sending_buf, strlen(sending_buf)+1);
+  while (true) { 
+    printf("file to send > ");
+    //fgets(input, sizeof(input), stdin);
+    scanf("%s",input);
+    printf("input: %s\n", input); 
+    sprintf(file_dir, "/home/pi/HOME_DIRECTORY/P2PForYourThings/%s", input);
+    printf("file_dir:%s\n", file_dir); 
+    fp = fopen(file_dir, "r");
+    if(fp == NULL){
+      fprintf(stderr, "error! can't find the file\n");
+    } else {
+      fseek(fp, 0L, SEEK_END);
+      numbytes = ftell(fp);
+      fseek(fp, 0L, SEEK_SET);
+      
+      buffer = (char*) calloc (numbytes, sizeof(char));
+      if(buffer == NULL){
+        fprintf(stderr, "error while allocating buffer!\n");
+      } else {
+        fread(buffer, sizeof(char), numbytes, fp);
+        ret = cm -> send_data(buffer, strlen(buffer)+1);
+        free(buffer);
+      }
+      fclose(fp);
+    }
+    //ret = cm -> send_data(sending_buf, strlen(sending_buf)+1);
   }
 
   return 0;

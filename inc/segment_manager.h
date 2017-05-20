@@ -23,10 +23,14 @@
 #include <mutex>
 #include <condition_variable>
 
+// For experiment
+#include <sys/time.h>
+#include <unistd.h>
+
 #define kSegMaxQueueSize 104857600 // Maximum 100MB Queue
 #define kSegSize 512
 #define kSegThreshold 512
-#define kSegQueueThreshold (kSegThreshold / 512)
+#define kSegQueueThreshold 10*(kSegThreshold / 512)
 
 #define kSegFreeThreshold 256
 
@@ -99,11 +103,18 @@ class SegmentManager {
   uint16_t seq_no;
   uint16_t get_seq_no(uint16_t len);
   uint8_t try_dequeue;  // # of try to dequeue
+  
+  // for experiment
+  int is_start, is_finish;
+  struct timeval start,end; 
 
   /* When access to queue, lock should be acquired */
   std::mutex lock[kSegMaxQueueType];
   std::mutex failed_lock;
   std::condition_variable not_empty[kSegMaxQueueType];
+
+  std::mutex exp_lock;
+  std::condition_variable exp_wait;
   uint16_t next_seq_no[kSegMaxQueueType];
   std::list<Segment *> queue[kSegMaxQueueType];
   std::list<Segment *> failed;

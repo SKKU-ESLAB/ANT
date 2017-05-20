@@ -102,7 +102,6 @@ void NetworkAdapter::dev_switch(DevState stat, DevStatCb cb) {
 }
 
 void NetworkAdapter::set_data_adapter(void) {
-  __OPEL_FUNCTION_ENTER__;
   // Check if the adapter is initialized
   if (at == kATInitialized) {
     OPEL_DBG_WARN("Already initialized: %d", at & kATCtrl);
@@ -174,7 +173,7 @@ void NetworkAdapter::_connect(void) {
   /*  make_connection() function is the function defined in each network adapter
    */
   bool res = make_connection();
-
+  
   if (res) 
   {
     /*  Only if it's data adapter, run the sender & recver thread.
@@ -194,9 +193,10 @@ void NetworkAdapter::_connect(void) {
 
     stat = kDevCon;
   }
-  else
+  else {
     stat = kDevDiscon;
-
+    OPEL_DBG_LOG("NetworkAdapter::_connect: Not connected!\n");
+  }
   if (make_connection_cb) make_connection_cb(stat);
   make_connection_cb = NULL;
 }

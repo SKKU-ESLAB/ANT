@@ -23,9 +23,15 @@ $(DEV_OBJ_DIR)/%.o: $(DEV_SRC)/%.cpp
 _DEV_OBJ=wifi_control.o tcp_server_over_eth.o tcp_server_over_wfd.o wifi_control.o rfcomm_over_bt.o
 DEV_OBJ=$(patsubst %, $(DEV_OBJ_DIR)/%, $(_DEV_OBJ)) 
 
-all : test
+all : test file_test_low
 
 test: tests/communicator_test.cpp $(OBJ) $(DEV_OBJ)
+	$(CC) -o $(BIN_DIR)/$@ $^ -I$(INC) $(LIB) $(FLAG) -I$(DEV_INC) -lbluetooth
+
+file_test: tests/file_test.cpp $(OBJ) $(DEV_OBJ)
+	$(CC) -o $(BIN_DIR)/$@ $^ -I$(INC) $(LIB) $(FLAG) -I$(DEV_INC) -lbluetooth
+
+file_test_low: tests/file_test_low.cpp $(OBJ) $(DEV_OBJ)
 	$(CC) -o $(BIN_DIR)/$@ $^ -I$(INC) $(LIB) $(FLAG) -I$(DEV_INC) -lbluetooth
 
 wfd_test: tests/wfd_test.cpp device/src/wifi_control.cpp

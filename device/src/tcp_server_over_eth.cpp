@@ -44,7 +44,6 @@ TCPServerOverEthAdapter::TCPServerOverEthAdapter(uint32_t id, int port) {
     return;
   }
 
-
   err = bind(serv_sock, (struct sockaddr *)&saddr, sizeof(saddr));
   assert (err >= 0);
 
@@ -140,11 +139,9 @@ void TCPServerOverEthAdapter::on_control_recv(const void *buf, size_t len) {
 }
 
 bool TCPServerOverEthAdapter::close_connection() {
+  /* Close only client socket, not server socket */
   close(cli_sock);
-  close(serv_sock);
-
-  cli_sock = 0;
-  serv_sock = 0;
+  cli_sock = 0; 
   return true;
 }
 
