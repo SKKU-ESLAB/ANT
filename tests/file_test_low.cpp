@@ -39,11 +39,10 @@ int main() {
   //na32.set_data_adapter();
 
   //na.set_data_adapter();
-  
   //na4.set_data_adapter();
   //na5.set_data_adapter();
   
-  //na2.set_data_adapter();
+  na2.set_data_adapter();
 
   char sending_buf[8192];
   int ret, numbytes;
@@ -78,6 +77,8 @@ int main() {
     }
     //ret = cm -> send_data(sending_buf, strlen(sending_buf)+1);
   }
+
+  
 
   return 0;
 }

@@ -69,9 +69,9 @@ void SegmentManager::serialize_segment_header(Segment *seg) {
 
 int SegmentManager::send_to_segment_manager(uint8_t *data, size_t len) {
   assert(data != NULL && len > 0);
-  std::unique_lock<std::mutex> exp_lck(exp_lock);
+  //std::unique_lock<std::mutex> exp_lck(exp_lock);
   
-  gettimeofday(&start, NULL);
+  //gettimeofday(&start, NULL);
   uint32_t offset = 0;
   uint16_t num_of_segments =(uint16_t)((len + kSegSize - 1) / kSegSize);
   assert((len + kSegSize - 1) / kSegSize < UINT16_MAX);
@@ -101,6 +101,7 @@ int SegmentManager::send_to_segment_manager(uint8_t *data, size_t len) {
 
     enqueue(kSegSend, seg);
   }
+  /*
   is_finish = 1;
   OPEL_DBG_LOG("wait for lock release");
   exp_wait.wait(exp_lck);
@@ -108,6 +109,7 @@ int SegmentManager::send_to_segment_manager(uint8_t *data, size_t len) {
   
   gettimeofday(&end, NULL);
   printf(" %ld s\n%ld us\n", (end.tv_sec - start.tv_sec), (end.tv_usec - start.tv_usec));
+  */
   return 0;
 }
 
@@ -232,35 +234,12 @@ Segment *SegmentManager::dequeue(SegQueueType type) {
   std::unique_lock<std::mutex> lck(lock[type]);
   if (queue_size[type] == 0) {
     /*
-    if(try_dequeue > 20){
-      try_dequeue = 0;
-      NetworkManager::get_instance()->decrease_adapter();
-      OPEL_DBG_LOG("Decrease adapter!");
-    } else {
-      try_dequeue++; 
-      OPEL_DBG_LOG("try_dequeue++");
-    }
-    */
-    
-    // This is just for experiment
-   /* 
-    OPEL_DBG_WARN("experiment!\n");
-    if(type == 0){ // sending queue
-      if(is_run == 1){ 
-        
-      }
-      else{
-        gettimeofday(&end, NULL);
-        printf(" %ld:%ld\n", (end.tv_sec - start.tv_sec), (end.tv_usec - end.tv_usec));
-      }
-      
-    }
-    */
     if(is_finish == 1){
       exp_wait.notify_one();
       OPEL_DBG_LOG("notify one");
       is_finish = 0;
     }
+    */
     not_empty[type].wait(lck);
   }
 
