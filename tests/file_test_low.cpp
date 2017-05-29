@@ -38,7 +38,7 @@ int main() {
   //na31.set_data_adapter();
   //na32.set_data_adapter();
 
-  //na.set_data_adapter();
+  na.set_data_adapter();
   //na4.set_data_adapter();
   //na5.set_data_adapter();
   

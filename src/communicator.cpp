@@ -64,7 +64,6 @@ int Communicator::send_data(const void *buf, uint32_t len) {
   uint8_t *serialized_vector;
   uint32_t packet_size;
 
-  printf("length is %d\n", len); 
   // Attach the protocol header to the payload
   ProtocolManager::data_to_protocol_data((const uint8_t *) buf, len, &pd);
   // The serialized_vector buffer is allocated in here
@@ -92,10 +91,10 @@ int Communicator::recv_data(void **buf) {
   uint8_t *packet;
 
   packet_size = ProtocolManager::recv_packet(&packet);
-
+  /*
   if (packet_size > UINT16_MAX)
     return kProtErr;
-
+  */
   *buf = packet;
 
   return packet_size;

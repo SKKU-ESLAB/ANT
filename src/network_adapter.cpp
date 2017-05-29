@@ -255,7 +255,7 @@ void NetworkAdapter::run_sender(void) {
     int len = kSegHeaderSize + kSegSize;
     const void *data = to_send->data;
     //OPEL_DBG_LOG("to_send seq_no: %d", to_send->seq_no);
-    bool res = this->send(data, len);
+    bool res = this->send(data, len); 
     if (!res) {
       OPEL_DBG_WARN("Sending failed at %s (%s)", dev_name, strerror(errno));
       return_sending_failed_packet(to_send);

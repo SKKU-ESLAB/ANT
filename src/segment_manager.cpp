@@ -49,21 +49,20 @@ SegmentManager *SegmentManager::get_instance(void) {
   return sm;
 }
 
-uint16_t SegmentManager::get_seq_no(uint16_t len) {
-  uint16_t res;
+uint32_t SegmentManager::get_seq_no(uint32_t num_segments) {
+  uint32_t res;
   seq_no_lock.lock();
   res = seq_no;
-  seq_no += len;
+  seq_no += num_segments;
   seq_no_lock.unlock();
   return res;
 }
 
 void SegmentManager::serialize_segment_header(Segment *seg) {
-  uint16_t net_seq_no = htons(seg->seq_no);
-  uint16_t net_flag_len = htons(seg->flag_len);
-
-  memcpy(seg->data, &net_seq_no, sizeof(uint16_t));
-  memcpy(seg->data+2, &net_flag_len, sizeof(uint16_t));
+  uint32_t net_seq_no = htonl(seg->seq_no);
+  uint32_t net_flag_len = htonl(seg->flag_len); 
+  memcpy(seg->data, &net_seq_no, sizeof(uint32_t));
+  memcpy(seg->data+4, &net_flag_len, sizeof(uint32_t));
 }
 
 
@@ -73,14 +72,15 @@ int SegmentManager::send_to_segment_manager(uint8_t *data, size_t len) {
   
   //gettimeofday(&start, NULL);
   uint32_t offset = 0;
-  uint16_t num_of_segments =(uint16_t)((len + kSegSize - 1) / kSegSize);
-  assert((len + kSegSize - 1) / kSegSize < UINT16_MAX);
+  uint32_t num_of_segments =((len + kSegSize - 1) / kSegSize);
+  assert((len + kSegSize - 1) / kSegSize < UINT32_MAX);
+  
   /* Reserve sequence numbers to this thread */
-  uint16_t allocated_seq_no = get_seq_no(num_of_segments);
+  uint32_t allocated_seq_no = get_seq_no(num_of_segments);
+
   int seg_idx;
-  printf("# of segments : %d\n", num_of_segments);
   for (seg_idx = 0; seg_idx < num_of_segments; seg_idx ++) {
-    uint16_t seg_len =(len - offset < kSegSize)? len - offset : kSegSize;
+    uint32_t seg_len =(len - offset < kSegSize)? len - offset : kSegSize;
     Segment *seg = get_free_segment();
 
     /* Set segment length */
@@ -88,7 +88,7 @@ int SegmentManager::send_to_segment_manager(uint8_t *data, size_t len) {
 
     /* Set segment sequence number */
     seg->seq_no = allocated_seq_no++;
-
+ 
     /* Set segment data */
     memcpy(&(seg->data[kSegHeaderSize]), data + offset, seg_len);
     offset += seg_len;

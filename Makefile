@@ -28,9 +28,6 @@ all : test file_test_low
 test: tests/communicator_test.cpp $(OBJ) $(DEV_OBJ)
 	$(CC) -o $(BIN_DIR)/$@ $^ -I$(INC) $(LIB) $(FLAG) -I$(DEV_INC) -lbluetooth
 
-file_test: tests/file_test.cpp $(OBJ) $(DEV_OBJ)
-	$(CC) -o $(BIN_DIR)/$@ $^ -I$(INC) $(LIB) $(FLAG) -I$(DEV_INC) -lbluetooth
-
 file_test_low: tests/file_test_low.cpp $(OBJ) $(DEV_OBJ)
 	$(CC) -o $(BIN_DIR)/$@ $^ -I$(INC) $(LIB) $(FLAG) -I$(DEV_INC) -lbluetooth
 

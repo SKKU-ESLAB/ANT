@@ -34,12 +34,12 @@
 
 #define kSegFreeThreshold 256
 
-#define kSegHeaderSize  4
+#define kSegHeaderSize  8
 
 #define kSegLenOffset 0
-#define kSegLenMask 0x7FFF
+#define kSegLenMask 0x00007FFF
 #define kSegFlagOffset  15
-#define kSegFlagMask 0x8000
+#define kSegFlagMask 0x00008000
 #define mGetSegLenBits(x)(((x) & kSegLenMask) >> kSegLenOffset)
 #define mGetSegFlagBits(x)(((x) & kSegFlagMask) >> kSegFlagOffset)
 #define mSetSegBits(x, dest, offset, mask)  do {\
@@ -66,12 +66,14 @@ typedef enum {
 } SegFlagVal;
 
 /*
- * Data Structure of Segment
- * This is handled by Segment Manager.
+ * Data Structure of Segment - Handled by Segment Manager
+ * 
+ * (*) Segment Header (seq_no + flag_len) is delicate to memroy alignment.
+ *    You need to be careful with the segment header.
  */
 typedef struct {
-  uint16_t seq_no;
-  uint16_t flag_len;
+  uint32_t seq_no;
+  uint32_t flag_len;    // To present the size of the segment(consider the flag)
   uint8_t data[kSegSize + kSegHeaderSize];
 } Segment;
 
@@ -86,8 +88,7 @@ class SegmentManager {
   void failed_sending(Segment *seg);
   Segment *get_failed_sending(void);
   void enqueue(SegQueueType type, Segment *seg);
-  Segment *dequeue(SegQueueType type);
-  
+  Segment *dequeue(SegQueueType type);  
   Segment *get_free_segment(void);
   void free_segment(Segment *seg);
   void free_segment_all(void);
@@ -100,8 +101,8 @@ class SegmentManager {
   SegmentManager(void);
 
   std::mutex seq_no_lock;
-  uint16_t seq_no;
-  uint16_t get_seq_no(uint16_t len);
+  uint32_t seq_no;
+  uint32_t get_seq_no(uint32_t num_segments);
   uint8_t try_dequeue;  // # of try to dequeue
   
   // for experiment
@@ -115,7 +116,7 @@ class SegmentManager {
 
   std::mutex exp_lock;
   std::condition_variable exp_wait;
-  uint16_t next_seq_no[kSegMaxQueueType];
+  uint32_t next_seq_no[kSegMaxQueueType];
   std::list<Segment *> queue[kSegMaxQueueType];
   std::list<Segment *> failed;
   std::list<Segment *> pending_queue[kSegMaxQueueType];

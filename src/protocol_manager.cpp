@@ -31,7 +31,7 @@ void ProtocolManager::data_to_protocol_data(const uint8_t *dat,
                                             uint32_t size,
                                             ProtocolData *ret_pd) {
   assert(ret_pd != NULL);
-  assert(size <= UINT16_MAX);
+  assert(size <= UINT32_MAX);
   ret_pd -> id = packet_id++;
   ret_pd -> len = size;
   ret_pd -> data = dat;
@@ -48,12 +48,12 @@ inline void ProtocolManager::serialize_header(ProtocolData *pd,
                                               uint8_t *vec_ptr) {
   uint32_t vec_offset = 0;
   uint16_t net_id = htons(pd -> id);
-  uint16_t net_len = htons(pd -> len);
-
+  uint32_t net_len = htonl(pd -> len);
+   
   memcpy(vec_ptr + vec_offset, &net_id, sizeof(uint16_t));
   vec_offset += sizeof(uint16_t);
-  memcpy(vec_ptr + vec_offset, &net_len, sizeof(uint16_t));
-  vec_offset += sizeof(uint16_t);
+  memcpy(vec_ptr + vec_offset, &net_len, sizeof(uint32_t));
+  vec_offset += sizeof(uint32_t);
 }
 
 inline void ProtocolManager::serialize_data(const uint8_t *dat_buf,
@@ -80,7 +80,7 @@ uint32_t ProtocolManager::serialize(ProtocolData *pd,
   serialize_header(pd, serialized_vector);
   serialize_data(buf + offset, payload_size, serialized_vector + data_offset);
 
-//#ifdef COMMUNICATOR_UNIT_TEST
+#ifdef COMMUNICATOR_UNIT_TEST
   OPEL_DBG_LOG("%p\t(%u)\tFrom %p~%p(%u)",
                serialized_vector,
                vector_size,
@@ -95,7 +95,7 @@ uint32_t ProtocolManager::serialize(ProtocolData *pd,
     buf_test = *(buf + offset + payload_size -1);
   }
   OPEL_DBG_LOG("Done");
-//#endif /* COMMUNICATOR_UNIT_TEST */
+#endif /* COMMUNICATOR_UNIT_TEST */
 
   *ret_vector = serialized_vector;
 
@@ -112,8 +112,8 @@ uint32_t ProtocolManager::parse_header(uint8_t *serialized,
   vec_offset += sizeof(uint16_t);
   ret_pd -> id = ntohs(net_id);
 
-  memcpy(&net_len, serialized + vec_offset, sizeof(uint16_t));
-  vec_offset += sizeof(uint16_t);
+  memcpy(&net_len, serialized + vec_offset, sizeof(uint32_t));
+  vec_offset += sizeof(uint32_t);
   ret_pd -> len = ntohs(net_len);
 
   return vec_offset;

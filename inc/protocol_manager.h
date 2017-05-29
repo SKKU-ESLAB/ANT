@@ -21,7 +21,11 @@
 
 // #define COMMUNICATOR_UNIT_TEST
 
-#define kProtHeaderSize  4
+/*  This is determined by the structure ProtocolData.
+ *  In the ProtocolData, the size except the data pointer is the kProHeaderSize.
+ */
+#define kProtHeaderSize 6
+
 
 namespace cm {
 
@@ -31,7 +35,7 @@ namespace cm {
  */
 typedef struct {
   uint16_t id;
-  uint16_t len;
+  uint32_t len;
   const uint8_t *data;
 } ProtocolData;
 
