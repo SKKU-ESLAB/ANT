@@ -1,8 +1,10 @@
-/* Copyright 2017 Eunsoo Park (esevan.park@gmail.com). All rights reserved
- * 
- * Contact: 
- * Eunsoo Park (esevan.park@gmail.com)
- * Injung Hwang (sinbna04@gmail.com)
+/* Copyright 2017 All Rights Reserved.
+ *  Eunsoo Park (esevan.park@gmail.com)
+ *  Injung Hwang (sinban04@gmail.com)
+ *  
+ * [Contact]
+ *  Eunsoo Park (esevan.park@gmail.com)
+ *  Injung Hwang (sinban04@gmail.com)
  *
  * Licensed under the Apache License, Version 2.0(the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +18,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 
 #include <rfcomm_over_bt.h>
 
@@ -242,7 +245,7 @@ int RfcommServerOverBt::send(const void *buf, size_t len) {
     }
 
     sent += sent_bytes;
-    OPEL_DBG_LOG("BT %d] sent : %d\n", port, sent_bytes);
+    //OPEL_DBG_LOG("BT %d] sent : %d\n", port, sent_bytes);
   }
 
   return sent;
@@ -275,8 +278,7 @@ void RfcommServerOverBt::on_control_recv(const void *buf, size_t len) {
   return;
 }
 
-bool RfcommServerOverBt::close_connection() {
-  __OPEL_FUNCTION_ENTER__;
+bool RfcommServerOverBt::close_connection() { 
   close(cli_sock);
   close(serv_sock);
 

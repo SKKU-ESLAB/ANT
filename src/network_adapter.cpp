@@ -1,8 +1,10 @@
-/* Copyright 2016 Eunsoo Park (esevan.park@gmail.com). All rights reserved
- * 
- * Contact: 
- * Eunsoo Park (esevan.park@gmail.com)
- * Injung Hwang (sinban04@gmail.com)
+/* Copyright 2017 All Rights Reserved.
+ *  Eunsoo Park (esevan.park@gmail.com)
+ *  Injung Hwang (sinban04@gmail.com)
+ *  
+ * [Contact]
+ *  Eunsoo Park (esevan.park@gmail.com)
+ *  Injung Hwang (sinban04@gmail.com)
  *
  * Licensed under the Apache License, Version 2.0(the "License");
  * you may not use this file except in compliance with the License.
@@ -282,12 +284,12 @@ void NetworkAdapter::run_recver(void) {
     }
 
 
-    uint16_t net_seq_no, net_flag_len;
-    memcpy(&net_seq_no, buf, sizeof(uint16_t));
+    uint32_t net_seq_no, net_flag_len;
+    memcpy(&net_seq_no, buf, sizeof(uint32_t));
     memcpy(&net_flag_len,
-           (reinterpret_cast<uint8_t *>(buf)+2), sizeof(uint16_t));
-    free_seg->seq_no = ntohs(net_seq_no);
-    free_seg->flag_len = ntohs(net_flag_len);
+           (reinterpret_cast<uint8_t *>(buf)+4), sizeof(uint32_t));
+    free_seg->seq_no = ntohl(net_seq_no);
+    free_seg->flag_len = ntohl(net_flag_len);
 
     OPEL_DBG_LOG("Recved:%d/%d(%d)", free_seg->seq_no, free_seg->flag_len, res);
     sm->enqueue(kSegRecv, free_seg);

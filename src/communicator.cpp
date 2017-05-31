@@ -1,6 +1,8 @@
-/* Copyright 2016 Eunsoo Park (esevan.park@gmail.com). All rights reserved
- * 
- * Contact
+/* Copyright 2017 All Rights Reserved.
+ *  Eunsoo Park (esevan.park@gmail.com)
+ *  Injung Hwang (sinban04@gmail.com)
+ *  
+ * [Contact]
  *  Eunsoo Park (esevan.park@gmail.com)
  *  Injung Hwang (sinban04@gmail.com)
  *

@@ -1,6 +1,10 @@
-/* Copyright 2016 Eunsoo Park (esevan.park@gmail.com). All rights reserved
- * 
- * Contact: Eunsoo Park (esevan.park@gmail.com)
+/* Copyright 2017 All Rights Reserved.
+ *  Eunsoo Park (esevan.park@gmail.com)
+ *  Injung Hwang (sinban04@gmail.com)
+ *  
+ * [Contact]
+ *  Eunsoo Park (esevan.park@gmail.com)
+ *  Injung Hwang (sinban04@gmail.com)
  *
  * Licensed under the Apache License, Version 2.0(the "License");
  * you may not use this file except in compliance with the License.
@@ -114,7 +118,7 @@ uint32_t ProtocolManager::parse_header(uint8_t *serialized,
 
   memcpy(&net_len, serialized + vec_offset, sizeof(uint32_t));
   vec_offset += sizeof(uint32_t);
-  ret_pd -> len = ntohs(net_len);
+  ret_pd -> len = ntohl(net_len);
 
   return vec_offset;
 }

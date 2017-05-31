@@ -1,6 +1,10 @@
-/* Copyright 2016 Eunsoo Park (esevan.park@gmail.com). All rights reserved
- * 
- * Contact: Eunsoo Park (esevan.park@gmail.com)
+/* Copyright 2017 All Rights Reserved.
+ *  Eunsoo Park (esevan.park@gmail.com)
+ *  Injung Hwang (sinban04@gmail.com)
+ *  
+ * [Contact]
+ *  Eunsoo Park (esevan.park@gmail.com)
+ *  Injung Hwang (sinban04@gmail.com)
  *
  * Licensed under the Apache License, Version 2.0(the "License");
  * you may not use this file except in compliance with the License.
@@ -14,6 +18,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 
 #include <tcp_server_over_eth.h>
 
@@ -89,7 +94,7 @@ bool TCPServerOverEthAdapter::make_connection(void) {
 
 int TCPServerOverEthAdapter::send(const void *buf, size_t len) {
   int sent = 0;
-  __OPEL_FUNCTION_ENTER__;
+ 
   if (cli_sock <= 0)
     return -1;
 
@@ -101,9 +106,9 @@ int TCPServerOverEthAdapter::send(const void *buf, size_t len) {
     }
 
     sent += sent_bytes;
-    OPEL_DBG_LOG("Eth %d] sent the data: %d\n", port, sent_bytes);
+    //OPEL_DBG_LOG("Eth %d] sent the data: %d\n", port, sent_bytes);
   }
-  __OPEL_FUNCTION_EXIT__;
+ 
   return sent;
 }
 

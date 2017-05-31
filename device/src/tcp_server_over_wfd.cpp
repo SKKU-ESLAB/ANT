@@ -1,6 +1,10 @@
-/* Copyright 2017 Eunsoo Park (esevan.park@gmail.com). All rights reserved
- * 
- * Contact: Eunsoo Park (esevan.park@gmail.com)
+/* Copyright 2017 All Rights Reserved.
+ *  Eunsoo Park (esevan.park@gmail.com)
+ *  Injung Hwang (sinban04@gmail.com)
+ *  
+ * [Contact]
+ *  Eunsoo Park (esevan.park@gmail.com)
+ *  Injung Hwang (sinban04@gmail.com)
  *
  * Licensed under the Apache License, Version 2.0(the "License");
  * you may not use this file except in compliance with the License.
@@ -182,7 +186,7 @@ int TCPServerOverWfdAdapter::send(const void *buf, size_t len) {
       OPEL_DBG_WARN("Cli sock closed");
       return -1;
     }
-    OPEL_DBG_LOG("WFD] sent: %d\n", sent_bytes);
+    //OPEL_DBG_LOG("WFD] sent: %d\n", sent_bytes);
     sent += sent_bytes;
   }
 
