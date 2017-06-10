@@ -51,6 +51,12 @@ $ sudo apt-get install udhcpd
 $ sudo touch /var/lib/misc/udhcpd.leases
 ```
 
+- Set wpa_supplicant configuration
+```
+sudo wpa_supplicant -iwlan0 -c /etc/wpa_supplicant/wpa_supplicant.conf
+```
+
+
 ## How to Build the Source Code
 ```
 // No need to make the new directories now (Already exists)
