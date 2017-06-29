@@ -15,22 +15,14 @@
 
 using namespace cm;
 
-FILE *fp;
-struct timeval start, end;
-
 void receiving_thread() {
   void *buf = NULL;
-  printf("receiving thread created! tid: %d\n", (unsigned int)syscall(224));
 
   while (true) {
     //fp = fopen("log.txt","a");
     int ret = Communicator::get_instance()->recv_data(&buf);
     printf("Recv %d> %s\n\n", ret, reinterpret_cast<char *>(buf));
-/*
-    gettimeofday(&end, NULL);
-    printf("%ld %ld \n", end.tv_sec - start.tv_sec, end.tv_usec - start.tv_usec);  
-    fprintf(fp,"%ld\n",1000000*(end.tv_sec - start.tv_sec) + (end.tv_usec - start.tv_usec));
-*/
+
     if(buf){
       free(buf);
     }
@@ -63,7 +55,7 @@ int main() {
   //na4.set_data_adapter();
   //na5.set_data_adapter();
   
-  //na2.set_data_adapter();
+  na2.set_data_adapter();
 
   char sending_buf[8192];
   int ret, numbytes;
@@ -72,13 +64,15 @@ int main() {
   char input[100];
   char file_dir[200];
   char* temp_buf;
+  int iter=0;
   //FILE* fp;
   //struct timeval start, end;
   
 
  
   std::thread(receiving_thread).detach();
-/*
+
+  // Initializaer
   int i;
   for(i=0; i<2; i++){
     sleep(2);
@@ -86,13 +80,13 @@ int main() {
     cm -> send_data(temp_buf, 10*1024);
     sleep(10);
   }
-*/
+
   while (true) { 
     printf("file to send-> "); 
-    //sleep(10); 
-    scanf("%s",input);
-    sprintf(file_dir, "/home/pi/HOME_DIRECTORY/%s",input);
-    //sprintf(file_dir, "/home/pi/HOME_DIRECTORY/1m.mp4");
+    sleep(10); 
+    //scanf("%s",input);
+    //sprintf(file_dir, "/home/pi/HOME_DIRECTORY/%s",input);
+    sprintf(file_dir, "/home/pi/HOME_DIRECTORY/10m.mp4");
     
 
     //fp = fopen("log.txt","a");
@@ -109,13 +103,22 @@ int main() {
         count = read(fd, buffer, 20*1024*1024);
         printf("read!: %d\n", count);
 
-        //gettimeofday(&start, NULL);
+
+    
+        for(i=0; i<20; i++){
+          cm->send_data(temp_buf, 10*1024);
+          sleep(3);
+        } 
+
         ret = cm -> send_data(buffer, count);
-/*
-        gettimeofday(&end, NULL);
-        printf("%ld %ld \n", end.tv_sec - start.tv_sec, end.tv_usec - start.tv_usec);  
-        fprintf(fp,"%ld\n",1000000*(end.tv_sec - start.tv_sec) + (end.tv_usec - start.tv_usec));
-*/
+        
+        if(iter == 5){
+          break;
+        }
+        else{
+          iter++;
+        }
+
         
         free(buffer);
       }

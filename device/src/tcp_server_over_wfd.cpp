@@ -35,6 +35,7 @@ TCPServerOverWfdAdapter::TCPServerOverWfdAdapter(uint32_t id, int port,
 
   strncpy(this->dev_name, dev_name, 256);
 
+  sent_data = 0;
   cli_sock = 0;
 
   memset(&saddr, 0, sizeof(saddr));
@@ -152,7 +153,7 @@ bool TCPServerOverWfdAdapter::dev_connected_wait() {
   std::unique_lock<std::mutex> lck(dev_wait_lock);
   OPEL_DBG_LOG("Wait for WFD connected");
   std::cv_status ret;
-  ret = dev_connected.wait_for(lck, std::chrono::seconds(10));
+  ret = dev_connected.wait_for(lck, std::chrono::seconds(15));
 
   if (ret == std::cv_status::timeout) {
     OPEL_DBG_LOG("Timed out");
@@ -177,6 +178,8 @@ bool TCPServerOverWfdAdapter::close_connection() {
 
 int TCPServerOverWfdAdapter::send(const void *buf, size_t len) {
   int sent = 0;
+  //fp = fopen("wfd.log", "a");
+
   if (cli_sock <= 0)
     return -1;
 
@@ -186,10 +189,14 @@ int TCPServerOverWfdAdapter::send(const void *buf, size_t len) {
       OPEL_DBG_WARN("Cli sock closed");
       return -1;
     }
-    //OPEL_DBG_LOG("WFD] sent: %d\n", sent_bytes);
+    OPEL_DBG_LOG("WFD] sent: %d\n", sent_bytes);
     sent += sent_bytes;
   }
 
+  sent_data += sent;
+  //fprintf(fp,"WFD sent data: %d\n", sent_data);
+
+  //fclose(fp);
   return sent;
 }
 

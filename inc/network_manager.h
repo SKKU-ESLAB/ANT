@@ -42,6 +42,7 @@ typedef enum {
 
 class NetworkManager {
  public:
+
   
   static NetworkManager *get_instance(void);
 

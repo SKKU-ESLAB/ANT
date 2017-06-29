@@ -39,9 +39,15 @@ namespace cm {
 RfcommServerOverBt::RfcommServerOverBt(uint16_t id, char *svc_uuid) {
   this->dev_id = id;
 
+  sent_data = 0;
+
   str2uuid(svc_uuid, &(this->svc_uuid));
   set_controllable();
 }
+RfcommServerOverBt::~RfcommServerOverBt() {
+
+}
+
 bool RfcommServerOverBt::device_on() {
   return true;
 }
@@ -231,6 +237,7 @@ int RfcommServerOverBt::bt_open() {
 
 int RfcommServerOverBt::send(const void *buf, size_t len) {
   int sent = 0;
+  //fp = fopen("bt.log", "a");
 
   if (cli_sock <= 0){
     OPEL_DBG_WARN("Socket closed\n");
@@ -245,9 +252,12 @@ int RfcommServerOverBt::send(const void *buf, size_t len) {
     }
 
     sent += sent_bytes;
-    //OPEL_DBG_LOG("BT %d] sent : %d\n", port, sent_bytes);
+    OPEL_DBG_LOG("BT %d] sent : %d\n", port, sent_bytes);
   }
 
+  sent_data += sent;
+  //fprintf(fp,"BT sent data :%d\n",sent_data);
+  //fclose(fp);
   return sent;
 }
 

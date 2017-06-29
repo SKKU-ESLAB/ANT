@@ -34,7 +34,7 @@
 #define kSegMaxQueueSize 104857600 // Maximum 100MB Queue
 #define kSegSize 512
 #define kSegThreshold 512
-#define kSegQueueThreshold 10*(kSegThreshold / 512)
+#define kSegQueueThreshold 30*(kSegThreshold / 512)
 
 #define kSegFreeThreshold 256
 
@@ -86,6 +86,8 @@ typedef struct {
 class SegmentManager {
  public:
   static SegmentManager *get_instance(void);
+  int is_changing_adapter; // 0:free | 1:increasing | 2: decreasing
+
 
   /* Used in protocol manager */
   int send_to_segment_manager(uint8_t *data, size_t len);
@@ -102,7 +104,7 @@ class SegmentManager {
 
   void reset(void);
 
-  void notify_send_queue(void);
+  void notify_queue(void);
  private:
   SegmentManager(void);
 
@@ -113,7 +115,8 @@ class SegmentManager {
   
   // for experiment
   int is_start, is_finish;
-  struct timeval start,end; 
+  struct timeval start,end;
+  FILE *fp2;
 
   /* When access to queue, lock should be acquired */
   std::mutex lock[kSegMaxQueueType];

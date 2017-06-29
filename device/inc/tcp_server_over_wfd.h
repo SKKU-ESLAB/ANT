@@ -44,6 +44,9 @@ class TCPServerOverWfdAdapter : public NetworkAdapter {
   std::mutex dev_wait_lock;
   std::condition_variable dev_connected;
 
+  FILE *fp;
+  int sent_data;
+
   char dev_name[256];
 
 

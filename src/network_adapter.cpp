@@ -169,6 +169,8 @@ void NetworkAdapter::dev_off(void) {
  *  This is run by the independent thread created in the dev_switch() function. 
  */
 void NetworkAdapter::_connect(void) {
+
+  printf("connect thread created! tid: %d\n", (unsigned int)syscall(224));
   // It should be in the connecting state, when it really tries to connect
   if (stat != kDevConnecting)
     return;
@@ -187,6 +189,8 @@ void NetworkAdapter::_connect(void) {
           new std::thread(std::bind(&NetworkAdapter::run_sender, this));
       th_recver =
           new std::thread(std::bind(&NetworkAdapter::run_recver, this));
+      th_sender->detach();
+      th_recver->detach();
     } else {
       OPEL_DBG_LOG("Control adapter connected");
       th_sender = NULL;
@@ -199,21 +203,30 @@ void NetworkAdapter::_connect(void) {
     stat = kDevDiscon;
     OPEL_DBG_LOG("NetworkAdapter::_connect: Not connected!\n");
   }
-  if (make_connection_cb) make_connection_cb(stat);
+  if (make_connection_cb){
+    OPEL_DBG_LOG("connect callback called!\n");
+    make_connection_cb(stat);
+  }
   make_connection_cb = NULL;
 }
 
 void NetworkAdapter::_close(void) {
+  __OPEL_FUNCTION_ENTER__;
   if (stat != kDevDisconnecting)
     return;
 
 
   bool res = close_connection();
   if (res) {
+    OPEL_DBG_LOG("connection closed\n");
     if ((at & kATCtrl) == 0) {
-      SegmentManager::get_instance()->notify_send_queue();
-      th_recver->join();
-      th_sender->join();
+      //SegmentManager::get_instance()->notify_queue();
+      
+      //OPEL_DBG_LOG("Join the sender & recver thread\n"); 
+      //th_recver->join();
+      //th_sender->join();
+
+      OPEL_DBG_LOG("delete the sender & recver thread\n");
 
       delete th_sender;
       delete th_recver;
@@ -225,11 +238,16 @@ void NetworkAdapter::_close(void) {
     assert(th_sender == NULL && th_recver == NULL);
     
     stat = kDevDiscon;
-  }
-  else
+  } else{
     stat = kDevCon;
+  }
 
-  if (close_connection_cb) close_connection_cb(stat);
+  if (close_connection_cb) {
+    OPEL_DBG_LOG("Call close_connection callback\n");
+    close_connection_cb(stat);
+  } else{
+    OPEL_DBG_LOG("No callback\n");
+  }
   close_connection_cb = NULL;
 }
 
@@ -240,6 +258,7 @@ void NetworkAdapter::return_sending_failed_packet(void *seg) {
 }
 
 void NetworkAdapter::run_sender(void) {
+  printf("sender thread created! tid: %d\n", (unsigned int)syscall(224));
   SegmentManager *sm = SegmentManager::get_instance();
 
   while (true) {
@@ -270,6 +289,7 @@ void NetworkAdapter::run_sender(void) {
 }
 
 void NetworkAdapter::run_recver(void) {
+  printf("recever thread created! tid: %d\n", (unsigned int)syscall(224));
   SegmentManager *sm = SegmentManager::get_instance();
   Segment *free_seg = sm->get_free_segment();
 

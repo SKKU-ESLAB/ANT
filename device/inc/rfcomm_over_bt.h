@@ -32,11 +32,14 @@ namespace cm {
 class RfcommServerOverBt : public NetworkAdapter {
  public:
   RfcommServerOverBt (uint16_t id, char *svc_uuid);
-
+  ~RfcommServerOverBt ();
  private:
   int port;
   sdp_session_t *session;
   uuid_t svc_uuid;
+  FILE *fp;
+
+  int sent_data;
 
   int serv_sock, cli_sock;
 

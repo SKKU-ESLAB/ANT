@@ -31,5 +31,8 @@ test: tests/communicator_test.cpp $(OBJ) $(DEV_OBJ)
 file_test_low: tests/file_test_low.cpp $(OBJ) $(DEV_OBJ)
 	$(CC) -o $(BIN_DIR)/$@ $^ -I$(INC) $(LIB) $(FLAG) -I$(DEV_INC) -lbluetooth
 
+power_exp: tests/power.cpp $(OBJ) $(DEV_OBJ)
+	$(CC) -o $(BIN_DIR)/$@ $^ -I$(INC) $(LIB) $(FLAG) -I$(DEV_INC) -lbluetooth
+
 wfd_test: tests/wfd_test.cpp device/src/wifi_control.cpp
 	$(CC) -o $(BIN_DIR)/$@ $^ -I$(INC) $(LIB) $(FLAG) -I$(DEV_INC)

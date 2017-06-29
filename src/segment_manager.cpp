@@ -42,6 +42,7 @@ SegmentManager::SegmentManager(void) {
   seq_no = 0;
   queue_threshold = 0;
   try_dequeue = 0;
+  is_changing_adapter = 0;
 
   is_start = 0;
   is_finish = 0;
@@ -72,16 +73,20 @@ void SegmentManager::serialize_segment_header(Segment *seg) {
 
 int SegmentManager::send_to_segment_manager(uint8_t *data, size_t len) {
   assert(data != NULL && len > 0);
-  //std::unique_lock<std::mutex> exp_lck(exp_lock);
-  
+  std::unique_lock<std::mutex> exp_lck(exp_lock);
+  struct timeval temp, temp0;
+
+
+  //fp2 = fopen("log2.txt","a");
   //gettimeofday(&start, NULL);
   uint32_t offset = 0;
   uint32_t num_of_segments =((len + kSegSize - 1) / kSegSize);
   assert((len + kSegSize - 1) / kSegSize < UINT32_MAX);
-  
+
   /* Reserve sequence numbers to this thread */
   uint32_t allocated_seq_no = get_seq_no(num_of_segments);
-
+  
+  
   int seg_idx;
   for (seg_idx = 0; seg_idx < num_of_segments; seg_idx ++) {
     uint32_t seg_len =(len - offset < kSegSize)? len - offset : kSegSize;
@@ -105,15 +110,17 @@ int SegmentManager::send_to_segment_manager(uint8_t *data, size_t len) {
 
     enqueue(kSegSend, seg);
   }
-  /*
-  is_finish = 1;
+ /* 
   OPEL_DBG_LOG("wait for lock release");
+  is_finish = 1;
   exp_wait.wait(exp_lck);
   OPEL_DBG_LOG("lock released\n");
+*/
+  //gettimeofday(&end, NULL);
+  //fprintf(fp2, " %ld \n",1000000 * (end.tv_sec - start.tv_sec) + (end.tv_usec - start.tv_usec));
+  //printf("total: %ld \n",1000000 * (end.tv_sec - start.tv_sec) + (end.tv_usec - start.tv_usec));
+  //fclose(fp2);
   
-  gettimeofday(&end, NULL);
-  printf(" %ld s\n%ld us\n", (end.tv_sec - start.tv_sec), (end.tv_usec - start.tv_usec));
-  */
   return 0;
 }
 
@@ -125,8 +132,16 @@ uint8_t *SegmentManager::recv_from_segment_manager(void *proc_data_handle) {
   uint16_t offset = 0;
   size_t data_size = 0;
   bool cont = false;
+  bool dequeued = false;
+  Segment *seg;
 
-  Segment *seg = dequeue(kSegRecv);
+  while(dequeued == false){
+    seg = dequeue(kSegRecv);
+    if(seg){
+      dequeued = true;
+    }
+  }
+
   ProtocolManager::parse_header(&(seg->data[kSegHeaderSize]), pd);
 
   if (unlikely(pd->len == 0))
@@ -218,37 +233,70 @@ void SegmentManager::enqueue(SegQueueType type, Segment *seg) {
   }
 
   /*  Dynamic adapter control
-   *  Increase or Decrease the adapter with the queue's threshold 
+   *  Increase the adapter with the queue's threshold 
    */
   if (type == kSegSend ) {
-    if (queue_size[type] > queue_threshold){
+    if (queue_size[type] > queue_threshold && is_changing_adapter == 0){ 
+      is_changing_adapter = 1;
       NetworkManager::get_instance()->increase_adapter();
-      OPEL_DBG_LOG("Increase adapter!");
-    }
-    else if (queue_size[type] == 0){
-      NetworkManager::get_instance()->decrease_adapter();
-      OPEL_DBG_LOG("Decrease Adapter!");
+      OPEL_DBG_LOG("Increase adapter!"); 
     }
   }
 
   if (segment_enqueued) not_empty[type].notify_all();
 }
 
+/*  Dequeue the segment from the queue.
+ *  Note that this function is used for sending & receiving queue.
+ */
 Segment *SegmentManager::dequeue(SegQueueType type) { 
+  assert(type < kSegMaxQueueType);
   std::unique_lock<std::mutex> lck(lock[type]);
+
   if (queue_size[type] == 0) {
-    /*
-    if(is_finish == 1){
-      exp_wait.notify_one();
-      OPEL_DBG_LOG("notify one");
-      is_finish = 0;
+   
+ /*  
+    if(type == 0){
+      if(is_finish == 1){
+        exp_wait.notify_one();
+        OPEL_DBG_LOG("notify one");
+        is_finish = 0;
+      }
     }
-    */
-    not_empty[type].wait(lck);
+
+*/
+
+    // When it's sending queue
+    if(type == kSegSend){
+      /*
+      if(try_dequeue > 8){
+        try_dequeue = 0;
+        if(is_changing_adapter == 0){
+          is_changing_adapter = 2;
+          NetworkManager::get_instance()->decrease_adapter();
+          OPEL_DBG_LOG("Decrease Adapter!\n");
+        } else {
+          OPEL_DBG_LOG("cannot decrease adapter, now\n");
+        }
+
+      } else {
+        try_dequeue++;
+        OPEL_DBG_LOG("try_dequeue ++\n");
+      }
+*/      
+      not_empty[type].wait(lck);
+
+    } else { // When it's receiving queue
+      not_empty[type].wait(lck);
+
+    } 
+
   }
 
   if (queue_size[type] == 0){
-    return NULL;
+    
+    return NULL;   
+ 
   }
 
   Segment *ret = queue[type].front();
@@ -327,8 +375,10 @@ void SegmentManager::reset(void) {
   
 }
 
-void SegmentManager::notify_send_queue() {
+void SegmentManager::notify_queue() {
+  OPEL_DBG_LOG("notify all\n");
   not_empty[kSegSend].notify_all();
+  not_empty[kSegRecv].notify_all();
 }
 
 }; /* namespace cm */
