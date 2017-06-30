@@ -275,6 +275,7 @@ int RfcommServerOverBt::recv(void *buf, size_t len) {
     }
 
     recved += recv_bytes;
+    OPEL_DBG_LOG("BT %d] recv : %d\n", port, recv_bytes);
   }
 
   return recved;

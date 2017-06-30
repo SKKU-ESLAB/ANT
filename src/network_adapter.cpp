@@ -172,8 +172,9 @@ void NetworkAdapter::_connect(void) {
 
   printf("connect thread created! tid: %d\n", (unsigned int)syscall(224));
   // It should be in the connecting state, when it really tries to connect
-  if (stat != kDevConnecting)
+  if (stat != kDevConnecting){
     return;
+  }
   /*  make_connection() function is the function defined in each network adapter
    */
   bool res = make_connection();
@@ -183,7 +184,7 @@ void NetworkAdapter::_connect(void) {
     /*  Only if it's data adapter, run the sender & recver thread.
      *  Control adapter uses other thread (control_recver_thread)
      */
-    if ((at & kATCtrl) == 0) {  // It's data adapter
+    if ((at & kATCtrl) == 0) {  // Data Adapter
       OPEL_DBG_LOG("Data adapter connected");
       th_sender =
           new std::thread(std::bind(&NetworkAdapter::run_sender, this));
@@ -191,7 +192,7 @@ void NetworkAdapter::_connect(void) {
           new std::thread(std::bind(&NetworkAdapter::run_recver, this));
       th_sender->detach();
       th_recver->detach();
-    } else {
+    } else { // Control Adapter
       OPEL_DBG_LOG("Control adapter connected");
       th_sender = NULL;
       th_recver = NULL;
@@ -269,8 +270,11 @@ void NetworkAdapter::run_sender(void) {
     }
 
     if (to_send == NULL) {
-      if (stat < kDevCon) break;
-      else continue;
+      if (stat < kDevCon){
+        break;
+      } else {
+        continue;
+      }
     }
 
     int len = kSegHeaderSize + kSegSize;

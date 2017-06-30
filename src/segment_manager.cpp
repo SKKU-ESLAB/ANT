@@ -73,12 +73,15 @@ void SegmentManager::serialize_segment_header(Segment *seg) {
 
 int SegmentManager::send_to_segment_manager(uint8_t *data, size_t len) {
   assert(data != NULL && len > 0);
+  
+  /*
   std::unique_lock<std::mutex> exp_lck(exp_lock);
   struct timeval temp, temp0;
-
+*/
 
   //fp2 = fopen("log2.txt","a");
   //gettimeofday(&start, NULL);
+
   uint32_t offset = 0;
   uint32_t num_of_segments =((len + kSegSize - 1) / kSegSize);
   assert((len + kSegSize - 1) / kSegSize < UINT32_MAX);
@@ -196,9 +199,12 @@ void SegmentManager::enqueue(SegQueueType type, Segment *seg) {
    */
   else {
     if (seg->seq_no <= next_seq_no[type]){
-      OPEL_DBG_ERR("%d > %d, %s", seg->seq_no, next_seq_no[type], type == kSegSend? "Send":"Recv");
+      OPEL_DBG_ERR("Sequence # Error!: %d > %d, %s", 
+          seg->seq_no, next_seq_no[type], type == kSegSend? "Send":"Recv");
+    
     }
     assert(seg->seq_no > next_seq_no[type]);
+
     std::list<Segment *>::iterator curr_it = pending_queue[type].begin();
 
     /* First, if we received unsequential data, 
@@ -236,10 +242,14 @@ void SegmentManager::enqueue(SegQueueType type, Segment *seg) {
    *  Increase the adapter with the queue's threshold 
    */
   if (type == kSegSend ) {
-    if (queue_size[type] > queue_threshold && is_changing_adapter == 0){ 
-      is_changing_adapter = 1;
-      NetworkManager::get_instance()->increase_adapter();
-      OPEL_DBG_LOG("Increase adapter!"); 
+    if (queue_size[type] > queue_threshold ){
+      if(is_changing_adapter == 0){ 
+        is_changing_adapter = 1;
+        NetworkManager::get_instance()->increase_adapter();
+        //OPEL_DBG_LOG("Increase adapter!"); 
+      } else {
+        //OPEL_DBG_LOG("Is changing adapter now\n");
+      }
     }
   }
 

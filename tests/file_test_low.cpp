@@ -17,24 +17,34 @@ using namespace cm;
 
 FILE *fp;
 struct timeval start, end;
+std::mutex lock;
+std::condition_variable end_lock;
+
 
 void receiving_thread() {
   void *buf = NULL;
   printf("receiving thread created! tid: %d\n", (unsigned int)syscall(224));
 
   while (true) {
-    //fp = fopen("log.txt","a");
+//    fp = fopen("log.txt","a");
+
     int ret = Communicator::get_instance()->recv_data(&buf);
     printf("Recv %d> %s\n\n", ret, reinterpret_cast<char *>(buf));
-/*
+
+   
     gettimeofday(&end, NULL);
     printf("%ld %ld \n", end.tv_sec - start.tv_sec, end.tv_usec - start.tv_usec);  
-    fprintf(fp,"%ld\n",1000000*(end.tv_sec - start.tv_sec) + (end.tv_usec - start.tv_usec));
-*/
+    //fprintf(fp,"%ld\n",1000000*(end.tv_sec - start.tv_sec) + (end.tv_usec - start.tv_usec));
+  
+
     if(buf){
       free(buf);
     }
-    //fclose(fp); 
+
+  //  fclose(fp); 
+
+    end_lock.notify_one();
+    
   }
 
 }
@@ -65,6 +75,7 @@ int main() {
   
   //na2.set_data_adapter();
 
+  int iter = 0;
   char sending_buf[8192];
   int ret, numbytes;
   int fd, count; 
@@ -72,27 +83,31 @@ int main() {
   char input[100];
   char file_dir[200];
   char* temp_buf;
-  //FILE* fp;
-  //struct timeval start, end;
-  
+ 
+
+
+  std::thread(receiving_thread).detach();
 
  
-  std::thread(receiving_thread).detach();
-/*
   int i;
-  for(i=0; i<2; i++){
+  for(i=0; i<1; i++){
     sleep(2);
-    temp_buf = (char*)calloc(10*1024, sizeof(char));
-    cm -> send_data(temp_buf, 10*1024);
+    temp_buf = (char*)calloc(5*1024, sizeof(char));
+    cm -> send_data(temp_buf, 5*1024);
     sleep(10);
   }
-*/
-  while (true) { 
+
+
+  //sleep(5);
+
+  while (true) {
+    std::unique_lock<std::mutex> lck(lock);
+
     printf("file to send-> "); 
-    //sleep(10); 
-    scanf("%s",input);
-    sprintf(file_dir, "/home/pi/HOME_DIRECTORY/%s",input);
-    //sprintf(file_dir, "/home/pi/HOME_DIRECTORY/1m.mp4");
+    sleep(5); 
+    //scanf("%s",input);
+    //sprintf(file_dir, "/home/pi/HOME_DIRECTORY/data/%s",input);
+    sprintf(file_dir, "/home/pi/HOME_DIRECTORY/data/100k.mp4");
     
 
     //fp = fopen("log.txt","a");
@@ -109,18 +124,23 @@ int main() {
         count = read(fd, buffer, 20*1024*1024);
         printf("read!: %d\n", count);
 
-        //gettimeofday(&start, NULL);
+        gettimeofday(&start, NULL);
         ret = cm -> send_data(buffer, count);
+
 /*
         gettimeofday(&end, NULL);
         printf("%ld %ld \n", end.tv_sec - start.tv_sec, end.tv_usec - start.tv_usec);  
         fprintf(fp,"%ld\n",1000000*(end.tv_sec - start.tv_sec) + (end.tv_usec - start.tv_usec));
 */
-        
+ 
+
         free(buffer);
       }
       close(fd); 
     }
+    iter++;
+    
+    end_lock.wait(lck);
     //fclose(fp);
 
     //ret = cm -> send_data(sending_buf, strlen(sending_buf)+1);

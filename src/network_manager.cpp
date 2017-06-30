@@ -226,7 +226,7 @@ void NetworkManager::install_control_cb(DevState res) {
 
 void NetworkManager::connect_control_adapter() {
   if (unlikely(state > kNetStatDiscon)) {
-    OPEL_DBG_WARN("Invalid trial:Control port already connected");
+    OPEL_DBG_WARN("Invalid trial:Control adapter is not in disconnected state");
     return;
   }
   NetworkAdapter *na = adapter_list[kNetCtrl].front();
@@ -283,27 +283,27 @@ void NetworkManager::increase_adapter_cb_wrapper(DevState stat) {
 void NetworkManager::increase_adapter() {
   // The adapter is already increasing adapter
   if (state == kNetStatIncr || state == kNetStatDecr) {
-    OPEL_DBG_WARN("Data ports are busy");
+    //OPEL_DBG_WARN("Data ports are busy");
     SegmentManager::get_instance()->is_changing_adapter = 0;
     return;
   }
 
   if (state <= kNetStatConnecting) {
-    OPEL_DBG_ERR("Control port is not opened yet");
+    //OPEL_DBG_ERR("Control port is not opened yet");
   SegmentManager::get_instance()->is_changing_adapter = 0;
     return;
   }
 
-  OPEL_DBG_LOG("Increasing data adapter...");
+  //OPEL_DBG_LOG("Increasing data adapter...");
   prev_state = state;
   state = kNetStatIncr;
 
   /* Select the data adapter available */
   NetworkAdapter *na = select_device();
   if (na == NULL) {
-    OPEL_DBG_WARN("All devices are already up");
+    //OPEL_DBG_WARN("All devices are already up");
     state = prev_state;
-  SegmentManager::get_instance()->is_changing_adapter = 0;
+    SegmentManager::get_instance()->is_changing_adapter = 0;
     return;
   }
 
