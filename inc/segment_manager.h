@@ -112,6 +112,7 @@ class SegmentManager {
   uint32_t seq_no;
   uint32_t get_seq_no(uint32_t num_segments);
   uint8_t try_dequeue;  // # of try to dequeue
+  int num_increase;
   
   // for experiment
   int is_start, is_finish;

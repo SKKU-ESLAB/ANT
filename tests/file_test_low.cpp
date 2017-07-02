@@ -73,7 +73,7 @@ int main() {
   //na4.set_data_adapter();
   //na5.set_data_adapter();
   
-  //na2.set_data_adapter();
+  na2.set_data_adapter();
 
   int iter = 0;
   char sending_buf[8192];
@@ -94,7 +94,7 @@ int main() {
     sleep(2);
     temp_buf = (char*)calloc(5*1024, sizeof(char));
     cm -> send_data(temp_buf, 5*1024);
-    sleep(10);
+    sleep(5);
   }
 
 
@@ -104,10 +104,10 @@ int main() {
     std::unique_lock<std::mutex> lck(lock);
 
     printf("file to send-> "); 
-    sleep(5); 
+    sleep(2); 
     //scanf("%s",input);
-    //sprintf(file_dir, "/home/pi/HOME_DIRECTORY/data/%s",input);
-    sprintf(file_dir, "/home/pi/HOME_DIRECTORY/data/100k.mp4");
+    //sprintf(file_dir, "/home/pi/HOME/data/%s",input);
+    sprintf(file_dir, "/home/pi/HOME/data/100k.mp4");
     
 
     //fp = fopen("log.txt","a");

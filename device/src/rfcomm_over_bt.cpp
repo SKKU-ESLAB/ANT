@@ -252,7 +252,7 @@ int RfcommServerOverBt::send(const void *buf, size_t len) {
     }
 
     sent += sent_bytes;
-    OPEL_DBG_LOG("BT %d] sent : %d\n", port, sent_bytes);
+    //OPEL_DBG_LOG("BT %d] sent : %d\n", port, sent_bytes);
   }
 
   sent_data += sent;

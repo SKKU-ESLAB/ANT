@@ -24,6 +24,7 @@
 
 #include <thread>
 #include <mutex>
+#include <condition_variable>
 
 namespace cm {
 typedef enum {
@@ -59,6 +60,7 @@ class NetworkAdapter {
   DevState get_stat(void);
   virtual void set_data_adapter(void) final;
   virtual void set_control_adapter(void) final;
+  bool delete_threads();
 
  protected:
   /**
@@ -97,6 +99,14 @@ class NetworkAdapter {
 
   std::thread *th_sender;
   std::thread *th_recver;
+
+  std::mutex sender_lock;
+  std::mutex recver_lock;
+  std::condition_variable sender_end;
+  std::condition_variable recver_end;
+  int sender_semaphore, recver_semaphore;
+
+
 
   /*
    *  Attribute: it has the state of the adapter.

@@ -274,6 +274,7 @@ void NetworkManager::increase_adapter_cb(DevState stat) {
     state = prev_state;
   }
   SegmentManager::get_instance()->is_changing_adapter = 0;
+  decrease_adapter();
 }
 
 void NetworkManager::increase_adapter_cb_wrapper(DevState stat) {
@@ -291,6 +292,8 @@ void NetworkManager::increase_adapter() {
   if (state <= kNetStatConnecting) {
     //OPEL_DBG_ERR("Control port is not opened yet");
   SegmentManager::get_instance()->is_changing_adapter = 0;
+  
+  decrease_adapter();
     return;
   }
 
@@ -392,6 +395,8 @@ void NetworkManager::decrease_adapter() {
    *  if it's used by other adapters, the device should not be turned off
    */
 
+  na->delete_threads();
+
   /* Send control message to turn off the working data adapter */
   unsigned char buf[512];
   buf[0] = kCtrlReqDecr;
@@ -427,11 +432,12 @@ NetworkAdapter *NetworkManager::select_device() {
  */
 NetworkAdapter *NetworkManager::select_device_on() {
   __OPEL_FUNCTION_ENTER__;
-  std::list<NetworkAdapter *>::reverse_iterator it = adapter_list[kNetData].rbegin();
+  //std::list<NetworkAdapter *>::reverse_iterator it = adapter_list[kNetData].rbegin();
+  std::list<NetworkAdapter *>::iterator it = adapter_list[kNetData].begin();
   NetworkAdapter *res = NULL;
   int num_on = 0;
 
-  while (it != adapter_list[kNetData].rend()) {
+  while (it != adapter_list[kNetData].end()) {
     NetworkAdapter *walker = *it;
     if (walker->stat == kDevCon) { 
       if(res == NULL){

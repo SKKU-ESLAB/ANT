@@ -43,6 +43,7 @@ SegmentManager::SegmentManager(void) {
   queue_threshold = 0;
   try_dequeue = 0;
   is_changing_adapter = 0;
+  num_increase = 0;
 
   is_start = 0;
   is_finish = 0;
@@ -243,7 +244,8 @@ void SegmentManager::enqueue(SegQueueType type, Segment *seg) {
    */
   if (type == kSegSend ) {
     if (queue_size[type] > queue_threshold ){
-      if(is_changing_adapter == 0){ 
+      if(is_changing_adapter == 0 && num_increase < 2){
+        num_increase++;
         is_changing_adapter = 1;
         NetworkManager::get_instance()->increase_adapter();
         //OPEL_DBG_LOG("Increase adapter!"); 

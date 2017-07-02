@@ -44,6 +44,8 @@ NetworkAdapter::NetworkAdapter() {
 
   th_sender = NULL;
   th_recver = NULL;
+  sender_semaphore = 0;
+  recver_semaphore = 0;
 }
 NetworkAdapter::~NetworkAdapter() {
   if (at == kATUninitialized)
@@ -129,8 +131,32 @@ void NetworkAdapter::set_control_adapter(void) {
     return;
   }
   // Install the control adapter
-  NetworkManager::get_instance()->install_control_adapter(this);
   at |= kATCtrl | kATInitialized;
+  NetworkManager::get_instance()->install_control_adapter(this);
+
+}
+
+bool NetworkAdapter::delete_threads(){
+  __OPEL_FUNCTION_ENTER__;
+
+  OPEL_DBG_LOG("wait for the sender thread to end\n");
+  sender_semaphore = 1;
+  std::unique_lock<std::mutex> lck1(sender_lock);
+  sender_end.wait(lck1);
+
+  OPEL_DBG_LOG("wait for the recver thread to end\n");
+  recver_semaphore = 1;
+  std::unique_lock<std::mutex> lck2(recver_lock);
+  recver_end.wait(lck2);
+
+  OPEL_DBG_LOG("delete the sender & recver thread\n");
+  delete th_sender;
+  delete th_recver;
+
+  th_sender = NULL;
+  th_recver = NULL;
+
+  return true;
 }
 
 DevState NetworkAdapter::get_stat() {
@@ -216,32 +242,35 @@ void NetworkAdapter::_close(void) {
   if (stat != kDevDisconnecting)
     return;
 
+  if((at & kATCtrl) == 0) { //Data adapter
 
-  bool res = close_connection();
-  if (res) {
-    OPEL_DBG_LOG("connection closed\n");
-    if ((at & kATCtrl) == 0) {
-      //SegmentManager::get_instance()->notify_queue();
-      
-      //OPEL_DBG_LOG("Join the sender & recver thread\n"); 
-      //th_recver->join();
-      //th_sender->join();
+    while(1){
+    if(th_sender == NULL && th_recver == NULL){
+      OPEL_DBG_LOG("No thread exists\n");
+    
+      bool res = close_connection();
+      if (res) {
+        OPEL_DBG_LOG("connection closed\n");
+        stat = kDevDiscon;
+      } else {
+        stat = kDevCon;
+      }
 
-      OPEL_DBG_LOG("delete the sender & recver thread\n");
+      break;
+    
+    } else {
+      OPEL_DBG_WARN("Still threads exist\n");
+      delete_threads();
 
-      delete th_sender;
-      delete th_recver;
-
-      th_sender = NULL;
-      th_recver = NULL;
     }
 
-    assert(th_sender == NULL && th_recver == NULL);
-    
-    stat = kDevDiscon;
-  } else{
-    stat = kDevCon;
+    }//end_while
+
+  } else { // Control Adapter
+    OPEL_DBG_ERR("Try to turn off the control adapter\n");
+    exit(1);
   }
+
 
   if (close_connection_cb) {
     OPEL_DBG_LOG("Call close_connection callback\n");
@@ -263,6 +292,12 @@ void NetworkAdapter::run_sender(void) {
   SegmentManager *sm = SegmentManager::get_instance();
 
   while (true) {
+
+    if(sender_semaphore == 1){
+      OPEL_DBG_LOG("sender semaphore is 1. stop sender thread\n");
+      break;
+    }
+
     Segment *to_send;
 
     if (likely((to_send = sm->get_failed_sending()) == NULL)){
@@ -289,7 +324,8 @@ void NetworkAdapter::run_sender(void) {
     sm->free_segment(to_send);
   }
 
-  dev_switch(kDevDiscon, NULL);
+  sender_end.notify_all();
+  //dev_switch(kDevDiscon, NULL);
 }
 
 void NetworkAdapter::run_recver(void) {
@@ -298,6 +334,12 @@ void NetworkAdapter::run_recver(void) {
   Segment *free_seg = sm->get_free_segment();
 
   while (true) {
+
+   if(recver_semaphore == 1){
+     OPEL_DBG_LOG("recver semaphore is 1. stop recver thread\n");
+     break;
+   }
+
     void *buf = reinterpret_cast<void *>(free_seg->data);
     int len = kSegSize + kSegHeaderSize;
     int res = this->recv(buf, len);
@@ -320,7 +362,9 @@ void NetworkAdapter::run_recver(void) {
     free_seg = sm->get_free_segment();
   }
 
-  dev_switch(kDevDiscon, NULL);
+  recver_end.notify_all();
+
+  //dev_switch(kDevDiscon, NULL);
 }
 
 void NetworkAdapter::set_controllable(void) {
