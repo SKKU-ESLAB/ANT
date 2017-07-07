@@ -136,25 +136,31 @@ void NetworkAdapter::set_control_adapter(void) {
 
 }
 
-bool NetworkAdapter::delete_threads(){
-  __OPEL_FUNCTION_ENTER__;
-
+void NetworkAdapter::join_threads(){
+  
   OPEL_DBG_LOG("wait for the sender thread to end\n");
   sender_semaphore = 1;
-  std::unique_lock<std::mutex> lck1(sender_lock);
-  sender_end.wait(lck1);
+
+  th_sender->join(); 
 
   OPEL_DBG_LOG("wait for the recver thread to end\n");
   recver_semaphore = 1;
-  std::unique_lock<std::mutex> lck2(recver_lock);
-  recver_end.wait(lck2);
-
-  OPEL_DBG_LOG("delete the sender & recver thread\n");
+  
+  th_recver->join();
+  
+ 
+  OPEL_DBG_LOG("Joined the sender & recver thread and delete them\n");
   delete th_sender;
   delete th_recver;
 
   th_sender = NULL;
   th_recver = NULL;
+
+}
+
+bool NetworkAdapter::delete_threads(){
+      
+  //std::thread(std::bind(&NetworkAdapter::join_threads, this)).detach();
 
   return true;
 }
@@ -216,8 +222,8 @@ void NetworkAdapter::_connect(void) {
           new std::thread(std::bind(&NetworkAdapter::run_sender, this));
       th_recver =
           new std::thread(std::bind(&NetworkAdapter::run_recver, this));
-      th_sender->detach();
-      th_recver->detach();
+      //th_sender->detach();
+      //th_recver->detach();
     } else { // Control Adapter
       OPEL_DBG_LOG("Control adapter connected");
       th_sender = NULL;
@@ -242,6 +248,8 @@ void NetworkAdapter::_close(void) {
   if (stat != kDevDisconnecting)
     return;
 
+  join_threads();
+
   if((at & kATCtrl) == 0) { //Data adapter
 
     while(1){
@@ -258,9 +266,9 @@ void NetworkAdapter::_close(void) {
 
       break;
     
-    } else {
-      OPEL_DBG_WARN("Still threads exist\n");
-      delete_threads();
+    }
+    else {
+      OPEL_DBG_WARN("Still threads exist. Let's wait more\n"); 
 
     }
 
@@ -324,7 +332,6 @@ void NetworkAdapter::run_sender(void) {
     sm->free_segment(to_send);
   }
 
-  sender_end.notify_all();
   //dev_switch(kDevDiscon, NULL);
 }
 
@@ -361,8 +368,7 @@ void NetworkAdapter::run_recver(void) {
     sm->enqueue(kSegRecv, free_seg);
     free_seg = sm->get_free_segment();
   }
-
-  recver_end.notify_all();
+ 
 
   //dev_switch(kDevDiscon, NULL);
 }

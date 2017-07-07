@@ -106,7 +106,7 @@ int TCPServerOverEthAdapter::send(const void *buf, size_t len) {
     }
 
     sent += sent_bytes;
-    //OPEL_DBG_LOG("Eth %d] sent the data: %d\n", port, sent_bytes);
+    OPEL_DBG_LOG("Eth %d] sent the data: %d\n", port, sent_bytes);
   }
  
   return sent;

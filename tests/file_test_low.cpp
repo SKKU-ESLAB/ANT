@@ -26,7 +26,7 @@ void receiving_thread() {
   printf("receiving thread created! tid: %d\n", (unsigned int)syscall(224));
 
   while (true) {
-//    fp = fopen("log.txt","a");
+    fp = fopen("log.txt","a");
 
     int ret = Communicator::get_instance()->recv_data(&buf);
     printf("Recv %d> %s\n\n", ret, reinterpret_cast<char *>(buf));
@@ -34,14 +34,14 @@ void receiving_thread() {
    
     gettimeofday(&end, NULL);
     printf("%ld %ld \n", end.tv_sec - start.tv_sec, end.tv_usec - start.tv_usec);  
-    //fprintf(fp,"%ld\n",1000000*(end.tv_sec - start.tv_sec) + (end.tv_usec - start.tv_usec));
+    fprintf(fp,"%ld\n",1000000*(end.tv_sec - start.tv_sec) + (end.tv_usec - start.tv_usec));
   
 
     if(buf){
       free(buf);
     }
 
-  //  fclose(fp); 
+    fclose(fp); 
 
     end_lock.notify_one();
     
@@ -76,6 +76,7 @@ int main() {
   na2.set_data_adapter();
 
   int iter = 0;
+  int iter2 = 0;
   char sending_buf[8192];
   int ret, numbytes;
   int fd, count; 
@@ -94,7 +95,7 @@ int main() {
     sleep(2);
     temp_buf = (char*)calloc(5*1024, sizeof(char));
     cm -> send_data(temp_buf, 5*1024);
-    sleep(5);
+    sleep(7);
   }
 
 
@@ -104,11 +105,27 @@ int main() {
     std::unique_lock<std::mutex> lck(lock);
 
     printf("file to send-> "); 
-    sleep(2); 
+    //usleep(1000); 
+    
     //scanf("%s",input);
     //sprintf(file_dir, "/home/pi/HOME/data/%s",input);
-    sprintf(file_dir, "/home/pi/HOME/data/100k.mp4");
-    
+
+    if(iter < 10 && iter2 == 0) {
+      sleep(4);
+      sprintf(file_dir, "/home/pi/HOME/data/10k.mp4");
+    }
+    else {
+      sleep(2);
+      sprintf(file_dir, "/home/pi/HOME/data/1m.mp4");
+
+      if(iter2 == 3){
+        iter = 0;
+        iter2 = 0;
+      } else {
+        iter2++;
+      }
+
+    }
 
     //fp = fopen("log.txt","a");
     fd = open(file_dir, O_RDONLY); 
@@ -125,14 +142,7 @@ int main() {
         printf("read!: %d\n", count);
 
         gettimeofday(&start, NULL);
-        ret = cm -> send_data(buffer, count);
-
-/*
-        gettimeofday(&end, NULL);
-        printf("%ld %ld \n", end.tv_sec - start.tv_sec, end.tv_usec - start.tv_usec);  
-        fprintf(fp,"%ld\n",1000000*(end.tv_sec - start.tv_sec) + (end.tv_usec - start.tv_usec));
-*/
- 
+        ret = cm -> send_data(buffer, count); 
 
         free(buffer);
       }

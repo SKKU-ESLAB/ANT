@@ -189,7 +189,7 @@ int TCPServerOverWfdAdapter::send(const void *buf, size_t len) {
       OPEL_DBG_WARN("Cli sock closed");
       return -1;
     }
-    //OPEL_DBG_LOG("WFD] sent: %d\n", sent_bytes);
+    OPEL_DBG_LOG("WFD] sent: %d\n", sent_bytes);
     sent += sent_bytes;
   }
 

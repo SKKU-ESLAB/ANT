@@ -244,10 +244,11 @@ void SegmentManager::enqueue(SegQueueType type, Segment *seg) {
    */
   if (type == kSegSend ) {
     if (queue_size[type] > queue_threshold ){
-      if(is_changing_adapter == 0 && num_increase < 2){
+      if(is_changing_adapter == 0 /*&& num_increase < 2*/){
         num_increase++;
         is_changing_adapter = 1;
         NetworkManager::get_instance()->increase_adapter();
+        
         //OPEL_DBG_LOG("Increase adapter!"); 
       } else {
         //OPEL_DBG_LOG("Is changing adapter now\n");
@@ -280,25 +281,26 @@ Segment *SegmentManager::dequeue(SegQueueType type) {
 
     // When it's sending queue
     if(type == kSegSend){
-      /*
-      if(try_dequeue > 8){
+
+      if(try_dequeue > 20){
         try_dequeue = 0;
         if(is_changing_adapter == 0){
           is_changing_adapter = 2;
           NetworkManager::get_instance()->decrease_adapter();
-          OPEL_DBG_LOG("Decrease Adapter!\n");
+
+          //OPEL_DBG_LOG("Decrease Adapter!\n");
         } else {
           OPEL_DBG_LOG("cannot decrease adapter, now\n");
         }
 
       } else {
         try_dequeue++;
-        OPEL_DBG_LOG("try_dequeue ++\n");
+        OPEL_DBG_LOG("try_dequeue ++: %d\n",try_dequeue);
       }
-*/      
-      not_empty[type].wait(lck);
+
 
     } else { // When it's receiving queue
+      OPEL_DBG_LOG("receiving queue is empty. wait for another\n");
       not_empty[type].wait(lck);
 
     } 
@@ -306,6 +308,10 @@ Segment *SegmentManager::dequeue(SegQueueType type) {
   }
 
   if (queue_size[type] == 0){
+    if(type == kSegSend){
+      OPEL_DBG_LOG("sending queue is empty. wait for another\n");
+      not_empty[type].wait(lck);
+    }
     
     return NULL;   
  

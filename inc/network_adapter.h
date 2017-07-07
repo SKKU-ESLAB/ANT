@@ -130,6 +130,8 @@ class NetworkAdapter {
    */ 
   void run_sender(void);
   void run_recver(void);
+  
+  void join_threads();
 
 
   virtual void dev_switch(DevState stat, DevStatCb cb) final;
