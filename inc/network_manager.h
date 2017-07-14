@@ -42,8 +42,8 @@ typedef enum {
 
 class NetworkManager {
  public:
-
-  
+  uint16_t decreasing_adapter_id;
+ 
   static NetworkManager *get_instance(void);
 
   void install_data_adapter(NetworkAdapter *na);

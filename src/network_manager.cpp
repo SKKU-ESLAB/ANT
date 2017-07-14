@@ -392,6 +392,7 @@ void NetworkManager::decrease_adapter() {
   SegmentManager::get_instance()->is_changing_adapter = 0;
     return;
   }
+  decreasing_adapter_id = na->dev_id;
  
   /*  Check the network device, which the adapter is using, is used by other adapter
    *  if it's used by other adapters, the device should not be turned off
@@ -399,12 +400,15 @@ void NetworkManager::decrease_adapter() {
 
   //na->delete_threads();
 
+
   /* Send control message to turn off the working data adapter */
+/*
   unsigned char buf[512];
   buf[0] = kCtrlReqDecr;
   uint16_t ndev_id = htons(na->dev_id);
   memcpy(buf+1, &ndev_id, 2);
   send_control_data((const void *)buf, 3);
+*/
 
   connecting_adapter = na;
   na->dev_switch(kDevDiscon, decrease_adapter_cb_wrapper); 

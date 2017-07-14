@@ -26,7 +26,7 @@ void receiving_thread() {
   printf("receiving thread created! tid: %d\n", (unsigned int)syscall(224));
 
   while (true) {
-    fp = fopen("log.txt","a");
+//    fp = fopen("log.txt","a");
 
     int ret = Communicator::get_instance()->recv_data(&buf);
     printf("Recv %d> %s\n\n", ret, reinterpret_cast<char *>(buf));
@@ -34,14 +34,14 @@ void receiving_thread() {
    
     gettimeofday(&end, NULL);
     printf("%ld %ld \n", end.tv_sec - start.tv_sec, end.tv_usec - start.tv_usec);  
-    fprintf(fp,"%ld\n",1000000*(end.tv_sec - start.tv_sec) + (end.tv_usec - start.tv_usec));
+//    fprintf(fp,"%ld\n",1000000*(end.tv_sec - start.tv_sec) + (end.tv_usec - start.tv_usec));
   
 
     if(buf){
       free(buf);
     }
 
-    fclose(fp); 
+//    fclose(fp); 
 
     end_lock.notify_one();
     
@@ -95,30 +95,37 @@ int main() {
     sleep(2);
     temp_buf = (char*)calloc(5*1024, sizeof(char));
     cm -> send_data(temp_buf, 5*1024);
-    sleep(7);
+    sleep(10);
   }
 
 
-  //sleep(5);
+  printf("now!\n");
+  sleep(3);
 
   while (true) {
     std::unique_lock<std::mutex> lck(lock);
 
     printf("file to send-> "); 
-    //usleep(1000); 
-    
+    //usleep(5000);
+    //sleep(1);
+  
+/*
     //scanf("%s",input);
     //sprintf(file_dir, "/home/pi/HOME/data/%s",input);
+    sprintf(file_dir, "/home/pi/HOME/data/20k.mp4");
+*/
 
     if(iter < 10 && iter2 == 0) {
-      sleep(4);
+      sleep(13);
+
       sprintf(file_dir, "/home/pi/HOME/data/10k.mp4");
     }
     else {
-      sleep(2);
+      //sleep(1);
+      usleep(1000);
       sprintf(file_dir, "/home/pi/HOME/data/1m.mp4");
 
-      if(iter2 == 3){
+      if(iter2 == 5){
         iter = 0;
         iter2 = 0;
       } else {
@@ -148,6 +155,7 @@ int main() {
       }
       close(fd); 
     }
+    
     iter++;
     
     end_lock.wait(lck);

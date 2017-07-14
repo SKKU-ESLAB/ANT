@@ -38,6 +38,7 @@
 namespace cm {
 RfcommServerOverBt::RfcommServerOverBt(uint16_t id, char *svc_uuid) {
   this->dev_id = id;
+  net_dev_type = kBluetooth;
 
   sent_data = 0;
 
@@ -252,7 +253,7 @@ int RfcommServerOverBt::send(const void *buf, size_t len) {
     }
 
     sent += sent_bytes;
-    OPEL_DBG_LOG("BT %d] sent : %d\n", port, sent_bytes);
+    //OPEL_DBG_LOG("BT %d] sent : %d\n", port, sent_bytes);
   }
 
   sent_data += sent;

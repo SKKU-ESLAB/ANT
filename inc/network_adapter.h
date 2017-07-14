@@ -43,8 +43,9 @@ typedef enum {
 } NaVal;
 
 typedef enum {
+  kNone = 0,
   kBluetooth = 1,
-  kEthernet = 2,
+  kWifi = 2,
   kWifiDirect = 3 
 } NetworkDevice;
 
@@ -57,6 +58,7 @@ class NetworkAdapter {
   NetworkAdapter();
   ~NetworkAdapter();
 
+  NetworkDevice net_dev_type;  // Type of the network device (enum NetworkDevice)
   DevState get_stat(void);
   virtual void set_data_adapter(void) final;
   virtual void set_control_adapter(void) final;
@@ -102,11 +104,10 @@ class NetworkAdapter {
 
   std::mutex sender_lock;
   std::mutex recver_lock;
-  std::condition_variable sender_end;
-  std::condition_variable recver_end;
+  std::condition_variable sender_start;
+  std::condition_variable recver_start;
   int sender_semaphore, recver_semaphore;
-
-
+  
 
   /*
    *  Attribute: it has the state of the adapter.
@@ -114,8 +115,7 @@ class NetworkAdapter {
    *  If it's adapter adapter, it's 0
    */
   int at;
-  DevState stat;
-  int net_dev_type;   // Type of the network device (enum NetworkDevice)
+  DevState stat; 
   std::mutex dev_on_lock;
   std::mutex dev_off_lock;
   std::mutex connect_lock;

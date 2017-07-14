@@ -41,12 +41,14 @@ SegmentManager::SegmentManager(void) {
   free_list_size = 0;
   seq_no = 0;
   queue_threshold = 0;
+
   try_dequeue = 0;
   is_changing_adapter = 0;
   num_increase = 0;
-
+  trigger = prev_trigger = 0;
   is_start = 0;
   is_finish = 0;
+  wfd_state = 0;
 }
 
 SegmentManager *SegmentManager::get_instance(void) {
@@ -75,13 +77,23 @@ void SegmentManager::serialize_segment_header(Segment *seg) {
 int SegmentManager::send_to_segment_manager(uint8_t *data, size_t len) {
   assert(data != NULL && len > 0);
   
-  /*
-  std::unique_lock<std::mutex> exp_lck(exp_lock);
-  struct timeval temp, temp0;
-*/
+
+  //std::unique_lock<std::mutex> exp_lck(exp_lock);
+  //struct timeval temp, temp0;
+
 
   //fp2 = fopen("log2.txt","a");
   //gettimeofday(&start, NULL);
+
+  prev_trigger = trigger;
+  if(len > 100*1024){
+    trigger = 1;
+  } else {
+    trigger = 0;
+  }
+  if(prev_trigger == 1 && trigger == 0){
+    start_decrease = 1;
+  }
 
   uint32_t offset = 0;
   uint32_t num_of_segments =((len + kSegSize - 1) / kSegSize);
@@ -114,12 +126,12 @@ int SegmentManager::send_to_segment_manager(uint8_t *data, size_t len) {
 
     enqueue(kSegSend, seg);
   }
- /* 
-  OPEL_DBG_LOG("wait for lock release");
-  is_finish = 1;
-  exp_wait.wait(exp_lck);
-  OPEL_DBG_LOG("lock released\n");
-*/
+
+  //OPEL_DBG_LOG("wait for lock release");
+  //is_finish = 1;
+  //exp_wait.wait(exp_lck);
+  //OPEL_DBG_LOG("lock released\n");
+
   //gettimeofday(&end, NULL);
   //fprintf(fp2, " %ld \n",1000000 * (end.tv_sec - start.tv_sec) + (end.tv_usec - start.tv_usec));
   //printf("total: %ld \n",1000000 * (end.tv_sec - start.tv_sec) + (end.tv_usec - start.tv_usec));
@@ -176,6 +188,7 @@ uint8_t *SegmentManager::recv_from_segment_manager(void *proc_data_handle) {
 
   return serialized;
 }
+
 /*
  * This function is the end of the sending logic.
  * It enqeueus the data to the sending queue in order with the sequence number.
@@ -281,12 +294,15 @@ Segment *SegmentManager::dequeue(SegQueueType type) {
 
     // When it's sending queue
     if(type == kSegSend){
+      if(start_decrease == 1){
+    
 
-      if(try_dequeue > 20){
+      if(try_dequeue > 3){
         try_dequeue = 0;
         if(is_changing_adapter == 0){
           is_changing_adapter = 2;
           NetworkManager::get_instance()->decrease_adapter();
+          start_decrease = 0;
 
           //OPEL_DBG_LOG("Decrease Adapter!\n");
         } else {
@@ -298,12 +314,17 @@ Segment *SegmentManager::dequeue(SegQueueType type) {
         OPEL_DBG_LOG("try_dequeue ++: %d\n",try_dequeue);
       }
 
+      } //start_decrease
+
+     return NULL;       
+
 
     } else { // When it's receiving queue
       OPEL_DBG_LOG("receiving queue is empty. wait for another\n");
       not_empty[type].wait(lck);
 
-    } 
+    }
+    
 
   }
 
@@ -313,7 +334,6 @@ Segment *SegmentManager::dequeue(SegQueueType type) {
       not_empty[type].wait(lck);
     }
     
-    return NULL;   
  
   }
 

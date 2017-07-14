@@ -87,6 +87,7 @@ class SegmentManager {
  public:
   static SegmentManager *get_instance(void);
   int is_changing_adapter; // 0:free | 1:increasing | 2: decreasing
+  int wfd_state;
 
 
   /* Used in protocol manager */
@@ -111,8 +112,13 @@ class SegmentManager {
   std::mutex seq_no_lock;
   uint32_t seq_no;
   uint32_t get_seq_no(uint32_t num_segments);
+
+   
   uint8_t try_dequeue;  // # of try to dequeue
   int num_increase;
+  int trigger, prev_trigger;
+  int start_decrease;
+   
   
   // for experiment
   int is_start, is_finish;

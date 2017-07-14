@@ -30,6 +30,7 @@ TCPServerOverEthAdapter::TCPServerOverEthAdapter(uint32_t id, int port) {
   int err;
   this->port = port;
   this->dev_id = id;
+  net_dev_type = kWifi;
 
   cli_sock = 0;
 
