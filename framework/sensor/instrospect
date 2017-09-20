@@ -1,0 +1,15 @@
+<node><interface name="org.ant.sensorManager">
+  <method name="Get">
+    <arg type="s" direction="out"/> 
+  </method>
+  
+  <method name="DestroyApplication">
+    <arg type="o" direction="in"/>
+  </method>
+  
+  <signal name="register">
+    <arg type="o"/>
+  </signal>
+  
+</interface>
+</node>

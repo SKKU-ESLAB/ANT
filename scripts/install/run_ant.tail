@@ -1,0 +1,15 @@
+
+# use python3
+ANT_PYTHON3_PATH=`which python3`
+
+# import target profile
+source ${ANT_CONFIG_DIR}/profile.env
+
+# set shared library path
+export LD_LIBRARY_PATH="${ANT_BIN_DIR}/libs:${LD_LIBRARY_PATH}"
+
+if [[ $# -eq 1 ]]; then
+  ${ANT_PYTHON3_PATH} ${ANT_BIN_DIR}/ant.py $1
+else
+  ${ANT_PYTHON3_PATH} ${ANT_BIN_DIR}/ant.py
+fi

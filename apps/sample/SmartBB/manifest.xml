@@ -1,0 +1,6 @@
+<?xml version="1.0"?>
+<application>
+	<icon>icon.png</icon>
+	<label>SmartBB</label>
+	<mainFile>index.js</mainFile>
+</application>
