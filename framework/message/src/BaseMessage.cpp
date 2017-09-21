@@ -180,6 +180,51 @@ cJSON* AppAckMessage::toJSON() {
   return thisObj;
 }
 
+// encoding to JSON (MLMessage)
+cJSON* MLMessage::toJSON() {
+  cJSON* thisObj = cJSON_CreateObject();
+
+  // commandType
+  char commandTypeStr[20];
+  sprintf(commandTypeStr, "%d", this->mCommandType);
+  cJSON_AddStringToObject(thisObj, ML_MESSAGE_KEY_COMMAND_TYPE,
+      commandTypeStr);
+
+  // payload (MLMessage's)
+  if(this->mMLPayloadObj != NULL) {
+    cJSON_AddItemToObject(thisObj, ML_MESSAGE_KEY_PAYLOAD,
+        this->mMLPayloadObj);
+  }
+
+  return thisObj;
+}
+
+// encoding to JSON (MLAckMessage)
+cJSON* MLAckMessage::toJSON() {
+  cJSON* thisObj = cJSON_CreateObject();
+
+  // commandMessageId
+  char commandMessageIdStr[20];
+  sprintf(commandMessageIdStr, "%d", this->mCommandMessageId);
+  cJSON_AddStringToObject(thisObj,
+      ML_ACK_MESSAGE_KEY_COMMAND_MESSAGE_NUM,
+      commandMessageIdStr);
+
+  // commandType
+  char commandTypeStr[20];
+  sprintf(commandTypeStr, "%d", this->mCommandType);
+  cJSON_AddStringToObject(thisObj, ML_ACK_MESSAGE_KEY_COMMAND_TYPE,
+      commandTypeStr);
+
+  // payload (MLAckMessage's)
+  if(this->mMLAckPayloadObj != NULL) {
+    cJSON_AddItemToObject(thisObj, ML_ACK_MESSAGE_KEY_PAYLOAD,
+        this->mMLAckPayloadObj);
+  }
+
+  return thisObj;
+}
+
 // Attach file on message to be sent
 BaseMessage* BaseMessage::attachFile(std::string filePath) {
   char filePathBuffer[EXT4_FILE_PATH_LENGTH];

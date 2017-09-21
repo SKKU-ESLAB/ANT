@@ -90,6 +90,32 @@ class MessageFactory {
     return message;
   }
 
+  // Make MLMessage from bottom
+  static BaseMessage* makeMLMessage(std::string uri,
+      MLMessageCommandType::Value commandType) {
+    MLMessage* payload = new MLMessage(commandType);
+    BaseMessage* message = new BaseMessage(currentMessageId++, uri,
+        BaseMessageType::ML);
+    message->setPayload(payload);
+    return message;
+  }
+
+  // Make MLAckMessage from bottom
+  static BaseMessage* makeMLAckMessage(std::string uri,
+      BaseMessage* originalMessage) {
+    int commandMessageId = originalMessage->getMessageId();
+    MLMessage* originalPayload = (MLMessage*) originalMessage->getPayload();
+    MLMessageCommandType::Value commandType
+      = originalPayload->getCommandType();
+
+    MLAckMessage* payload = new MLAckMessage(commandMessageId,
+        commandType);
+    BaseMessage* message = new BaseMessage(currentMessageId++, uri,
+        BaseMessageType::MLAck);
+    message->setPayload(payload);
+    return message;
+  }
+
   protected:
   // JSON -> BaseMessage / AppCoreMessage / AppMessage
   static BaseMessage* makeBaseMessageFromJSON(cJSON* messageObj);
@@ -98,6 +124,9 @@ class MessageFactory {
       cJSON* messagePayloadObj);
   static AppMessage* makeAppMessageFromJSON(cJSON* messagePayloadObj);
   static AppAckMessage* makeAppAckMessageFromJSON(
+      cJSON* messagePayloadObj);
+  static MLMessage* makeMLMessageFromJSON(cJSON* messagePayloadObj);
+  static MLAckMessage* makeMLAckMessageFromJSON(
       cJSON* messagePayloadObj);
   static CompanionMessage* makeCompanionMessageFromJSON(
       cJSON* messagePayloadObj);
