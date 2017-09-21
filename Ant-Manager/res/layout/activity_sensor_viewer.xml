@@ -1,0 +1,179 @@
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="fill_parent"
+    android:layout_height="match_parent"
+
+    tools:context="com.ant.graphtest.MainActivity" >
+	
+	<ScrollView
+            android:layout_width="fill_parent"
+            android:layout_height="wrap_content">
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical">
+		
+		<LinearLayout
+		    android:layout_width="match_parent"
+		    android:layout_height="wrap_content"
+		    android:background="#f6f792"
+		    android:orientation="vertical">
+
+			<TextView
+			    android:id="@+id/textView11"
+			    android:layout_width="wrap_content"
+			    android:layout_height="wrap_content"
+			    android:gravity="center_horizontal"
+			    android:text="TextView"
+			    android:textSize="18sp" 
+			    android:textColor="#000000"/>
+
+			<com.jjoe64.graphview.GraphView
+			    android:id="@+id/graph1"
+			    android:layout_width="match_parent"
+			    android:layout_height="100dip"
+			    
+			    android:layout_marginLeft="0dp"    />
+
+		</LinearLayout>
+
+		<LinearLayout
+		    android:layout_width="match_parent"
+		    android:layout_height="wrap_content"
+		    android:background="#a0e0a9"
+		    android:orientation="vertical" >
+
+			<TextView
+			    android:id="@+id/textView22"
+			    android:layout_width="wrap_content"
+			    android:layout_height="wrap_content"
+			    android:textColor="#000000"
+			    android:text="TextView" 
+			    android:textSize="18sp"/>
+
+			<com.jjoe64.graphview.GraphView
+			    android:id="@+id/graph2"
+			    android:layout_width="match_parent"
+			    android:layout_height="100dip"
+			    android:layout_marginTop="5dp"
+			    android:paddingTop="0dp" />
+
+		</LinearLayout>
+
+		<LinearLayout
+		    android:layout_width="match_parent"
+		    android:layout_height="wrap_content"
+		    android:background="#ed7b76"
+		    android:orientation="vertical" >
+
+			<TextView
+			    android:id="@+id/textView33"
+			    android:layout_width="wrap_content"
+			    android:layout_height="wrap_content"
+			    android:text="TextView" 
+			    android:textSize="18sp"
+			    android:textColor="#000000"/>
+
+			<com.jjoe64.graphview.GraphView
+			    android:id="@+id/graph3"
+			    android:layout_width="match_parent"
+			    android:layout_height="100dip"
+			    android:layout_marginTop="5dp"
+			    android:paddingTop="0dp" />
+
+		</LinearLayout>
+
+		<LinearLayout
+		    android:layout_width="match_parent"
+		    android:layout_height="wrap_content"
+		    android:background="#f8bf7b"
+		    android:orientation="vertical" >
+
+			<TextView
+			    android:id="@+id/textView4"
+			    android:layout_width="wrap_content"
+			    android:layout_height="wrap_content"
+			    android:text="TextView" 
+			    android:textSize="18sp"
+			    android:textColor="#000000"/>
+
+			<com.jjoe64.graphview.GraphView
+			    android:id="@+id/graph4"
+			    android:layout_width="match_parent"
+			    android:layout_height="100dip"
+			    android:layout_marginTop="5dp"
+			    android:paddingTop="0dp" />
+
+		</LinearLayout>
+		
+		<LinearLayout
+		    android:layout_width="match_parent"
+		    android:layout_height="wrap_content"
+		    android:background="#5ea0a4"
+		    android:orientation="vertical" >
+
+			<TextView
+			    android:id="@+id/textView5"
+			    android:layout_width="wrap_content"
+			    android:layout_height="wrap_content"
+			    android:text="TextView" 
+			    android:textSize="18sp"
+			    android:textColor="#000000"/>
+
+			<com.jjoe64.graphview.GraphView
+			    android:id="@+id/graph5"
+			    android:layout_width="match_parent"
+			    android:layout_height="100dip"
+			    android:layout_marginTop="5dp"
+			    android:paddingTop="0dp" />
+
+		</LinearLayout>
+		
+		<LinearLayout
+		    android:layout_width="match_parent"
+		    android:layout_height="wrap_content"
+		    android:background="#ff4f5c"
+		    android:orientation="vertical" >
+
+			<TextView
+			    android:id="@+id/textView6"
+			    android:layout_width="wrap_content"
+			    android:layout_height="wrap_content"
+			    android:text="TextView"
+			    android:textSize="18sp" 
+			    android:textColor="#000000"/>
+
+			<com.jjoe64.graphview.GraphView
+			    android:id="@+id/graph6"
+			    android:layout_width="match_parent"
+			    android:layout_height="100dip"
+			    android:layout_marginTop="5dp"
+			    android:paddingTop="0dp" />
+
+		</LinearLayout>
+		
+		<LinearLayout
+		    android:layout_width="match_parent"
+		    android:layout_height="wrap_content"
+		    android:background="#00ada7"
+		    android:orientation="vertical" >
+
+			<TextView
+			    android:id="@+id/textView7"
+			    android:layout_width="wrap_content"
+			    android:layout_height="wrap_content"
+			    android:text="TextView" 
+			    android:textSize="18sp"
+			    android:textColor="#000000"/>
+
+			<com.jjoe64.graphview.GraphView
+			    android:id="@+id/graph7"
+			    android:layout_width="match_parent"
+			    android:layout_height="100dip"
+			    android:layout_marginTop="5dp"
+			    android:paddingTop="0dp" />
+
+		</LinearLayout>
+    </LinearLayout>
+</ScrollView>
+</RelativeLayout>
