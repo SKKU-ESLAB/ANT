@@ -66,26 +66,26 @@ void MLDaemon::run() {
 // LocalChannelListener
 void MLDaemon::onReceivedMessage(BaseMessage* message) {
   // TODO: implement MLMessage in Message FW
-//  if(message == NULL) {
-//    ANT_DBG_ERR("Invalid ML Message");
-//    return;
-//  }
-//  if(message->getType() != BaseMessageType::ML) {
-//    ANT_DBG_ERR("Not ML Message");
-//    return;
-//  }
-//  MLMessage* payload = (MLMessage*)message->getPayload();
-//  if(payload == NULL) {
-//    ANT_DBG_ERR("MLMessage payload does not exist");
-//    return;
-//  }
-//
-//  int commandType = payload->getCommandType();
-//  switch(commandType) {
-//    default:
-//      // Do not handle it
-//      break;
-//  }
+  if(message == NULL) {
+    ANT_DBG_ERR("Invalid ML Message");
+    return;
+  }
+  if(message->getType() != BaseMessageType::ML) {
+    ANT_DBG_ERR("Not ML Message");
+    return;
+  }
+  MLMessage* payload = (MLMessage*)message->getPayload();
+  if(payload == NULL) {
+    ANT_DBG_ERR("MLMessage payload does not exist");
+    return;
+  }
+
+  int commandType = payload->getCommandType();
+  switch(commandType) {
+    default:
+      // Do not handle it
+      break;
+  }
 }
 
 // TODO: MLFW Commands
