@@ -241,3 +241,48 @@ CompanionMessage* MessageFactory::makeCompanionMessageFromJSON(
   }
   return newMessage;
 }
+
+MLMessage* MessageFactory::makeMLMessageFromJSON(cJSON* messagePayloadObj) {
+  cJSON* thisObj = messagePayloadObj;
+
+  // Allocate and initialize a new BaseMessage and return it
+  cJSON* commandTypeObj = cJSON_GetObjectItem(thisObj, "commandType");
+  RETURN_IF_INVALID_CJSON_OBJ(commandTypeObj, NULL);
+  MLMessageCommandType::Value commandType
+    = static_cast<MLMessageCommandType::Value>(atoi(
+          commandTypeObj->valuestring));
+
+  cJSON* mlPayloadObj = cJSON_GetObjectItem(thisObj, "payload");
+  
+  // Allocate and initialize a new MLMessage
+  MLMessage* newMessage = new MLMessage(commandType);
+  if(mlPayloadObj != NULL) {
+    newMessage->setMLPayloadObj(mlPayloadObj);
+  }
+  return newMessage;
+}
+
+MLAckMessage* MessageFactory::makeMLAckMessageFromJSON(
+    cJSON* messagePayloadObj) {
+  cJSON* thisObj = messagePayloadObj;
+
+  // Allocate and initialize a new BaseMessage and return it
+  cJSON* commandMessageIdObj = cJSON_GetObjectItem(thisObj, "commandMessageId");
+  RETURN_IF_INVALID_CJSON_OBJ(commandMessageIdObj, NULL);
+  int commandMessageId = atoi(commandMessageIdObj->valuestring);
+  
+  cJSON* commandTypeObj = cJSON_GetObjectItem(thisObj, "commandType");
+  RETURN_IF_INVALID_CJSON_OBJ(commandTypeObj, NULL);
+  MLMessageCommandType::Value commandType
+    = static_cast<MLMessageCommandType::Value>(atoi(
+          commandTypeObj->valuestring));
+
+  cJSON* mlAckPayloadObj = cJSON_GetObjectItem(thisObj, "payload");
+  
+  // Allocate and initialize a new MLAckMessage
+  MLAckMessage* newMessage = new MLAckMessage(commandMessageId, commandType);
+  if(mlAckPayloadObj != NULL) {
+    newMessage->setMLAckPayloadObj(mlAckPayloadObj);
+  }
+  return newMessage;
+}
