@@ -1,0 +1,27 @@
+[submodule "dep/bluez-4.101"]
+	path = dep/bluez-4.101
+	url = https://github.com/SKKU-ESLAB/ant-bluez
+[submodule "dep/ant-dbus-config"]
+	path = dep/ant-dbus-config
+	url = https://github.com/SKKU-ESLAB/ant-dbus-config
+[submodule "dep/deletesem"]
+	path = dep/deletesem
+	url = https://github.com/SKKU-ESLAB/ant-deletesem
+[submodule "dep/hostap"]
+	path = dep/hostap
+	url = https://github.com/SKKU-ESLAB/ant-hostap
+[submodule "dep/libuv-v1.7.5"]
+	path = dep/libuv-v1.7.5
+	url = https://github.com/libuv/libuv
+[submodule "dep/libxml2-2.9.4-rc2"]
+	path = dep/libxml2-2.9.4-rc2
+	url = https://github.com/GNOME/libxml2
+[submodule "dep/opencv-3.0.0"]
+	path = dep/opencv-3.0.0
+	url = https://github.com/SKKU-ESLAB/ant-opencv3
+[submodule "dep/nodejs-4.0.0"]
+	path = dep/nodejs-4.0.0
+	url = https://github.com/nodejs/node
+[submodule "dep/gst-rpicamsrc"]
+	path = dep/gst-rpicamsrc
+	url = https://github.com/thaytan/gst-rpicamsrc.git
