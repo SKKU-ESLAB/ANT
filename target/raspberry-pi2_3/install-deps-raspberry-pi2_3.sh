@@ -40,7 +40,8 @@ print_progress() {
 # Step 1. Install packages by apt-get
 print_progress 1 "Install dependent packages..."
 sudo apt-get update
-sudo apt-get install g++-4.8 wiringpi libdbus-1-dev glib-2.0 libdbus-glib-1-2 \
+sudo apt-get -y install g++-4.8                                               \
+  wiringpi libdbus-1-dev glib-2.0 libdbus-glib-1-2                            \
   libdbus-glib-1-2-dbg libdbus-glib-1-dev zip sqlite3 libsqlite3-dev cmake    \
   libgtk2.0-dev pkg-config libavcodec-dev libavformat-dev libswscale-dev git  \
   python-dev python-numpy libjpeg-dev libpng-dev libtiff-dev libjasper-dev    \
@@ -51,8 +52,13 @@ sudo apt-get install g++-4.8 wiringpi libdbus-1-dev glib-2.0 libdbus-glib-1-2 \
 ANT_REPO_DIR=$(dirname "$0")/../..
 eval ANT_REPO_DIR=`readlink --canonicalize ${ANT_REPO_DIR}`
 
-# Step 2. Build and reinstall bluez-4.101
-print_progress 2 "Build and reinstall bluez-4.101..."
+# Step 2. Download submodules
+print_progress 2 "Download submodules..."
+git submodule sync
+git submodule update --init --recursive
+
+# Step 3. Build and reinstall bluez-4.101
+print_progress 3 "Build and reinstall bluez-4.101..."
 # Remove existing bluez
 sudo apt-get remove bluez
 # Install bluez
@@ -62,19 +68,19 @@ cd ${ANT_REPO_DIR}/dep/bluez-4.101
 make 
 sudo make install
 
-# Step 3. Set udhcpd config
-print_progress 3 "Set udhcpd config..."
+# Step 4. Set udhcpd config
+print_progress 4 "Set udhcpd config..."
 sudo touch /var/lib/misc/udhcpd.leases
 
-# Step 4. Build and install libxml2-2.9.4-rc2
-print_progress 4 "Build and install libxml2-2.9.4-rc2..."
+# Step 5. Build and install libxml2-2.9.4-rc2
+print_progress 5 "Build and install libxml2-2.9.4-rc2..."
 cd ${ANT_REPO_DIR}/dep/libxml2-2.9.4-rc2
 ./configure --prefix=/usr/local/xml
 make
 sudo make install
 
-# Step 5. Build and install opencv-3.0.0
-print_progress 5 "Build and install opencv-3.0.0..."
+# Step 6. Build and install opencv-3.0.0
+print_progress 6 "Build and install opencv-3.0.0..."
 cd /usr/include/linux
 sudo ln -s ../libv4l1-videodev.h videodev.h
 cd ${ANT_REPO_DIR}/dep/opencv-3.0.0
@@ -85,8 +91,8 @@ cmake -D CMAKE_BUILD_TYPE=RELEASE -D CMAKE_INSTALL_PREFIX=/usr/local -D \
 make -j 4
 sudo make install
 
-# Step 6. Build and install libuv-v1.7.5
-print_progress 6 "Build and install libuv-v1.7.5..."
+# Step 7. Build and install libuv-v1.7.5
+print_progress 7 "Build and install libuv-v1.7.5..."
 cd ${ANT_REPO_DIR}/dep/libuv-v1.7.5
 sh autogen.sh
 ./configure
@@ -94,12 +100,12 @@ make
 make check
 sudo make install
 
-# Step 7. Copy dbus config file
-print_progress 7 "Copy dbus config file for ANT..."
+# Step 8. Copy dbus config file
+print_progress 8 "Copy dbus config file for ANT..."
 sudo cp ${ANT_REPO_DIR}/dep/ant-dbus-config/ant.conf
 
-# Step 8. Install wpa_supplicant, wpa_cli and deletesem
-print_progress 8 "Install wpa_supplicant, wpa_cli and deletesem..."
+# Step 9. Install wpa_supplicant, wpa_cli and deletesem
+print_progress 9 "Install wpa_supplicant, wpa_cli and deletesem..."
 cd ${ANT_REPO_DIR}/dep/hostap/wpa_supplicant
 make
 cd ${ANT_REPO_DIR}/dep/deletesem
@@ -111,24 +117,20 @@ sudo cp ${ANT_REPO_DIR}/dep/hostap/wpa_supplicant/wpa_cli /usr/bin/ant-deps/
 sudo cp ${ANT_REPO_DIR}/dep/deletesem/deletesem /usr/bin/ant-deps/
 chmod +x /usr/bin/ant-deps/*
 
-# Step 9. Build and install nodejs-4.0.0
-print_progress 9 "Build and install nodejs-4.0.0..."
-git clone https://github.com/nodejs/node ${ANT_REPO_DIR}/dep/nodejs-4.0.0 \
-  -b v4.0.0 --depth=1
+# Step 10. Build and install nodejs-4.0.0
+print_progress 10 "Build and install nodejs-4.0.0..."
 cd ${ANT_REPO_DIR}/dep/nodejs-4.0.0
 ./configure
 make -j4
 sudo make install
 
-# Step 10. Install nan, node-gyp package 
+# Step 11. Install nan, node-gyp package 
 cd ${ANT_REPO_DIR}
 npm install nan
 sudo npm install -g node-gyp
 
-# Step 11. Install Gstreamer RPI camera source element
-cd ${ANT_REPO_DIR}/dep
-git clone https://github.com/thaytan/gst-rpicamsrc.git
-cd gst-rpicamsrc
+# Step 12. Install Gstreamer RPI camera source element
+cd ${ANT_REPO_DIR}/dep/gst-rpicamsrc
 ./autogen.sh --prefix=/usr --libdir=/usr/lib/arm-linux-gnueabihf/
 make
 sudo make install
