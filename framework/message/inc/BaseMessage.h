@@ -27,7 +27,7 @@
 // {
 //   // BaseMessage
 //   payload: {
-//     // BaseMessagePayload (AppCore, AppCoreAck, App, Companion)
+//     // BaseMessagePayload (AppCore, AppCoreAck, App, AppAck, Companion, etc.)
 //     params: {
 //       // **Params
 //     }
@@ -50,7 +50,9 @@ namespace BaseMessageType {
     AppCoreAck = 11,
     App = 20,
     AppAck = 21,
-    Companion = 30
+    Companion = 30,
+    ML = 40,
+    MLAck = 41
   };
 }
 
@@ -492,6 +494,97 @@ class CompanionMessage: public BaseMessagePayload {
     // JSON-exported values
     CompanionMessageCommandType::Value mCommandType;
     cJSON* mCompanionPayloadObj;
+};
+
+// Use namespace + enum for readability
+namespace MLMessageCommandType {
+  enum Value {
+    NotDetermined = 0
+    // TODO: to be added
+  };
+}
+
+#define ML_MESSAGE_KEY_COMMAND_TYPE "commandType"
+#define ML_MESSAGE_KEY_PAYLOAD "payload"
+
+// MLMessage: message sent to machine learning daemon
+// - Decoding(makeFromJSON): C++
+// - Encoding(make, toJSON): C++
+class MLMessage: public BaseMessagePayload {
+  public:
+    friend class MessageFactory;
+
+    ~MLMessage() {
+      if(this->mMLPayloadObj != NULL) {
+        cJSON_Delete(this->mMLPayloadObj);
+      }
+    }
+
+    // encoding to JSON
+    virtual cJSON* toJSON();
+
+    // Get parameters
+    MLMessageCommandType::Value getCommandType() { return this->mCommandType; }
+    cJSON* getMLPayloadObj() { return this->mMLPayloadObj; }
+
+    // TODO: Get command-specific parameters
+
+    // TODO: Set command-specific parameters
+    void setMLPayloadObj(cJSON* mlPayloadObj) {
+      this->mMLPayloadObj = mlPayloadObj;
+    }
+
+  protected:
+    // Initializer
+    MLMessage(MLMessageCommandType::Value commandType)
+      : mCommandType(commandType), mMLPayloadObj(NULL) {
+    }
+
+    // JSON-exported values
+    MLMessageCommandType::Value mCommandType;
+    cJSON* mMLPayloadObj;
+};
+
+#define ML_ACK_MESSAGE_KEY_COMMAND_MESSAGE_NUM "commandMessageId"
+#define ML_ACK_MESSAGE_KEY_COMMAND_TYPE "commandType"
+#define ML_ACK_MESSAGE_KEY_PAYLOAD "payload"
+
+// MLAckMessage: ack message sent from machine learning daemon
+// - Decoding(makeFromJSON): C++
+// - Encoding(make, toJSON): C++
+class MLAckMessage : public BaseMessagePayload {
+  public:
+    friend class MessageFactory;
+
+    ~MLAckMessage() {
+      if(this->mMLAckPayloadObj != NULL) {
+        cJSON_Delete(this->mMLAckPayloadObj);
+      }
+    }
+
+    // encoding to JSON
+    virtual cJSON* toJSON();
+
+    // Get parameters
+    MLMessageCommandType::Value getCommandType() {
+      return this->mCommandType;
+    }
+
+    // TODO: Set command-specific parameters
+    void setMLAckPayloadObj(cJSON* mlAckPayloadObj) {
+      this->mMLAckPayloadObj = mlAckPayloadObj;
+    }
+
+  protected:
+    MLAckMessage(int commandMessageId,
+        MLMessageCommandType::Value commandType)
+      : mCommandMessageId(commandMessageId),
+      mCommandType(commandType), mMLAckPayloadObj(NULL) { }
+
+    // JSON-exported values
+    int mCommandMessageId;
+    MLMessageCommandType::Value mCommandType;
+    cJSON* mMLAckPayloadObj;
 };
 
 #endif // !defined(__BASE_MESSAGE_H__)

@@ -1,0 +1,22 @@
+include_directories(./inc)
+include_directories(../message/inc)
+include_directories(../communication/inc)
+link_directories(../../out/libs)
+
+add_definitions("`pkg-config --libs --cflags dbus-1 glib-2.0 dbus-glib-1`")
+
+set(CMAKE_CXX_STANDARD 11)
+set(MLFW_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/src)
+
+set(MLFW_sources
+  ${MLFW_SOURCE_DIR}/main.cpp
+  ${MLFW_SOURCE_DIR}/MLDaemon.cpp)
+
+add_executable(ant-ml ${MLFW_sources})
+
+target_link_libraries(ant-ml
+  ant-message ant-cmfw)
+
+set_target_properties(ant-ml
+  PROPERTIES
+  RUNTIME_OUTPUT_DIRECTORY "../../out/bin")
