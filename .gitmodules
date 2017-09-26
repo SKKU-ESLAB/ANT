@@ -1,0 +1,3 @@
+[submodule "Ant-Manager/libs/armeabi"]
+	path = Ant-Manager/libs/armeabi
+	url = https://github.com/SKKU-ESLAB/ant-android-libs-armeabi
