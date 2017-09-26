@@ -1,6 +1,0 @@
-Since Gstreamer libraries' size is too large, they are uploaded to another server.
-
-In order to download the libraries, please enter following command.
-
-$ wget http://nyx.skku.ac.kr/ant/libgstreamer_android.so
-$ wget http://nyx.skku.ac.kr/ant/libtutorial-4.so
