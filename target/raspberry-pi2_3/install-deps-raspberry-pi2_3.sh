@@ -103,7 +103,7 @@ sudo make install
 
 # Step 8. Copy dbus config file
 print_progress 8 "Copy dbus config file for ANT..."
-sudo cp ${ANT_REPO_DIR}/dep/ant-dbus-config/ant.conf
+sudo cp ${ANT_REPO_DIR}/dep/ant-dbus-config/ant.conf /etc/dbus-1/system.d/ant.conf
 
 # Step 9. Install wpa_supplicant, wpa_cli and deletesem
 print_progress 9 "Install wpa_supplicant, wpa_cli and deletesem..."
