@@ -10,7 +10,11 @@ set(MLFW_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/src)
 
 set(MLFW_sources
   ${MLFW_SOURCE_DIR}/main.cpp
-  ${MLFW_SOURCE_DIR}/MLDaemon.cpp)
+  ${MLFW_SOURCE_DIR}/MLDaemon.cpp
+  ${MLFW_SOURCE_DIR}/InputReaderSet.cpp
+  ${MLFW_SOURCE_DIR}/CameraInputReader.cpp
+  ${MLFW_SOURCE_DIR}/SensorInputReader.cpp
+  ${MLFW_SOURCE_DIR}/InferenceUnit.cpp)
 
 add_executable(ant-ml ${MLFW_sources})
 

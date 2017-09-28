@@ -88,4 +88,32 @@ void MLDaemon::onReceivedMessage(BaseMessage* message) {
   }
 }
 
-// TODO: MLFW Commands
+// MLFW Commands
+void MLDaemon::load(std::string modelFilePath, ModelParams params) {
+  // TODO: implement it
+}
+void MLDaemon::unload(int modelId) {
+  // TODO: implement it
+}
+void MLDaemon::getInferenceUnits() {
+  // TODO: implement it
+}
+void MLDaemon::setModelInput(int modelId, std::string inputName,
+    std::string sourceUri) {
+  // TODO: implement it
+}
+void MLDaemon::startListeningModelOutput(int modelId, std::string listenerUri) {
+  // TODO: implement it
+}
+void MLDaemon::stopListeningModelOutput(int modelId, std::string listenerUri) {
+  // TODO: implement it
+}
+void MLDaemon::start(int modelId) {
+  // TODO: implement it
+}
+void MLDaemon::stop(int modelId) {
+  // TODO: implement it
+}
+void MLDaemon::getResourceUsage(int modelId) {
+  // TODO: implement it
+}
