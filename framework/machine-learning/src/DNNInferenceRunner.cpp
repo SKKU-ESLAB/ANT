@@ -15,19 +15,11 @@
  * limitations under the License.
  */
 
-#ifndef __INFERENCE_RUNNER_H__
-#define __INFERENCE_RUNNER_H__
+#include "DNNInferenceRunner.h"
 
-#include <iostream>
-#include <string>
-#include <vector>
-#include <map>
-
-class InferenceRunner {
-  public:
-    virtual void run(std::map<std::string, void*> inputDataBuffers,
-        std::map<std::string, std::string> inputShape,
-        std::map<std::string, void*> outputDataBuffers) = 0;
-};
-
-#endif // !defined(__INFERENCE_RUNNER_H__)
+void DNNInferenceRunner::run(
+    std::map<std::string, void*> inputDataBuffers,
+    std::map<std::string, std::string> inputShape,
+    std::map<std::string, void*> outputDataBuffers) {
+  // TODO: implement it
+}
