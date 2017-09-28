@@ -1,15 +1,53 @@
+/* Copyright (c) 2017 SKKU ESLAB, and contributors. All rights reserved.
+ *
+ * Contributor: Gyeonghwan Hong<redcarrottt@gmail.com>
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *  http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 #include "InferenceUnit.h"
 
-bool InferenceUnit::run() {
+bool InferenceUnit::start() {
+  pthread_mutex_lock(&this->mThreadRunningMutex);
+
   // Check if state is "Ready"
   InferenceUnitState::Value state = this->getState();
   if( state != InferenceUnitState::Ready) {
+    pthread_mutex_unlock(&this->mThreadRunningMutex);
     return false;
   }
 
   // Make Inference Unit Thread
   pthread_create(&this->mInferenceUnitThread, NULL,
       InferenceUnit::inferenceLoop, (void *)this);
+
+  pthread_mutex_unlock(&this->mThreadRunningMutex);
+  return true;
+}
+
+bool InferenceUnit::stop() {
+  pthread_mutex_lock(&this->mThreadRunningMutex);
+
+  // Check if state is "Running"
+  InferenceUnitState::Value state = this->getState();
+  if( state != InferenceUnitState::Running) {
+    pthread_mutex_unlock(&this->mThreadRunningMutex);
+    return false;
+  }
+
+  this->mIsThreadRunning = false;
+
+  pthread_mutex_unlock(&this->mThreadRunningMutex);
   return true;
 }
 
@@ -22,14 +60,20 @@ bool InferenceUnit::run() {
 void* InferenceUnit::inferenceLoop(void* data) {
   InferenceUnit* self = (InferenceUnit*)data;
 
-  while(1) {
+  self->mIsThreadRunning = true;
+
+  while(self->mIsThreadRunning) {
+    pthread_mutex_lock(&self->mInputMutex);
+    std::map<std::string, std::string> inputMap = self->mInputMap;
+    pthread_mutex_unlock(&self->mInputMutex);
+
     // Step 1. Run InputReaders to load inputs
     // InputDataBuffer: Dictionary
     //   (key=string inputName, value=void* inputDataBuffer)
     std::map<std::string, void*> inputDataBuffers;
     std::map<std::string, std::string>::iterator imIter;
-    for(imIter = self->mInputMap.begin();
-        imIter != self->mInputMap.end();
+    for(imIter = inputMap.begin();
+        imIter != inputMap.end();
         ++imIter) {
       std::string inputName(imIter->first);
       std::string sourceUri(imIter->second);
@@ -46,11 +90,15 @@ void* InferenceUnit::inferenceLoop(void* data) {
             inputName, (void*)inputBuffer));
     }
 
+    pthread_mutex_lock(&self->mOutputMutex);
+    std::map<std::string, std::string> outputShape = self->mOutputShape;
+    pthread_mutex_unlock(&self->mOutputMutex);
+
     // Make OutputDataBuffer
     std::map<std::string, void*> outputDataBuffers;
     std::map<std::string, std::string>::iterator osIter;
-    for(osIter = self->mOutputShape.begin();
-        osIter != self->mOutputShape.end();
+    for(osIter = outputShape.begin();
+        osIter != outputShape.end();
         ++osIter) {
       std::string outputName(osIter->first);
       std::string dataType(osIter->second);
@@ -104,6 +152,7 @@ bool InferenceUnit::setInput(std::string inputName, std::string sourceUri) {
   // TODO: check if source URI's type is same as inputShape's dataType
 
   // set input map
+  pthread_mutex_lock(&this->mInputMutex);
   bool foundInputEntry = false;
   std::map<std::string, std::string>::iterator imIter;
   for(imIter = this->mInputMap.begin();
@@ -119,9 +168,11 @@ bool InferenceUnit::setInput(std::string inputName, std::string sourceUri) {
   if(!foundInputEntry) {
     return false;
   }
+  pthread_mutex_unlock(&this->mInputMutex);
 
   // check input & output conenctions and update state
   this->checkConnectionsAndUpdateState();
+
   return true;
 }
 
@@ -135,7 +186,9 @@ bool InferenceUnit::startListeningOutput(std::string listenerUri) {
   }
 
   // Add listener URI to the list
+  pthread_mutex_lock(&this->mOutputMutex);
   this->mOutputListenerURIs.push_back(listenerUri);
+  pthread_mutex_unlock(&this->mOutputMutex);
   return true;
 }
 
@@ -149,6 +202,7 @@ bool InferenceUnit::stopListeningOutput(std::string listenerUri) {
   }
 
   // Remove listener URI from the list
+  pthread_mutex_lock(&this->mOutputMutex);
   bool foundOutputEntry = false;
   std::vector<std::string>::iterator olIter;
   for(olIter = this->mOutputListenerURIs.begin();
@@ -161,6 +215,7 @@ bool InferenceUnit::stopListeningOutput(std::string listenerUri) {
       break;
     }
   }
+  pthread_mutex_unlock(&this->mOutputMutex);
   if(!foundOutputEntry) {
     return false;
   }

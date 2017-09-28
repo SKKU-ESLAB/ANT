@@ -14,12 +14,14 @@ set(MLFW_sources
   ${MLFW_SOURCE_DIR}/InputReaderSet.cpp
   ${MLFW_SOURCE_DIR}/CameraInputReader.cpp
   ${MLFW_SOURCE_DIR}/SensorInputReader.cpp
-  ${MLFW_SOURCE_DIR}/InferenceUnit.cpp)
+  ${MLFW_SOURCE_DIR}/InferenceUnit.cpp
+  ${MLFW_SOURCE_DIR}/DNNInferenceRunner.cpp
+  ${MLFW_SOURCE_DIR}/ANNInferenceRunner.cpp)
 
 add_executable(ant-ml ${MLFW_sources})
 
 target_link_libraries(ant-ml
-  ant-message ant-cmfw)
+  ant-message ant-cmfw pthread)
 
 set_target_properties(ant-ml
   PROPERTIES

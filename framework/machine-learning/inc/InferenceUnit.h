@@ -64,7 +64,8 @@ class InferenceUnit {
     static void* inferenceLoop(void*);
 
     // Commands
-    bool run();
+    bool start();
+    bool stop();
     bool setInput(std::string inputName, std::string sourceUri);
     bool startListeningOutput(std::string listenerUri);
     bool stopListeningOutput(std::string listenerUri);
@@ -95,13 +96,18 @@ class InferenceUnit {
     }
 
   protected:
-    // Users should create a child of InferenceUnit.
-    InferenceUnit(int iuid, std::string modelPackagePath) 
-    : mIuid(iuid), mState(InferenceUnitState::Initialized),
-    mModelPackagePath(modelPackagePath), mPid(-1),
-    mFieldsMutex(PTHREAD_MUTEX_INITIALIZER) {
-      // NOTICE: Its child classes should create its own InferenceRunner
-      //         in the child's constructor function.
+    InferenceUnit(int iuid,
+        std::string modelPackagePath,
+        InferenceRunner* inferenceRunner)
+    : mIuid(iuid),
+    mState(InferenceUnitState::Initialized),
+    mModelPackagePath(modelPackagePath),
+    mPid(-1),
+    mInferenceRunner(inferenceRunner),
+    mThreadRunningMutex(PTHREAD_MUTEX_INITIALIZER),
+    mInputMutex(PTHREAD_MUTEX_INITIALIZER),
+    mOutputMutex(PTHREAD_MUTEX_INITIALIZER),
+    mIsThreadRunning(false) {
       this->mInputReaderSet = new InputReaderSet();
     }
 
@@ -151,9 +157,12 @@ class InferenceUnit {
     InferenceRunner* mInferenceRunner = NULL;
 
     // Inference Unit Thread //
+    bool mIsThreadRunning;
     pthread_t mInferenceUnitThread;
 
-    pthread_mutex_t mFieldsMutex;
+    pthread_mutex_t mThreadRunningMutex;
+    pthread_mutex_t mInputMutex;
+    pthread_mutex_t mOutputMutex;
 };
 
 #endif // !defined(__INFERENCE_UNIT_H__)
