@@ -96,16 +96,18 @@ class InferenceUnit {
     }
 
   protected:
-    // Users should create a child of InferenceUnit.
-    InferenceUnit(int iuid, std::string modelPackagePath) 
-    : mIuid(iuid), mState(InferenceUnitState::Initialized),
-    mModelPackagePath(modelPackagePath), mPid(-1),
+    InferenceUnit(int iuid,
+        std::string modelPackagePath,
+        InferenceRunner* inferenceRunner)
+    : mIuid(iuid),
+    mState(InferenceUnitState::Initialized),
+    mModelPackagePath(modelPackagePath),
+    mPid(-1),
+    mInferenceRunner(inferenceRunner),
     mThreadRunningMutex(PTHREAD_MUTEX_INITIALIZER),
     mInputMutex(PTHREAD_MUTEX_INITIALIZER),
     mOutputMutex(PTHREAD_MUTEX_INITIALIZER),
     mIsThreadRunning(false) {
-      // NOTICE: Its child classes should create its own InferenceRunner
-      //         in the child's constructor function.
       this->mInputReaderSet = new InputReaderSet();
     }
 

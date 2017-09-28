@@ -60,12 +60,12 @@ bool InferenceUnit::stop() {
 void* InferenceUnit::inferenceLoop(void* data) {
   InferenceUnit* self = (InferenceUnit*)data;
 
-  this->mIsThreadRunning = true;
+  self->mIsThreadRunning = true;
 
-  while(this->mIsThreadRunning) {
-    pthread_mutex_lock(&this->mInputMutex);
+  while(self->mIsThreadRunning) {
+    pthread_mutex_lock(&self->mInputMutex);
     std::map<std::string, std::string> inputMap = self->mInputMap;
-    pthread_mutex_unlock(&this->mInputMutex);
+    pthread_mutex_unlock(&self->mInputMutex);
 
     // Step 1. Run InputReaders to load inputs
     // InputDataBuffer: Dictionary
@@ -90,9 +90,9 @@ void* InferenceUnit::inferenceLoop(void* data) {
             inputName, (void*)inputBuffer));
     }
 
-    pthread_mutex_lock(&this->mOutputMutex);
+    pthread_mutex_lock(&self->mOutputMutex);
     std::map<std::string, std::string> outputShape = self->mOutputShape;
-    pthread_mutex_unlock(&this->mOutputMutex);
+    pthread_mutex_unlock(&self->mOutputMutex);
 
     // Make OutputDataBuffer
     std::map<std::string, void*> outputDataBuffers;
