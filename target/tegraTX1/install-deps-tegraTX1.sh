@@ -80,6 +80,7 @@ sudo touch /var/lib/misc/udhcpd.leases
 # Step 5. Build and install libxml2-2.9.4-rc2
 print_progress 5 "Build and install libxml2-2.9.4-rc2..."
 cd ${ANT_REPO_DIR}/dep/libxml2-2.9.4-rc2
+./autogen.sh
 ./configure --prefix=/usr/local/xml
 make
 sudo make install

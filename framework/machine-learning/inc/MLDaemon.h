@@ -15,16 +15,20 @@
  * limitations under the License.
  */
 
-#ifndef __APP_CORE_H__
-#define __APP_CORE_H__
+#ifndef __ML_DAEMON_H__
+#define __ML_DAEMON_H__
 
 #include "LocalChannel.h"
 #include "MessageRouter.h"
 #include "DbusChannel.h"
 #include "BaseMessage.h"
+#include "ModelParams.h"
+#include "InferenceUnit.h"
 
 #include <iostream>
+#include <string>
 #include <vector>
+#include <map>
 
 #define PATH_BUFFER_SIZE 1024
 
@@ -50,7 +54,22 @@ class MLDaemon
     virtual void onReceivedMessage(BaseMessage* message);
 
   protected:
-    // TODO: MLFW commands 
+    // MLFW commands 
+    void load(std::string modelFilePath, ModelParams params);
+    void unload(int modelId);
+    void getInferenceUnits();
+    void setModelInput(int modelId,
+        std::string inputName, std::string sourceUri);
+    void startListeningModelOutput(int modelId,
+        std::string listenerUri);
+    void stopListeningModelOutput(int modelId,
+        std::string listenerUri);
+    void start(int modelId);
+    void stop(int modelId);
+    void getResourceUsage(int modelId);
+    
+    // Inference Unit Directory (key: int iuid, value: InferenceUnit)
+    std::map<int, InferenceUnit*> mInferenceUnitDirectory;
 
     // Message framework
     MessageRouter* mMessageRouter = NULL;
@@ -58,4 +77,4 @@ class MLDaemon
     LocalChannel* mLocalChannel = NULL;
 };
 
-#endif // !defined(__APP_CORE_H__)
+#endif // !defined(__ML_DAEMON_H__)
