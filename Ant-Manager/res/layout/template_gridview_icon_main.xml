@@ -9,7 +9,7 @@
         android:id="@+id/item_image"
         android:layout_width="50dp"
         android:layout_height="50dp"
-        android:src="@drawable/ic_launcher" >
+        android:src="@mipmap/ic_launcher" >
 
     </ImageView>
 

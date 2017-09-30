@@ -30,7 +30,6 @@ import android.support.v4.app.NotificationCompat;
 import com.ant.ant_manager.R;
 import com.ant.ant_manager.controller.LegacyJSONParser;
 import com.ant.ant_manager.model.ANTApp;
-import com.ant.ant_manager.view.MainActivity;
 
 public class RemoteNotiUI {
     private static final int kNotificationId = 1234;
@@ -67,7 +66,7 @@ public class RemoteNotiUI {
         builder.setContentText(jp.getValueByKey("description"));
         builder.setTicker(" " + jp.getValueByKey("appTitle"));
         builder.setLargeIcon(BitmapFactory.decodeFile(app.getIconImagePath()));
-        builder.setSmallIcon(R.drawable.ant);
+        builder.setSmallIcon(R.mipmap.ic_launcher);
         builder.setContentIntent(contentIntent);
         builder.setAutoCancel(true);
         builder.setWhen(System.currentTimeMillis());
