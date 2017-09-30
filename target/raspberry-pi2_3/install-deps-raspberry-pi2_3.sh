@@ -112,11 +112,11 @@ make
 cd ${ANT_REPO_DIR}/dep/deletesem
 gcc -o deletesem deletesem.c -lpthread
 
-mkdir -p /usr/bin/ant-deps
+sudo mkdir -p /usr/bin/ant-deps
 sudo cp ${ANT_REPO_DIR}/dep/hostap/wpa_supplicant/wpa_supplicant /usr/bin/ant-deps/
 sudo cp ${ANT_REPO_DIR}/dep/hostap/wpa_supplicant/wpa_cli /usr/bin/ant-deps/
 sudo cp ${ANT_REPO_DIR}/dep/deletesem/deletesem /usr/bin/ant-deps/
-chmod +x /usr/bin/ant-deps/*
+sudo chmod +x /usr/bin/ant-deps/*
 
 # Step 10. Build and install nodejs-4.0.0
 print_progress 10 "Build and install nodejs-4.0.0..."
