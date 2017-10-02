@@ -1,5 +1,22 @@
 package com.ant.cmfw.devicecontrollers.wifidirect;
 
+/* Copyright (c) 2017 SKKU ESLAB, and contributors. All rights reserved.
+ *
+ * Contributor: Gyeonghwan Hong<redcarrottt@gmail.com>
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *  http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 import android.app.Activity;
 import android.app.Service;
 import android.content.BroadcastReceiver;
@@ -64,6 +81,8 @@ public class WifiDirectDeviceController {
     private class ConnectProcedure {
         private WifiDirectPeerChangedEventReceiver mPeerChangedEventReceiver = null;
         private WifiDirectConnectingResultListener mConnectingResultListener;
+        private Integer mConnectingResultListenerLock = 0;
+        private boolean mIsConnecting = false;
 
         public void start(WifiDirectConnectingResultListener connectingResultListener) {
             this.mConnectingResultListener = connectingResultListener;
@@ -76,8 +95,10 @@ public class WifiDirectDeviceController {
             IntentFilter wifiP2PIntentFilter;
             wifiP2PIntentFilter = new IntentFilter();
             wifiP2PIntentFilter.addAction(WifiP2pManager.WIFI_P2P_PEERS_CHANGED_ACTION);
-            this.mPeerChangedEventReceiver = new WifiDirectPeerChangedEventReceiver();
-            mService.registerReceiver(this.mPeerChangedEventReceiver, wifiP2PIntentFilter);
+            synchronized (this.mConnectingResultListenerLock) {
+                this.mPeerChangedEventReceiver = new WifiDirectPeerChangedEventReceiver();
+                mService.registerReceiver(this.mPeerChangedEventReceiver, wifiP2PIntentFilter);
+            }
 
             // Start Wi-fi direct discovery
             mWifiP2pManager.discoverPeers(mWifiP2pManagerChannel, null);
@@ -88,6 +109,14 @@ public class WifiDirectDeviceController {
             public void onReceive(Context context, Intent intent) {
                 String action = intent.getAction();
                 if (WifiP2pManager.WIFI_P2P_PEERS_CHANGED_ACTION.compareTo(action) == 0) {
+                    // Unregister receiver
+                    synchronized (mConnectingResultListenerLock) {
+                        if (mPeerChangedEventReceiver != null) {
+                            mService.unregisterReceiver(mPeerChangedEventReceiver);
+                            mPeerChangedEventReceiver = null;
+                        }
+                    }
+
                     onPeerChanged();
                 }
             }
@@ -95,6 +124,7 @@ public class WifiDirectDeviceController {
 
         private void onPeerChanged() {
             // Step 2. Request peer list
+            Log.d(TAG, "Request peer list");
             mWifiP2pManager.requestPeers(mWifiP2pManagerChannel, new WifiDirectPeerListListener());
         }
 
@@ -106,16 +136,26 @@ public class WifiDirectDeviceController {
         }
 
         private void onPeerListReceived(WifiP2pDeviceList peerDeviceList) {
-            // Step 3. Check if there is peer device that we want
+            // Prevent duplicated connection tries
+            if(this.mIsConnecting) {
+                return;
+            } else {
+                Log.d(TAG, "Peer List Received");
+                this.mIsConnecting = true;
+            }
+
             if (mWifiDirectName.isEmpty()) {
                 Log.d(TAG, "Failed to connectChannel! No Wi-fi Direct name given!");
+                this.mIsConnecting = false;
                 this.onFail();
                 return;
             }
 
+            // Step 3. Check if there is peer device that we want
             for (WifiP2pDevice peerDevice : peerDeviceList.getDeviceList()) {
                 if (peerDevice.deviceName.compareTo(mWifiDirectName) == 0) {
-                    Log.d(TAG, "Found Wi-fi Direct device: " + mWifiDirectName);
+                    Log.d(TAG, "Found Wi-fi Direct device: " + mWifiDirectName + " / " +
+                            peerDevice.deviceAddress);
                     if (peerDevice.status == WifiP2pDevice.AVAILABLE || peerDevice.status ==
                             WifiP2pDevice.CONNECTED || peerDevice.status == WifiP2pDevice.INVITED) {
                         Log.d(TAG, "Connecting Wi-fi Direct device: " + mWifiDirectName);
@@ -126,19 +166,22 @@ public class WifiDirectDeviceController {
                                 .status);
                         this.onFail();
                     }
+                    this.mIsConnecting = false;
                     return;
                 }
             }
+            this.mIsConnecting = false;
         }
 
         private void requestConnection(WifiP2pDevice peerDevice) {
+            final WifiP2pDevice kPeerDevice = peerDevice;
             // Step 4. Request for connecting to the peer device
             WifiP2pConfig wifiP2pConfig = new WifiP2pConfig();
-            wifiP2pConfig.deviceAddress = peerDevice.deviceAddress;
-            if (peerDevice.wpsPbcSupported()) {
+            wifiP2pConfig.deviceAddress = kPeerDevice.deviceAddress;
+            if (kPeerDevice.wpsPbcSupported()) {
                 wifiP2pConfig.wps.setup = WpsInfo.PBC;
                 Log.d(TAG, "WPS: PBC");
-            } else if (peerDevice.wpsKeypadSupported()) {
+            } else if (kPeerDevice.wpsKeypadSupported()) {
                 wifiP2pConfig.wps.setup = WpsInfo.KEYPAD;
                 wifiP2pConfig.wps.pin = "12345670";
                 Log.d(TAG, "WPS:KeyPad");
@@ -147,18 +190,17 @@ public class WifiDirectDeviceController {
                 Log.d(TAG, "WPS:Display");
             }
 
-            // Unregister receiver
-            if (this.mPeerChangedEventReceiver != null) {
-                mService.unregisterReceiver(this.mPeerChangedEventReceiver);
-                this.mPeerChangedEventReceiver = null;
-            }
-
             Log.d(TAG, "Request to connect Wi-fi connection");
             mWifiP2pManager.connect(mWifiP2pManagerChannel, wifiP2pConfig, new WifiP2pManager
                     .ActionListener() {
                 @Override
                 public void onSuccess() {
-                    ConnectProcedure.this.onSuccess();
+                    new Thread() {
+                        @Override
+                        public void run() {
+                            ConnectProcedure.this.onSuccess();
+                        }
+                    }.start();
                 }
 
                 @Override

@@ -1,4 +1,4 @@
-package com.ant.cmfw.devicecontrollers.wifidirect;
+package com.ant.ant_manager.view.main;
 
 /* Copyright (c) 2017 SKKU ESLAB, and contributors. All rights reserved.
  *
@@ -17,6 +17,25 @@ package com.ant.cmfw.devicecontrollers.wifidirect;
  * limitations under the License.
  */
 
-public interface WifiDirectDeviceStateListener {
-    public void onWifiDirectDeviceStateChanged(boolean isConnected);
+import android.graphics.BitmapFactory;
+
+import com.ant.ant_manager.R;
+import com.ant.ant_manager.view.MainActivity;
+
+public class LargeDataTestMainIcon extends MainIcon {
+
+    public LargeDataTestMainIcon(MainActivity ownerActivity) {
+        super(ownerActivity, "Test LDPort", BitmapFactory.decodeResource(ownerActivity
+                .getResources(), R.drawable.connect));
+    }
+
+    @Override
+    public void onClick() {
+        this.mOwnerActivity.testEnableLargeData();
+    }
+
+    @Override
+    public void onLongClick() {
+        this.mOwnerActivity.testEnableLargeData();
+    }
 }

@@ -2,7 +2,7 @@ package com.ant.ant_manager.model.message.params;
 
 /* Copyright (c) 2017 SKKU ESLAB, and contributors. All rights reserved.
  *
- * Contributor: 
+ * Contributor: Gyeonghwan Hong<redcarrottt@gmail.com>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
