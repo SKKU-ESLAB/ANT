@@ -41,6 +41,7 @@ import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.ant.ant_manager.view.main.LargeDataTestMainIcon;
 import com.ant.cmfw.service.CommChannelService;
 import com.ant.ant_manager.R;
 import com.ant.ant_manager.controller.ANTControllerBroadcastReceiver;
@@ -61,6 +62,9 @@ import java.util.ArrayList;
 
 public class MainActivity extends Activity {
     private static final String TAG = "MainActivity";
+
+    // Test Mode
+    private static final boolean kIsTestMode = false;
 
     // ANTControllerService
     private ANTControllerService mControllerServiceStub;
@@ -114,8 +118,8 @@ public class MainActivity extends Activity {
 
             if (ActivityCompat.shouldShowRequestPermissionRationale(this, Manifest.permission
                     .READ_EXTERNAL_STORAGE)) {
-                Toast.makeText(this, "Storage permission is required to start " + "ANT Manager"
-                        + ".", Toast.LENGTH_SHORT).show();
+                Toast.makeText(this, "Storage permission is required to start " + "ANT Manager" +
+                        ".", Toast.LENGTH_SHORT).show();
             }
             ActivityCompat.requestPermissions(this, new String[]{Manifest.permission
                     .READ_EXTERNAL_STORAGE, Manifest.permission.WRITE_EXTERNAL_STORAGE}, 1);
@@ -173,7 +177,7 @@ public class MainActivity extends Activity {
     private void disconnectControllerService() {
         if (this.mControllerServiceConnection != null)
             this.unbindService(this.mControllerServiceConnection);
-        if(this.mControllerBroadcastReceiver != null)
+        if (this.mControllerBroadcastReceiver != null)
             this.unregisterReceiver(this.mControllerBroadcastReceiver);
     }
 
@@ -338,6 +342,11 @@ public class MainActivity extends Activity {
 
         // Request to open connection
         this.mControllerServiceStub.initializeConnectionAsync();
+    }
+
+    public void testEnableLargeData() {
+        Toast.makeText(this, "Test Start: enable large data", Toast.LENGTH_LONG).show();
+        this.mControllerServiceStub.enableLargeDataMode();
     }
 
     // Control an app
@@ -543,6 +552,11 @@ public class MainActivity extends Activity {
         this.mMainIconList.add(new AppMarketMainIcon(this));
         this.mMainIconList.add(new EventLogViewerMainIcon(this));
         this.mMainIconList.add(new FileManagerMainIcon(this));
+
+        // Test code
+        if (kIsTestMode) {
+            this.mMainIconList.add(new LargeDataTestMainIcon(this));
+        }
 
         if (appList != null) {
             for (ANTApp app : appList) {

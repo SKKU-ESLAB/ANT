@@ -1,5 +1,22 @@
 package com.ant.cmfw.service;
 
+/* Copyright (c) 2017 SKKU ESLAB, and contributors. All rights reserved.
+ *
+ * Contributor: Gyeonghwan Hong<redcarrottt@gmail.com>
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *  http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 import android.app.Service;
 import android.bluetooth.BluetoothDevice;
 import android.content.Intent;
@@ -143,6 +160,8 @@ public class CommChannelService extends Service implements CommPortListener {
     }
 
     private void disableLargeDataMode() {
+        Log.d(TAG, "Disable large data mode");
+
         // Send turning on Wi-fi direct message
         sendRawMessageOnControl(kWifiDirectOffMessage, null);
 
@@ -317,6 +336,7 @@ public class CommChannelService extends Service implements CommPortListener {
             if (mDefaultPort != null) mDefaultPort.runListeningThread(self, mDownloadFilePath);
 
             // CommChannel State: transit to ConnectedDefault
+            Log.d(TAG, "Succeed to connect CommChannel");
             mState.transitToConnectedDefault();
         }
 
@@ -392,12 +412,28 @@ public class CommChannelService extends Service implements CommPortListener {
 
         private void openLargeDataPort() {
             // (Enable Largedata) Step 3. Open largedata port
-            boolean isOpeningSuccess = mLargeDataPort.open(this.mIpAddress);
+            int kSleepMillisecs = 500;
+            int kMaxTries = 10;
+            boolean isOpeningSuccess = false;
+            int tries = 0;
+            while (!isOpeningSuccess && tries++ < kMaxTries) {
+                isOpeningSuccess = mLargeDataPort.open(this.mIpAddress);
 
-            // Connect the Bluetooth device
-            if (isOpeningSuccess) {
-                this.onSuccess();
-            } else {
+                // Connect the Bluetooth device
+                if (isOpeningSuccess) {
+                    Log.d(TAG, "Succeed to connect large data (" + tries + "/" + kMaxTries + ")");
+                    this.onSuccess();
+                } else {
+                    Log.d(TAG, "Fail to connect large data (" + tries + "/" + kMaxTries + ")");
+                }
+
+                try {
+                    Thread.sleep(kSleepMillisecs);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }
+            if(!isOpeningSuccess) {
                 this.onFail();
             }
         }
@@ -463,7 +499,8 @@ public class CommChannelService extends Service implements CommPortListener {
                     if ((mNumInUse == 0) && ((now.getTime() - this.mLastAccess.getTime()) >
                             kThresholdMillisecs)) {
 
-                        Log.d(TAG, "Disable large data mode!");
+                        Log.d(TAG, "No users detected for large data port over " +
+                                kThresholdMillisecs + " ms.");
                         disableLargeDataMode();
                     }
                 }
@@ -547,6 +584,7 @@ public class CommChannelService extends Service implements CommPortListener {
             @Override
             public void onWifiDirectDeviceStateChanged(boolean isConnected) {
                 if (!isConnected) {
+                    Log.d(TAG, "Wi-fi Direct is disconnected");
                     if (mState == STATE_CONNECTED_LARGE_DATA || mState ==
                             STATE_CONNECTING_LARGE_DATA)
                         transitToConnectedDefault();

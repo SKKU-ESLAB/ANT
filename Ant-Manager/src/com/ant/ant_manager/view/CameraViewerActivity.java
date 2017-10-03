@@ -391,12 +391,12 @@ public class CameraViewerActivity extends Activity implements SurfaceHolder.Call
                 @Override
                 public void onCommChannelStateChanged(int prevState, int newState) {
                     if (newState == CommChannelService.STATE_CONNECTED_LARGE_DATA) {
-                        // Succeed to connect large mMainIconList port
+                        // Succeed to connect large data port
                         launchAndConnectToCameraViewer();
                     } else if (newState == CommChannelService.STATE_CONNECTING_LARGE_DATA) {
-                        Log.d(TAG, "Connecting large mMainIconList port...");
+                        Log.d(TAG, "Connecting large data port...");
                     } else {
-                        Log.d(TAG, "Large mMainIconList port disconnected or failed to connect");
+                        Log.d(TAG, "Large data port disconnected or failed to connect");
                     }
                 }
             });
