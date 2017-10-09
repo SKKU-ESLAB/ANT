@@ -28,9 +28,10 @@
 class ANNInferenceRunner
 : public InferenceRunner {
   public:
-    virtual void run(std::map<std::string, void*> inputDataBuffers,
-        std::map<std::string, std::string> inputShape,
-        std::map<std::string, void*> outputDataBuffers);
+    // Run model inference with inputData and get outputData
+    //   - Input: MLDataUnit* inputData
+    //   - Ouptut: MLDataUnit* outputData
+    virtual MLDataUnit* run(MLDataUnit* inputData);
 };
 
 #endif // !defined(__ANN_INFERENCE_RUNNER_H__)

@@ -89,7 +89,7 @@ void MLDaemon::onReceivedMessage(BaseMessage* message) {
 }
 
 // MLFW Commands
-void MLDaemon::loadIU(std::string modelFilePath, InferenceUnitParams params) {
+void MLDaemon::loadIU(std::string modelPackagePath, InferenceUnitParams params) {
   // TODO: implement it
 }
 void MLDaemon::unloadIU(int iuid) {
@@ -114,6 +114,6 @@ void MLDaemon::startIU(int iuid) {
 void MLDaemon::stopIU(int iuid) {
   // TODO: implement it
 }
-void MLDaemon::getResourceUsage(int iuid) {
+void MLDaemon::getIUResourceUsage(int iuid) {
   // TODO: implement it
 }

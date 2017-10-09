@@ -16,6 +16,7 @@
  */
 
 #include "InferenceUnit.h"
+#include "ANTdbugLog.h"
 
 bool InferenceUnit::start() {
   pthread_mutex_lock(&this->mThreadRunningMutex);
@@ -51,12 +52,6 @@ bool InferenceUnit::stop() {
   return true;
 }
 
-// TODO: I assumed that input buffer & output buffer's size are fixed.
-// However, this assumption is not realistic.
-// TODO: input/output buffer size should be tuned according to data type
-#define INPUT_BUFFER_SIZE 1024
-#define OUTPUT_BUFFER_SIZE 1024
-
 void* InferenceUnit::inferenceLoop(void* data) {
   InferenceUnit* self = (InferenceUnit*)data;
 
@@ -65,12 +60,11 @@ void* InferenceUnit::inferenceLoop(void* data) {
   while(self->mIsThreadRunning) {
     pthread_mutex_lock(&self->mInputMutex);
     std::map<std::string, std::string> inputMap = self->mInputMap;
-    pthread_mutex_unlock(&self->mInputMutex);
 
     // Step 1. Run InputReaders to load inputs
     // InputDataBuffer: Dictionary
     //   (key=string inputName, value=void* inputDataBuffer)
-    std::map<std::string, void*> inputDataBuffers;
+    MLDataUnit* inputData = new MLDataUnit();
     std::map<std::string, std::string>::iterator imIter;
     for(imIter = inputMap.begin();
         imIter != inputMap.end();
@@ -78,80 +72,96 @@ void* InferenceUnit::inferenceLoop(void* data) {
       std::string inputName(imIter->first);
       std::string sourceUri(imIter->second);
 
-      // TODO: fixed buffer size -> buffer size corresponding to data type
-      // Allocate inputBuffer
-      char* inputBuffer = new char[INPUT_BUFFER_SIZE];
-
-      // run InputReader
-      self->mInputReaderSet->read(sourceUri, inputBuffer);
+      // Run InputReader
+      MLTensor* inputTensor = self->mInputReaderSet->read(sourceUri);
+      
+      // Verify InputTensor
+      MLTensorLayout* givenTensorLayout
+        = self->mInputLayout->findTensorLayout(inputName);
+      if(inputTensor == NULL) {
+        ANT_DBG_ERR("Input tensor is NULL! : %s(%s)",
+            inputName.c_str(), sourceUri.c_str());
+        pthread_mutex_unlock(&self->mInputMutex);
+        delete inputData;
+        self->stop();
+        return NULL;
+      } else if(givenTensorLayout == NULL
+          || !inputTensor->isMatched(*givenTensorLayout)) {
+        ANT_DBG_ERR("Input tensor layout is not matched! : %s(%s)",
+            inputName.c_str(), sourceUri.c_str());
+        pthread_mutex_unlock(&self->mInputMutex);
+        delete inputData;
+        self->stop();
+        return NULL;
+      }
 
       // Store input buffer
-      inputDataBuffers.insert(std::pair<std::string, void*>(
-            inputName, (void*)inputBuffer));
+      inputData->insertTensor(inputName, inputTensor);
     }
-
-    pthread_mutex_lock(&self->mOutputMutex);
-    std::map<std::string, std::string> outputShape = self->mOutputShape;
-    pthread_mutex_unlock(&self->mOutputMutex);
-
-    // Make OutputDataBuffer
-    std::map<std::string, void*> outputDataBuffers;
-    std::map<std::string, std::string>::iterator osIter;
-    for(osIter = outputShape.begin();
-        osIter != outputShape.end();
-        ++osIter) {
-      std::string outputName(osIter->first);
-      std::string dataType(osIter->second);
-
-      // TODO: fixed buffer size -> buffer size corresponding to data type
-      // Allocate outputBuffer
-      char* outputBuffer = new char[OUTPUT_BUFFER_SIZE];
-
-      outputDataBuffers.insert(std::pair<std::string, void*>(
-            outputName, outputBuffer));
-    }
+    pthread_mutex_unlock(&self->mInputMutex);
 
     // Step 2. Run InferenceRunner to do inference
-    self->mInferenceRunner->run(inputDataBuffers, self->mInputShape,
-        outputDataBuffers);
+    MLDataUnit* outputData = self->mInferenceRunner->run(inputData);
+
+    // Verify OutputData
+    if(outputData == NULL) {
+        ANT_DBG_ERR("OutputData is NULL!");
+        delete inputData;
+        delete outputData;
+        self->stop();
+        return NULL;
+    }
+    pthread_mutex_lock(&self->mOutputMutex);
+    MLDataUnitLayout* outputLayout = self->mOutputLayout;
+    if(!outputData->isMatched(outputLayout)) {
+        ANT_DBG_ERR("OutputData data unit layout is not matched!");
+        pthread_mutex_unlock(&self->mOutputMutex);
+        delete inputData;
+        delete outputData;
+        self->stop();
+        return NULL;
+    }
+    pthread_mutex_unlock(&self->mOutputMutex);
 
     // Step 3. Notify output to listener
     // (OutputListener will notify the output to listening apps)
+    pthread_mutex_lock(&self->mOutputMutex);
     if(self->mOutputListener != NULL) {
       self->mOutputListener->onInferenceUnitOutput(self->getIuid(),
-          outputDataBuffers);
+          outputData);
     }
+    pthread_mutex_unlock(&self->mOutputMutex);
 
-    // Deallocate input buffers and output buffers
-    std::map<std::string, void*>::iterator ibIter;
-    for(ibIter = inputDataBuffers.begin();
-        ibIter != inputDataBuffers.end();
-        ++ibIter) {
-      char* inputBuffer = (char*)(ibIter->second);
-      delete[] inputBuffer;
-    }
-
-    std::map<std::string, void*>::iterator obIter;
-    for(obIter = outputDataBuffers.begin();
-        obIter != outputDataBuffers.end();
-        ++obIter) {
-      char* outputBuffer = (char*)(obIter->second);
-      delete[] outputBuffer;
-    }
+    // Deallocate input data and output data
+    delete inputData;
+    delete outputData;
   }
 }
 
 bool InferenceUnit::setInput(std::string inputName, std::string sourceUri) {
-  // check if state is "Initialized" or "Ready"
+  // Check if state is "Initialized" or "Ready"
   InferenceUnitState::Value state = this->getState();
   if(state != InferenceUnitState::Initialized
       && state != InferenceUnitState::Ready) {
     return false;
   }
 
-  // TODO: check if source URI's type is same as inputShape's dataType
+  // Find InputReader
+  InputReader* inputReader
+    = this->mInputReaderSet->findBestInputReader(sourceUri);
 
-  // set input map
+  // Check if source URI's TensorLayout is matched with inputShape's one
+  MLTensorLayout sourceTensorLayout = inputReader->getLayout();
+  MLTensorLayout* iuInputTensorLayout
+    = this->mInputLayout->findTensorLayout(inputName);
+  if(iuInputTensorLayout == NULL
+      || !sourceTensorLayout.isMatched(iuInputTensorLayout)) {
+    ANT_DBG_ERR("Input tensor layout is not matched! : %s(%s)",
+        inputName.c_str(), sourceUri.c_str());
+    return false;
+  }
+
+  // Set input map
   pthread_mutex_lock(&this->mInputMutex);
   bool foundInputEntry = false;
   std::map<std::string, std::string>::iterator imIter;
@@ -170,7 +180,7 @@ bool InferenceUnit::setInput(std::string inputName, std::string sourceUri) {
   }
   pthread_mutex_unlock(&this->mInputMutex);
 
-  // check input & output conenctions and update state
+  // Check input & output conenctions and update state
   this->checkConnectionsAndUpdateState();
 
   return true;
@@ -223,11 +233,44 @@ bool InferenceUnit::stopListeningOutput(std::string listenerUri) {
   return true;
 }
 
+// Check if the inference unit is ready to run
+// - Set "Ready" if inputs & outputs are all connected.
+// - Set "Initialized" if one of inputs is disconnected
+//     or no output is connected.
 void InferenceUnit::checkConnectionsAndUpdateState() {
-  // TODO:
-  // Set "Ready" if inputs & outputs are all connected.
-  // Set "Initialized" if one of inputs is disconnected
-  //   or no output is connected.
+  InferenceUnitState::Value state = this->getState();
+  if(state != InferenceUnitState::Initialized
+      && state != InferenceUnitState::Ready) {
+    // This funciton runs only when the state is Initialized or Ready.
+    return;
+  }
+
+  if(this->checkConnections()) {
+    this->setState(InferenceUnitState::Ready);
+  } else {
+    this->setState(InferenceUnitState::Initialized);
+  }
+}
+
+bool InferenceUnit::checkConnections() {
+  // Check input map
+  std::map<std::string, std::string>::iterator imIter; 
+  for(imIter = this->mInputMap.begin();
+      imIter != this->mInputMap.end();
+      imIter++) {
+    std::string inputName(imIter->first);
+    std::string sourceURI(imIter->second);
+    if(inputName.empty() || sourceURI.empty()) {
+      return false;
+    }
+  }
+
+  // Check output map
+  if(this->mOutputListenerURIs.empty()) {
+    return false;
+  }
+
+  return true;
 }
 
 void InferenceUnit::setState(InferenceUnitState::Value newState) {

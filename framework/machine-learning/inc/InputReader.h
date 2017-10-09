@@ -23,11 +23,21 @@
 #include <vector>
 #include <map>
 
+#include "MLTensor.h"
+
 class InputReader {
   public:
     // Read input data from source
     //   - Child class of InputReader should implement it.
-    virtual void read(std::string sourceUri, void* inputDataBuffer) = 0;
+    //   - Input: String sourceUri
+    //   - Output: MLTensor* inputTensor
+    virtual MLTensor* read(std::string sourceUri) = 0;
+
+    // Get the tensor layout of inputData which this InputReader produces
+    //   - Child class of InputReader should implement it.
+    //   - Output: MLTensorLayout layout
+    //     - It will be used to check if the layout is same as the required.
+    virtual MLTensorLayout getLayout() = 0;
 };
 
 #endif // !defined(__INPUT_READER_H__)
