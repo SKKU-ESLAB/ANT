@@ -89,31 +89,31 @@ void MLDaemon::onReceivedMessage(BaseMessage* message) {
 }
 
 // MLFW Commands
-void MLDaemon::load(std::string modelFilePath, ModelParams params) {
+void MLDaemon::loadIU(std::string modelFilePath, InferenceUnitParams params) {
   // TODO: implement it
 }
-void MLDaemon::unload(int modelId) {
+void MLDaemon::unloadIU(int iuid) {
   // TODO: implement it
 }
-void MLDaemon::getInferenceUnits() {
+void MLDaemon::getIUs() {
   // TODO: implement it
 }
-void MLDaemon::setModelInput(int modelId, std::string inputName,
+void MLDaemon::setIUInput(int iuid, std::string inputName,
     std::string sourceUri) {
   // TODO: implement it
 }
-void MLDaemon::startListeningModelOutput(int modelId, std::string listenerUri) {
+void MLDaemon::startListeningIUOutput(int iuid, std::string listenerUri) {
   // TODO: implement it
 }
-void MLDaemon::stopListeningModelOutput(int modelId, std::string listenerUri) {
+void MLDaemon::stopListeningIUOutput(int iuid, std::string listenerUri) {
   // TODO: implement it
 }
-void MLDaemon::start(int modelId) {
+void MLDaemon::startIU(int iuid) {
   // TODO: implement it
 }
-void MLDaemon::stop(int modelId) {
+void MLDaemon::stopIU(int iuid) {
   // TODO: implement it
 }
-void MLDaemon::getResourceUsage(int modelId) {
+void MLDaemon::getResourceUsage(int iuid) {
   // TODO: implement it
 }
