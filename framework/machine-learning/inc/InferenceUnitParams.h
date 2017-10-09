@@ -15,15 +15,15 @@
  * limitations under the License.
  */
 
-#ifndef __MODEL_PARAMS_H__
-#define __MODEL_PARAMS_H__
+#ifndef __INFERENCE_UNIT_PARAMS_H__
+#define __INFERENCE_UNIT_PARAMS_H__
 
 #include <iostream>
 #include <string>
 #include <vector>
 #include <map>
 
-class ModelParams {
+class InferenceUnitParams {
 };
 
-#endif // !defined(__MODEL_PARAMS_H__)
+#endif // !defined(__INFERENCE_UNIT_PARAMS_H__)

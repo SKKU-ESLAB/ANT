@@ -22,7 +22,7 @@
 #include "MessageRouter.h"
 #include "DbusChannel.h"
 #include "BaseMessage.h"
-#include "ModelParams.h"
+#include "InferenceUnitParams.h"
 #include "InferenceUnit.h"
 
 #include <iostream>
@@ -55,18 +55,19 @@ class MLDaemon
 
   protected:
     // MLFW commands 
-    void load(std::string modelFilePath, ModelParams params);
-    void unload(int modelId);
-    void getInferenceUnits();
-    void setModelInput(int modelId,
+    void loadIU(std::string modelFilePath,
+        InferenceUnitParams params);
+    void unloadIU(int iuid);
+    void getIUs();
+    void setIUInput(int iuid,
         std::string inputName, std::string sourceUri);
-    void startListeningModelOutput(int modelId,
+    void startListeningIUOutput(int iuid,
         std::string listenerUri);
-    void stopListeningModelOutput(int modelId,
+    void stopListeningIUOutput(int iuid,
         std::string listenerUri);
-    void start(int modelId);
-    void stop(int modelId);
-    void getResourceUsage(int modelId);
+    void startIU(int iuid);
+    void stopIU(int iuid);
+    void getIUResourceUsage(int iuid);
     
     // Inference Unit Directory (key: int iuid, value: InferenceUnit)
     std::map<int, InferenceUnit*> mInferenceUnitDirectory;
