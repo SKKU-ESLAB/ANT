@@ -89,7 +89,7 @@ void MLDaemon::onReceivedMessage(BaseMessage* message) {
 }
 
 // MLFW Commands
-void MLDaemon::loadIU(std::string modelPackagePath, InferenceUnitParams params) {
+void MLDaemon::loadIU(std::string modelPackagePath, MLDataUnit* params) {
   // TODO: implement it
 }
 void MLDaemon::unloadIU(int iuid) {
