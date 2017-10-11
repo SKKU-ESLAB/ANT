@@ -65,7 +65,6 @@ void MLDaemon::run() {
 
 // LocalChannelListener
 void MLDaemon::onReceivedMessage(BaseMessage* message) {
-  // TODO: implement MLMessage in Message FW
   if(message == NULL) {
     ANT_DBG_ERR("Invalid ML Message");
     return;
@@ -74,7 +73,7 @@ void MLDaemon::onReceivedMessage(BaseMessage* message) {
     ANT_DBG_ERR("Not ML Message");
     return;
   }
-  MLMessage* payload = (MLMessage*)message->getPayload();
+  BaseMessage* payload = (MLMessage*)message->getPayload();
   if(payload == NULL) {
     ANT_DBG_ERR("MLMessage payload does not exist");
     return;
@@ -82,6 +81,33 @@ void MLDaemon::onReceivedMessage(BaseMessage* message) {
 
   int commandType = payload->getCommandType();
   switch(commandType) {
+    case MLMessageCommandType::LoadIU:
+      this->loadIU(message);
+      break;
+    case MLMessageCommandType::UnloadIU:
+      this->unloadIU(message);
+      break;
+    case MLMessageCommandType::GetIUs:
+      this->getIUs(message);
+      break;
+    case MLMessageCommandType::SetIUInput:
+      this->setIUInput(message);
+      break;
+    case MLMessageCommandType::StartListeningIUOutput:
+      this->startListeningIUOutput(message);
+      break;
+    case MLMessageCommandType::StopListeningIUOutput:
+      this->stopListeningIUOutput(message);
+      break;
+    case MLMessageCommandType::StartIU:
+      this->startIU(message);
+      break;
+    case MLMessageCommandType::StopIU:
+      this->stopIU(message);
+      break;
+    case MLMessageCommandType::GetIUResourceUsage:
+      this->getIUResourceUsage(message);
+      break;
     default:
       // Do not handle it
       break;
@@ -89,31 +115,85 @@ void MLDaemon::onReceivedMessage(BaseMessage* message) {
 }
 
 // MLFW Commands
-void MLDaemon::loadIU(std::string modelPackagePath, MLDataUnit* params) {
+void MLDaemon::loadIU(BaseMessage* message) {
+  // Get arguments
+  MLMessage* originalPayload = (MLMessage*)message->getPayload();
+  std::string modelPackagePath;
+  MLDataUnit params;
+  originalPayload->getParamsLoadIU(modelPacakgePath, params);
+
   // TODO: implement it
 }
-void MLDaemon::unloadIU(int iuid) {
+
+void MLDaemon::unloadIU(BaseMessage* message) {
+  // Get arguments
+  MLMessage* originalPayload = (MLMessage*)message->getPayload();
+  int iuid;
+  originalPayload->getParamsUnloadIU(iuid);
+
   // TODO: implement it
 }
-void MLDaemon::getIUs() {
+
+void MLDaemon::getIUs(BaseMessage* message) {
+  // No arguments
+
   // TODO: implement it
 }
-void MLDaemon::setIUInput(int iuid, std::string inputName,
-    std::string sourceUri) {
+
+void MLDaemon::setIUInput(BaseMessage* message) {
+  // Get arguments
+  MLMessage* originalPayload = (MLMessage*)message->getPayload();
+  int iuid;
+  std::string inputName;
+  std::string sourceUri;
+  originalPayload->getParamsSetIUInput(iuid, inputName, sourceUri);
+
   // TODO: implement it
 }
-void MLDaemon::startListeningIUOutput(int iuid, std::string listenerUri) {
+
+void MLDaemon::startListeningIUOutput(BaseMessage* message) {
+  // Get arguments
+  MLMessage* originalPayload = (MLMessage*)message->getPayload();
+  int iuid;
+  std::string listenerUri;
+  originalPayload->getParamsStartListeningIUOutput(iuid, listenerUri);
+
   // TODO: implement it
 }
-void MLDaemon::stopListeningIUOutput(int iuid, std::string listenerUri) {
+
+void MLDaemon::stopListeningIUOutput(BaseMessage* message) {
+  // Get arguments
+  MLMessage* originalPayload = (MLMessage*)message->getPayload();
+  int iuid;
+  std::string listenerUri;
+  originalPayload->getParamsStopListeningIUOutput(iuid, listenerUri);
+
   // TODO: implement it
 }
-void MLDaemon::startIU(int iuid) {
+
+void MLDaemon::startIU(BaseMessage* message) {
+  // Get arguments
+  MLMessage* originalPayload = (MLMessage*)message->getPayload();
+  int iuid;
+  originalPayload->getParamsStartIU(iuid);
+
   // TODO: implement it
 }
-void MLDaemon::stopIU(int iuid) {
+
+void MLDaemon::stopIU(BaseMessage* message) {
+  // Get arguments
+  MLMessage* originalPayload = (MLMessage*)message->getPayload();
+  int iuid;
+  originalPayload->getParamsStopIU(iuid);
+
   // TODO: implement it
 }
-void MLDaemon::getIUResourceUsage(int iuid) {
+
+void MLDaemon::getIUResourceUsage(BaseMessage* message) {
+  // Get arguments
+  MLMessage* originalPayload = (MLMessage*)message->getPayload();
+  std::string data;
+  originalPayload->getParamsGetIUResourceUsage(data);
+
   // TODO: implement it
 }
