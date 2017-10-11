@@ -22,6 +22,9 @@
 #include <string>
 #include <vector>
 #include <map>
+#include <string.h>
+
+#include "cJSON.h"
 
 namespace MLDataType {
   enum Value {
@@ -65,22 +68,14 @@ class MLTensorLayout {
       delete[] this->mShape;
     }
 
-    bool isMatched(MLTensorLayout* tensorLayout) {
-      if(tensorLayout->getRank() != this->getRank()) {
-        return false;
-      } else if(tensorLayout->getDataType() != this->getDataType()) {
-        return false;
-      } else {
-        int* thisShape = this->getShape();
-        int* givenShape = tensorLayout->getShape();
-        for(int i = 0; i < this->mRank; i++) {
-          if(thisShape[i] != givenShape[i]) {
-            return false;
-          }
-        }
-        return true;
-      }
-    }
+    // encoding to JSON
+    cJSON* toJSON();
+
+    // decoding from JSON
+    static MLTensorLayout* makeFromJSON(cJSON* tensorLayoutObj);
+
+    // Handle tensor layout
+    bool isMatched(MLTensorLayout* tensorLayout);
 
     int getNumElements() {
       int numElements = 1;
@@ -119,19 +114,22 @@ class MLTensor {
       free(this->mBuffer);
     }
 
-    bool isMatched(MLTensorLayout& targetLayout) {
-      MLTensorLayout& thisLayout = this->getLayout();
-      return thisLayout.isMatched(&targetLayout);
-    }
+    // encoding to JSON
+    cJSON* toJSON();
 
-    bool isMatched(MLTensor* targetTensor) {
-      MLTensorLayout& targetLayout = targetTensor->getLayout();
-      return this->isMatched(targetLayout);
-    }
+    // decoding from JSON
+    static MLTensor* makeFromJSON(cJSON* tensorObj);
+
+    // Handle tensor
+    bool isMatched(MLTensorLayout& targetLayout);
+    bool isMatched(MLTensor* targetTensor);
 
     MLTensorLayout& getLayout() { return this->mLayout; }
     int getBufferSize() { return this->mBufferSize; }
 
+    void assignData(void* data) {
+      memcpy(this->mBuffer, data, this->mBufferSize);
+    }
     void* bytesValue() { return this->mBuffer; }
     std::string stringValue() { return std::string((char*)this->mBuffer); }
     char charValue() { return *((char*)this->mBuffer); }
