@@ -19,7 +19,7 @@ init_wf()
 
 	IS_INIT=`cat ${INIT_PATH}/self | awk '{print $1}'`
 	echo $IS_INIT
-	if [ ${IS_INIT} -eq '1' ] 
+	if [ "${IS_INIT}" = "1" ];
 	then
 		exit 1
 	fi

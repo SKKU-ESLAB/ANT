@@ -17,6 +17,10 @@
 
 #include "CameraInputReader.h"
 
-void CameraInputReader::read(std::string sourceUri, void* inputDataBuffer) {
+MLTensor* CameraInputReader::read(std::string sourceUri) {
+  // TODO: implement it
+}
+
+MLTensorLayout CameraInputReader::getLayout() {
   // TODO: implement it
 }

@@ -17,9 +17,6 @@
 
 #include "ANNInferenceRunner.h"
 
-void ANNInferenceRunner::run(
-    std::map<std::string, void*> inputDataBuffers,
-    std::map<std::string, std::string> inputShape,
-    std::map<std::string, void*> outputDataBuffers) {
+MLDataUnit* ANNInferenceRunner::run(MLDataUnit* inputData) {
   // TODO: implement it
 }

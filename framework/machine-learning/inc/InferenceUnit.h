@@ -27,6 +27,8 @@
 #include "InputReaderSet.h"
 #include "InferenceRunner.h"
 #include "OutputNotifier.h"
+#include "MLTensor.h"
+#include "MLDataUnit.h"
 
 namespace InferenceUnitState {
   enum Value {
@@ -49,7 +51,7 @@ namespace InferenceUnitType {
 class InferenceUnitOutputListener {
   public:
     virtual void onInferenceUnitOutput(int iuid,
-        std::map<std::string, void*> outputDataBuffers);
+        MLDataUnit* outputData);
 };
 
 class InferenceUnitStateListener {
@@ -75,12 +77,9 @@ class InferenceUnit {
     InferenceUnitState::Value getState() { return this->mState; }
     std::string getModelPackagePath() { return this->mModelPackagePath; }
     InferenceUnitType::Value getType() { return this->mType; }
-    std::map<std::string, std::string> getInputShape() {
-      return this->mInputShape;
-    }
-    std::map<std::string, std::string> getOutputShape() {
-      return this->mOutputShape;
-    }
+    MLDataUnitLayout* getInputLayout() { return this->mInputLayout; }
+    MLDataUnitLayout* getOutputLayout() { return this->mOutputLayout; }
+    MLDataUnit* getParameters() { return this->mParameters; }
     int getPid() { return this->mPid; }
     
     // Setters
@@ -98,17 +97,36 @@ class InferenceUnit {
   protected:
     InferenceUnit(int iuid,
         std::string modelPackagePath,
-        InferenceRunner* inferenceRunner)
+        InferenceRunner* inferenceRunner,
+        MLDataUnitLayout* inputLayout,
+        MLDataUnitLayout* outputLayout,
+        MLDataUnit* parameters)
     : mIuid(iuid),
     mState(InferenceUnitState::Initialized),
     mModelPackagePath(modelPackagePath),
+    mInputLayout(inputLayout),
+    mOutputLayout(outputLayout),
+    mParameters(parameters),
     mPid(-1),
     mInferenceRunner(inferenceRunner),
     mThreadRunningMutex(PTHREAD_MUTEX_INITIALIZER),
     mInputMutex(PTHREAD_MUTEX_INITIALIZER),
     mOutputMutex(PTHREAD_MUTEX_INITIALIZER),
     mIsThreadRunning(false) {
+      // Initialize InputReaderSet
       this->mInputReaderSet = new InputReaderSet();
+
+      // Initialize InputMap
+      std::map<std::string, MLTensorLayout>& inputTensorMap
+        = this->mInputLayout->getMap();
+      std::map<std::string, MLTensorLayout>::iterator itmIter;
+      for(itmIter = inputTensorMap.begin();
+          itmIter != inputTensorMap.end();
+          itmIter++) {
+        std::string tensorName(itmIter->first);
+        this->mInputMap.insert(
+            std::pair<std::string, std::string>(tensorName, ""));
+      }
     }
 
     // Check input & output connections and update state
@@ -116,6 +134,7 @@ class InferenceUnit {
     //   - Set "Initialized" if one of inputs is disconnected
     //       or no output is connected.
     void checkConnectionsAndUpdateState();
+    bool checkConnections();
 
     // State change
     void setState(InferenceUnitState::Value newState);
@@ -128,10 +147,12 @@ class InferenceUnit {
     // Inference unit's model package path (it should be absolute path)
     std::string mModelPackagePath;
     InferenceUnitType::Value mType;
-    // Input shape (key: String name, value: String dataType)
-    std::map<std::string, std::string> mInputShape;
-    // Output shape (key: String name, value: String dataType)
-    std::map<std::string, std::string> mOutputShape;
+    // Input data's data unit layout
+    MLDataUnitLayout* mInputLayout;
+    // Output data's data unit layout
+    MLDataUnitLayout* mOutputLayout;
+    // Inference unit's parameters
+    MLDataUnit* mParameters;
 
     // Fields which of key is determined at Initialized state,
     //   and value is determined at Initialized & Ready state

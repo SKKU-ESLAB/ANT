@@ -17,9 +17,6 @@
 
 #include "DNNInferenceRunner.h"
 
-void DNNInferenceRunner::run(
-    std::map<std::string, void*> inputDataBuffers,
-    std::map<std::string, std::string> inputShape,
-    std::map<std::string, void*> outputDataBuffers) {
+MLDataUnit* DNNInferenceRunner::run(MLDataUnit* inputData) {
   // TODO: implement it
 }
