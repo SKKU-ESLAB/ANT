@@ -22,7 +22,6 @@
 #include "MessageRouter.h"
 #include "DbusChannel.h"
 #include "BaseMessage.h"
-#include "InferenceUnitParams.h"
 #include "InferenceUnit.h"
 
 #include <iostream>

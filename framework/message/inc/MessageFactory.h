@@ -21,6 +21,7 @@
 #include <string>
 
 #include "BaseMessage.h"
+#include "MLMessage.h"
 
 class MessageFactory {
   public:
