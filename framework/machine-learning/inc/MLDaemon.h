@@ -56,7 +56,7 @@ class MLDaemon
   protected:
     // MLFW commands 
     void loadIU(std::string modelPackagePath,
-        InferenceUnitParams params);
+        MLDataUnit* params);
     void unloadIU(int iuid);
     void getIUs();
     void setIUInput(int iuid,
