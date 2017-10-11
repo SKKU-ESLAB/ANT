@@ -21,22 +21,9 @@
 #include <libgen.h>
 
 #include "BaseMessage.h"
+#include "MessageUtil.h"
 #include "cJSON.h"
 #include "ANTdbugLog.h"
-
-#define RETURN_IF_NULL(a, ret) \
-  if((a) == NULL) { \
-    ANT_DBG_ERR("JSON handling error: null pointer"); \
-    return ret; \
-  }
-
-#define RETURN_IF_INVALID_CJSON_OBJ(a, ret) \
-  if((a) == NULL) { \
-    ANT_DBG_ERR("JSON handling error: %s", cJSON_GetErrorPtr()); \
-    return ret; \
-  }
-
-#define EXT4_FILE_PATH_LENGTH 4097
 
 // encoding to JSON (BaseMessage)
 cJSON* BaseMessage::toJSON() {
@@ -175,51 +162,6 @@ cJSON* AppAckMessage::toJSON() {
   if(this->mAppAckPayloadObj != NULL) {
     cJSON_AddItemToObject(thisObj, APP_ACK_MESSAGE_KEY_PAYLOAD,
         this->mAppAckPayloadObj);
-  }
-
-  return thisObj;
-}
-
-// encoding to JSON (MLMessage)
-cJSON* MLMessage::toJSON() {
-  cJSON* thisObj = cJSON_CreateObject();
-
-  // commandType
-  char commandTypeStr[20];
-  sprintf(commandTypeStr, "%d", this->mCommandType);
-  cJSON_AddStringToObject(thisObj, ML_MESSAGE_KEY_COMMAND_TYPE,
-      commandTypeStr);
-
-  // payload (MLMessage's)
-  if(this->mMLPayloadObj != NULL) {
-    cJSON_AddItemToObject(thisObj, ML_MESSAGE_KEY_PAYLOAD,
-        this->mMLPayloadObj);
-  }
-
-  return thisObj;
-}
-
-// encoding to JSON (MLAckMessage)
-cJSON* MLAckMessage::toJSON() {
-  cJSON* thisObj = cJSON_CreateObject();
-
-  // commandMessageId
-  char commandMessageIdStr[20];
-  sprintf(commandMessageIdStr, "%d", this->mCommandMessageId);
-  cJSON_AddStringToObject(thisObj,
-      ML_ACK_MESSAGE_KEY_COMMAND_MESSAGE_NUM,
-      commandMessageIdStr);
-
-  // commandType
-  char commandTypeStr[20];
-  sprintf(commandTypeStr, "%d", this->mCommandType);
-  cJSON_AddStringToObject(thisObj, ML_ACK_MESSAGE_KEY_COMMAND_TYPE,
-      commandTypeStr);
-
-  // payload (MLAckMessage's)
-  if(this->mMLAckPayloadObj != NULL) {
-    cJSON_AddItemToObject(thisObj, ML_ACK_MESSAGE_KEY_PAYLOAD,
-        this->mMLAckPayloadObj);
   }
 
   return thisObj;
