@@ -15,16 +15,8 @@
  * limitations under the License.
  */
 
-#include "DNNInferenceRunner.h"
+#include "ModelPackageLoader.h"
 
-MLDataUnit* DNNInferenceRunner::run(MLDataUnit* inputData) {
-  // TODO: implement it
-}
-
-// Get resource usage of inference runner
-std::string DNNInferenceRunner::getResourceUsage() {
-  std::string data("");
-  // TODO: implement it
-  
-  return data;
+InferenceUnit* ModelPackageLoader::load(
+    std::string modelPackagePath, MLDataUnit& params) {
 }

@@ -78,7 +78,7 @@ class MLMessage: public BaseMessagePayload {
     bool getParamsStopListeningIUOutput(int& iuid, std::string& listenerUri);
     bool getParamsStartIU(int& iuid);
     bool getParamsStopIU(int& iuid);
-    bool getParamsGetIUResourceUsage(std::string& data);
+    bool getParamsGetIUResourceUsage(int& iuid);
 
     // Set command-specific parameters
     void setMLPayloadObj(cJSON* mlPayloadObj) {
@@ -93,7 +93,7 @@ class MLMessage: public BaseMessagePayload {
     void setParamsStopListeningIUOutput(int iuid, std::string listenerUri);
     void setParamsStartIU(int iuid);
     void setParamsStopIU(int iuid);
-    void setParamsGetIUResourceUsage(std::string data);
+    void setParamsGetIUResourceUsage(int iuid);
 
   protected:
     // Initializer
@@ -179,7 +179,7 @@ class MLAckMessage : public BaseMessagePayload {
     // No ack message for StopListeningIUOutput
     // No ack message for StartIU
     // No ack message for StopIU
-    // No ack message for GetIUResourceUsage
+    bool getParamsGetIUResourceUsage(std::string& data);
 
     // Set command-specific parameters
     void setMLAckPayloadObj(cJSON* mlAckPayloadObj) {
@@ -193,7 +193,7 @@ class MLAckMessage : public BaseMessagePayload {
     // No ack message for StopListeningIUOutput
     // No ack message for StartIU
     // No ack message for StopIU
-    // No ack message for GetIUResourceUsage
+    void setParamsGetIUResourceUsage(std::string data);
 
   protected:
     MLAckMessage(int commandMessageId,

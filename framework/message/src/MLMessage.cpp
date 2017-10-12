@@ -213,10 +213,10 @@ bool MLMessage::getParamsStopIU(int& iuid) {
   return true;
 }
 
-bool MLMessage::getParamsGetIUResourceUsage(std::string& data) {
-  cJSON* dataObj = cJSON_GetObjectItem(this->mMLPayloadObj, "data");
-  RETURN_IF_INVALID_CJSON_OBJ(dataObj, false);
-  data.assign(dataObj->valuestring);
+bool MLMessage::getParamsGetIUResourceUsage(int& iuid) {
+  cJSON* iuidObj = cJSON_GetObjectItem(this->mMLPayloadObj, "iuid");
+  RETURN_IF_INVALID_CJSON_OBJ(iuidObj, false);
+  iuid = atoi(iuidObj->valuestring);
 
   return true;
 }
@@ -293,9 +293,11 @@ void MLMessage::setParamsStopIU(int iuid) {
   this->mMLPayloadObj = payloadObj;
 }
 
-void MLMessage::setParamsGetIUResourceUsage(std::string data) {
+void MLMessage::setParamsGetIUResourceUsage(int iuid) {
   cJSON* payloadObj = cJSON_CreateObject();
-  cJSON_AddStringToObject(payloadObj, "data", data.c_str());
+  char iuidStr[20];
+  sprintf(iuidStr, "%d", iuid);
+  cJSON_AddStringToObject(payloadObj, "iuid", iuidStr);
 
   this->mMLPayloadObj = payloadObj;
 }
@@ -326,6 +328,14 @@ bool MLAckMessage::getParamsStartListeningIUOutput(MLDataUnit& outputData) {
   return true;
 }
 
+bool MLAckMessage::getParamsGetIUResourceUsage(std::string& data) {
+  cJSON* dataObj = cJSON_GetObjectItem(this->mMLAckPayloadObj, "data");
+  RETURN_IF_INVALID_CJSON_OBJ(dataObj, false);
+  data.assign(dataObj->valuestring);
+
+  return true;
+}
+
 // Set command-specific parameters (MLAckMessage)
 void MLAckMessage::setParamsLoadIU(int iuid) {
   cJSON* payloadObj = cJSON_CreateObject();
@@ -346,6 +356,13 @@ void MLAckMessage::setParamsGetIUs(ParamIUList* iuList) {
 void MLAckMessage::setParamsStartListeningIUOutput(MLDataUnit* outputData) {
   cJSON* payloadObj = cJSON_CreateObject();
   cJSON_AddItemToObject(payloadObj, "outputData", outputData->toJSON());
+
+  this->mMLAckPayloadObj = payloadObj;
+}
+
+void MLAckMessage::setParamsGetIUResourceUsage(std::string data) {
+  cJSON* payloadObj = cJSON_CreateObject();
+  cJSON_AddStringToObject(payloadObj, "data", data.c_str());
 
   this->mMLAckPayloadObj = payloadObj;
 }
