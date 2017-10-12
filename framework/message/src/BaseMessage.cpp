@@ -34,6 +34,10 @@ cJSON* BaseMessage::toJSON() {
   sprintf(tempStr, "%d", this->mMessageId);
   cJSON_AddStringToObject(thisObj, BASE_MESSAGE_KEY_MESSAGE_NUM, tempStr);
 
+  // senderUri
+  cJSON_AddStringToObject(thisObj, BASE_MESSAGE_KEY_SENDER_URI,
+      this->mSenderUri.c_str());
+
   // uri
   cJSON_AddStringToObject(thisObj, BASE_MESSAGE_KEY_URI, this->mUri.c_str());
 

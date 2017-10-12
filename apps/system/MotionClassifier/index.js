@@ -15,29 +15,12 @@
  * limitations under the License.
  */
 
-#include <stdio.h>
+var ant_api_dir = process.env.ANT_BIN_DIR + "/api/";
+var api = require(ant_api_dir + "api");
+var appApi = api.app();
+var mlApi = api.ml();
 
-#include "DNNInferenceRunner.h"
-
-MLDataUnit* DNNInferenceRunner::run(MLDataUnit* inputData) {
+mlApi.runModel("motionclassifier", function(outputData) {
   // TODO: implement it
-  // Now DNN output is given as dummy data.
-  int outputShape[] = {30};
-  MLTensorLayout outputTensorLayout(1, outputShape, MLDataType::Char);
-
-  MLTensor* outputTensor = new MLTensor(outputTensorLayout);
-  char outputStr[30] = "test";
-  outputTensor->assignData(outputStr);
-
-  MLDataUnit* outputData = new MLDataUnit();
-  outputData->insertTensor("output", outputTensor);
-  return outputData;
-}
-
-// Get resource usage of inference runner
-std::string DNNInferenceRunner::getResourceUsage() {
-  std::string data("");
-  // not implemented yet
-  
-  return data;
-}
+  // notify to application
+});
