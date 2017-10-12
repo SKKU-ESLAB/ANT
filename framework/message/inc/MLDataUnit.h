@@ -66,10 +66,11 @@ class MLDataUnit {
       }
     }
     
-    // encoding to JSON
+    // decoding from JSON
+    bool setFromJSON(const char* jsonString);
     bool setFromJSON(cJSON* dataUnitObj);
 
-    // decoding from JSON
+    // encoding to JSON
     cJSON* toJSON();
 
     // Handle tensor map

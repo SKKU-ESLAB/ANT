@@ -30,7 +30,7 @@ class MessageRouter;
 
 class MessageRouter {
   public:
-    MessageRouter() : mMasterRoutingTableMutex(PTHREAD_MUTEX_INITIALIZER) {
+    MessageRouter() {
     }
 
     // Routing functions
@@ -47,7 +47,7 @@ class MessageRouter {
     // Master Routing Table
     //   entry = std::pair<std::string uriString, Channel* channel>
     std::map<std::string, Channel*> mMasterRoutingTable;
-    pthread_mutex_t mMasterRoutingTableMutex;
+    pthread_mutex_t mMasterRoutingTableMutex = PTHREAD_MUTEX_INITIALIZER;
 };
 
 #endif // !defined(__MESSAGE_ROUTER_H__)
