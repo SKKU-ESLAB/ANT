@@ -64,8 +64,32 @@ class MLTensorLayout {
         this->mShape[i] = shape[i];
       }
     }
+
+    MLTensorLayout(const MLTensorLayout &input) {
+      this->mRank = input.mRank;
+      this->mDataType = input.mDataType;
+
+      int* shape = input.mShape;
+      this->mShape = new int[this->mRank];
+      for(int i = 0; i < this->mRank; i++) {
+        this->mShape[i] = shape[i];
+      }
+    }
+
     ~MLTensorLayout() {
       delete[] this->mShape;
+    }
+
+    MLTensorLayout& operator=(MLTensorLayout input) {
+      this->mRank = input.getRank();
+      this->mDataType = input.getDataType();
+
+      int* shape = input.getShape();
+      this->mShape = new int[this->mRank];
+      for(int i = 0; i < this->mRank; i++) {
+        this->mShape[i] = shape[i];
+      }
+      return *this;
     }
 
     // encoding to JSON

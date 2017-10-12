@@ -1,8 +1,29 @@
+/* Copyright (c) 2017 SKKU ESLAB, and contributors. All rights reserved.
+ *
+ * Contributor: Gyeonghwan Hong<redcarrottt@gmail.com>
+ *              Dongig Sin<dongig@skku.edu>
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *  http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 #include <node.h>
+#include <node_object_wrap.h>
 #include <stdlib.h>
 #include <string.h>
 #include <string>
 
+#include "AppAPI.h"
+#include "API.h"
 #include "AppAPIInternal.h"
 #include "AppBase.h"
 #include "ANTdbugLog.h"
@@ -16,18 +37,107 @@ using namespace v8;
 #define getV8String(isolate, cstr) (String::NewFromOneByte(isolate, \
       (const uint8_t*)cstr))
 
-AppBase* gAppBase;
+// Static Constructor
+Persistent<Function> AppAPI::sConstructor;
 
-void initAppBase(){
-  printf("initialize AppBase");
-  gAppBase = new AppBase();
-  gAppBase->run();
+#define JS_THIS_OBJECT_NAME "AppAPI"
 
-  // Send CompleteLaunchingApp command to appcore
-  gAppBase->completeLaunchingApp();
+/* 
+ * Prototype Initializer
+ */
+void AppAPI::InitPrototype(Isolate* isolate) {
+  // Prepare constructor template
+  Local<FunctionTemplate> funcTemplate = FunctionTemplate::New(isolate, New);
+  funcTemplate->SetClassName(getV8String(isolate, JS_THIS_OBJECT_NAME));
+  funcTemplate->InstanceTemplate()->SetInternalFieldCount(1);
+
+  // Event Page
+  NODE_SET_PROTOTYPE_METHOD(funcTemplate,
+      "makeEventPage", makeEventPage);
+  NODE_SET_PROTOTYPE_METHOD(funcTemplate,
+      "addEventText", addEventText);
+  NODE_SET_PROTOTYPE_METHOD(funcTemplate,
+      "addEventImg", addEventImg);
+  NODE_SET_PROTOTYPE_METHOD(funcTemplate,
+      "sendEventPageWithNoti", sendEventPageWithNoti);
+  NODE_SET_PROTOTYPE_METHOD(funcTemplate,
+      "sendEventPage", sendEventPage);
+
+  // Config Page
+  NODE_SET_PROTOTYPE_METHOD(funcTemplate,
+      "makeConfigPage", makeConfigPage);
+  NODE_SET_PROTOTYPE_METHOD(funcTemplate,
+      "addStrTextbox", addStrTextbox);
+  NODE_SET_PROTOTYPE_METHOD(funcTemplate,
+      "addNumberTextbox", addNumberTextbox);
+  NODE_SET_PROTOTYPE_METHOD(funcTemplate,
+      "addSingleDialog", addSingleDialog);
+  NODE_SET_PROTOTYPE_METHOD(funcTemplate,
+      "addMultipleDialog", addMultipleDialog);
+  NODE_SET_PROTOTYPE_METHOD(funcTemplate,
+      "addDateDialog", addDateDialog);
+  NODE_SET_PROTOTYPE_METHOD(funcTemplate,
+      "addTimeDialog", addTimeDialog);
+  NODE_SET_PROTOTYPE_METHOD(funcTemplate,
+      "sendConfigPage", sendConfigPage);
+
+  // Retrieval of Event/Config Page Data
+  NODE_SET_PROTOTYPE_METHOD(funcTemplate,
+      "getData", getData);
+
+  // Termination
+  NODE_SET_PROTOTYPE_METHOD(funcTemplate,
+      "onTermination", onTermination);
+
+  // Sensor Viewer
+  NODE_SET_PROTOTYPE_METHOD(funcTemplate,
+      "sendMsgToSensorViewer", sendMsgToSensorViewer);
+
+  sConstructor.Reset(isolate, funcTemplate->GetFunction());
 }
 
-void makeEventPage(const FunctionCallbackInfo<Value>& args) {
+/* 
+ * Constructor 1
+ */
+void AppAPI::NewInstance(const FunctionCallbackInfo<Value>& args) {
+  Isolate* isolate = args.GetIsolate();
+
+  Local<Function> consFunction = Local<Function>::New(isolate, sConstructor);
+  Local<Context> context = isolate->GetCurrentContext();
+  Local<Object> instance = consFunction->NewInstance(context).ToLocalChecked();
+  
+  // No Arguments
+
+  args.GetReturnValue().Set(instance);
+}
+
+/* 
+ * Constructor 2
+ */
+void AppAPI::New(const FunctionCallbackInfo<Value>& args) {
+  Isolate* isolate = args.GetIsolate();
+
+  if(args.IsConstructCall()) {
+    // Invoked as constructor: `new **(...)`
+    // Get arguments: no arguments
+
+    // Create a native object
+    AppAPI* newObject = new AppAPI();
+    newObject->Wrap(args.This());
+    args.GetReturnValue().Set(args.This());
+  } else {
+    // Invoked as plain function: `**(...)`, turn into constructor call
+    // Get arguments: no arguments
+
+    // Call constructor
+    Local<Context> context = isolate->GetCurrentContext();
+    Local<Function> consFunction = Local<Function>::New(isolate, sConstructor);
+    Local<Object> result = consFunction->NewInstance(context).ToLocalChecked();
+    args.GetReturnValue().Set(result);
+  }
+}
+
+void AppAPI::makeEventPage(const FunctionCallbackInfo<Value>& args) {
   Isolate* isolate = Isolate::GetCurrent();
   HandleScope scope(isolate);
   const char* description;
@@ -52,7 +162,7 @@ void makeEventPage(const FunctionCallbackInfo<Value>& args) {
           "Invalid Use : arguments expected [Null or Description(string)]")));
 }
 
-void addEventText(const FunctionCallbackInfo<Value>& args) {
+void AppAPI::addEventText(const FunctionCallbackInfo<Value>& args) {
   Isolate* isolate = Isolate::GetCurrent();
   HandleScope scope(isolate);
   int newJsonLength;
@@ -105,7 +215,7 @@ void addEventText(const FunctionCallbackInfo<Value>& args) {
 
 // [MORE] addDescription
 // TODO: attach image file
-void addEventImg(const FunctionCallbackInfo<Value>& args) {
+void AppAPI::addEventImg(const FunctionCallbackInfo<Value>& args) {
   Isolate* isolate = Isolate::GetCurrent();
   HandleScope scope(isolate);
 
@@ -158,7 +268,7 @@ void addEventImg(const FunctionCallbackInfo<Value>& args) {
 }
 
 // send CompanionMessage.SendEventPage
-void sendEventPage(const FunctionCallbackInfo<Value>& args) {
+void AppAPI::sendEventPage(const FunctionCallbackInfo<Value>& args) {
   Isolate* isolate = Isolate::GetCurrent();
   HandleScope scope(isolate);
 
@@ -191,7 +301,7 @@ void sendEventPage(const FunctionCallbackInfo<Value>& args) {
 }
 
 // send CompanionMessage.SendEventPage
-void sendEventPageWithNoti(const FunctionCallbackInfo<Value>& args) {
+void AppAPI::sendEventPageWithNoti(const FunctionCallbackInfo<Value>& args) {
   Isolate* isolate = Isolate::GetCurrent();
   HandleScope scope(isolate);
 
@@ -240,7 +350,7 @@ void sendEventPageWithNoti(const FunctionCallbackInfo<Value>& args) {
 */
 
 //----------------------   config page -------------------------//
-void makeConfigPage(const FunctionCallbackInfo<Value>& args) {
+void AppAPI::makeConfigPage(const FunctionCallbackInfo<Value>& args) {
   Isolate* isolate = Isolate::GetCurrent();
   HandleScope scope(isolate);
 
@@ -249,7 +359,7 @@ void makeConfigPage(const FunctionCallbackInfo<Value>& args) {
 
 // addStrTextbox(page, name, description, length);
 // Return new Json string
-void addStrTextbox(const FunctionCallbackInfo<Value>& args) {
+void AppAPI::addStrTextbox(const FunctionCallbackInfo<Value>& args) {
   Isolate* isolate = Isolate::GetCurrent();
   HandleScope scope(isolate);
 
@@ -321,7 +431,7 @@ void addStrTextbox(const FunctionCallbackInfo<Value>& args) {
 
 // addNumberTextbox(page, name, description, range1, range2);
 // Return new Json string
-void addNumberTextbox(const FunctionCallbackInfo<Value>& args) {
+void AppAPI::addNumberTextbox(const FunctionCallbackInfo<Value>& args) {
   Isolate* isolate = Isolate::GetCurrent();
   HandleScope scope(isolate);
 
@@ -416,7 +526,7 @@ void addNumberTextbox(const FunctionCallbackInfo<Value>& args) {
 
 // addSingleDialog(page, name, description, item1,2,3...);
 // Return new Json string (+"sDialog":"Name[description/a/b/c/d/e]"),
-void addSingleDialog(const FunctionCallbackInfo<Value>& args) {
+void AppAPI::addSingleDialog(const FunctionCallbackInfo<Value>& args) {
   Isolate* isolate = Isolate::GetCurrent();
   HandleScope scope(isolate);
 
@@ -515,7 +625,7 @@ void addSingleDialog(const FunctionCallbackInfo<Value>& args) {
 
 // addMultipleDialog(page, name, description, item1,2,3...);
 // Return new Json string (+"mDialog":"Name[description/a/b/c/d/e]")
-void addMultipleDialog(const FunctionCallbackInfo<Value>& args) {
+void AppAPI::addMultipleDialog(const FunctionCallbackInfo<Value>& args) {
   Isolate* isolate = Isolate::GetCurrent();
   HandleScope scope(isolate);
 
@@ -613,7 +723,7 @@ void addMultipleDialog(const FunctionCallbackInfo<Value>& args) {
 // addMultipleDialog(page, name, description, flag(0||1));
 // Return new Json string (+"dateDialog":"Name[flag]")
 // flag 0 = no constraint , 1 = allow only after current date
-void addDateDialog(const FunctionCallbackInfo<Value>& args) {
+void AppAPI::addDateDialog(const FunctionCallbackInfo<Value>& args) {
   Isolate* isolate = Isolate::GetCurrent();
   HandleScope scope(isolate);
 
@@ -694,7 +804,7 @@ void addDateDialog(const FunctionCallbackInfo<Value>& args) {
 // addTimeDialog(page, name, flag(0||1));
 // Return new Json string (+"timeDialog":"Name[flag]")
 // flag 0 = no constraint , 1 = allow only after current time
-void addTimeDialog(const FunctionCallbackInfo<Value>& args) {
+void AppAPI::addTimeDialog(const FunctionCallbackInfo<Value>& args) {
   Isolate* isolate = Isolate::GetCurrent();
   HandleScope scope(isolate);
 
@@ -787,13 +897,13 @@ void addTimeDialog(const FunctionCallbackInfo<Value>& args) {
 
 */
 // send CompanionMessage.SendConfigPage
-void sendConfigPage(const FunctionCallbackInfo<Value>& args) {
+void AppAPI::sendConfigPage(const FunctionCallbackInfo<Value>& args) {
   Isolate* isolate = Isolate::GetCurrent();
   HandleScope scope(isolate);
 
   // Arguments
   const char* jsonData;
-  Local<Function> onUpdateAppConfigCallback;
+  Local<Function> callback;
 
   // Check arguments
   if ((args.Length() != 2) ||	!args[1]->IsFunction() || !args[0]->IsString() ) {
@@ -814,10 +924,10 @@ void sendConfigPage(const FunctionCallbackInfo<Value>& args) {
   }
 
   // Get argument 1
-  onUpdateAppConfigCallback = Local<Function>::Cast(args[1]);
+  callback = Local<Function>::Cast(args[1]);
 
   // Register onUpdateAppConfig callback
-  gAppBase->setOnUpdateAppConfig(isolate, onUpdateAppConfigCallback);
+  gAppBase->setOnUpdateAppConfig(callback);
 
   // Send CompanionMessage.SendConfigPage command
   gAppBase->sendConfigPageToCompanion(jsonData);
@@ -829,7 +939,7 @@ void sendConfigPage(const FunctionCallbackInfo<Value>& args) {
 
 // getData(page[return page], name);
 // Return name(key)->value [string]
-void getData(const FunctionCallbackInfo<Value>& args) {
+void AppAPI::getData(const FunctionCallbackInfo<Value>& args) {
   Isolate* isolate = Isolate::GetCurrent();
   HandleScope scope(isolate);
 
@@ -918,7 +1028,7 @@ void getData(const FunctionCallbackInfo<Value>& args) {
 // [MORE] return multiple choice -> array
 
 // onTermination(function)
-void onTermination(const FunctionCallbackInfo<Value>& args) {
+void AppAPI::onTermination(const FunctionCallbackInfo<Value>& args) {
   Isolate* isolate = Isolate::GetCurrent();
   HandleScope scope(isolate);
 
@@ -936,13 +1046,13 @@ void onTermination(const FunctionCallbackInfo<Value>& args) {
   onTerminateCallback = Local<Function>::Cast(args[0]);
 
   // Register onTerminate callback
-  gAppBase->setOnTerminate(isolate, onTerminateCallback);
+  gAppBase->setOnTerminate(onTerminateCallback);
 
   return;
 }
 
 // send CompanionMessage.UpdateSensorData
-void sendMsgToSensorViewer(const FunctionCallbackInfo<Value>& args) {
+void AppAPI::sendMsgToSensorViewer(const FunctionCallbackInfo<Value>& args) {
   Isolate* isolate = Isolate::GetCurrent();
   HandleScope scope(isolate);
 
@@ -967,53 +1077,3 @@ void sendMsgToSensorViewer(const FunctionCallbackInfo<Value>& args) {
   printf("[NIL] sendMsgToSensorViewer to companion: %s\n", jsonData);
   return;
 }
-
-void init(Handle<Object> exports) {
-  Isolate* isolate = Isolate::GetCurrent();
-  initAppBase();
-
-  //-----------------------EventPage-------------------------------------------
-  exports->Set(getV8String(isolate, "makeEventPage"),
-      FunctionTemplate::New(isolate, makeEventPage)->GetFunction());
-  exports->Set(getV8String(isolate, "addEventText"),
-      FunctionTemplate::New(isolate, addEventText)->GetFunction());
-  exports->Set(getV8String(isolate, "addEventImg"),
-      FunctionTemplate::New(isolate, addEventImg)->GetFunction());
-  exports->Set(getV8String(isolate, "sendEventPageWithNoti"),
-      FunctionTemplate::New(isolate, sendEventPageWithNoti)->GetFunction());
-  exports->Set(getV8String(isolate, "sendEventPage"),
-      FunctionTemplate::New(isolate, sendEventPage)->GetFunction());
-
-
-  //-----------------------ConfigPage-------------------------------------------
-
-  exports->Set(getV8String(isolate, "makeConfigPage"),
-      FunctionTemplate::New(isolate, makeConfigPage)->GetFunction());
-  exports->Set(getV8String(isolate, "addStrTextbox"),
-      FunctionTemplate::New(isolate, addStrTextbox)->GetFunction());
-  exports->Set(getV8String(isolate, "addNumberTextbox"),
-      FunctionTemplate::New(isolate, addNumberTextbox)->GetFunction());
-  exports->Set(getV8String(isolate, "addSingleDialog"),
-      FunctionTemplate::New(isolate, addSingleDialog)->GetFunction());
-  exports->Set(getV8String(isolate, "addMultipleDialog"),
-      FunctionTemplate::New(isolate, addMultipleDialog)->GetFunction());
-  exports->Set(getV8String(isolate, "addDateDialog"),
-      FunctionTemplate::New(isolate, addDateDialog)->GetFunction());
-  exports->Set(getV8String(isolate, "addTimeDialog"),
-      FunctionTemplate::New(isolate, addTimeDialog)->GetFunction());
-  exports->Set(getV8String(isolate, "sendConfigPage"),
-      FunctionTemplate::New(isolate, sendConfigPage)->GetFunction());
-
-  exports->Set(getV8String(isolate, "getData"),
-      FunctionTemplate::New(isolate, getData)->GetFunction());
-
-  //------------------------termination-----------------------------------------
-  exports->Set(getV8String(isolate, "onTermination"),
-      FunctionTemplate::New(isolate, onTermination)->GetFunction());
-
-  //------------------------sensor viewer---------------------------------------
-  exports->Set(getV8String(isolate, "sendMsgToSensorViewer"),
-      FunctionTemplate::New(isolate, sendMsgToSensorViewer)->GetFunction());
-}
-
-NODE_MODULE(nil, init)

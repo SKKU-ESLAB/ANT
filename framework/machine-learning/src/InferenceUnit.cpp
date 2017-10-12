@@ -15,13 +15,15 @@
  * limitations under the License.
  */
 
+#include <unistd.h>
+
 #include "InferenceUnit.h"
 #include "ANTdbugLog.h"
 
 bool InferenceUnit::unload() {
   InferenceUnitState::Value state = this->getState();
   if(state != InferenceUnitState::Initialized) {
-    ANT_DBG_ERR("Invalid state!: %s", state);
+    ANT_DBG_ERR("Invalid state!: %d", state);
     return false;
   }
 
@@ -36,6 +38,7 @@ bool InferenceUnit::start() {
   InferenceUnitState::Value state = this->getState();
   if(state != InferenceUnitState::Ready) {
     pthread_mutex_unlock(&this->mThreadRunningMutex);
+    ANT_DBG_ERR("Invalid state!: %d", state);
     return false;
   }
 
@@ -75,6 +78,7 @@ void* InferenceUnit::inferenceLoop(void* data) {
     // Step 1. Run InputReaders to load inputs
     // InputDataBuffer: Dictionary
     //   (key=string inputName, value=void* inputDataBuffer)
+    ANT_DBG_VERB("Step 1. Run InputReaders to load inputs");
     MLDataUnit* inputData = new MLDataUnit();
     std::map<std::string, std::string>::iterator imIter;
     for(imIter = inputMap.begin();
@@ -112,6 +116,7 @@ void* InferenceUnit::inferenceLoop(void* data) {
     pthread_mutex_unlock(&self->mInputMutex);
 
     // Step 2. Run InferenceRunner to do inference
+    ANT_DBG_VERB("Step 2. Run InferenceRunner to do inference");
     MLDataUnit* outputData = self->mInferenceRunner->run(inputData);
 
     // Verify OutputData
@@ -136,16 +141,25 @@ void* InferenceUnit::inferenceLoop(void* data) {
 
     // Step 3. Notify output to listener
     // (OutputListener will notify the output to listening apps)
+    ANT_DBG_VERB("Step 3. Notify output to listener");
     pthread_mutex_lock(&self->mOutputMutex);
     if(self->mOutputListener != NULL) {
-      self->mOutputListener->onInferenceUnitOutput(self->getIuid(),
-          outputData);
+      std::vector<std::string>::iterator iter;
+      for(iter = self->mOutputListenerURIs.begin();
+          iter != self->mOutputListenerURIs.end();
+          iter++) {
+        std::string listenerUri(*iter);
+        self->mOutputListener->onInferenceUnitOutput(self->getIuid(),
+            listenerUri, outputData);
+      }
     }
     pthread_mutex_unlock(&self->mOutputMutex);
 
     // Deallocate input data and output data
     delete inputData;
     delete outputData;
+
+    usleep(1000*500);
   }
 }
 
@@ -210,6 +224,10 @@ bool InferenceUnit::startListeningOutput(std::string listenerUri) {
   pthread_mutex_lock(&this->mOutputMutex);
   this->mOutputListenerURIs.push_back(listenerUri);
   pthread_mutex_unlock(&this->mOutputMutex);
+
+  // Check input & output conenctions and update state
+  this->checkConnectionsAndUpdateState();
+
   return true;
 }
 

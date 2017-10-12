@@ -26,6 +26,7 @@ class InferenceUnitDirectory {
     }
     int insert(InferenceUnit* iu) {
       int iuid = this->mNextIuid;
+      iu->setIuid(iuid);
       this->mIuMap.insert(
           std::pair<int, InferenceUnit*>(iuid, iu));
       this->mNextIuid++;

@@ -15,18 +15,38 @@
  * limitations under the License.
  */
 
-#ifndef __MODEL_PACKAGE_LOADER_H__
-#define __MODEL_PACKAGE_LOADER_H__
+#ifndef __ML_API_H__
+#define __ML_API_H__
 
-#include <string>
+#include <node.h>
+#include <node_object_wrap.h>
 
-#include "InferenceUnit.h"
-#include "MLDataUnit.h"
+using namespace v8;
 
-class ModelPackageLoader {
+// How to create this object: antAPI.ml();
+class MLAPI
+: public node::ObjectWrap {
   public:
-    static InferenceUnit* load(std::string modelPackagePath, MLDataUnit& params);
-    static InferenceUnit* loadBuiltin(std::string modelName);
+    // Prototype Initializer
+    static void InitPrototype(Isolate* isolate);
+
+    // Constructor 1
+    static void NewInstance(const FunctionCallbackInfo<Value>& args);
+
+  protected:
+    MLAPI() {
+    }
+    ~MLAPI() {
+    }
+
+    // Static Constructor
+    static Persistent<Function> sConstructor;
+
+    // Constructor 2
+    static void New(const FunctionCallbackInfo<Value>& args);
+
+    // Member functions
+    static void RunModel(const FunctionCallbackInfo<Value>& args);
 };
 
-#endif // !defined(__MODEL_PACKAGE_LOADER_H__)
+#endif // !defined(__ML_API_H__)

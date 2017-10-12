@@ -112,6 +112,8 @@ def on_did_initialize(args):
             name="Camera Framework Daemon")
     run_on_daemon(command=["./ant-sensor"],
             name="Sensor Framework Daemon")
+    run_on_daemon(command=["./ant-ml"],
+            name="Machine Learning Framework Daemon")
     return
 
 # on_did_halt_by_user: (event handler) user killed ANT manager manually

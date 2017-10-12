@@ -50,8 +50,8 @@ namespace InferenceUnitType {
 
 class InferenceUnitOutputListener {
   public:
-    virtual void onInferenceUnitOutput(int iuid,
-        MLDataUnit* outputData);
+    virtual void onInferenceUnitOutput(int iuid, std::string listenerUri,
+        MLDataUnit* outputData) = 0;
 };
 
 class InferenceUnitStateListener {
@@ -62,6 +62,8 @@ class InferenceUnitStateListener {
 
 class InferenceUnit {
   public:
+    friend class ModelPackageLoader;
+
     // Inference Unit Thread
     static void* inferenceLoop(void*);
 
@@ -86,6 +88,7 @@ class InferenceUnit {
     int getPid() { return this->mPid; }
     
     // Setters
+    void setIuid(int iuid) { this->mIuid = iuid; }
 
     // State Listener
     void setStateListener(InferenceUnitStateListener* stateListener) {
@@ -111,15 +114,13 @@ class InferenceUnit {
     }
 
   protected:
-    InferenceUnit(int iuid,
-        std::string name,
+    InferenceUnit(std::string name,
         std::string modelPackagePath,
         InferenceRunner* inferenceRunner,
         MLDataUnitLayout* inputLayout,
         MLDataUnitLayout* outputLayout,
         MLDataUnit* parameters)
-    : mIuid(iuid),
-    mName(name),
+    : mName(name),
     mState(InferenceUnitState::Initialized),
     mModelPackagePath(modelPackagePath),
     mInputLayout(inputLayout),
@@ -127,9 +128,6 @@ class InferenceUnit {
     mParameters(parameters),
     mPid(-1),
     mInferenceRunner(inferenceRunner),
-    mThreadRunningMutex(PTHREAD_MUTEX_INITIALIZER),
-    mInputMutex(PTHREAD_MUTEX_INITIALIZER),
-    mOutputMutex(PTHREAD_MUTEX_INITIALIZER),
     mIsThreadRunning(false) {
       // Initialize InputReaderSet
       this->mInputReaderSet = new InputReaderSet();
@@ -201,9 +199,9 @@ class InferenceUnit {
     bool mIsThreadRunning;
     pthread_t mInferenceUnitThread;
 
-    pthread_mutex_t mThreadRunningMutex;
-    pthread_mutex_t mInputMutex;
-    pthread_mutex_t mOutputMutex;
+    pthread_mutex_t mThreadRunningMutex = PTHREAD_MUTEX_INITIALIZER;
+    pthread_mutex_t mInputMutex = PTHREAD_MUTEX_INITIALIZER;
+    pthread_mutex_t mOutputMutex = PTHREAD_MUTEX_INITIALIZER;
 };
 
 #endif // !defined(__INFERENCE_UNIT_H__)
