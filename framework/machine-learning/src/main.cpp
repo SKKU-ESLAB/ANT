@@ -17,12 +17,29 @@
 #include <string>
 #include <iostream>
 #include <unistd.h>
+#include <string.h>
 
 #include "MLDaemon.h"
+#include "ANTdbugLog.h"
 
 MLDaemon gMLDaemon;
 
 int main(int argc, char* argv[]) {
-  // Start machine learning daemon
-  gMLDaemon.run();
+  if(argc == 2) {
+    // Run machine learning daemon in testing mode
+    if(strcmp(argv[1], "--test-motion") == 0) {
+      // Test motion classifier
+      gMLDaemon.runTest("motionclassifier");
+    } else if(strcmp(argv[1], "--test-image") == 0) {
+      // Test image classifier
+      gMLDaemon.runTest("imageclassifier");
+    } else {
+      ANT_DBG_ERR("Invalid arguments!" \
+          "Expected: %s [--test-motion or --test-image]",
+          argv[0]);
+    }
+  } else {
+    // Start machine learning daemon
+    gMLDaemon.run();
+  }
 }

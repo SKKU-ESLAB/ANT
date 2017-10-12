@@ -141,7 +141,8 @@ void AppCore::run() {
   this->mDbusChannel = new DbusChannel(this->mMessageRouter);
   this->mCommChannel = new CommChannel(this->mMessageRouter,
       this->getTempDir());
-  this->mLocalChannel = new LocalChannel(this->mMessageRouter, false);
+  this->mLocalChannel = new LocalChannel(this->mMessageRouter, APPCORE_URI,
+      false);
 
   // Run DbusChannel and add it to MessageRouter's routing table
   this->mDbusChannel->run();
@@ -284,7 +285,7 @@ void AppCore::onChangedState(int appId, AppState::Value newState) {
     if(thisAppId == appId) {
       // Make ACK message
       BaseMessage* ackMessage
-        = MessageFactory::makeAppCoreAckMessage(COMPANION_DEVICE_URI,
+        = MessageFactory::makeAppCoreAckMessage(this->mLocalChannel->getUri(),
             originalMessage); 
       AppCoreAckMessage* ackPayload = (AppCoreAckMessage*)ackMessage->getPayload();
       ackPayload->setParamsListenAppState(appId, newState);
@@ -315,7 +316,8 @@ void AppCore::getAppList(BaseMessage* message) {
 
   // Make ACK message
   BaseMessage* ackMessage
-    = MessageFactory::makeAppCoreAckMessage(COMPANION_DEVICE_URI, message); 
+    = MessageFactory::makeAppCoreAckMessage(this->mLocalChannel->getUri(),
+        message); 
   AppCoreAckMessage* ackPayload = (AppCoreAckMessage*)ackMessage->getPayload();
   ackPayload->setParamsGetAppList(paramAppList);
 
@@ -369,7 +371,8 @@ void AppCore::initializeApp(BaseMessage* message) {
 
   // Make ACK message
   BaseMessage* ackMessage
-    = MessageFactory::makeAppCoreAckMessage(COMPANION_DEVICE_URI, message); 
+    = MessageFactory::makeAppCoreAckMessage(this->mLocalChannel->getUri(),
+        message); 
   AppCoreAckMessage* ackPayload = (AppCoreAckMessage*)ackMessage->getPayload();
   ackPayload->setParamsInitializeApp(app->getId());
 
@@ -638,10 +641,9 @@ void AppCore::completeLaunchingApp(BaseMessage* message) {
         app->successLaunching();
 
         // Make ACK message
-        char appURI[PATH_BUFFER_SIZE];
-        snprintf(appURI, PATH_BUFFER_SIZE, "%s/pid%d", APPS_URI, pid);
         BaseMessage* ackMessage
-          = MessageFactory::makeAppCoreAckMessage(appURI, message); 
+          = MessageFactory::makeAppCoreAckMessage(this->mLocalChannel->getUri(),
+              message); 
         AppCoreAckMessage* ackPayload
           = (AppCoreAckMessage*)ackMessage->getPayload();
         ackPayload->setParamsCompleteLaunchingApp(app->getId());
@@ -705,7 +707,8 @@ void AppCore::terminateApp(BaseMessage* message) {
         char appURI[PATH_BUFFER_SIZE];
         snprintf(appURI, PATH_BUFFER_SIZE, "%s/%d", APPS_URI, app->getId());
         BaseMessage* appMessage
-          = MessageFactory::makeAppMessage(appURI, AppMessageCommandType::Terminate);
+          = MessageFactory::makeAppMessage(this->mLocalChannel->getUri(),
+              appURI, AppMessageCommandType::Terminate);
 
         // Send the terminate message
         this->mLocalChannel->sendMessage(appMessage);
@@ -812,7 +815,8 @@ void AppCore::getFileList(BaseMessage* message) {
 
   // Make ACK message
   BaseMessage* ackMessage
-    = MessageFactory::makeAppCoreAckMessage(COMPANION_DEVICE_URI, message); 
+    = MessageFactory::makeAppCoreAckMessage(this->mLocalChannel->getUri(),
+        message); 
   AppCoreAckMessage* ackPayload = (AppCoreAckMessage*)ackMessage->getPayload();
   ackPayload->setParamsGetFileList(path, paramFileList);
 
@@ -833,7 +837,8 @@ void AppCore::getFile(BaseMessage* message) {
 
   // Make ACK message
   BaseMessage* ackMessage
-    = MessageFactory::makeAppCoreAckMessage(COMPANION_DEVICE_URI, message); 
+    = MessageFactory::makeAppCoreAckMessage(this->mLocalChannel->getUri(),
+        message); 
   ackMessage->attachFile(path);
 
   // Send ACK message
@@ -845,7 +850,8 @@ void AppCore::getRootPath(BaseMessage* message) {
 
   // Make ACK message
   BaseMessage* ackMessage
-    = MessageFactory::makeAppCoreAckMessage(COMPANION_DEVICE_URI, message); 
+    = MessageFactory::makeAppCoreAckMessage(this->mLocalChannel->getUri(),
+        message); 
   AppCoreAckMessage* ackPayload = (AppCoreAckMessage*)ackMessage->getPayload();
   ackPayload->setParamsGetRootPath(this->mDataDir);
 
@@ -871,7 +877,8 @@ void AppCore::getAppIcon(BaseMessage* message) {
   }
 
   BaseMessage* ackMessage
-    = MessageFactory::makeAppCoreAckMessage(COMPANION_DEVICE_URI, message); 
+    = MessageFactory::makeAppCoreAckMessage(this->mLocalChannel->getUri(),
+        message); 
 
   // Get app's icon file path
   if(app->getIconFileName().compare(".") != 0) {

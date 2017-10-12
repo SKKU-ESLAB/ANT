@@ -38,6 +38,7 @@ AppList* AppList::initializeFromDB(std::string dbPath,
   bool fetchAppListRes = appList->fetchAppList();
   if(fetchAppListRes) {
     // If fetching is successful, return it
+    appList->initializeDefaultApps(systemAppsDir);
     return appList;
   }
 
@@ -56,38 +57,31 @@ AppList* AppList::initializeFromDB(std::string dbPath,
 }
 
 void AppList::initializeDefaultApps(std::string systemAppsDir) {
-  // Camera Viewer
-  {
-    char packagePath[PATH_BUFFER_SIZE];
-    char mainJSFileName[PATH_BUFFER_SIZE];
-    char iconFileName[PATH_BUFFER_SIZE];
-    snprintf(packagePath, PATH_BUFFER_SIZE, "%s/%s",
-        systemAppsDir.c_str(), "CameraViewer");
-    snprintf(mainJSFileName, PATH_BUFFER_SIZE, "%s",
-        "index.js");
-    snprintf(iconFileName, PATH_BUFFER_SIZE, ".");
-    App* app = new App(this->mNextAppId++, true, "CameraViewer",
-        packagePath, mainJSFileName, iconFileName,
-        AppState::Ready);
-    ANT_DBG_ERR("Add CameraViewer: %s, %s", packagePath, mainJSFileName);
-    this->add(app);
-    this->flush(app);
-  }
+  int systemAppNamesCount = 4;
+  const char* systemAppNames[] = {
+    "CameraViewer", "SensorViewer",
+    "MotionClassifier", "ImageClassifier"
+  };
 
-  // Sensor Viewer
-  {
+  for(int i = 0; i < systemAppNamesCount; i++) {
+    if(this->getByName(systemAppNames[i]) != NULL) {
+      continue;
+    }
+
+    // If the system app does not exist, create an entry.
     char packagePath[PATH_BUFFER_SIZE];
     char mainJSFileName[PATH_BUFFER_SIZE];
     char iconFileName[PATH_BUFFER_SIZE];
     snprintf(packagePath, PATH_BUFFER_SIZE, "%s/%s",
-        systemAppsDir.c_str(), "SensorViewer");
+        systemAppsDir.c_str(), systemAppNames[i]);
     snprintf(mainJSFileName, PATH_BUFFER_SIZE, "%s",
         "index.js");
     snprintf(iconFileName, PATH_BUFFER_SIZE, ".");
-    App* app = new App(this->mNextAppId++, true, "SensorViewer",
+    App* app = new App(this->mNextAppId++, true, systemAppNames[i],
         packagePath, mainJSFileName, iconFileName,
         AppState::Ready);
-    ANT_DBG_ERR("Add SensorViewer: %s, %s", packagePath, mainJSFileName);
+    ANT_DBG_ERR("Add %s: %s, %s",
+        systemAppNames[i], packagePath, mainJSFileName);
     this->add(app);
     this->flush(app);
   }
@@ -198,6 +192,19 @@ App* AppList::getByPid(int pid) {
       ++alIter) {
     int thisPid = (*alIter)->getPid();
     if(thisPid == pid) {
+      return (*alIter);
+    }
+  }
+  return NULL;
+}
+
+App* AppList::getByName(std::string appName) {
+  std::vector<App*>::iterator alIter;
+  for(alIter = this->mApps.begin();
+      alIter != this->mApps.end();
+      ++alIter) {
+    std::string thisAppName((*alIter)->getName());
+    if(thisAppName.compare(appName) == 0) {
       return (*alIter);
     }
   }

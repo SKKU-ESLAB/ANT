@@ -57,6 +57,7 @@ namespace BaseMessageType {
 }
 
 #define BASE_MESSAGE_KEY_MESSAGE_NUM "messageId"
+#define BASE_MESSAGE_KEY_SENDER_URI "senderUri"
 #define BASE_MESSAGE_KEY_URI "uri"
 #define BASE_MESSAGE_KEY_TYPE "type"
 #define BASE_MESSAGE_KEY_IS_FILE_ATTACHED "isFileAttached"
@@ -98,6 +99,7 @@ class BaseMessage {
 
     // Get parameters
     int getMessageId() { return this->mMessageId; }
+    std::string& getSenderUri() { return this->mSenderUri; }
     std::string& getUri() { return this->mUri; }
     BaseMessageType::Value getType() { return this->mType; }
     bool isFileAttached() { return this->mIsFileAttached; }
@@ -108,20 +110,23 @@ class BaseMessage {
     BaseMessagePayload* getPayload() { return this->mPayload; }
 
   protected:
-    BaseMessage(int messageId, std::string uri, BaseMessageType::Value type,
+    BaseMessage(int messageId, std::string senderUri, std::string uri,
+        BaseMessageType::Value type,
         bool isFileAttached, std::string fileName)
-      : mMessageId(messageId), mUri(uri), mType(type),
+      : mMessageId(messageId), mSenderUri(senderUri), mUri(uri), mType(type),
       mIsFileAttached(isFileAttached), mFileName(fileName),
       mStoredFilePath("") {
     }
-    BaseMessage(int messageId, std::string uri, BaseMessageType::Value type)
-      : mMessageId(messageId), mUri(uri), mType(type),
+    BaseMessage(int messageId, std::string senderUri, std::string uri,
+        BaseMessageType::Value type)
+      : mMessageId(messageId), mSenderUri(senderUri), mUri(uri), mType(type),
       mIsFileAttached(false), mFileName(""),
       mStoredFilePath("") {
     }
 
     // JSON-exported values
     int mMessageId;
+    std::string mSenderUri;
     std::string mUri;
     BaseMessageType::Value mType;
     bool mIsFileAttached;

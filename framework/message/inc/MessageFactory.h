@@ -29,17 +29,17 @@ class MessageFactory {
   static BaseMessage* makeMessageFromJSONString(const char* rawString);
 
   // Make AppCoreMessage from bottom
-  static BaseMessage* makeAppCoreMessage(std::string uri,
+  static BaseMessage* makeAppCoreMessage(std::string senderUri, std::string uri,
       AppCoreMessageCommandType::Value commandType) {
     AppCoreMessage* payload = new AppCoreMessage(commandType);
-    BaseMessage* message = new BaseMessage(currentMessageId++, uri,
+    BaseMessage* message = new BaseMessage(currentMessageId++, senderUri, uri,
         BaseMessageType::AppCore);
     message->setPayload(payload);
     return message;
   }
 
   // Make AppCoreAckMessage from bottom
-  static BaseMessage* makeAppCoreAckMessage(std::string uri,
+  static BaseMessage* makeAppCoreAckMessage(std::string senderUri,
       BaseMessage* originalMessage) {
     int commandMessageId = originalMessage->getMessageId();
     AppCoreMessage* originalPayload
@@ -47,71 +47,75 @@ class MessageFactory {
     AppCoreMessageCommandType::Value commandType
       = originalPayload->getCommandType();
 
+    std::string uri(originalMessage->getSenderUri());
     AppCoreAckMessage* payload = new AppCoreAckMessage(commandMessageId,
         commandType);
-    BaseMessage* message = new BaseMessage(currentMessageId++, uri,
+    BaseMessage* message = new BaseMessage(currentMessageId++, senderUri, uri,
         BaseMessageType::AppCoreAck);
     message->setPayload(payload);
     return message;
   }
 
   // Make AppMessage from bottom
-  static BaseMessage* makeAppMessage(std::string uri,
+  static BaseMessage* makeAppMessage(std::string senderUri, std::string uri,
       AppMessageCommandType::Value commandType) {
     AppMessage* payload = new AppMessage(commandType);
-    BaseMessage* message = new BaseMessage(currentMessageId++, uri,
+    BaseMessage* message = new BaseMessage(currentMessageId++, senderUri, uri,
         BaseMessageType::App);
     message->setPayload(payload);
     return message;
   }
 
   // Make CompanionMessage from bottom
-  static BaseMessage* makeCompanionMessage(std::string uri,
+  static BaseMessage* makeCompanionMessage(std::string senderUri,
+      std::string uri,
       CompanionMessageCommandType::Value commandType) {
     CompanionMessage* payload = new CompanionMessage(commandType);
-    BaseMessage* message = new BaseMessage(currentMessageId++, uri,
+    BaseMessage* message = new BaseMessage(currentMessageId++, senderUri, uri,
         BaseMessageType::Companion);
     message->setPayload(payload);
     return message;
   }
 
   // Make AppAckMessage from bottom
-  static BaseMessage* makeAppAckMessage(std::string uri,
+  static BaseMessage* makeAppAckMessage(std::string senderUri,
       BaseMessage* originalMessage) {
     int commandMessageId = originalMessage->getMessageId();
     AppMessage* originalPayload = (AppMessage*) originalMessage->getPayload();
     AppMessageCommandType::Value commandType
       = originalPayload->getCommandType();
 
+    std::string uri(originalMessage->getSenderUri());
     AppAckMessage* payload = new AppAckMessage(commandMessageId,
         commandType);
-    BaseMessage* message = new BaseMessage(currentMessageId++, uri,
+    BaseMessage* message = new BaseMessage(currentMessageId++, senderUri, uri,
         BaseMessageType::AppAck);
     message->setPayload(payload);
     return message;
   }
 
   // Make MLMessage from bottom
-  static BaseMessage* makeMLMessage(std::string uri,
+  static BaseMessage* makeMLMessage(std::string senderUri, std::string uri,
       MLMessageCommandType::Value commandType) {
     MLMessage* payload = new MLMessage(commandType);
-    BaseMessage* message = new BaseMessage(currentMessageId++, uri,
+    BaseMessage* message = new BaseMessage(currentMessageId++, senderUri, uri,
         BaseMessageType::ML);
     message->setPayload(payload);
     return message;
   }
 
   // Make MLAckMessage from bottom
-  static BaseMessage* makeMLAckMessage(std::string uri,
+  static BaseMessage* makeMLAckMessage(std::string senderUri,
       BaseMessage* originalMessage) {
     int commandMessageId = originalMessage->getMessageId();
     MLMessage* originalPayload = (MLMessage*) originalMessage->getPayload();
     MLMessageCommandType::Value commandType
       = originalPayload->getCommandType();
 
+    std::string uri(originalMessage->getSenderUri());
     MLAckMessage* payload = new MLAckMessage(commandMessageId,
         commandType);
-    BaseMessage* message = new BaseMessage(currentMessageId++, uri,
+    BaseMessage* message = new BaseMessage(currentMessageId++, senderUri, uri,
         BaseMessageType::MLAck);
     message->setPayload(payload);
     return message;
