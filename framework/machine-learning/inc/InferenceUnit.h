@@ -66,14 +66,17 @@ class InferenceUnit {
     static void* inferenceLoop(void*);
 
     // Commands
+    bool unload();
     bool start();
     bool stop();
     bool setInput(std::string inputName, std::string sourceUri);
     bool startListeningOutput(std::string listenerUri);
     bool stopListeningOutput(std::string listenerUri);
+    std::string getResourceUsage();
 
     // Getters
     int getIuid() { return this->mIuid; }
+    std::string getName() { return this->mName; }
     InferenceUnitState::Value getState() { return this->mState; }
     std::string getModelPackagePath() { return this->mModelPackagePath; }
     InferenceUnitType::Value getType() { return this->mType; }
@@ -94,14 +97,29 @@ class InferenceUnit {
       this->mOutputListener = outputListener;
     }
 
+    ~InferenceUnit() {
+      if(this->mInputLayout != NULL)
+        delete this->mInputLayout;
+      if(this->mOutputLayout != NULL)
+        delete this->mOutputLayout;
+      if(this->mParameters != NULL)
+        delete this->mParameters;
+      if(this->mInputReaderSet != NULL)
+        delete this->mInputReaderSet;
+      if(this->mInferenceRunner != NULL)
+        delete this->mInferenceRunner;
+    }
+
   protected:
     InferenceUnit(int iuid,
+        std::string name,
         std::string modelPackagePath,
         InferenceRunner* inferenceRunner,
         MLDataUnitLayout* inputLayout,
         MLDataUnitLayout* outputLayout,
         MLDataUnit* parameters)
     : mIuid(iuid),
+    mName(name),
     mState(InferenceUnitState::Initialized),
     mModelPackagePath(modelPackagePath),
     mInputLayout(inputLayout),
@@ -142,6 +160,8 @@ class InferenceUnit {
     // Fields determined at Initializd state //
     // Inference unit ID (IUID)
     int mIuid;
+    // Inference unit name
+    std::string mName;
     // Inference unit's state
     InferenceUnitState::Value mState;
     // Inference unit's model package path (it should be absolute path)

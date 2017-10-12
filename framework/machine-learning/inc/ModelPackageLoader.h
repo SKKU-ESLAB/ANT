@@ -15,16 +15,17 @@
  * limitations under the License.
  */
 
-#include "DNNInferenceRunner.h"
+#ifndef __MODEL_PACKAGE_LOADER_H__
+#define __MODEL_PACKAGE_LOADER_H__
 
-MLDataUnit* DNNInferenceRunner::run(MLDataUnit* inputData) {
-  // TODO: implement it
-}
+#include <string>
 
-// Get resource usage of inference runner
-std::string DNNInferenceRunner::getResourceUsage() {
-  std::string data("");
-  // TODO: implement it
-  
-  return data;
-}
+#include "InferenceUnit.h"
+#include "MLDataUnit.h"
+
+class ModelPackageLoader {
+  public:
+    static InferenceUnit* load(std::string modelPackagePath, MLDataUnit& params);
+};
+
+#endif // !defined(__MODEL_PACKAGE_LOADER_H__)

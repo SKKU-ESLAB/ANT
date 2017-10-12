@@ -20,3 +20,11 @@
 MLDataUnit* ANNInferenceRunner::run(MLDataUnit* inputData) {
   // TODO: implement it
 }
+
+// Get resource usage of inference runner
+std::string ANNInferenceRunner::getResourceUsage() {
+  std::string data("");
+  // TODO: implement it
+  
+  return data;
+}

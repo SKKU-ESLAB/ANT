@@ -23,6 +23,7 @@
 #include "DbusChannel.h"
 #include "MLMessage.h"
 #include "InferenceUnit.h"
+#include "InferenceUnitDirectory.h"
 
 #include <iostream>
 #include <string>
@@ -63,9 +64,9 @@ class MLDaemon
     void startIU(BaseMessage* message);
     void stopIU(BaseMessage* message);
     void getIUResourceUsage(BaseMessage* message);
-    
-    // Inference Unit Directory (key: int iuid, value: InferenceUnit)
-    std::map<int, InferenceUnit*> mInferenceUnitDirectory;
+
+    // Inference Unit Directory
+    InferenceUnitDirectory mInferenceUnitDirectory;
 
     // Message framework
     MessageRouter* mMessageRouter = NULL;
