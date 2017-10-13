@@ -21,9 +21,9 @@
 #include "LocalChannel.h"
 #include "MessageRouter.h"
 #include "DbusChannel.h"
-#include "BaseMessage.h"
-#include "InferenceUnitParams.h"
+#include "MLMessage.h"
 #include "InferenceUnit.h"
+#include "InferenceUnitDirectory.h"
 
 #include <iostream>
 #include <string>
@@ -55,22 +55,18 @@ class MLDaemon
 
   protected:
     // MLFW commands 
-    void loadIU(std::string modelPackagePath,
-        MLDataUnit* params);
-    void unloadIU(int iuid);
-    void getIUs();
-    void setIUInput(int iuid,
-        std::string inputName, std::string sourceUri);
-    void startListeningIUOutput(int iuid,
-        std::string listenerUri);
-    void stopListeningIUOutput(int iuid,
-        std::string listenerUri);
-    void startIU(int iuid);
-    void stopIU(int iuid);
-    void getIUResourceUsage(int iuid);
-    
-    // Inference Unit Directory (key: int iuid, value: InferenceUnit)
-    std::map<int, InferenceUnit*> mInferenceUnitDirectory;
+    void loadIU(BaseMessage* message);
+    void unloadIU(BaseMessage* message);
+    void getIUs(BaseMessage* message);
+    void setIUInput(BaseMessage* message);
+    void startListeningIUOutput(BaseMessage* message);
+    void stopListeningIUOutput(BaseMessage* message);
+    void startIU(BaseMessage* message);
+    void stopIU(BaseMessage* message);
+    void getIUResourceUsage(BaseMessage* message);
+
+    // Inference Unit Directory
+    InferenceUnitDirectory mInferenceUnitDirectory;
 
     // Message framework
     MessageRouter* mMessageRouter = NULL;

@@ -32,6 +32,9 @@ class InferenceRunner {
     //   - Input: MLDataUnit* inputData
     //   - Ouptut: MLDataUnit* outputData
     virtual MLDataUnit* run(MLDataUnit* inputData) = 0;
+
+    // Get resource usage of inference runner
+    virtual std::string getResourceUsage() = 0;
 };
 
 #endif // !defined(__INFERENCE_RUNNER_H__)

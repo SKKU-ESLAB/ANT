@@ -24,6 +24,7 @@
 #include <map>
 
 #include "MLTensor.h"
+#include "cJSON.h"
 
 class MLDataUnitLayout {
   public:
@@ -64,7 +65,14 @@ class MLDataUnit {
         delete tensor;
       }
     }
+    
+    // encoding to JSON
+    bool setFromJSON(cJSON* dataUnitObj);
 
+    // decoding from JSON
+    cJSON* toJSON();
+
+    // Handle tensor map
     MLTensor* findTensor(std::string tensorName) {
       std::map<std::string, MLTensor*>::iterator it
         = this->mTensorMap.find(tensorName);
@@ -79,25 +87,7 @@ class MLDataUnit {
           std::pair<std::string, MLTensor*>(tensorName, tensor));
     }
 
-    bool isMatched(MLDataUnitLayout* dataUnitLayout) {
-      std::map<std::string, MLTensor*>::iterator it;
-      for(it = this->mTensorMap.begin();
-          it != this->mTensorMap.end();
-          it++) {
-        std::string tensorName = it->first;
-        MLTensor* tensor = it->second;
-        MLTensorLayout& tensorLayout = tensor->getLayout();
-
-        MLTensorLayout* givenTensorLayout
-          = dataUnitLayout->findTensorLayout(tensorName);
-
-        if(givenTensorLayout == NULL
-            || !givenTensorLayout->isMatched(&tensorLayout)) {
-          return false;
-        }
-      }
-      return true;
-    }
+    bool isMatched(MLDataUnitLayout* dataUnitLayout);
 
     std::map<std::string, MLTensor*>& getMap() {
       return this->mTensorMap;

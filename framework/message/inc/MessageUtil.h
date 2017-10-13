@@ -15,16 +15,24 @@
  * limitations under the License.
  */
 
-#include "DNNInferenceRunner.h"
+#ifndef __MESSAGE_UTIL_H__
+#define __MESSAGE_UTIL_H__
 
-MLDataUnit* DNNInferenceRunner::run(MLDataUnit* inputData) {
-  // TODO: implement it
-}
+#include "ANTdbugLog.h"
+#include "cJSON.h"
 
-// Get resource usage of inference runner
-std::string DNNInferenceRunner::getResourceUsage() {
-  std::string data("");
-  // TODO: implement it
-  
-  return data;
-}
+#define RETURN_IF_NULL(a, ret) \
+  if((a) == NULL) { \
+    ANT_DBG_ERR("JSON handling error: null pointer"); \
+    return ret; \
+  }
+
+#define RETURN_IF_INVALID_CJSON_OBJ(a, ret) \
+  if((a) == NULL) { \
+    ANT_DBG_ERR("JSON handling error: %s", cJSON_GetErrorPtr()); \
+    return ret; \
+  }
+
+#define EXT4_FILE_PATH_LENGTH 4097
+
+#endif // !defined(__MESSAGE_UTIL_H__)

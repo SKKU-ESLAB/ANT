@@ -18,12 +18,23 @@
 #include "InferenceUnit.h"
 #include "ANTdbugLog.h"
 
+bool InferenceUnit::unload() {
+  InferenceUnitState::Value state = this->getState();
+  if(state != InferenceUnitState::Initialized) {
+    ANT_DBG_ERR("Invalid state!: %s", state);
+    return false;
+  }
+
+  this->setState(InferenceUnitState::Destroyed);
+  return true;
+}
+
 bool InferenceUnit::start() {
   pthread_mutex_lock(&this->mThreadRunningMutex);
 
   // Check if state is "Ready"
   InferenceUnitState::Value state = this->getState();
-  if( state != InferenceUnitState::Ready) {
+  if(state != InferenceUnitState::Ready) {
     pthread_mutex_unlock(&this->mThreadRunningMutex);
     return false;
   }
@@ -41,7 +52,7 @@ bool InferenceUnit::stop() {
 
   // Check if state is "Running"
   InferenceUnitState::Value state = this->getState();
-  if( state != InferenceUnitState::Running) {
+  if(state != InferenceUnitState::Running) {
     pthread_mutex_unlock(&this->mThreadRunningMutex);
     return false;
   }
@@ -231,6 +242,17 @@ bool InferenceUnit::stopListeningOutput(std::string listenerUri) {
   }
 
   return true;
+}
+
+std::string InferenceUnit::getResourceUsage() {
+  std::string data("");
+
+  if(this->mInferenceRunner == NULL) {
+    ANT_DBG_ERR("Inference runner is not defined! : %d", this->getIuid());
+  } else {
+    data.assign(this->mInferenceRunner->getResourceUsage());
+  }
+  return data;
 }
 
 // Check if the inference unit is ready to run

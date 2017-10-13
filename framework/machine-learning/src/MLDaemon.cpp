@@ -35,6 +35,7 @@
 
 #include "MLDaemon.h"
 #include "ANTdbugLog.h"
+#include "ModelPackageLoader.h"
 
 // Message FW
 #include "BaseMessage.h"
@@ -65,7 +66,6 @@ void MLDaemon::run() {
 
 // LocalChannelListener
 void MLDaemon::onReceivedMessage(BaseMessage* message) {
-  // TODO: implement MLMessage in Message FW
   if(message == NULL) {
     ANT_DBG_ERR("Invalid ML Message");
     return;
@@ -82,6 +82,33 @@ void MLDaemon::onReceivedMessage(BaseMessage* message) {
 
   int commandType = payload->getCommandType();
   switch(commandType) {
+    case MLMessageCommandType::LoadIU:
+      this->loadIU(message);
+      break;
+    case MLMessageCommandType::UnloadIU:
+      this->unloadIU(message);
+      break;
+    case MLMessageCommandType::GetIUs:
+      this->getIUs(message);
+      break;
+    case MLMessageCommandType::SetIUInput:
+      this->setIUInput(message);
+      break;
+    case MLMessageCommandType::StartListeningIUOutput:
+      this->startListeningIUOutput(message);
+      break;
+    case MLMessageCommandType::StopListeningIUOutput:
+      this->stopListeningIUOutput(message);
+      break;
+    case MLMessageCommandType::StartIU:
+      this->startIU(message);
+      break;
+    case MLMessageCommandType::StopIU:
+      this->stopIU(message);
+      break;
+    case MLMessageCommandType::GetIUResourceUsage:
+      this->getIUResourceUsage(message);
+      break;
     default:
       // Do not handle it
       break;
@@ -89,31 +116,232 @@ void MLDaemon::onReceivedMessage(BaseMessage* message) {
 }
 
 // MLFW Commands
-void MLDaemon::loadIU(std::string modelPackagePath, MLDataUnit* params) {
-  // TODO: implement it
+void MLDaemon::loadIU(BaseMessage* message) {
+  // Get arguments
+  MLMessage* originalPayload = (MLMessage*)message->getPayload();
+  std::string modelPackagePath;
+  MLDataUnit params;
+  originalPayload->getParamsLoadIU(modelPackagePath, params);
+
+  // Model Package Loader: Load a model package and make inference unit
+  InferenceUnit* iu = ModelPackageLoader::load(modelPackagePath, params);
+
+  // Insert the Infernce Unit to Inference Unit Directory
+  int iuid = this->mInferenceUnitDirectory.insert(iu);
+
+  // Make ACK message
+  // TODO: remove setting target URI of AckMessage
+  BaseMessage* ackMessage
+    = MessageFactory::makeMLAckMessage(APPS_URI, message);
+  MLAckMessage* ackPayload = (MLAckMessage*)ackMessage->getPayload();
+  ackPayload->setParamsLoadIU(iuid);
+
+  // Send ACK message
+  this->mLocalChannel->sendMessage(ackMessage);
 }
-void MLDaemon::unloadIU(int iuid) {
-  // TODO: implement it
+
+void MLDaemon::unloadIU(BaseMessage* message) {
+  // Get arguments
+  MLMessage* originalPayload = (MLMessage*)message->getPayload();
+  int iuid;
+  originalPayload->getParamsUnloadIU(iuid);
+
+  // Find inference unit
+  InferenceUnit* iu = this->mInferenceUnitDirectory.find(iuid);
+  if(iu == NULL) {
+    ANT_DBG_ERR("Cannot find inference unit: %d", iuid);
+    return;
+  }
+
+  // Unload inference unit
+  bool unloadRes = iu->unload();
+  if(!unloadRes) {
+    ANT_DBG_ERR("Cannot unload inference unit: %d", iuid);
+    return;
+  }
+
+  // Remove inference unit from Inference Unit Directory
+  bool removeRes = this->mInferenceUnitDirectory.remove(iuid);
+  if(!removeRes) {
+    ANT_DBG_ERR("Cannot remove inference unit from directory: %d", iuid);
+    return;
+  }
+
+  // No ACK message
 }
-void MLDaemon::getIUs() {
-  // TODO: implement it
+
+void MLDaemon::getIUs(BaseMessage* message) {
+  // No arguments
+  
+  // Get infernece unit map
+  std::map<int, InferenceUnit*>& iuMap = this->mInferenceUnitDirectory.getMap();
+
+  // Make parameters
+  ParamIUList* paramIUList = ParamIUList::make();
+  std::map<int, InferenceUnit*>::iterator iter;
+  for(iter = iuMap.begin();
+      iter != iuMap.end();
+      iter++) {
+    InferenceUnit* iu = iter->second;
+    paramIUList->addEntry(iu->getIuid(), iu->getName(), iu->getType());
+  }
+
+  // Make ACK message
+  BaseMessage* ackMessage
+    = MessageFactory::makeMLAckMessage(APPS_URI, message);
+  MLAckMessage* ackPayload = (MLAckMessage*)ackMessage->getPayload();
+  ackPayload->setParamsGetIUs(paramIUList);
+
+  // Send ACK message
+  this->mLocalChannel->sendMessage(ackMessage);
+  delete paramIUList;
 }
-void MLDaemon::setIUInput(int iuid, std::string inputName,
-    std::string sourceUri) {
-  // TODO: implement it
+
+void MLDaemon::setIUInput(BaseMessage* message) {
+  // Get arguments
+  MLMessage* originalPayload = (MLMessage*)message->getPayload();
+  int iuid;
+  std::string inputName;
+  std::string sourceUri;
+  originalPayload->getParamsSetIUInput(iuid, inputName, sourceUri);
+
+  // Find inference unit
+  InferenceUnit* iu = this->mInferenceUnitDirectory.find(iuid);
+  if(iu == NULL) {
+    ANT_DBG_ERR("Cannot find inference unit: %d", iuid);
+    return;
+  }
+
+  // Set inference unit input
+  bool setInputRes = iu->setInput(inputName, sourceUri);
+  if(!setInputRes) {
+    ANT_DBG_ERR("Cannot set input of inference unit: %d", iuid);
+    return;
+  }
+
+  // No ACK message
 }
-void MLDaemon::startListeningIUOutput(int iuid, std::string listenerUri) {
-  // TODO: implement it
+
+void MLDaemon::startListeningIUOutput(BaseMessage* message) {
+  // Get arguments
+  MLMessage* originalPayload = (MLMessage*)message->getPayload();
+  int iuid;
+  std::string listenerUri;
+  originalPayload->getParamsStartListeningIUOutput(iuid, listenerUri);
+
+  // Find inference unit
+  InferenceUnit* iu = this->mInferenceUnitDirectory.find(iuid);
+  if(iu == NULL) {
+    ANT_DBG_ERR("Cannot find inference unit: %d", iuid);
+    return;
+  }
+
+  // Start listening inference unit output
+  bool startListeningOutputRes = iu->startListeningOutput(listenerUri);
+  if(!startListeningOutputRes) {
+    ANT_DBG_ERR("Cannot start listening output of inference unit: %d", iuid);
+    return;
+  }
+
+  // ACK message will be sent later
 }
-void MLDaemon::stopListeningIUOutput(int iuid, std::string listenerUri) {
-  // TODO: implement it
+
+void MLDaemon::stopListeningIUOutput(BaseMessage* message) {
+  // Get arguments
+  MLMessage* originalPayload = (MLMessage*)message->getPayload();
+  int iuid;
+  std::string listenerUri;
+  originalPayload->getParamsStopListeningIUOutput(iuid, listenerUri);
+
+  // Find inference unit
+  InferenceUnit* iu = this->mInferenceUnitDirectory.find(iuid);
+  if(iu == NULL) {
+    ANT_DBG_ERR("Cannot find inference unit: %d", iuid);
+    return;
+  }
+
+  // Stop listening inference unit output
+  bool stopListeningOutputRes = iu->stopListeningOutput(listenerUri);
+  if(!stopListeningOutputRes) {
+    ANT_DBG_ERR("Cannot stop listening output of inference unit: %d", iuid);
+    return;
+  }
+
+  // No ACK message
 }
-void MLDaemon::startIU(int iuid) {
-  // TODO: implement it
+
+void MLDaemon::startIU(BaseMessage* message) {
+  // Get arguments
+  MLMessage* originalPayload = (MLMessage*)message->getPayload();
+  int iuid;
+  originalPayload->getParamsStartIU(iuid);
+
+  // Find inference unit
+  InferenceUnit* iu = this->mInferenceUnitDirectory.find(iuid);
+  if(iu == NULL) {
+    ANT_DBG_ERR("Cannot find inference unit: %d", iuid);
+    return;
+  }
+
+  // Start inference unit
+  bool startRes = iu->start();
+  if(!startRes) {
+    ANT_DBG_ERR("Cannot start inference unit: %d", iuid);
+    return;
+  }
+
+  // No ACK message
 }
-void MLDaemon::stopIU(int iuid) {
-  // TODO: implement it
+
+void MLDaemon::stopIU(BaseMessage* message) {
+  // Get arguments
+  MLMessage* originalPayload = (MLMessage*)message->getPayload();
+  int iuid;
+  originalPayload->getParamsStopIU(iuid);
+
+  // Find inference unit
+  InferenceUnit* iu = this->mInferenceUnitDirectory.find(iuid);
+  if(iu == NULL) {
+    ANT_DBG_ERR("Cannot find inference unit: %d", iuid);
+    return;
+  }
+
+  // Stop inference unit
+  bool stopRes = iu->stop();
+  if(!stopRes) {
+    ANT_DBG_ERR("Cannot stop inference unit: %d", iuid);
+    return;
+  }
+
+  // No ACK message
 }
-void MLDaemon::getIUResourceUsage(int iuid) {
-  // TODO: implement it
+
+void MLDaemon::getIUResourceUsage(BaseMessage* message) {
+  // Get arguments
+  MLMessage* originalPayload = (MLMessage*)message->getPayload();
+  int iuid;
+  originalPayload->getParamsGetIUResourceUsage(iuid);
+
+  // Find inference unit
+  InferenceUnit* iu = this->mInferenceUnitDirectory.find(iuid);
+  if(iu == NULL) {
+    ANT_DBG_ERR("Cannot find inference unit: %d", iuid);
+    return;
+  }
+
+  // Get resource usage of inference unit
+  std::string data = iu->getResourceUsage();
+  if(data.empty()) {
+    ANT_DBG_ERR("Cannot get resource usage of inference unit: %d", iuid);
+    return;
+  }
+
+  // Make ACK message
+  BaseMessage* ackMessage
+    = MessageFactory::makeMLAckMessage(APPS_URI, message);
+  MLAckMessage* ackPayload = (MLAckMessage*)ackMessage->getPayload();
+  ackPayload->setParamsGetIUResourceUsage(data);
+
+  // Send ACK message
+  this->mLocalChannel->sendMessage(ackMessage);
 }

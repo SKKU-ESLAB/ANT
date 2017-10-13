@@ -32,6 +32,9 @@ class DNNInferenceRunner
     //   - Input: MLDataUnit* inputData
     //   - Ouptut: MLDataUnit* outputData
     virtual MLDataUnit* run(MLDataUnit* inputData);
+
+    // Get resource usage of inference runner
+    virtual std::string getResourceUsage();
 };
 
 #endif // !defined(__DNN_INFERENCE_RUNNER_H__)
