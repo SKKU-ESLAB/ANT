@@ -37,9 +37,12 @@ public class BaseMessage implements Parcelable {
     public static final int Type_App = 20;
     public static final int Type_AppAck = 21;
     public static final int Type_Companion = 30;
+    public static final int Type_ML = 40;
+    public static final int Type_MLAck = 41;
 
     // JSON field name
     static final String ANT_MESSAGE_KEY_MESSAGE_NUM = "messageId";
+    static final String ANT_MESSAGE_KEY_SENDER_URI = "senderUri";
     static final String ANT_MESSAGE_KEY_URI = "uri";
     static final String ANT_MESSAGE_KEY_TYPE = "type";
     static final String ANT_MESSAGE_KEY_IS_FILE_ATTACHED = "isFileAttached";
@@ -56,6 +59,7 @@ public class BaseMessage implements Parcelable {
         ObjectMapper mapper = new ObjectMapper();
         ObjectNode thisObj = mapper.createObjectNode();
         thisObj.put(ANT_MESSAGE_KEY_MESSAGE_NUM, "" + this.mMessageId);
+        thisObj.put(ANT_MESSAGE_KEY_SENDER_URI, "" + this.mSenderUri);
         thisObj.put(ANT_MESSAGE_KEY_URI, "" + this.mUri);
         thisObj.put(ANT_MESSAGE_KEY_TYPE, "" + this.mType);
         thisObj.put(ANT_MESSAGE_KEY_IS_FILE_ATTACHED, (this.isFileAttached()) ? "1" : "0");
@@ -67,6 +71,10 @@ public class BaseMessage implements Parcelable {
     // Get parameters
     public int getMessageId() {
         return this.mMessageId;
+    }
+
+    public String getSenderUri() {
+        return this.mSenderUri;
     }
 
     public String getUri() {
@@ -112,17 +120,6 @@ public class BaseMessage implements Parcelable {
         return this.mStoredFilePath;
     }
 
-    public BaseMessage(int messageId, String uri, int type, boolean isFileAttached, String
-            fileName) {
-        this.mMessageId = messageId;
-        this.mUri = uri;
-        this.mType = type;
-        this.mIsFileAttached = isFileAttached;
-        this.mFileName = fileName;
-        this.mStoredFilePath = "";
-        this.mPayload = null;
-    }
-
     // Android Parcelable
     @Override
     public int describeContents() {
@@ -156,12 +153,25 @@ public class BaseMessage implements Parcelable {
     };
 
     // Initializer
-    public BaseMessage(int messageId, String uri, int type) {
-        this(messageId, uri, type, false, "");
+    public BaseMessage(int messageId, String senderUri, String uri, int type, boolean
+            isFileAttached, String fileName) {
+        this.mMessageId = messageId;
+        this.mSenderUri = senderUri;
+        this.mUri = uri;
+        this.mType = type;
+        this.mIsFileAttached = isFileAttached;
+        this.mFileName = fileName;
+        this.mStoredFilePath = "";
+        this.mPayload = null;
+    }
+
+    public BaseMessage(int messageId, String senderUri, String uri, int type) {
+        this(messageId, senderUri, uri, type, false, "");
     }
 
     // Exported to JSON
     private int mMessageId;
+    private String mSenderUri;
     private String mUri;
     private int mType;
     private boolean mIsFileAttached;
