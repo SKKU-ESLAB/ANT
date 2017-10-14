@@ -41,7 +41,7 @@ print_progress() {
 print_progress 1 "Install dependent packages..."
 sudo apt-get update
 sudo apt-get -y install g++-4.8                                               \
-  wiringpi libdbus-1-dev glib-2.0 libdbus-glib-1-2 bison yacc                 \
+  wiringpi libdbus-1-dev glib-2.0 libdbus-glib-1-2 bison byacc                 \
   libdbus-glib-1-2-dbg libdbus-glib-1-dev zip sqlite3 libsqlite3-dev cmake    \
   libgtk2.0-dev pkg-config libavcodec-dev libavformat-dev libswscale-dev git  \
   python-dev python-numpy libjpeg-dev libpng-dev libtiff-dev libjasper-dev    \
@@ -59,8 +59,10 @@ git submodule update --init --recursive
 
 # Step 3. Build and reinstall bluez-4.101
 print_progress 3 "Build and reinstall bluez-4.101..."
+
 # Remove existing bluez
-sudo apt-get remove bluez
+#sudo apt-get remove bluez
+
 # Install bluez
 cd ${ANT_REPO_DIR}/dep/bluez-4.101
 ./configure --prefix=/usr --mandir=/usr/share/man --sysconfdir=/etc \
