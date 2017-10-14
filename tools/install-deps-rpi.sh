@@ -49,7 +49,7 @@ sudo apt-get -y install g++-4.8                                               \
   python3 udhcpd libv4l-dev libboost-dev libboost-serialization-dev gstreamer1.0
 
 # Get the absolute path of ANT repository directory
-ANT_REPO_DIR=$(dirname "$0")/../..
+ANT_REPO_DIR=$(dirname "$0")/..
 eval ANT_REPO_DIR=`readlink --canonicalize ${ANT_REPO_DIR}`
 
 # Step 2. Download submodules
