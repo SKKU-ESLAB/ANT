@@ -16,6 +16,8 @@ before_script:
 
 
 script:
-  - docker build -t ant ./tools/
+  - docker build -t ant .
   - docker run -it ant uname -a
-
+  - docker run -it ant ./tools/install-deps-rpi.sh
+  - docker run -it ant cmake -Bbuild -H.
+  - docker run -it ant make
