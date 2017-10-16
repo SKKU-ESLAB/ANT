@@ -40,7 +40,7 @@ print_progress() {
 # Step 1. Install packages by apt-get
 print_progress 1 "Install dependent packages..."
 sudo apt-get update
-sudo apt-get -y install g++-4.8                                               \
+sudo apt-get -y install make g++-4.8                                          \
   wiringpi libdbus-1-dev glib-2.0 libdbus-glib-1-2 bison byacc                 \
   libdbus-glib-1-2-dbg libdbus-glib-1-dev zip sqlite3 libsqlite3-dev cmake    \
   libgtk2.0-dev pkg-config libavcodec-dev libavformat-dev libswscale-dev git  \
