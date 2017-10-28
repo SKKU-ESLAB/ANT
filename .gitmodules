@@ -13,15 +13,6 @@
 [submodule "dep/libuv-v1.7.5"]
 	path = dep/libuv-v1.7.5
 	url = https://github.com/libuv/libuv
-[submodule "dep/libxml2-2.9.4-rc2"]
-	path = dep/libxml2-2.9.4-rc2
-	url = https://github.com/GNOME/libxml2
-[submodule "dep/opencv-3.0.0"]
-	path = dep/opencv-3.0.0
-	url = https://github.com/SKKU-ESLAB/ant-opencv3
-[submodule "dep/nodejs-4.0.0"]
-	path = dep/nodejs-4.0.0
-	url = https://github.com/nodejs/node
 [submodule "dep/gst-rpicamsrc"]
 	path = dep/gst-rpicamsrc
 	url = https://github.com/thaytan/gst-rpicamsrc.git
