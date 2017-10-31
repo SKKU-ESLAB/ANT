@@ -53,6 +53,21 @@ In example of Raspberry Pi 2 or 3:
 $ cd ${ANT_ROOT_DIR}
 $ sudo ./scripts/install.sh --target=raspberry-pi2_3
 ```
+### How to Run
+
+```
+$ sudo run_ant
+```
+
+## For Your Information (FYI)
+When you are using ANT with raspberry pi or tegra, you need to make it to bluetooth-pair with the mobile phone.
+Our ANT mobile Android App provides bluetooth discovery feature when it starts the app.
+You need to make the device discoverable with the bluetooth.
+
+In raspberry pi, 
+```
+$ sudo hciconfig hci0 piscan
+```
 
 You need target profile on ```target/TARGET_NAME/profile.env``` before running install script.
 
