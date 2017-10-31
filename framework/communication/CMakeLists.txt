@@ -21,7 +21,7 @@ target_link_libraries(ant-cmfw bluetooth)
 
 set_target_properties(ant-cmfw
 		PROPERTIES
-		ARCHIVE_OUTPUT_DIRECTORY "../../out/libs"
-		LIBRARY_OUTPUT_DIRECTORY "../../out/libs"
-		RUNTIME_OUTPUT_DIRECTORY "../../out/bin"
+    ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/out/libs
+		LIBRARY_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/out/libs
+		RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/out/bin
 		COMPILE_FLAGS "-std=c++11")
