@@ -65,9 +65,13 @@ Our ANT mobile Android App provides bluetooth discovery feature when it starts t
 You need to make the device discoverable with the bluetooth.
 
 In raspberry pi, 
+### Change hci0 interface to Scan Mode
 ```
 $ sudo hciconfig hci0 piscan
 ```
+
+For more information, see docs/blueooth.md
+
 
 You need target profile on ```target/TARGET_NAME/profile.env``` before running install script.
 
