@@ -16,3 +16,6 @@
 [submodule "dep/gst-rpicamsrc"]
 	path = dep/gst-rpicamsrc
 	url = https://github.com/thaytan/gst-rpicamsrc.git
+[submodule "dep/fann"]
+	path = dep/fann
+	url = https://github.com/libfann/fann.git
