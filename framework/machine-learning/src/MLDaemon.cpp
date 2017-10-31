@@ -552,24 +552,3 @@ int MLDaemon::loadBuiltin(std::string modelName) {
   int iuid = this->mInferenceUnitDirectory.insert(iu);
   return iuid;
 }
-
-// Utility function
-std::string getDataDir() {
-  char* dirString = getenv("ANT_DATA_DIR");
-  char dataDir[PATH_BUFFER_SIZE];
-  struct stat st = {0};
-  std::string dataDirStr;
-
-  if(dirString != NULL) {
-    snprintf(dataDir, PATH_BUFFER_SIZE, "%s", dirString);
-    if(stat(dataDir, &st) == -1) {
-      mkdir(dataDir, 0755);
-    }
-  } else {
-    ANT_DBG_ERR("Cannot read ANT_DATA_DIR");
-    return dataDirStr;
-  }
-  ANT_DBG_VERB("MLDaemon DataDir=%s", dataDir);
-  dataDirStr.assign(dataDir);
-  return dataDirStr;
-}
