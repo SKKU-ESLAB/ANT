@@ -48,6 +48,10 @@ sudo apt-get -y install g++-4.8 wiringpi libdbus-1-dev glib-2.0 bison byacc   \
   gstreamer1.0-plugins-bad gstreamer1.0-plugins-ugly gstreamer1.0-libav       \
   gstreamer1.0-doc gstreamer1.0-tools libgstreamer-plugins-base1.0-dev
 
+## Caffe Library Dependency
+
+
+
 # Get the absolute path of ANT repository directory
 ANT_REPO_DIR=$(dirname "$0")/../..
 eval ANT_REPO_DIR=`readlink --canonicalize ${ANT_REPO_DIR}`
