@@ -138,6 +138,11 @@ cd ${ANT_REPO_DIR}/dep/gst-rpicamsrc
 make
 sudo make install
 
+# Step 13. Install FANN Library
+cd ${ANT_REPO_DIR}/dep/fann
+cmake .
+sudo make install
+
 WARN_COLO="\033[31;47m"
 INFO_COLO="\033[36m"
 INIT_COLO="\033[0m"

@@ -15,11 +15,51 @@
  * limitations under the License.
  */
 
+#include <sys/stat.h>
+#include <sys/types.h>
+
 #include "ANNInferenceRunner.h"
+#include "ANTdbugLog.h"
+#include "fann.h"
+
+// Utility function
+#define PATH_BUFFER_SIZE 1024
+std::string getDataDir() {
+  char* dirString = getenv("ANT_DATA_DIR");
+  char dataDir[PATH_BUFFER_SIZE];
+  struct stat st = {0};
+  std::string dataDirStr;
+
+  if(dirString != NULL) {
+    snprintf(dataDir, PATH_BUFFER_SIZE, "%s", dirString);
+    if(stat(dataDir, &st) == -1) {
+      mkdir(dataDir, 0755);
+    }
+  } else {
+    ANT_DBG_ERR("Cannot read ANT_DATA_DIR");
+    return dataDirStr;
+  }
+  dataDirStr.assign(dataDir);
+  return dataDirStr;
+}
 
 MLDataUnit* ANNInferenceRunner::run(MLDataUnit* inputData) {
-  // TODO: implement it
   // Now DNN output is given as dummy data.
+ 
+  const char* act[7] = {"None", "Biking", "Sitting", "Standing", "Walking",
+    "Stair Up", "Stair down"};
+  fann_type *calc_out;
+  fann_type inputstr[3];
+  std::string dataDir = getDataDir();
+  std::string modelPath = dataDir.append("/models/accelerometer.net");
+  struct fann *ann = fann_create_from_file(modelPath.c_str());
+
+  if(!ann)
+  {
+    printf("Error creating ann --- ABORTING\n");
+    return NULL;
+  }
+
   MLTensor* inputTensor = inputData->findTensor("input");
   if(inputTensor == NULL) return NULL;
   void* inputBuffer = inputTensor->bytesValue();
@@ -31,11 +71,31 @@ MLDataUnit* ANNInferenceRunner::run(MLDataUnit* inputData) {
 
   MLTensor* outputTensor = new MLTensor(outputTensorLayout);
   char outputStr[30];
-  snprintf(outputStr, 30, "%.4f-%.4f-%.4f", input0, input1, input2);
+  int outputidx = 0;
+
+  inputstr[0] = input0;
+  inputstr[1] = input1;
+  inputstr[2] = input2;
+  calc_out = fann_run(ann, inputstr);
+
+  for (int i = 0; i < 7; i++)
+  {
+    if (calc_out[outputidx]<calc_out[i]) outputidx = i;
+  }
+
+#ifdef TEST_ON
+  printf("\ninputstr: %f, %f, %f\noutputidx: %d\ncalc_out:%f, %f, %f, %f, %f, %f, %f\n\n", 
+      inputstr[0], inputstr[1], inputstr[2], outputidx, calc_out[0], calc_out[1], 
+      calc_out[2], calc_out[3], calc_out[4], calc_out[5], calc_out[6]);
+#endif
+
+  snprintf(outputStr, 30, "%s", act[outputidx]);
   outputTensor->assignData(outputStr);
 
   MLDataUnit* outputData = new MLDataUnit();
   outputData->insertTensor("output", outputTensor);
+
+  fann_destroy(ann);
   return outputData;
 }
 
