@@ -1,6 +1,6 @@
-include_directories(./inc)
-include_directories(../communication/inc)
-link_directories(../../out/libs)
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/inc)
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../communication/inc)
+link_directories(${CMAKE_SOURCE_DIR}/out/libs)
 
 add_definitions("`pkg-config --libs --cflags dbus-1 glib-2.0 dbus-glib-1`")
 
@@ -26,7 +26,7 @@ target_link_libraries(ant-message
 
 set_target_properties(ant-message
   PROPERTIES
-  ARCHIVE_OUTPUT_DIRECTORY "../../out/libs"
-  LIBRARY_OUTPUT_DIRECTORY "../../out/libs"
-  RUNTIME_OUTPUT_DIRECTORY "../../out/bin"
+  ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/out/libs
+  LIBRARY_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/out/libs
+  RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/out/bin
   COMPILE_FLAGS "-std=c++11")
