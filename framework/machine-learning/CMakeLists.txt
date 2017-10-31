@@ -22,7 +22,7 @@ set(MLFW_sources
 add_executable(ant-ml ${MLFW_sources})
 
 target_link_libraries(ant-ml
-  ant-message ant-cmfw pthread)
+  ant-message ant-cmfw pthread fann doublefann fixedfann floatfann)
 
 set_target_properties(ant-ml
   PROPERTIES
