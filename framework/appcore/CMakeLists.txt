@@ -1,10 +1,10 @@
-include_directories(./inc)
-include_directories(../message/inc)
-include_directories(../communication/inc)
-include_directories(./libminiunz)
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/inc)
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../message/inc)
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../communication/inc)
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/libminiunz)
 include_directories(/usr/local/xml/include/libxml2)
 link_directories(/usr/local/xml/lib)
-link_directories(../../out/libs)
+link_directories(${CMAKE_SOURCE_DIR}/out/libs)
 
 add_definitions("`pkg-config --libs --cflags dbus-1 glib-2.0 dbus-glib-1`")
 
@@ -32,4 +32,4 @@ target_link_libraries(ant-appcore
 
 set_target_properties(ant-appcore
   PROPERTIES
-  RUNTIME_OUTPUT_DIRECTORY "../../out/bin")
+  RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/out/bin)
