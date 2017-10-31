@@ -400,6 +400,13 @@ mkdir -p ${ANT_APPS_DIR}/system
 mkdir -p ${ANT_APPS_DIR}/user
 cp -R ${ANT_OUT_DIR}/system-apps/* ${ANT_APPS_DIR}/system/
 
+# Copy built-in machine learning models
+print_progress 8 "Install built-in machine learning models..."
+mkdir -p ${ANT_DATA_DIR}/models
+cp -R ${ANT_OUT_DIR}/models/* ${ANT_DATA_DIR}/models/
+
+
+
 WARN_COLO="\033[31;47m"
 INFO_COLO="\033[36m"
 INIT_COLO="\033[0m"
