@@ -13,6 +13,7 @@ $ cd ANT
 You can build the sensor driver code for the specific target board.
 The target-dependent code is in the target/ directory.
 ```
+ $ cd ${ANT_ROOT_DIR}
  $ cd target/<TARGET_BOARD>/sensor-drivers/
  $ cmake .
  $ make
@@ -21,8 +22,8 @@ The target-dependent code is in the target/ directory.
 The driver code and specification is in the out/sensor-drivers/ directory.
 You need to copy it to the ANT sensor driver code directory
 ```
-$ cp libsensors.so ${ANT_DIR}/out/sensor-drivers/
-$ cp sensor_config.json ${ANT_DIR}/out/sensor-drivers/
+$ cp libsensors.so ${ANT_ROOT_DIR}/out/sensor-drivers/
+$ cp sensor_config.json ${ANT_ROOT_DIR}/out/sensor-drivers/
 
 ```
 
@@ -32,19 +33,24 @@ It is dependent on target device.
 In example of Raspberry Pi 2 or 3:
 
 ```
+$ cd ${ANT_ROOT_DIR}
 $ ./target/raspberry-pi2_3/install-deps-raspberry-pi2_3.sh
 ```
 
 ### How to Build
 ```
-$ cmake -Bbuild -H.
-$ make
+$ cd ${ANT_ROOT_DIR}
+$ mkdir build
+$ cd build
+$ cmake ..
+$ make   ## Please do not give -j option
 ```
 
 ### How to Install
 In example of Raspberry Pi 2 or 3:
 
 ```
+$ cd ${ANT_ROOT_DIR}
 $ sudo ./scripts/install.sh --target=raspberry-pi2_3
 ```
 
