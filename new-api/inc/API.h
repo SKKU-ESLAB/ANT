@@ -15,18 +15,11 @@
  * limitations under the License.
  */
 
-#ifndef __MODEL_PACKAGE_LOADER_H__
-#define __MODEL_PACKAGE_LOADER_H__
+#ifndef __API_H__
+#define __API_H__
 
-#include <string>
+#include "AppBase.h"
 
-#include "InferenceUnit.h"
-#include "MLDataUnit.h"
+extern AppBase* gAppBase;
 
-class ModelPackageLoader {
-  public:
-    static InferenceUnit* load(std::string modelPackagePath, MLDataUnit& params);
-    static InferenceUnit* loadBuiltin(std::string modelName);
-};
-
-#endif // !defined(__MODEL_PACKAGE_LOADER_H__)
+#endif // !defined(__API_H__)

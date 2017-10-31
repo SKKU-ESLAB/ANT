@@ -35,7 +35,8 @@
 class LocalChannel;
 
 class MLDaemon
-: public LocalChannelListener {
+: public LocalChannelListener,
+  public InferenceUnitOutputListener {
 
   public:
     MLDaemon() {
@@ -45,13 +46,28 @@ class MLDaemon
       delete this->mMessageRouter;
       delete this->mDbusChannel;
       delete this->mLocalChannel;
+
+      std::vector<BaseMessage*>::iterator iter;
+      for(iter = this->mListenIUOutputList.begin();
+          iter != this->mListenIUOutputList.end();
+          iter++) {
+        this->mListenIUOutputList.erase(iter);
+        delete (*iter);
+      }
     }
 
     // Main loop
     void run();
 
+    // Testing mode
+    void runTest(std::string modelName);
+
     // LocalChannelListener
     virtual void onReceivedMessage(BaseMessage* message);
+
+    // InferenceUnitOutputListener
+    virtual void onInferenceUnitOutput(int iuid,
+        std::string listenerUri, MLDataUnit* outputData);
 
   protected:
     // MLFW commands 
@@ -64,14 +80,34 @@ class MLDaemon
     void startIU(BaseMessage* message);
     void stopIU(BaseMessage* message);
     void getIUResourceUsage(BaseMessage* message);
+    void runModel(BaseMessage* message);
+
+    // MLFW internal functions
+    int loadIU(std::string modelPackagePath, MLDataUnit params);
+    int loadBuiltin(std::string modelName);
+    bool unloadIU(int iuid);   
+    std::map<int, InferenceUnit*>& getIUs();
+    bool setIUInput(int iuid, std::string inputName, std::string sourceUri);
+    bool startListeningIUOutput(int iuid, std::string listenerUri);
+    bool stopListeningIUOutput(int iuid, std::string listenerUri);
+    bool startIU(int iuid);
+    bool stopIU(int iuid);
+    std::string getIUResourceUsage(int iuid);
+    bool runModel(std::string modelName);
 
     // Inference Unit Directory
     InferenceUnitDirectory mInferenceUnitDirectory;
+
+    // Inference unit output listen request message list
+    std::vector<BaseMessage*> mListenIUOutputList;
 
     // Message framework
     MessageRouter* mMessageRouter = NULL;
     DbusChannel* mDbusChannel = NULL;
     LocalChannel* mLocalChannel = NULL;
+
+    // Test mode
+    bool mIsTestMode = false;
 };
 
 #endif // !defined(__ML_DAEMON_H__)

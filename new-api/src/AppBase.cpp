@@ -14,6 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 #include <sys/types.h>
 #include <unistd.h>
 
@@ -23,23 +24,24 @@
 
 #define COMPANION_DEVICE_URI "/comp0"
 #define APPCORE_URI "/thing/appcore"
+#define ML_URI "/thing/ml"
 #define APPS_URI "/thing/apps"
 
 #define PATH_BUFFER_SIZE 1024
 
 // Static variables
-Persistent<Function> AppBase::sOnTerminateCallback;
-AppBase* AppBase::sOnTerminateSelf;
-Persistent<Function> AppBase::sOnUpdateAppConfigCallback;
-AppBase* AppBase::sOnUpdateAppConfigSelf;
-uint8_t* AppBase::sOnUpdateAppConfigJsonData;
-BaseMessage* AppBase::sOnUpdateAppConfigMessage;
+OnTerminateJSAsync* OnTerminateJSAsync::sSingleton;
+OnUpdateAppConfigJSAsync* OnUpdateAppConfigJSAsync::sSingleton;
 
 void AppBase::run() {
+  // URI
+  char appURI[PATH_BUFFER_SIZE];
+  snprintf(appURI, PATH_BUFFER_SIZE, "%s/pid%d", APPS_URI, getpid());
+
   // Initialize MessageRouter and Channels
   this->mMessageRouter = new MessageRouter();
   this->mDbusChannel = new DbusChannel(this->mMessageRouter);
-  this->mLocalChannel = new LocalChannel(this->mMessageRouter, true);
+  this->mLocalChannel = new LocalChannel(this->mMessageRouter, appURI, true);
 
   // Run DbusChannel: run on child thread
   this->mDbusChannel->run();
@@ -48,8 +50,6 @@ void AppBase::run() {
       this->mDbusChannel);
 
   // LocalChannel: run on child thread
-  char appURI[PATH_BUFFER_SIZE];
-  snprintf(appURI, PATH_BUFFER_SIZE, "%s/pid%d", APPS_URI, getpid());
   this->mMessageRouter->addRoutingEntry(appURI, this->mLocalChannel);
   this->mLocalChannel->setListener(this);
   this->mLocalChannel->run();
@@ -59,7 +59,8 @@ void AppBase::run() {
 void AppBase::completeLaunchingApp() {
   // Make appcore message
   BaseMessage* appcoreMessage 
-    = MessageFactory::makeAppCoreMessage(APPCORE_URI,
+    = MessageFactory::makeAppCoreMessage(this->mLocalChannel->getUri(),
+        APPCORE_URI,
         AppCoreMessageCommandType::CompleteLaunchingApp); 
   AppCoreMessage* appCorePayload
     = (AppCoreMessage*)appcoreMessage->getPayload();
@@ -78,7 +79,8 @@ void AppBase::sendEventPageToCompanion(const char* jsonData, bool isNoti) {
 
   // Make companion message
   BaseMessage* companionMessage
-    = MessageFactory::makeCompanionMessage(COMPANION_DEVICE_URI,
+    = MessageFactory::makeCompanionMessage(this->mLocalChannel->getUri(),
+        COMPANION_DEVICE_URI,
         CompanionMessageCommandType::SendEventPage); 
   CompanionMessage* companionPayload
     = (CompanionMessage*)companionMessage->getPayload();
@@ -97,7 +99,8 @@ void AppBase::sendConfigPageToCompanion(const char* jsonData) {
 
   // Make companion message
   BaseMessage* companionMessage
-    = MessageFactory::makeCompanionMessage(COMPANION_DEVICE_URI,
+    = MessageFactory::makeCompanionMessage(this->mLocalChannel->getUri(),
+        COMPANION_DEVICE_URI,
         CompanionMessageCommandType::SendConfigPage); 
   CompanionMessage* companionPayload
     = (CompanionMessage*)companionMessage->getPayload();
@@ -111,7 +114,8 @@ void AppBase::sendConfigPageToCompanion(const char* jsonData) {
 void AppBase::updateSensorDataToCompanion(const char* jsonData) {
   // Make companion message
   BaseMessage* companionMessage
-    = MessageFactory::makeCompanionMessage(COMPANION_DEVICE_URI,
+    = MessageFactory::makeCompanionMessage(this->mLocalChannel->getUri(),
+        COMPANION_DEVICE_URI,
         CompanionMessageCommandType::UpdateSensorData); 
   CompanionMessage* companionPayload
     = (CompanionMessage*)companionMessage->getPayload();
@@ -169,9 +173,29 @@ void AppBase::onReceivedMessage(BaseMessage* message) {
         }
         break;
       }
+    case BaseMessageType::MLAck:
+      {
+        // ML Ack Message
+        MLAckMessage* payload = (MLAckMessage*)message->getPayload();
+        if(payload == NULL) {
+          ANT_DBG_ERR("MLAckMessage payload does not exist");
+          return;
+        }
+
+        switch(payload->getCommandType()) {
+          case MLMessageCommandType::RunModel:
+            this->onAckRunModel(message);
+            break;
+          default:
+            // Do not handle it
+            break;
+        }
+        break;
+      }
     case BaseMessageType::AppCore:
     case BaseMessageType::AppAck:
     case BaseMessageType::Companion:
+    case BaseMessageType::ML:
     default:
       ANT_DBG_ERR("Invalid Message Type");
       break;
@@ -179,46 +203,37 @@ void AppBase::onReceivedMessage(BaseMessage* message) {
 }
 
 // Terminate async callback
-// 1. AppBase::setOnTerminate() (callback registration on app main thread)
-// 2. (app running)
-// 3. AppMessage::terminate comes (on MessageFW listening thread)
-// 4. AppBase::terminate() (on MessageFW listening thread)
-// 5. AppBase::onTerminateAsyncHandler() (on app main thread)
-void AppBase::setOnTerminate(Isolate* isolate,
-    Local<Function> onTerminateCallback) {
-  uv_loop_t* loop = uv_default_loop();
-  uv_async_init(loop, &this->mOnTerminateAsync,
-      onTerminateAsyncHandler);
-  AppBase::sOnTerminateCallback.Reset(isolate,
-      onTerminateCallback);
-  AppBase::sOnTerminateSelf = this;
-
-  this->mIsTerminateCallbackEnabled = true;
+void AppBase::setOnTerminate(Local<Function> jsCallback) {
+  OnTerminateJSAsync* jsAsync = OnTerminateJSAsync::get();
+  jsAsync->setCallback(this, jsCallback);
 }
 
 void AppBase::terminate(BaseMessage* message) {
+  OnTerminateJSAsync* jsAsync = OnTerminateJSAsync::get();
+
   // If no async is set, quit the application in force.
-  if(!this->mIsTerminateCallbackEnabled) {
+  if(!jsAsync->isCallbacksEnabled()) {
     exit(1);
   }
 
-  // Call async callback
-  uv_async_send(&this->mOnTerminateAsync);
+  // Call async native callback
+  jsAsync->onAsyncEvent();
 }
 
-void AppBase::onTerminateAsyncHandler(uv_async_t* handle) {
-  AppBase* self = sOnTerminateSelf;
+void OnTerminateJSAsync::nativeCallback(uv_async_t* handle) {
   Isolate* isolate = Isolate::GetCurrent();
   HandleScope scope(isolate);
 
-  printf("[NIL] termination Event (app id: %d)\n", self->mAppId);
+  OnTerminateJSAsync* self = OnTerminateJSAsync::get();
 
-  // Execute onTerminate callback
+  printf("[NIL] termination Event (app id: %d)\n", self->mAppBase->mAppId);
+
+  // Execute JS callback: no arguments
   TryCatch try_catch;
   Handle<Value> argv[] = { };
-  Local<Function> onTerminateCallback
-    = Local<Function>::New(isolate, AppBase::sOnTerminateCallback);
-  onTerminateCallback->Call(isolate->GetCurrentContext()->Global(), 0, argv);
+  Local<Function> jsCallback
+    = Local<Function>::New(isolate, self->mJSCallback);
+  jsCallback->Call(isolate->GetCurrentContext()->Global(), 0, argv);
 
   if (try_catch.HasCaught()) {
     Local<Value> exception = try_catch.Exception();
@@ -231,19 +246,9 @@ void AppBase::onTerminateAsyncHandler(uv_async_t* handle) {
 }
 
 // UpdateAppConfig async callback
-// 1. AppBase::setOnUpdateAppConfig() (callback registration on app main thread)
-// 2. (app running)
-// 3. AppMessage::updateAppConfig comes (on MessageFW listening thread)
-// 4. AppBase::updateAppConfig() (on MessageFW listening thread)
-// 5. AppBase::onUpdateAppConfigAsyncHandler() (on app main thread)
-void AppBase::setOnUpdateAppConfig(Isolate* isolate,
-    Local<Function> onUpdateAppConfigCallback) {
-  uv_loop_t* loop = uv_default_loop();
-  uv_async_init(loop, &this->mOnUpdateAppConfigAsync,
-      onUpdateAppConfigAsyncHandler);
-  AppBase::sOnUpdateAppConfigCallback.Reset(isolate,
-      onUpdateAppConfigCallback);
-  AppBase::sOnUpdateAppConfigSelf = this;
+void AppBase::setOnUpdateAppConfig(Local<Function> jsCallback) {
+  OnUpdateAppConfigJSAsync* jsAsync = OnUpdateAppConfigJSAsync::get();
+  jsAsync->setCallback(this, jsCallback);
 }
 
 void AppBase::updateAppConfig(BaseMessage* message) {
@@ -253,21 +258,24 @@ void AppBase::updateAppConfig(BaseMessage* message) {
   // Get arguments
   AppMessage* payload = (AppMessage*)message->getPayload();
   payload->getParamsUpdateAppConfig(legacyData);
-  AppBase::sOnUpdateAppConfigJsonData = (uint8_t*)legacyData.c_str();
 
-  AppBase::sOnUpdateAppConfigMessage = message;
+  // Set parameters to native callback
+  OnUpdateAppConfigJSAsync* jsAsync = OnUpdateAppConfigJSAsync::get();
+  jsAsync->setMessage(message);
+  jsAsync->setLegacyData((uint8_t*)legacyData.c_str());
 
-  // Call async callback
-  uv_async_send(&this->mOnUpdateAppConfigAsync);
+  // Call async native callback
+  jsAsync->onAsyncEvent();
 }
 
-void AppBase::onUpdateAppConfigAsyncHandler(uv_async_t* handle) {
-  AppBase* self = sOnUpdateAppConfigSelf;
+void OnUpdateAppConfigJSAsync::nativeCallback(uv_async_t* handle) {
   Isolate* isolate = Isolate::GetCurrent();
   HandleScope scope(isolate);
 
+  OnUpdateAppConfigJSAsync* self = OnUpdateAppConfigJSAsync::get();
+
   // Get arguments
-  unsigned char* jsonData = AppBase::sOnUpdateAppConfigJsonData;
+  unsigned char* jsonData = self->mLegacyData;
 
   printf("[NIL] Receive Config value :%s\n", jsonData);
 
@@ -275,13 +283,14 @@ void AppBase::onUpdateAppConfigAsyncHandler(uv_async_t* handle) {
   TryCatch try_catch;
   Handle<Value> argv[] = { String::NewFromOneByte(isolate, jsonData) };
   Local<Function> onUpdateAppConfigCallback
-    = Local<Function>::New(isolate, AppBase::sOnUpdateAppConfigCallback);
+    = Local<Function>::New(isolate, self->mJSCallback);
   onUpdateAppConfigCallback->Call(
       isolate->GetCurrentContext()->Global(), 1, argv);
 
   // Make ACK message
+  BaseMessage* originalMessage = self->mMessage;
   BaseMessage* ackMessage =  MessageFactory::makeAppAckMessage(
-      COMPANION_DEVICE_URI, AppBase::sOnUpdateAppConfigMessage); 
+      self->mAppBase->mLocalChannel->getUri(), originalMessage); 
   AppAckMessage* ackPayload = (AppAckMessage*)ackMessage->getPayload();
   if (try_catch.HasCaught()) {
     Local<Value> exception = try_catch.Exception();
@@ -294,7 +303,7 @@ void AppBase::onUpdateAppConfigAsyncHandler(uv_async_t* handle) {
   }
 
   // Send ACK message
-  self->mLocalChannel->sendMessage(ackMessage);
+  self->mAppBase->mLocalChannel->sendMessage(ackMessage);
   return;
 }
 
@@ -315,4 +324,37 @@ void AppBase::onAckCompleteLaunchingApp(BaseMessage* message) {
   this->mMessageRouter->removeRoutingEntry(appURI);
   snprintf(appURI, PATH_BUFFER_SIZE, "%s/%d", APPS_URI, appId);
   this->mMessageRouter->addRoutingEntry(appURI, this->mLocalChannel);
+
+  this->mLocalChannel->setUri(appURI);
+}
+
+// Send machine learning commands
+void AppBase::runModel(std::string modelName, Local<Function> callback) {
+  // Set async callback
+  OnRunModelJSAsync* jsAsync = OnRunModelJSAsync::get();
+  jsAsync->setCallback(this, callback);
+
+  // Make ML message
+  BaseMessage* mlMessage = MessageFactory::makeMLMessage(
+      this->mLocalChannel->getUri(), ML_URI, MLMessageCommandType::RunModel);
+  MLMessage* mlPayload = (MLMessage*)mlMessage->getPayload();
+  mlPayload->setParamsRunModel(modelName);
+
+  // Send ML message
+  this->mLocalChannel->sendMessage(mlMessage);
+}
+
+// Native async callbacks
+void AppBase::onAckRunModel(BaseMessage* message) {
+  // Arguments
+  std::string outputData;
+
+  // Get arguments
+  MLAckMessage* payload = (MLAckMessage*)message->getPayload();
+  payload->getParamsRunModel(outputData);
+
+  // Execute JS callback
+  OnRunModelJSAsync* jsAsync = OnRunModelJSAsync::get();
+  jsAsync->setOutputData((uint8_t*)outputData.c_str());
+  jsAsync->onAsyncEvent();
 }

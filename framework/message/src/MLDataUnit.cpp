@@ -20,7 +20,20 @@
 #include "MessageUtil.h"
 #include "ANTdbugLog.h"
 
-// encoding to JSON
+#define RETURN_IF_INVALID_CJSON_OBJ(a, ret) \
+  if((a) == NULL) { \
+    ANT_DBG_ERR("JSON handling error: %s", cJSON_GetErrorPtr()); \
+    return ret; \
+  }
+
+// decoding from JSON
+bool MLDataUnit::setFromJSON(const char* jsonString) {
+  // Parse rawString in JSON
+  cJSON* thisObj = cJSON_Parse(jsonString);
+  RETURN_IF_INVALID_CJSON_OBJ(thisObj, NULL);
+  return this->setFromJSON(thisObj);
+}
+
 bool MLDataUnit::setFromJSON(cJSON* dataUnitObj) {
   cJSON* tensorMapObj = dataUnitObj;
   int tensorMapSize = cJSON_GetArraySize(tensorMapObj);
@@ -45,7 +58,7 @@ bool MLDataUnit::setFromJSON(cJSON* dataUnitObj) {
   return true;
 }
 
-// decoding from JSON
+// encoding to JSON
 cJSON* MLDataUnit::toJSON() {
   cJSON* tensorMapObj = cJSON_CreateArray();
 

@@ -34,9 +34,6 @@ class Channel {
   public:
     Channel(MessageRouter* messageRouter, const char* name)
       : mMessageRouter(messageRouter),
-      mWaitMutex(PTHREAD_MUTEX_INITIALIZER),
-      mWaitCond(PTHREAD_COND_INITIALIZER),
-      mRoutedMessageQueueMutex(PTHREAD_MUTEX_INITIALIZER),
       mName(name) {
     }
 
@@ -88,10 +85,10 @@ class Channel {
     // into RoutedMessageQueue of Channel. The message will be handled in
     // the Channel's RoutedLoop.
     std::vector<BaseMessage*> mRoutedMessageQueue;
-    pthread_mutex_t mRoutedMessageQueueMutex;
+    pthread_mutex_t mRoutedMessageQueueMutex = PTHREAD_MUTEX_INITIALIZER;
 
-    pthread_mutex_t mWaitMutex;
-    pthread_cond_t mWaitCond;
+    pthread_mutex_t mWaitMutex = PTHREAD_MUTEX_INITIALIZER;
+    pthread_cond_t mWaitCond = PTHREAD_COND_INITIALIZER;
 
     // RoutedThread (Enabled when isCreateRoutedThread is true)
     pthread_t mRoutedThread;
