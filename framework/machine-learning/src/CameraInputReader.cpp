@@ -19,8 +19,17 @@
 
 MLTensor* CameraInputReader::read(std::string sourceUri) {
   // TODO: implement it
+  // Now camera data is given as dummy data.
+  MLTensor* inputTensor = new MLTensor(this->getLayout());
+  float data[224*224];
+  memset((void*)data, 0.5, 224*224);
+  inputTensor->assignData(data);
+  return inputTensor;
 }
 
 MLTensorLayout CameraInputReader::getLayout() {
-  // TODO: implement it
+  // Input layout : float[224][224] input
+  int inputShape[] = {224, 224};
+  MLTensorLayout inputTensorLayout(2, inputShape, MLDataType::Float);
+  return inputTensorLayout;
 }

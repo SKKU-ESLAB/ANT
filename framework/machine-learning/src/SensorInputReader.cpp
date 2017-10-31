@@ -15,12 +15,26 @@
  * limitations under the License.
  */
 
+#include <time.h>
+#include <stdlib.h>
+
 #include "SensorInputReader.h"
 
 MLTensor* SensorInputReader::read(std::string sourceUri) {
   // TODO: implement it
+  // Now sensor data is given as dummy data.
+  MLTensor* inputTensor = new MLTensor(this->getLayout());
+  srand(time(NULL));
+  int randData = rand() % 1000;
+  float data[3];
+  data[0] = randData*0.001f; data[1] = randData*0.0001f; data[2] = randData*0.001f;
+  inputTensor->assignData(data);
+  return inputTensor;
 }
 
 MLTensorLayout SensorInputReader::getLayout() {
-  // TODO: implement it
+  // Input layout : float[3] input
+  int inputShape[] = {3};
+  MLTensorLayout inputTensorLayout(1, inputShape, MLDataType::Float);
+  return inputTensorLayout;
 }

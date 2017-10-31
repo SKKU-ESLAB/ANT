@@ -19,12 +19,30 @@
 
 MLDataUnit* ANNInferenceRunner::run(MLDataUnit* inputData) {
   // TODO: implement it
+  // Now DNN output is given as dummy data.
+  MLTensor* inputTensor = inputData->findTensor("input");
+  if(inputTensor == NULL) return NULL;
+  void* inputBuffer = inputTensor->bytesValue();
+  float input0 = *(((float*)inputBuffer) + 0);
+  float input1 = *(((float*)inputBuffer) + 1);
+  float input2 = *(((float*)inputBuffer) + 2);
+  int outputShape[] = {30};
+  MLTensorLayout outputTensorLayout(1, outputShape, MLDataType::Char);
+
+  MLTensor* outputTensor = new MLTensor(outputTensorLayout);
+  char outputStr[30];
+  snprintf(outputStr, 30, "%.4f-%.4f-%.4f", input0, input1, input2);
+  outputTensor->assignData(outputStr);
+
+  MLDataUnit* outputData = new MLDataUnit();
+  outputData->insertTensor("output", outputTensor);
+  return outputData;
 }
 
 // Get resource usage of inference runner
 std::string ANNInferenceRunner::getResourceUsage() {
   std::string data("");
-  // TODO: implement it
+  // not implemented yet
   
   return data;
 }

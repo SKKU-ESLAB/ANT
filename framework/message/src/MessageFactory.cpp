@@ -49,6 +49,12 @@ BaseMessage* MessageFactory::makeBaseMessageFromJSON(cJSON* messageObj) {
       BASE_MESSAGE_KEY_MESSAGE_NUM);
   RETURN_IF_INVALID_CJSON_OBJ(messageIdObj, NULL);
   int messageId = atoi(messageIdObj->valuestring);
+
+  // Sender URI 
+  cJSON* senderUriObj = cJSON_GetObjectItem(thisObj,
+      BASE_MESSAGE_KEY_SENDER_URI);
+  RETURN_IF_INVALID_CJSON_OBJ(senderUriObj, NULL);
+  std::string senderUri(senderUriObj->valuestring);
   
   // URI
   cJSON* uriObj = cJSON_GetObjectItem(thisObj, BASE_MESSAGE_KEY_URI);
@@ -85,7 +91,7 @@ BaseMessage* MessageFactory::makeBaseMessageFromJSON(cJSON* messageObj) {
   RETURN_IF_INVALID_CJSON_OBJ(payloadObj, NULL);
 
   // Allocate and initialize a new BaseMessage
-  BaseMessage* newMessage = new BaseMessage(messageId, uri, type,
+  BaseMessage* newMessage = new BaseMessage(messageId, senderUri, uri, type,
       isFileAttached, fileName);
   switch(type) {
     case BaseMessageType::AppCore:
