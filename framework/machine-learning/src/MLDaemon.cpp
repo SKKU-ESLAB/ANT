@@ -159,7 +159,6 @@ void MLDaemon::onInferenceUnitOutput(int iuid,
   } else {
     // Normal mode: notify to app
 
-    // Find from setIUOutput listner list
     std::vector<BaseMessage*>::iterator iter;
     BaseMessage* originalMessage = NULL;
     MLMessage* originalPayload = NULL;
@@ -169,26 +168,52 @@ void MLDaemon::onInferenceUnitOutput(int iuid,
       originalMessage = (*iter);
       originalPayload = (MLMessage*)originalMessage->getPayload();
 
-      int thisIuid;
-      std::string thisListenerUri;
-      originalPayload->getParamsStartListeningIUOutput(thisIuid, thisListenerUri);
+      MLMessageCommandType::Value commandType
+        = originalPayload->getCommandType();
+      if(commandType == MLMessageCommandType::RunModel) { 
+        // StartListeningIUOutput ACK
+        int thisIuid;
+        std::string thisListenerUri;
+        originalPayload->getParamsStartListeningIUOutput(thisIuid,
+            thisListenerUri);
 
-      if((iuid == thisIuid) && (listenerUri == thisListenerUri)) {
+        if((iuid == thisIuid) && (listenerUri == thisListenerUri)) {
+          // Make ACK message
+          BaseMessage* ackMessage
+            = MessageFactory::makeMLAckMessage(this->mLocalChannel->getUri(),
+                originalMessage); 
+          MLAckMessage* ackPayload = (MLAckMessage*)ackMessage->getPayload();
+          ackPayload->setParamsStartListeningIUOutput(outputData);
+
+          // Send ACK message
+          this->mLocalChannel->sendMessage(ackMessage);
+          return;
+        }
+      } else if(commandType == MLMessageCommandType::RunModel) { 
+        // RunModel ACK
+        
+        // TODO: modelName comparison
+        
+        // Get outputData string
+        MLTensor* outputTensor = outputData->findTensor("output");
+        if(outputTensor == NULL) {
+          ANT_DBG_ERR("Cannot find output tensor in output data unit!");
+          return;
+        }
+        std::string outputDataStr(outputTensor->stringValue());
+        
         // Make ACK message
         BaseMessage* ackMessage
-          = MessageFactory::makeAppCoreAckMessage(this->mLocalChannel->getUri(),
+          = MessageFactory::makeMLAckMessage(this->mLocalChannel->getUri(),
               originalMessage); 
         MLAckMessage* ackPayload = (MLAckMessage*)ackMessage->getPayload();
-        ackPayload->setParamsStartListeningIUOutput(outputData);
+        ackPayload->setParamsRunModel(outputDataStr);
 
         // Send ACK message
         this->mLocalChannel->sendMessage(ackMessage);
         return;
       }
     }
-
-    // Find from runModel listner list
-    // TODO: implement it
 
     ANT_DBG_WARN("Cannot find listening request! : %d -> %s",
         iuid, listenerUri.c_str());
@@ -348,6 +373,10 @@ void MLDaemon::startListeningIUOutput(BaseMessage* message) {
       iter++) {
     BaseMessage* thisMessage = (*iter);
     MLMessage* thisPayload = (MLMessage*)thisMessage->getPayload();
+    MLMessageCommandType::Value commandType = thisPayload->getCommandType();
+    if(commandType != MLMessageCommandType::RunModel) {
+      continue;
+    }
     int thisIuid;
     std::string thisListenerUri;
     thisPayload->getParamsStartListeningIUOutput(thisIuid, thisListenerUri);
@@ -507,7 +536,8 @@ std::string MLDaemon::getIUResourceUsage(int iuid) {
 
 void MLDaemon::runModel(BaseMessage* message) {
   // Get arguments
-  MLMessage* originalPayload = (MLMessage*)message->getPayload();
+  BaseMessage* originalMessage = message;
+  MLMessage* originalPayload = (MLMessage*)originalMessage->getPayload();
   std::string modelName;
   originalPayload->getParamsRunModel(modelName);
 
@@ -516,7 +546,29 @@ void MLDaemon::runModel(BaseMessage* message) {
   if(!res) {
     ANT_DBG_ERR("Cannot find model %s!", modelName.c_str());
   }
-  // TODO: implement runModel ACK
+
+  // Check if there has already been duplicated listening request
+  std::vector<BaseMessage*>::iterator iter;
+  for(iter = this->mListenIUOutputList.begin();
+      iter != this->mListenIUOutputList.end();
+      iter++) {
+    BaseMessage* thisMessage = (*iter);
+    MLMessage* thisPayload = (MLMessage*)thisMessage->getPayload();
+    MLMessageCommandType::Value commandType = thisPayload->getCommandType();
+    if(commandType != MLMessageCommandType::RunModel) {
+      continue;
+    }
+    std::string thisModelName;
+    thisPayload->getParamsRunModel(thisModelName);
+    if(modelName.compare(thisModelName) == 0) {
+      ANT_DBG_ERR("Duplicated listening request is ignored: %s",
+          modelName.c_str());
+      return;
+    }
+  }
+
+  // ACK message will be sent later
+  this->mListenIUOutputList.push_back(originalMessage);
 }
 
 #define PATH_BUFFER_SIZE 1024
