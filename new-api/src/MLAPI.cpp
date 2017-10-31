@@ -105,8 +105,8 @@ void MLAPI::RunModel(const FunctionCallbackInfo<Value>& args) {
   Isolate* isolate = Isolate::GetCurrent();
   HandleScope scope(isolate);
 
-  const char* modelName;
-  Local<Function> onOutputCallback;
+  std::string modelName;
+  Local<Function> callback;
 
   if (args.Length() != 2) {
     isolate->ThrowException(Exception::TypeError(getV8String(isolate,
@@ -121,4 +121,13 @@ void MLAPI::RunModel(const FunctionCallbackInfo<Value>& args) {
             "Wrong arguments: expected (String modelName, Function callback)")));
     return;
   }
+
+  // Get argument 0
+  v8::String::Utf8Value param1(args[0]->ToString());
+  modelName = std::string(*param1);
+
+  // Get argument 1
+  callback = Local<Function>::Cast(args[1]);
+
+  gAppBase->runModel(modelName, callback);
 }
