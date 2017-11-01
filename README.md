@@ -60,12 +60,21 @@ $ sudo run_ant
 ```
 
 ## For Your Information (FYI)
+### SDP session registration problem
+When you meet some error in registering SDP session after install ANT framework,
+please reboot.
+(For more details, please refer to #44)
+```
+$ sudo reboot
+```
+
+### Bluetooth Issues
 When you are using ANT with raspberry pi or tegra, you need to make it to bluetooth-pair with the mobile phone.
 Our ANT mobile Android App provides bluetooth discovery feature when it starts the app.
 You need to make the device discoverable with the bluetooth.
 
 In raspberry pi, 
-### Change hci0 interface to Scan Mode
+#### Change hci0 interface to Scan Mode
 ```
 $ sudo hciconfig hci0 piscan
 ```
