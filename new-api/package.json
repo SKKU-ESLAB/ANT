@@ -1,13 +1,12 @@
 {
-  "name": "dbus-libuv",
+  "name": "ant-api",
   "version": "0.0.1",
-  "description": "Livuv based model",
-  "main": "index.js",
+  "description": "ANT API for Node.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "",
-  "license": "ISC",
+  "license": "Apache-2.0",
   "gypfile": true,
   "dependencies": {
     "bindings": "~1.2.1",
