@@ -16,6 +16,7 @@
  */
 
 #include "InputReaderSet.h"
+#include "ANTdbugLog.h"
 #include "SensorInputReader.h"
 #include "CameraInputReader.h"
 
@@ -32,9 +33,15 @@ InputReaderSet::InputReaderSet() {
         kCameraInputURI, (InputReader*)new CameraInputReader()));
 }
 
-void InputReaderSet::read(std::string sourceUri, void* inputDataBuffer) {
+MLTensor* InputReaderSet::read(std::string sourceUri) {
   InputReader* inputReader = this->findBestInputReader(sourceUri);
-  inputReader->read(sourceUri, inputDataBuffer);
+  if(inputReader == NULL) {
+    ANT_DBG_WARN("Cannot find input reader for URI %s", sourceUri.c_str());
+    return NULL;
+  }
+
+  MLTensor* inputTensor = inputReader->read(sourceUri);
+  return inputTensor;
 }
 
 InputReader* InputReaderSet::findBestInputReader(std::string uriString) {

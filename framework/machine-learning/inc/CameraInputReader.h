@@ -23,11 +23,20 @@
 #include <vector>
 #include <map>
 
-class CameraInputReader {
+#include "InputReader.h"
+
+class CameraInputReader
+: public InputReader {
   public:
     // Read input data from source
-    //   - Child class of InputReader should implement it.
-    virtual void read(std::string sourceUri, void* inputDataBuffer);
+    //   - Input: String sourceUri
+    //   - Output: MLTensor* inputTensor
+    virtual MLTensor* read(std::string sourceUri);
+
+    // Get the tensor layout of inputData which this InputReader produces
+    //   - Output: MLTensorLayout layout
+    //     - It will be used to check if the layout is same as the required.
+    virtual MLTensorLayout getLayout();
 };
 
 #endif // !defined(__CAMERA_INPUT_READER_H__)

@@ -23,11 +23,15 @@
 #include <vector>
 #include <map>
 
+#include "MLDataUnit.h"
+
 class InferenceRunner {
   public:
-    virtual void run(std::map<std::string, void*> inputDataBuffers,
-        std::map<std::string, std::string> inputShape,
-        std::map<std::string, void*> outputDataBuffers) = 0;
+    // Run model inference with inputData and get outputData
+    //   - Child class of InferenceRunner should implement it.
+    //   - Input: MLDataUnit* inputData
+    //   - Ouptut: MLDataUnit* outputData
+    virtual MLDataUnit* run(MLDataUnit* inputData) = 0;
 };
 
 #endif // !defined(__INFERENCE_RUNNER_H__)
