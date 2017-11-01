@@ -31,9 +31,10 @@ class LocalChannelListener {
 class LocalChannel: public Channel {
   public:
     LocalChannel(MessageRouter* messageRouter,
-        bool isCreateRoutedThread)
+        std::string uri, bool isCreateRoutedThread)
     : Channel(messageRouter, "LocalChannel"), mListener(NULL),
-    mIsCreateRoutedThread(isCreateRoutedThread) {
+    mIsCreateRoutedThread(isCreateRoutedThread),
+    mUri(uri) {
     }
 
     // Channel function
@@ -44,10 +45,13 @@ class LocalChannel: public Channel {
     void setListener(LocalChannelListener* listener) {
       this->mListener = listener;
     }
+    void setUri(std::string uri) { this->mUri.assign(uri); }
+    std::string getUri() { return this->mUri; }
 
   protected:
     LocalChannelListener* mListener = NULL;
     bool mIsCreateRoutedThread;
+    std::string mUri;
 
     // Channel function
     virtual void onRoutedMessage(BaseMessage* message);

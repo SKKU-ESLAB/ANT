@@ -9,6 +9,9 @@ set(MESSAGE_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/src)
 
 set(MESSAGE_sources
   ${MESSAGE_SOURCE_DIR}/BaseMessage.cpp
+  ${MESSAGE_SOURCE_DIR}/MLMessage.cpp
+  ${MESSAGE_SOURCE_DIR}/MLDataUnit.cpp
+  ${MESSAGE_SOURCE_DIR}/MLTensor.cpp
   ${MESSAGE_SOURCE_DIR}/MessageFactory.cpp
   ${MESSAGE_SOURCE_DIR}/Channel.cpp
   ${MESSAGE_SOURCE_DIR}/CommChannel.cpp

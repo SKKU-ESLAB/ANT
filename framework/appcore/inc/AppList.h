@@ -46,6 +46,7 @@ class AppList {
     std::vector<App*>& getApps() { return this->mApps; }
     App* getByAppId(int appId);
     App* getByPid(int pid);
+    App* getByName(std::string appName);
     bool add(App* app);
     bool flush(App* app);
     bool remove(App* app);
