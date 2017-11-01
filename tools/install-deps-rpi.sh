@@ -39,14 +39,18 @@ print_progress() {
 
 # Step 1. Install packages by apt-get
 print_progress 1 "Install dependent packages..."
+
+print_progress 1-1 "update distribution package"
 sudo apt-get update
+
+print_progress 1-2 "Install dependent packages"
 sudo apt-get -y install g++-4.8 wiringpi libdbus-1-dev glib-2.0 bison byacc   \
   libdbus-glib-1-2 libdbus-glib-1-dev zip sqlite3 libsqlite3-dev cmake git    \
   libgtk2.0-dev pkg-config automake libtool libssl-dev libnl-3-dev python3    \
   libnl-genl-3-dev udhcpd libopencv-dev libxml2-dev curl                      \
   libgstreamer1.0-dev gstreamer1.0-plugins-base gstreamer1.0-plugins-good     \
   gstreamer1.0-plugins-bad gstreamer1.0-plugins-ugly gstreamer1.0-libav       \
-  gstreamer1.0-doc gstreamer1.0-tools libgstreamer-plugins-base1.0-dev
+  gstreamer1.0-doc gstreamer1.0-tools libgstreamer-plugins-base1.0-dev make
 
 # Get the absolute path of ANT repository directory
 ANT_REPO_DIR=$(dirname "$0")/../
@@ -57,8 +61,6 @@ print_progress 2 "Download submodules..."
 git submodule sync
 git submodule update --init --recursive
 
-print Install automake
-sudo apt-get install make
 # Step 3. Build and reinstall bluez-4.101
 print_progress 3 "Build and reinstall bluez-4.101..."
 # Install bluez
