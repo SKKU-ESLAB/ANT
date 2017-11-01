@@ -49,7 +49,7 @@ sudo apt-get -y install g++-4.8 wiringpi libdbus-1-dev glib-2.0 bison byacc   \
   gstreamer1.0-doc gstreamer1.0-tools libgstreamer-plugins-base1.0-dev
 
 # Get the absolute path of ANT repository directory
-ANT_REPO_DIR=$(dirname "$0")/../..
+ANT_REPO_DIR=$(dirname "$0")/../
 eval ANT_REPO_DIR=`readlink --canonicalize ${ANT_REPO_DIR}`
 
 # Step 2. Download submodules
@@ -57,6 +57,8 @@ print_progress 2 "Download submodules..."
 git submodule sync
 git submodule update --init --recursive
 
+print Install automake
+sudo apt-get install automake
 # Step 3. Build and reinstall bluez-4.101
 print_progress 3 "Build and reinstall bluez-4.101..."
 # Install bluez

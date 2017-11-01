@@ -105,10 +105,10 @@ void MLAPI::RunModel(const FunctionCallbackInfo<Value>& args) {
   Isolate* isolate = Isolate::GetCurrent();
   HandleScope scope(isolate);
 
-
   std::string modelName;
   Local<Function> callback;
-
+  
+  // Check arguments
   if (args.Length() != 2) {
     isolate->ThrowException(Exception::TypeError(getV8String(isolate,
             "Wrong arguments: expected (String modelName, Function callback)")));
