@@ -6,7 +6,7 @@ ANT_PYTHON3_PATH=`which python3`
 source ${ANT_CONFIG_DIR}/profile.env
 
 # set shared library path
-export LD_LIBRARY_PATH="${ANT_BIN_DIR}/libs:${LD_LIBRARY_PATH}"
+export LD_LIBRARY_PATH="{ANT_SENSOR_DRIVER_DIR}:${ANT_BIN_DIR}/libs:/usr/lib:/usr/local/lib:${LD_LIBRARY_PATH}"
 
 if [[ $# -eq 1 ]]; then
   ${ANT_PYTHON3_PATH} ${ANT_BIN_DIR}/ant.py $1
