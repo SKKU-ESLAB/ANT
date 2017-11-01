@@ -159,6 +159,7 @@ void MLDaemon::onInferenceUnitOutput(int iuid,
   } else {
     // Normal mode: notify to app
 
+    // Find from setIUOutput listner list
     std::vector<BaseMessage*>::iterator iter;
     BaseMessage* originalMessage = NULL;
     MLMessage* originalPayload = NULL;
@@ -170,7 +171,7 @@ void MLDaemon::onInferenceUnitOutput(int iuid,
 
       MLMessageCommandType::Value commandType
         = originalPayload->getCommandType();
-      if(commandType == MLMessageCommandType::RunModel) { 
+      if(commandType == MLMessageCommandType::StartListeningIUOutput) { 
         // StartListeningIUOutput ACK
         int thisIuid;
         std::string thisListenerUri;
@@ -208,6 +209,17 @@ void MLDaemon::onInferenceUnitOutput(int iuid,
               originalMessage); 
         MLAckMessage* ackPayload = (MLAckMessage*)ackMessage->getPayload();
         ackPayload->setParamsRunModel(outputDataStr);
+      int thisIuid;
+      std::string thisListenerUri;
+      originalPayload->getParamsStartListeningIUOutput(thisIuid, thisListenerUri);
+
+      if((iuid == thisIuid) && (listenerUri == thisListenerUri)) {
+        // Make ACK message
+        BaseMessage* ackMessage
+          = MessageFactory::makeAppCoreAckMessage(this->mLocalChannel->getUri(),
+              originalMessage); 
+        MLAckMessage* ackPayload = (MLAckMessage*)ackMessage->getPayload();
+        ackPayload->setParamsStartListeningIUOutput(outputData);
 
         // Send ACK message
         this->mLocalChannel->sendMessage(ackMessage);
@@ -569,6 +581,15 @@ void MLDaemon::runModel(BaseMessage* message) {
 
   // ACK message will be sent later
   this->mListenIUOutputList.push_back(originalMessage);
+  MLMessage* originalPayload = (MLMessage*)message->getPayload();
+  std::string modelName;
+  originalPayload->getParamsRunModel(modelName);
+
+  // Internal
+  bool res = this->runModel(modelName);
+  if(!res) {
+    ANT_DBG_ERR("Cannot find model %s!", modelName.c_str());
+  }
 }
 
 #define PATH_BUFFER_SIZE 1024
