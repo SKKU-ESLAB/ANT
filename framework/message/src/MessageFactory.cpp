@@ -49,6 +49,12 @@ BaseMessage* MessageFactory::makeBaseMessageFromJSON(cJSON* messageObj) {
       BASE_MESSAGE_KEY_MESSAGE_NUM);
   RETURN_IF_INVALID_CJSON_OBJ(messageIdObj, NULL);
   int messageId = atoi(messageIdObj->valuestring);
+
+  // Sender URI 
+  cJSON* senderUriObj = cJSON_GetObjectItem(thisObj,
+      BASE_MESSAGE_KEY_SENDER_URI);
+  RETURN_IF_INVALID_CJSON_OBJ(senderUriObj, NULL);
+  std::string senderUri(senderUriObj->valuestring);
   
   // URI
   cJSON* uriObj = cJSON_GetObjectItem(thisObj, BASE_MESSAGE_KEY_URI);
@@ -85,7 +91,7 @@ BaseMessage* MessageFactory::makeBaseMessageFromJSON(cJSON* messageObj) {
   RETURN_IF_INVALID_CJSON_OBJ(payloadObj, NULL);
 
   // Allocate and initialize a new BaseMessage
-  BaseMessage* newMessage = new BaseMessage(messageId, uri, type,
+  BaseMessage* newMessage = new BaseMessage(messageId, senderUri, uri, type,
       isFileAttached, fileName);
   switch(type) {
     case BaseMessageType::AppCore:
@@ -238,6 +244,51 @@ CompanionMessage* MessageFactory::makeCompanionMessageFromJSON(
   CompanionMessage* newMessage = new CompanionMessage(commandType);
   if(companionPayloadObj != NULL) {
     newMessage->setCompanionPayloadObj(companionPayloadObj);
+  }
+  return newMessage;
+}
+
+MLMessage* MessageFactory::makeMLMessageFromJSON(cJSON* messagePayloadObj) {
+  cJSON* thisObj = messagePayloadObj;
+
+  // Allocate and initialize a new BaseMessage and return it
+  cJSON* commandTypeObj = cJSON_GetObjectItem(thisObj, "commandType");
+  RETURN_IF_INVALID_CJSON_OBJ(commandTypeObj, NULL);
+  MLMessageCommandType::Value commandType
+    = static_cast<MLMessageCommandType::Value>(atoi(
+          commandTypeObj->valuestring));
+
+  cJSON* mlPayloadObj = cJSON_GetObjectItem(thisObj, "payload");
+  
+  // Allocate and initialize a new MLMessage
+  MLMessage* newMessage = new MLMessage(commandType);
+  if(mlPayloadObj != NULL) {
+    newMessage->setMLPayloadObj(mlPayloadObj);
+  }
+  return newMessage;
+}
+
+MLAckMessage* MessageFactory::makeMLAckMessageFromJSON(
+    cJSON* messagePayloadObj) {
+  cJSON* thisObj = messagePayloadObj;
+
+  // Allocate and initialize a new BaseMessage and return it
+  cJSON* commandMessageIdObj = cJSON_GetObjectItem(thisObj, "commandMessageId");
+  RETURN_IF_INVALID_CJSON_OBJ(commandMessageIdObj, NULL);
+  int commandMessageId = atoi(commandMessageIdObj->valuestring);
+  
+  cJSON* commandTypeObj = cJSON_GetObjectItem(thisObj, "commandType");
+  RETURN_IF_INVALID_CJSON_OBJ(commandTypeObj, NULL);
+  MLMessageCommandType::Value commandType
+    = static_cast<MLMessageCommandType::Value>(atoi(
+          commandTypeObj->valuestring));
+
+  cJSON* mlAckPayloadObj = cJSON_GetObjectItem(thisObj, "payload");
+  
+  // Allocate and initialize a new MLAckMessage
+  MLAckMessage* newMessage = new MLAckMessage(commandMessageId, commandType);
+  if(mlAckPayloadObj != NULL) {
+    newMessage->setMLAckPayloadObj(mlAckPayloadObj);
   }
   return newMessage;
 }

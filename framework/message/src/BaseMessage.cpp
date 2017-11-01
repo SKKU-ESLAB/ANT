@@ -21,22 +21,9 @@
 #include <libgen.h>
 
 #include "BaseMessage.h"
+#include "MessageUtil.h"
 #include "cJSON.h"
 #include "ANTdbugLog.h"
-
-#define RETURN_IF_NULL(a, ret) \
-  if((a) == NULL) { \
-    ANT_DBG_ERR("JSON handling error: null pointer"); \
-    return ret; \
-  }
-
-#define RETURN_IF_INVALID_CJSON_OBJ(a, ret) \
-  if((a) == NULL) { \
-    ANT_DBG_ERR("JSON handling error: %s", cJSON_GetErrorPtr()); \
-    return ret; \
-  }
-
-#define EXT4_FILE_PATH_LENGTH 4097
 
 // encoding to JSON (BaseMessage)
 cJSON* BaseMessage::toJSON() {
@@ -46,6 +33,10 @@ cJSON* BaseMessage::toJSON() {
   // messageId
   sprintf(tempStr, "%d", this->mMessageId);
   cJSON_AddStringToObject(thisObj, BASE_MESSAGE_KEY_MESSAGE_NUM, tempStr);
+
+  // senderUri
+  cJSON_AddStringToObject(thisObj, BASE_MESSAGE_KEY_SENDER_URI,
+      this->mSenderUri.c_str());
 
   // uri
   cJSON_AddStringToObject(thisObj, BASE_MESSAGE_KEY_URI, this->mUri.c_str());
