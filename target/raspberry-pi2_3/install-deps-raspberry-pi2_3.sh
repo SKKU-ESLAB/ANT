@@ -124,7 +124,10 @@ sudo make install
 
 # Step 13. Install FANN Library
 cd ${ANT_REPO_DIR}/dep/fann
-cmake .
+mkdir build
+cd build
+cmake ..
+make -j4
 sudo make install
 
 WARN_COLO="\033[31;47m"
