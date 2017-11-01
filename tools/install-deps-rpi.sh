@@ -50,7 +50,8 @@ sudo apt-get -y install g++-4.8 wiringpi libdbus-1-dev glib-2.0 bison byacc   \
   libnl-genl-3-dev udhcpd libopencv-dev libxml2-dev curl                      \
   libgstreamer1.0-dev gstreamer1.0-plugins-base gstreamer1.0-plugins-good     \
   gstreamer1.0-plugins-bad gstreamer1.0-plugins-ugly gstreamer1.0-libav       \
-  gstreamer1.0-doc gstreamer1.0-tools libgstreamer-plugins-base1.0-dev make
+  gstreamer1.0-doc gstreamer1.0-tools libgstreamer-plugins-base1.0-dev        \
+  make g++
 
 # Get the absolute path of ANT repository directory
 ANT_REPO_DIR=$(dirname "$0")/../
