@@ -24,18 +24,19 @@
 #include <map>
 
 #include "InputReader.h"
+#include "MLTensor.h"
 
 class InputReaderSet {
   public:
     InputReaderSet();
 
-    // Read input data from source
+    // Read input tensor from source
     //   - Child class of InputReader should implement it.
-    void read(std::string sourceUri, void* inputDataBuffer);
+    MLTensor* read(std::string sourceUri);
+
+    InputReader* findBestInputReader(std::string uriString);
     
   protected:
-    InputReader* findBestInputReader(std::string uriString);
-
     // Dictinary(key: string sourceUriPattern, value: InputReader)
     std::map<std::string, InputReader*> mInputReaders;
 };

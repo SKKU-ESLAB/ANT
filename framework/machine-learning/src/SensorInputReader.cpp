@@ -17,6 +17,10 @@
 
 #include "SensorInputReader.h"
 
-void SensorInputReader::read(std::string sourceUri, void* inputDataBuffer) {
+MLTensor* SensorInputReader::read(std::string sourceUri) {
+  // TODO: implement it
+}
+
+MLTensorLayout SensorInputReader::getLayout() {
   // TODO: implement it
 }
