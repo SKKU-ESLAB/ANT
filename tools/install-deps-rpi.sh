@@ -58,7 +58,7 @@ git submodule sync
 git submodule update --init --recursive
 
 print Install automake
-sudo apt-get install automake
+sudo apt-get install make
 # Step 3. Build and reinstall bluez-4.101
 print_progress 3 "Build and reinstall bluez-4.101..."
 # Install bluez
