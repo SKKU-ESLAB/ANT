@@ -209,17 +209,6 @@ void MLDaemon::onInferenceUnitOutput(int iuid,
               originalMessage); 
         MLAckMessage* ackPayload = (MLAckMessage*)ackMessage->getPayload();
         ackPayload->setParamsRunModel(outputDataStr);
-      int thisIuid;
-      std::string thisListenerUri;
-      originalPayload->getParamsStartListeningIUOutput(thisIuid, thisListenerUri);
-
-      if((iuid == thisIuid) && (listenerUri == thisListenerUri)) {
-        // Make ACK message
-        BaseMessage* ackMessage
-          = MessageFactory::makeAppCoreAckMessage(this->mLocalChannel->getUri(),
-              originalMessage); 
-        MLAckMessage* ackPayload = (MLAckMessage*)ackMessage->getPayload();
-        ackPayload->setParamsStartListeningIUOutput(outputData);
 
         // Send ACK message
         this->mLocalChannel->sendMessage(ackMessage);
@@ -577,18 +566,6 @@ void MLDaemon::runModel(BaseMessage* message) {
           modelName.c_str());
       return;
     }
-  }
-
-  // ACK message will be sent later
-  this->mListenIUOutputList.push_back(originalMessage);
-  MLMessage* originalPayload = (MLMessage*)message->getPayload();
-  std::string modelName;
-  originalPayload->getParamsRunModel(modelName);
-
-  // Internal
-  bool res = this->runModel(modelName);
-  if(!res) {
-    ANT_DBG_ERR("Cannot find model %s!", modelName.c_str());
   }
 }
 
