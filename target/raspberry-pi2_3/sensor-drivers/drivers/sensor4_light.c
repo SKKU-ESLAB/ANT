@@ -2,17 +2,17 @@
 
 #define LIGHT	10
 
-static void LIGHT_start(void *data)
+void LIGHT_start(void *data)
 {
 	printf("Light sensor is started\n");
 }
 
-static void LIGHT_stop(void *data)
+void LIGHT_stop(void *data)
 {
 	printf("Light sensor is terminated\n");
 }
 
-static char* LIGHT_get(void *data)
+char* LIGHT_get(void *data)
 {
 	static char value_c[20];
 	int value = ADC_Read(LIGHT);
