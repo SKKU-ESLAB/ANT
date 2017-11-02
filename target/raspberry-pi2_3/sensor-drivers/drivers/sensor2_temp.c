@@ -18,7 +18,6 @@ char* TEMP_get(void *data)
 	float value = (float)ADC_Read(TEMP);
 
 	value = (500 * value) / 1024;
-
 	sprintf(value_c, "%.2f\n", value);
 
 	return value_c;

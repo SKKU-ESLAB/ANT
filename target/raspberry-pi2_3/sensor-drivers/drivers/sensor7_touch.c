@@ -4,7 +4,7 @@
 static int touch_flag = 0;
 
 
-static void TOUCH_start(void *data)
+void TOUCH_start(void *data)
 {
 	if (!touch_flag){
 		setupWiringPi();
@@ -15,12 +15,12 @@ static void TOUCH_start(void *data)
 	printf("Touch sensor is start\n");
 }
 
-static void TOUCH_stop(void *data)
+void TOUCH_stop(void *data)
 {
 	printf("Touch sensor is terminated\n");
 }
 
-static char* TOUCH_get(void *data)
+char* TOUCH_get(void *data)
 {
 	int value;
 	static char value_c[20];
