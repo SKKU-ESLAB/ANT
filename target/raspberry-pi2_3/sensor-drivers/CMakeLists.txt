@@ -34,7 +34,6 @@ set_target_properties( sensors
 add_custom_target(
   make-sensor-driver-dir ALL
   COMMAND mkdir -p ${CMAKE_SOURCE_DIR}/out/sensor-drivers
-  COMMAND cp ${CMAKE_CURRENT_SOURCE_DIR}/SENSOR_LIST ${CMAKE_SOURCE_DIR}/out/sensor-drivers/SENSOR_LIST
   COMMAND cp ${CMAKE_CURRENT_SOURCE_DIR}/sensor_config.json ${CMAKE_SOURCE_DIR}/out/sensor-drivers/sensor_config.json
   COMMENT "make sensor driver directory"
   WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}

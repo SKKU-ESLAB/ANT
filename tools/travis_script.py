@@ -39,8 +39,7 @@ if __name__ == '__main__':
 
     exec_docker(DOCKER_ANT_PATH, ['./tools/install-deps-rpi.sh'])
     exec_docker(DOCKER_ANT_PATH, ['mkdir build'])
-    exec_docker(DOCKER_ANT_PATH, ['cd build'])
-    exec_docker(DOCKER_ANT_PATH, ['cmake ..'])
-    exec_docker(DOCKER_ANT_PATH, ['make'])
+    exec_docker(DOCKER_ANT_PATH, ['cd build && cmake .. && make'])
+
 
 

@@ -29,7 +29,7 @@ void pid_to_char(unsigned int input, char* output){
 	output[5] = '\0'; //NULL
 
 	for (i = 4; i >= 0; i--){
-		temp = value % 10; //1???ë¦¬
+		temp = value % 10; //1???ÂÃ«Â¦Â¬
 		output[i] = ((char)(temp)) + 65;
 		value = value / 10;
 	}
@@ -107,11 +107,12 @@ int sensorDataParsing(sensorList* sl, char* input, char* type){
 
 		if (!strcmp("0\n", rd->sensor_data))
 			event_check = 0;
-		//For On/Off type sensor 
-		//¼¾¼­ °ªÀÌ 0/1 À¯ÇüÀÇ On/off ¼¾¼­ÀÇ °æ¿ì
-		//¼¾¼­ °ªÀÌ On À¸·Î °¬À» ¶§¸¸ event ¹ß»ýÀ¸·Î Ã³¸®ÇÔ.
-
-		//printf("cur_[%s] \n", rd->prev_sensor_data, rd->sensor_data);
+		/* For On/Off type sensor 
+     * If sensor value type is 0/1 like On/Off,
+     * When the sensor value becomes On, it's considered for the event to occur
+     */
+		
+    //printf("cur_[%s] \n", rd->prev_sensor_data, rd->sensor_data);
 	}
 
 	strcpy(rd->prev_sensor_data, rd->sensor_data);
@@ -162,7 +163,7 @@ void sendSensorNotify(sensorList* sl){
 		DBUS_TYPE_INVALID);
 
 	/* Send the signal */
-	dbus_connection_send(connection, message, NULL);    //ÀÌ ºÎºÐ¿¡¼­ µ¥ÀÌÅÍ¸¦ Àü¼ÛÇÔ
+	dbus_connection_send(connection, message, NULL);    //Ã€ÃŒ ÂºÃŽÂºÃÂ¿Â¡Â¼Â­ ÂµÂ¥Ã€ÃŒÃ…ÃÂ¸Â¦ Ã€Ã¼Â¼Ã›Ã‡Ã”
 	dbus_message_unref(message);
 
 	//printf("[SM] Send Sensor notify to %s, rq_num[%d]\n", getInterface(sl), rq_num);
@@ -195,9 +196,12 @@ void* sensorThread(void* args){
 
 		rd = sl->rh->start;
 
-		//------------------ 1. Request Ã³¸® ------------------// 
-		// 
-		//sl->sensor_data_ori = sensorGet(sl, NULL);
+		/* 
+     * =============  1. Handle Request  ------------------
+     */ 
+	
+		
+    //sl->sensor_data_ori = sensorGet(sl, NULL);
 		sensor_value = sensorGet(sl, NULL);
 		sl->sensor_data_ori = sensor_value;
 		strcpy(rd->sensor_data, sensor_value);
@@ -206,7 +210,7 @@ void* sensorThread(void* args){
 		//////////////////////////////////////////////////
 		//printf("sensord data : %s \n", sl->sensor_data_ori);
 		
-		//Sensor Data  È¹µæ
+		/* Get Sensor Data */
 		//printf("[SM] Handle Rq[%d] from PID[%d] ", sl->rh->start->rq_num, sl->rh->start->pid);
 		if (rd->handle_type == SENSING_INTERVAL){
 		  printf("[SM] Handle Type is SENSING_INTERVAL\n");
@@ -224,12 +228,15 @@ void* sensorThread(void* args){
 			printf("Not supported sensor handle type \n");
 		}
 		
-		// 2. update
-		// ÇöÀç ½Ã°£ ±âÁØÀ¸·Î ´ÙÀ½ ½ÇÇà ½Ã°£ ¾÷µ¥ÀÌÆ® + queue Á¤·Ä
+		/* 2. update
+     * Update the next run time based on the current time
+     * Sort queue
+     */	
 		scheduleRequest(sl->rh);
 
-		// 3. sleep
-		// ´ÙÀ½ ¸®Äù½ºÆ® ½ÇÇà ½Ã°£±îÁö ½½¸³
+		/* 3. sleep
+     * Sleep until the next execution of the request 
+     */	
 		sleep_time = getSleepTime(sl->rh);	
 		
 		pthread_cond_timedwait(&(sl->cond), &(sl->mutex), &(sleep_time));
@@ -303,9 +310,13 @@ static sensorManagerEventRegister(DBusConnection *connection, DBusMessage *messa
 	rd->next = NULL;
 	makeDbusAddress(rd);
 
-	printf("[DEBUG] Received data check : [%u / %d / %s / %d / %d / %d ] \n", rd->pid, rd->rq_num, rd->sensor_name, rd->handle_type, rd->sensing_interval, rd->sensing_level);
+	printf("[DEBUG] Received data check : [%u / %d / %s / %d / %d / %d ] \n", \
+      rd->pid, rd->rq_num, rd->sensor_name, rd->handle_type, \
+      rd->sensing_interval, rd->sensing_level);
 
-	//0. Target sensor list °¡Á®¿À±â
+	/* 
+   * 0. Load target sensor list 
+   */
 
 	sl = getSensorByName(sensor_head_main, rd->sensor_name);
 
@@ -316,7 +327,10 @@ static sensorManagerEventRegister(DBusConnection *connection, DBusMessage *messa
 		return DBUS_HANDLER_RESULT_NOT_YET_HANDLED;
 	}
 
-	//1. request header °¡Á®¿À±â, 2 .ÇØ´ç rh¿¡ rqÃß°¡
+	/* 
+   * 1. Load request header 
+   * 2. Add rq into corresponding rh
+   */
 	addRequest(sl->rh, rd);
 
 	printf("Wake up thread, %s\n", rd->sensor_name);
@@ -345,8 +359,10 @@ static sensorManagerEventUpdate(DBusConnection *connection, DBusMessage *message
 
 	printf("[DEBUG] Received data check : [%u / %d / %d / %d / %d ] \n", pid, rq_num, handle_type, sensing_interval, sensing_level);
 
-	//0. Target request °¡Á®¿À±â
-
+	
+  /*
+   * 0. Load target request
+   */
 	rd = getRequestByPidRqnum(sensor_head_main, pid, rq_num);
 
 	if (rd == NULL){
@@ -356,7 +372,7 @@ static sensorManagerEventUpdate(DBusConnection *connection, DBusMessage *message
 		return DBUS_HANDLER_RESULT_NOT_YET_HANDLED;
 	}
 
-	//Value update
+	/* Value update */
 	rd->handle_type = handle_type;
 	rd->sensing_interval = sensing_interval;
 
@@ -378,8 +394,10 @@ static sensorManagerEventUnregister(DBusConnection *connection, DBusMessage *mes
 
 	printf("[DEBUG] Received data check : [%u / %d ] \n", pid, rq_num);
 
-	//0. Target request °¡Á®¿À±â
 
+  /* 
+   * 0. Load target request
+   */
 	if (rq_num == -1){
 		int i;
 		sl = sensor_head_main->start;
@@ -505,7 +523,7 @@ void initDbus(){
 	DBusError error;
 	GMainLoop *loop;
 
-	loop = g_main_loop_new(NULL, FALSE);   // main loop ?¤ì •
+	loop = g_main_loop_new(NULL, FALSE);   // main loop ?Â¤Ã¬Â â€¢
 	dbus_error_init(&error);
 
 	connection = dbus_bus_get(DBUS_BUS_SYSTEM, &error);
@@ -623,6 +641,7 @@ void load_sensors(){
   //printf("the library_path: %s\n", library_path);
 
   void *handle = dlopen(library_path, RTLD_LAZY);
+  error = dlerror();
   if(!handle){
     fprintf(stderr, "Error while loading so file: %s\n",error);
     exit(1);
@@ -636,14 +655,27 @@ void load_sensors(){
     cJSON *sensor_object = cJSON_GetObjectItem(root, sensor_index);
     
     char* sensor_name = cJSON_GetObjectItem(sensor_object, "name")->valuestring;
+    if(sensor_name == NULL)
+      fprintf(stderr, "error while reading the sensor name\n");
     char* value_type = cJSON_GetObjectItem(sensor_object, "value_type")->valuestring;
+    if(value_type == NULL)
+      fprintf(stderr, "error while reading the sensor value type\n");
+
     char* value_name = cJSON_GetObjectItem(sensor_object, "value_name")->valuestring;
+    if(value_name == NULL)
+      fprintf(stderr, "error while reading the sensor value name\n");
+
     char* start_func_name = cJSON_GetObjectItem(sensor_object, "start_func")->valuestring;
+    if(start_func_name == NULL)
+      fprintf(stderr, "error while reading the sensor start function name\n");
+
     char* stop_func_name = cJSON_GetObjectItem(sensor_object, "stop_func")->valuestring;
+    if(stop_func_name == NULL)
+      fprintf(stderr, "error while reading the sensor stop function name\n");
+
     char* get_func_name = cJSON_GetObjectItem(sensor_object, "get_func")->valuestring;
-    if(!sensor_name || !value_type || !value_name || !start_func_name 
-          || !stop_func_name || !get_func_name){
-        fprintf(stderr, "error while reading the sensor configuration\n");
+    if(get_func_name == NULL){
+        fprintf(stderr, "error while reading the sensor get function name\n");
     }
   
     device_ops_list[i].name = (char*) malloc( 20*sizeof(char));
@@ -700,6 +732,7 @@ int main(void)
 
 	return 0;
 }
+
 
 
 
