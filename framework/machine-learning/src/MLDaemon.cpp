@@ -159,10 +159,7 @@ void MLDaemon::onInferenceUnitOutput(int iuid,
   } else {
     // Normal mode: notify to app
 
-<<<<<<< HEAD
-=======
     // Find from setIUOutput listner list
->>>>>>> d89d5c7... Implement test system of machine learning framework and system apps, bug fixes
     std::vector<BaseMessage*>::iterator iter;
     BaseMessage* originalMessage = NULL;
     MLMessage* originalPayload = NULL;
@@ -172,10 +169,9 @@ void MLDaemon::onInferenceUnitOutput(int iuid,
       originalMessage = (*iter);
       originalPayload = (MLMessage*)originalMessage->getPayload();
 
-<<<<<<< HEAD
       MLMessageCommandType::Value commandType
         = originalPayload->getCommandType();
-      if(commandType == MLMessageCommandType::RunModel) { 
+      if(commandType == MLMessageCommandType::StartListeningIUOutput) { 
         // StartListeningIUOutput ACK
         int thisIuid;
         std::string thisListenerUri;
@@ -213,19 +209,6 @@ void MLDaemon::onInferenceUnitOutput(int iuid,
               originalMessage); 
         MLAckMessage* ackPayload = (MLAckMessage*)ackMessage->getPayload();
         ackPayload->setParamsRunModel(outputDataStr);
-=======
-      int thisIuid;
-      std::string thisListenerUri;
-      originalPayload->getParamsStartListeningIUOutput(thisIuid, thisListenerUri);
-
-      if((iuid == thisIuid) && (listenerUri == thisListenerUri)) {
-        // Make ACK message
-        BaseMessage* ackMessage
-          = MessageFactory::makeAppCoreAckMessage(this->mLocalChannel->getUri(),
-              originalMessage); 
-        MLAckMessage* ackPayload = (MLAckMessage*)ackMessage->getPayload();
-        ackPayload->setParamsStartListeningIUOutput(outputData);
->>>>>>> d89d5c7... Implement test system of machine learning framework and system apps, bug fixes
 
         // Send ACK message
         this->mLocalChannel->sendMessage(ackMessage);
@@ -233,12 +216,6 @@ void MLDaemon::onInferenceUnitOutput(int iuid,
       }
     }
 
-<<<<<<< HEAD
-=======
-    // Find from runModel listner list
-    // TODO: implement it
-
->>>>>>> d89d5c7... Implement test system of machine learning framework and system apps, bug fixes
     ANT_DBG_WARN("Cannot find listening request! : %d -> %s",
         iuid, listenerUri.c_str());
   }
@@ -397,13 +374,10 @@ void MLDaemon::startListeningIUOutput(BaseMessage* message) {
       iter++) {
     BaseMessage* thisMessage = (*iter);
     MLMessage* thisPayload = (MLMessage*)thisMessage->getPayload();
-<<<<<<< HEAD
     MLMessageCommandType::Value commandType = thisPayload->getCommandType();
     if(commandType != MLMessageCommandType::RunModel) {
       continue;
     }
-=======
->>>>>>> d89d5c7... Implement test system of machine learning framework and system apps, bug fixes
     int thisIuid;
     std::string thisListenerUri;
     thisPayload->getParamsStartListeningIUOutput(thisIuid, thisListenerUri);
@@ -563,7 +537,6 @@ std::string MLDaemon::getIUResourceUsage(int iuid) {
 
 void MLDaemon::runModel(BaseMessage* message) {
   // Get arguments
-<<<<<<< HEAD
   BaseMessage* originalMessage = message;
   MLMessage* originalPayload = (MLMessage*)originalMessage->getPayload();
   std::string modelName;
@@ -594,21 +567,6 @@ void MLDaemon::runModel(BaseMessage* message) {
       return;
     }
   }
-
-  // ACK message will be sent later
-  this->mListenIUOutputList.push_back(originalMessage);
-=======
-  MLMessage* originalPayload = (MLMessage*)message->getPayload();
-  std::string modelName;
-  originalPayload->getParamsRunModel(modelName);
-
-  // Internal
-  bool res = this->runModel(modelName);
-  if(!res) {
-    ANT_DBG_ERR("Cannot find model %s!", modelName.c_str());
-  }
-  // TODO: implement runModel ACK
->>>>>>> d89d5c7... Implement test system of machine learning framework and system apps, bug fixes
 }
 
 #define PATH_BUFFER_SIZE 1024

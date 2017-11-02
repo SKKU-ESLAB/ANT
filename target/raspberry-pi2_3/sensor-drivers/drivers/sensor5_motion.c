@@ -4,7 +4,7 @@
 
 static int flag = 0;
 
-static void MOTION_start(void *data)
+void MOTION_start(void *data)
 {
 	if(!flag){
 		setupWiringPi();
@@ -14,12 +14,12 @@ static void MOTION_start(void *data)
 	printf("Motion sensor is start\n");
 }
 
-static void MOTION_stop(void *data)
+void MOTION_stop(void *data)
 {
 	printf("Motion sensor is terminated\n");
 }
 
-static char* MOTION_get(void *data)
+char* MOTION_get(void *data)
 {	
 	static char value_c[20];
 	int value = digitalRead(MOTION_PIN);
