@@ -2,17 +2,17 @@
 
 #define SOUND	9
 
-static void SOUND_start(void *data)
+void SOUND_start(void *data)
 {
 	printf("Sound sensor is started\n");
 }
 
-static void SOUND_stop(void *data)
+void SOUND_stop(void *data)
 {
 	printf("Sound sensor is terminated\n");
 }
 
-static char* SOUND_get(void *data)
+char* SOUND_get(void *data)
 {
 	static char value_c[20];
 	int value = ADC_Read(SOUND);
