@@ -11,7 +11,7 @@ void vib_fuc(){
 		state++;
 }
 
-static void VIBRATION_start(void *data)
+void VIBRATION_start(void *data)
 {
 	working = 1;
 	
@@ -25,13 +25,13 @@ static void VIBRATION_start(void *data)
 	printf("Vibration sensor is start\n");
 }
 
-static void VIBRATION_stop(void *data)
+void VIBRATION_stop(void *data)
 {
 	working = 0;
 	printf("Vibration sensor is terminated\n");
 }
 
-static char* VIBRATION_get(void *data)
+char* VIBRATION_get(void *data)
 {
 	static char value_c[20];
 	int value;
