@@ -1,4 +1,7 @@
 #include "driver_common.h"
+#include <wiringPi.h>
+#include <wiringPiI2C.h>
+
 
 #define Clock 27
 #define Address 28
