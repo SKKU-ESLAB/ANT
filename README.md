@@ -44,7 +44,7 @@ $ ./target/raspberry-pi2_3/install-deps-raspberry-pi2_3.sh
 $ cd ${ANT_ROOT_DIR}
 $ mkdir build
 $ cd build
-$ cmake ..
+$ cmake .. -DTARGET_BOARD=<target_board>  #raspberry-pi, tegraTX
 $ make -j4
 ```
 
