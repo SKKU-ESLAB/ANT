@@ -24,6 +24,7 @@
 #include "AppBase.h"
 #include "AppAPI.h"
 #include "MLAPI.h"
+#include "CommAPI.h"
 
 using namespace v8;
 
@@ -59,6 +60,7 @@ void init(Local<Object> exports, Local<Object> module) {
   // Set entries as API object's constructors
   NODE_SET_METHOD(module, "app", AppAPI::NewInstance);
   NODE_SET_METHOD(module, "ml", MLAPI::NewInstance);
+  NODE_SET_METHOD(module, "comm", CommAPI::NewInstance);
 }
 
 NODE_MODULE(NODE_GYP_MODULE_NAME, init)

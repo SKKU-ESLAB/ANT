@@ -452,7 +452,7 @@ namespace CompanionMessageCommandType {
     NotDetermined = 0,
     SendEventPage = 1, // params: int appId, string legacyData, boolean isNoti
     SendConfigPage = 2, // params: int appId, string legacyData
-    UpdateSensorData = 3 // params: string legacyData
+    SendToCompanion = 3 // params: string listenerName, string data
   };
 }
 
@@ -484,7 +484,7 @@ class CompanionMessage: public BaseMessagePayload {
     // Set command-specific parameters
     void setParamsSendEventPage(int appId, std::string legacyData, bool isNoti);
     void setParamsSendConfigPage(int appId, std::string legacyData);
-    void setParamsUpdateSensorData(std::string legacyData);
+    void setParamsSendToCompanion(std::string listenerName, std::string data);
 
     void setCompanionPayloadObj(cJSON* companionPayloadObj) {
       this->mCompanionPayloadObj = companionPayloadObj;

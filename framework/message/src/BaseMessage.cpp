@@ -442,13 +442,16 @@ void CompanionMessage::setParamsSendConfigPage(int appId,
 
   this->mCompanionPayloadObj = payloadObj;
 }
-void CompanionMessage::setParamsUpdateSensorData(std::string legacyData) {
+void CompanionMessage::setParamsSendToCompanion(std::string listenerName,
+    std::string data) {
   cJSON* payloadObj = cJSON_CreateObject();
-  cJSON* legacyDataObj = cJSON_Parse(legacyData.c_str());
-  if(legacyDataObj == NULL) {
-    ANT_DBG_ERR("UpdateSensorData: cannot parse legacyData");
+  cJSON* listenerNameObj = cJSON_Parse(listenerName.c_str());
+  cJSON* dataObj = cJSON_Parse(data.c_str());
+  if(listenerNameObj == NULL || dataObj == NULL) {
+    ANT_DBG_ERR("SendToCompanion: cannot parse listenerName or data");
   }
-  cJSON_AddItemToObject(payloadObj, "legacyData", legacyDataObj);
+  cJSON_AddItemToObject(payloadObj, "listenerName", listenerNameObj);
+  cJSON_AddItemToObject(payloadObj, "data", dataObj);
 
   this->mCompanionPayloadObj = payloadObj;
 }
