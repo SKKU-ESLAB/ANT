@@ -22,17 +22,19 @@
 
 SensorInputReader::SensorInputReader(DBusConnection* dbusConn)
 {
-  mDBusConnection = dbusConn;
+  this->mDBusConnection = dbusConn;
 }
 
-DBusConnection* get_dbus_connection(){
-  return mDBusConnection;
+DBusConnection* SensorInputReader::get_dbus_connection(){
+  return this->mDBusConnection;
 }
 
 MLTensor* SensorInputReader::read(std::string sourceUri) {
   /* TODO: implement it
    * Now sensor data is given as dummy data.
    */
+
+  printf("aaa\n");
   MLTensor* inputTensor = new MLTensor(this->getLayout());
   DBusConnection *dbus_conn = get_dbus_connection();
   DBusMessage *msg;
@@ -45,6 +47,8 @@ MLTensor* SensorInputReader::read(std::string sourceUri) {
   float data[3];
 
   srand(time(NULL));
+
+  printf("send method call\n");
   msg = dbus_message_new_method_call("org.ant.sensorManager",
       "/", "org.ant.sensorManager", "Get");
   if(msg == NULL){
@@ -52,7 +56,7 @@ MLTensor* SensorInputReader::read(std::string sourceUri) {
   }
 
   dbus_message_append_args(msg,
-      DBUS_TYPE<STRING, &sensor_name,
+      DBUS_TYPE_STRING, &sensor_name,
       DBUS_TYPE_INVALID
       );
   dbus_error_init(&error);
