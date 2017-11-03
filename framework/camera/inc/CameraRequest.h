@@ -31,8 +31,8 @@ typedef enum _RequestType {
   kPreRecordingInit,
   kPreRecordingStart,
   kPreRecordingStop,
-  kOpenCVStart,
-  kOpenCVStop,
+  kCopyShmStart,
+  kCopyShmStop,
   kSensorOverlayStart,
   kSensorOverlayStop,
 } RequestType;

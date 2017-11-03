@@ -15,7 +15,7 @@ static void send_event_rec_start(DBusConnection *conn, char *file_name)
 {
   printf("Event recording start\n");
   DBusMessage *message;
-  message = dbus_message_new_signal("/org/ant/camera/daemon", "org.ant.camera.daemon", event_rec_start_request);
+  message = dbus_message_new_signal("/org/ant/cameraManager", "org.ant.cameraManager", event_rec_start_request);
 
   char* ant_data_dir = getenv("ANT_DATA_DIR");
   char str[256] = "";
@@ -45,7 +45,7 @@ static void send_delay_streaming_start(DBusConnection *conn)
 {
   printf("Delay streaming start\n");
   DBusMessage *message;
-  message = dbus_message_new_signal("/org/ant/camera/daemon", "org.ant.camera.daemon", delay_streaming_start_request);
+  message = dbus_message_new_signal("/org/ant/cameraManager", "org.ant.cameraManager", delay_streaming_start_request);
   char sensor[8] = "BUTTON";
   unsigned camera_num = 0;
   printf("Camera Number : ");
@@ -65,7 +65,7 @@ static void send_sensor_overlay(DBusConnection *conn)
 {
   printf("Sensor overlay start\n");
   DBusMessage *message;
-  message = dbus_message_new_signal("/org/ant/camera/daemon", "org.ant.camera.daemon", sensor_overlay_start_request);
+  message = dbus_message_new_signal("/org/ant/cameraManager", "org.ant.cameraManager", sensor_overlay_start_request);
   char sensor[8] = "BUTTON";
   unsigned camera_num = 0;
   printf("Camera Number : ");
@@ -87,7 +87,7 @@ static void send_sensor_overlay_stop(DBusConnection *conn)
 {
   printf("Sensor overlay stop\n");
   DBusMessage *message;
-  message = dbus_message_new_signal("/org/ant/camera/daemon", "org.ant.camera.daemon", sensor_overlay_stop_request);
+  message = dbus_message_new_signal("/org/ant/cameraManager", "org.ant.cameraManager", sensor_overlay_stop_request);
   char sensor[8] = "BUTTON";
   unsigned camera_num = 0;
   printf("Camera Number : ");
@@ -109,7 +109,7 @@ static void send_rec_init(DBusConnection *conn, char* file_name)
 {
   printf("Recording Start\n");
   DBusMessage *message;
-  message = dbus_message_new_signal("/org/ant/camera/daemon", "org.ant.camera.daemon", "recStart");
+  message = dbus_message_new_signal("/org/ant/cameraManager", "org.ant.cameraManager", "recStart");
   char* ant_data_dir = getenv("ANT_DATA_DIR");
 	char str[256] = "";
   strcat(str, ant_data_dir);
@@ -178,7 +178,7 @@ static void send_rec_term(DBusConnection *conn)
 {
   printf("termination\n");
   DBusMessage *message;
-  message = dbus_message_new_signal(dbus_path, dbus_interface, opencv_start_request);
+  message = dbus_message_new_signal(dbus_path, dbus_interface, copy_shm_start_request);
 
 	unsigned pid = getpid();
   unsigned camera_num = 0;

@@ -49,8 +49,11 @@ sudo apt-get -y install g++-4.8 wiringpi libdbus-1-dev glib-2.0 bison byacc   \
   gstreamer1.0-doc gstreamer1.0-tools libgstreamer-plugins-base1.0-dev
 
 ## Caffe Library Dependency
-
-
+sudo apt-get -y install libprotobuf-dev libleveldb-dev libsnappy-dev          \
+  libhdf5-serial-dev protobuf-compiler libatlas-base-dev libopenblas-dev      \
+  libgflags-dev libgoogle-glog-dev liblmdb-dev python-numpy python-scipy      \
+  python-yaml python-six python-pip
+sudo apt-get -y install --no-install-recommends libboost-all-dev
 
 # Get the absolute path of ANT repository directory
 ANT_REPO_DIR=$(dirname "$0")/../..
@@ -121,6 +124,14 @@ cd ${ANT_REPO_DIR}/dep/gst-rpicamsrc
 ./autogen.sh --prefix=/usr --libdir=/usr/lib/arm-linux-gnueabihf/
 make -j4
 sudo make install
+
+# Step 12. Install Caffe Framework
+cd ${ANT_REPO_DIR}/dep/caffe
+cp Makefile.config.rpi Makefile.config
+make -j4 all distribute
+
+sudo cp -a distribute/lib/libcaffe.so* /usr/lib
+sudo cp -r distribute/include/caffe/ /usr/include
 
 # Step 13. Install FANN Library
 cd ${ANT_REPO_DIR}/dep/fann

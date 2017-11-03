@@ -23,7 +23,7 @@ add_executable(ant-ml ${MLFW_sources})
 add_dependencies(ant-ml ant-message)
 
 target_link_libraries(ant-ml
-  ant-message ant-cmfw pthread fann doublefann fixedfann floatfann)
+  ant-message ant-cmfw pthread fann doublefann fixedfann floatfann caffe glog boost_system opencv_core opencv_highgui opencv_imgproc)
 
 set_target_properties(ant-ml
   PROPERTIES
