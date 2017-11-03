@@ -23,11 +23,17 @@
 #include <vector>
 #include <map>
 
+#include <dbus/dbus.h>
+#include <dbus/dbus-glib.h>
+#include <dbus/dbus-glib-lowlevel.h>
+
 #include "InputReader.h"
 
 class SensorInputReader
 : public InputReader {
   public:
+    SensorInputReader(DBusConnection* dbusConn);
+    
     // Read input data from source
     //   - Input: String sourceUri
     //   - Output: MLTensor* inputTensor
@@ -37,6 +43,10 @@ class SensorInputReader
     //   - Output: MLTensorLayout layout
     //     - It will be used to check if the layout is same as the required.
     virtual MLTensorLayout getLayout();
+
+  protected:
+    DBusConnection* mDBusConnection;
+    DBusConnection* get_dbus_connection();
 };
 
 #endif // !defined(__SENSOR_INPUT_READER_H__)

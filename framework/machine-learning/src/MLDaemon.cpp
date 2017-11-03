@@ -83,6 +83,8 @@ void MLDaemon::runTest(std::string modelName) {
 
   // Run DbusChannel to initialize only dbus.
   // This dbus will be used by only SensorInputReader.
+  this->mMessageRouter = new MessageRouter();
+  this->mDbusChannel = new DbusChannel(this->mMessageRouter);
   this->mDbusChannel->run();
 
   // Initialize
