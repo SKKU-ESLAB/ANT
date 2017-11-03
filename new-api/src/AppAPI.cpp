@@ -89,10 +89,6 @@ void AppAPI::InitPrototype(Isolate* isolate) {
   NODE_SET_PROTOTYPE_METHOD(funcTemplate,
       "onTermination", onTermination);
 
-  // Sensor Viewer
-  NODE_SET_PROTOTYPE_METHOD(funcTemplate,
-      "sendMsgToSensorViewer", sendMsgToSensorViewer);
-
   sConstructor.Reset(isolate, funcTemplate->GetFunction());
 }
 
@@ -295,7 +291,7 @@ void AppAPI::sendEventPage(const FunctionCallbackInfo<Value>& args) {
 
   // send CompanionMessage.SendEventPage
   gAppBase->sendEventPageToCompanion(jsonData, false);
-  printf("[NIL] SendEventPage to companion: %s\n", jsonData);
+  ANT_DBG_VERB("SendEventPage to companion: %s", jsonData);
 
   return;
 }
@@ -328,7 +324,7 @@ void AppAPI::sendEventPageWithNoti(const FunctionCallbackInfo<Value>& args) {
 
   // Send CompanionMessage.SendEventPage
   gAppBase->sendEventPageToCompanion(jsonData, true);
-  printf("[NIL] SendEventPage to companion:  %s\n", jsonData);
+  ANT_DBG_VERB("[NIL] SendEventPage to companion:  %s\n", jsonData);
 
   return;
 }
@@ -932,7 +928,7 @@ void AppAPI::sendConfigPage(const FunctionCallbackInfo<Value>& args) {
   // Send CompanionMessage.SendConfigPage command
   gAppBase->sendConfigPageToCompanion(jsonData);
 
-  printf("[NIL] SendConfigPage >>  %s \n", jsonData);
+  ANT_DBG_VERB("Send config page to companion: %s", jsonData);
 
   return;
 }
@@ -1022,7 +1018,8 @@ void AppAPI::getData(const FunctionCallbackInfo<Value>& args) {
     }
   }
 
-  printf("[NIL] There is no value with the key[%s]\n", name);			
+  ANT_DBG_ERR("Legacy JSON parser error: There is no value with the key[%s]\n",
+      name);			
   args.GetReturnValue().Set(getV8String(isolate, "N/A"));
 }
 // [MORE] return multiple choice -> array
@@ -1048,32 +1045,5 @@ void AppAPI::onTermination(const FunctionCallbackInfo<Value>& args) {
   // Register onTerminate callback
   gAppBase->setOnTerminate(onTerminateCallback);
 
-  return;
-}
-
-// send CompanionMessage.UpdateSensorData
-void AppAPI::sendMsgToSensorViewer(const FunctionCallbackInfo<Value>& args) {
-  Isolate* isolate = Isolate::GetCurrent();
-  HandleScope scope(isolate);
-
-  // Arguments
-  const char* jsonData;
-
-  // Check arguments
-  if ((args.Length() != 1) ||	!args[0]->IsString() ) {
-    isolate->ThrowException(Exception::TypeError(getV8String(isolate,
-            "Invalid Use : 1 arguments expected [SensorData obj]")));
-    return;
-  }
-
-  // Get argument 0
-  v8::String::Utf8Value param1(args[0]->ToString());
-  std::string name_c = std::string(*param1);
-  jsonData = name_c.c_str();
-
-  // Send CompanionMessage.UpdateSensorData
-  gAppBase->updateSensorDataToCompanion(jsonData);
-
-  printf("[NIL] sendMsgToSensorViewer to companion: %s\n", jsonData);
   return;
 }
