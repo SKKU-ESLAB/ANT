@@ -46,5 +46,5 @@ public interface TargetDeviceStubListener {
 
     public void onSendConfigPage(BaseMessage message);
 
-    public void onUpdateSensorData(BaseMessage message);
+    public void onSendToCompanion(BaseMessage message);
 }

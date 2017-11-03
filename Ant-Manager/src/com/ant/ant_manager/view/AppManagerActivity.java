@@ -43,6 +43,7 @@ import android.widget.BaseAdapter;
 import android.widget.ImageView;
 import android.widget.ListView;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.ant.ant_manager.R;
 import com.ant.ant_manager.controller.ANTControllerBroadcastReceiver;
@@ -112,27 +113,32 @@ public class AppManagerActivity extends Activity {
         public void onItemClick(AdapterView<?> parent, View view, int position, long l_position) {
             final AppListItem item = (AppListItem) parent.getAdapter().getItem(position);
 
-            AlertDialog.Builder alt_bld = new AlertDialog.Builder(AppManagerActivity.this);
-            alt_bld.setMessage("Delete this app ?").setCancelable(false).setPositiveButton("Yes",
-                    new DialogInterface.OnClickListener() {
-                public void onClick(DialogInterface dialog, int id) {
-                    // Action for 'Yes' Button
-                    int appId = item.getAppID();
-                    if (mControllerServiceStub != null)
-                        mControllerServiceStub.removeAppOneWay(appId);
-                }
-            }).setNegativeButton("No", new DialogInterface.OnClickListener() {
-                public void onClick(DialogInterface dialog, int id) {
-                    // Action for 'NO' Button
-                    dialog.cancel();
-                }
-            });
+            if (item.isDefaultApp()) {
+                Toast.makeText(self, "You cannot delete default app.", Toast.LENGTH_LONG).show();
+            } else {
+                AlertDialog.Builder alt_bld = new AlertDialog.Builder(AppManagerActivity.this);
+                alt_bld.setMessage("Delete this app ?").setCancelable(false).setPositiveButton
+                        ("Yes", new DialogInterface.OnClickListener() {
 
-            AlertDialog alert = alt_bld.create();
-            alert.setTitle(item.getAppName());
-            Drawable d = new BitmapDrawable(getResources(), item.getAppIcon());
-            alert.setIcon(d);
-            alert.show();
+                    public void onClick(DialogInterface dialog, int id) {
+                        // Action for 'Yes' Button
+                        int appId = item.getAppID();
+                        if (mControllerServiceStub != null)
+                            mControllerServiceStub.removeAppOneWay(appId);
+                    }
+                }).setNegativeButton("No", new DialogInterface.OnClickListener() {
+                    public void onClick(DialogInterface dialog, int id) {
+                        // Action for 'NO' Button
+                        dialog.cancel();
+                    }
+                });
+
+                AlertDialog alert = alt_bld.create();
+                alert.setTitle(item.getAppName());
+                Drawable d = new BitmapDrawable(getResources(), item.getAppIcon());
+                alert.setIcon(d);
+                alert.show();
+            }
         }
 
     };
@@ -201,7 +207,6 @@ public class AppManagerActivity extends Activity {
 
                 ImageView iv = (ImageView) convertView.findViewById(R.id.imageView11);
                 iv.setImageBitmap(mAppList.get(position).getAppIcon());
-
             }
             return convertView;
         }
@@ -222,13 +227,13 @@ public class AppManagerActivity extends Activity {
 
         this.mAppList.clear();
         for (ANTApp app : appList) {
-            if (!app.isDefaultApp()) {
-                int appId = app.getAppId();
-                String appName = app.getName();
-                Bitmap iconBitmap = BitmapFactory.decodeFile(app.getIconImagePath());
-                int appState = app.getState();
-                this.mAppList.add(new AppListItem(appId, appName, iconBitmap, appState));
-            }
+            int appId = app.getAppId();
+            String appName = app.getName();
+            String iconImagePath = app.getIconImagePath();
+            Bitmap iconBitmap = BitmapFactory.decodeFile(iconImagePath);
+            int appState = app.getState();
+            boolean isDefaultApp = app.isDefaultApp();
+            this.mAppList.add(new AppListItem(appId, appName, iconBitmap, appState, isDefaultApp));
         }
         this.updateUI();
     }
@@ -238,12 +243,14 @@ public class AppManagerActivity extends Activity {
         private String mAppName;
         private Bitmap mAppIcon;
         private int mAppState;
+        private boolean mIsDefaultApp;
 
-        AppListItem(int appID, String appName, Bitmap appIcon, int appState) {
+        AppListItem(int appID, String appName, Bitmap appIcon, int appState, boolean isDefaultApp) {
             this.mAppID = appID;
             this.mAppName = appName;
             this.mAppIcon = appIcon;
             this.mAppState = appState;
+            this.mIsDefaultApp = isDefaultApp;
         }
 
         int getAppID() {
@@ -260,6 +267,10 @@ public class AppManagerActivity extends Activity {
 
         int getAppState() {
             return this.mAppState;
+        }
+
+        boolean isDefaultApp() {
+            return this.mIsDefaultApp;
         }
 
         void updateAppState(int appState) {

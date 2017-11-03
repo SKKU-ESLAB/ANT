@@ -46,8 +46,9 @@ abstract public class ANTControllerBroadcastReceiver extends BroadcastReceiver {
     public static final String KEY_ON_RECEIVED_EVENT_LEGACY_DATA = "legacyData";
     public static final String KEY_ON_RECEIVED_EVENT_IS_NOTI = "isNoti";
 
-    public static final String EVENT_TYPE_ON_RECEIVED_SENSOR_DATA = "onReceivedSensorData";
-    public static final String KEY_ON_RECEIVED_SENSOR_DATA_LEGACY_DATA = "legacyData";
+    public static final String EVENT_TYPE_ON_RECEIVED_DATA_FROM_TARGET = "onReceivedDataFromTarget";
+    public static final String KEY_ON_RECEIVED_SENSOR_DATA_LISTENER_NAME = "listenerName";
+    public static final String KEY_ON_RECEIVED_SENSOR_DATA_DATA = "data";
 
     public static final String EVENT_TYPE_ON_RECEIVED_APP_CONFIG = "onReceivedAppConfig";
     public static final String KEY_ON_RECEIVED_APP_CONFIG_APP_ID = "appId";
@@ -105,10 +106,12 @@ abstract public class ANTControllerBroadcastReceiver extends BroadcastReceiver {
                 String legacyData = intent.getStringExtra(KEY_ON_RECEIVED_APP_CONFIG_LEGACY_DATA);
                 if (this.mOnReceivedAppConfigListener != null)
                     this.mOnReceivedAppConfigListener.onReceivedAppConfig(appId, legacyData);
-            } else if (eventType.compareTo(EVENT_TYPE_ON_RECEIVED_SENSOR_DATA) == 0) {
-                String legacyData = intent.getStringExtra(KEY_ON_RECEIVED_SENSOR_DATA_LEGACY_DATA);
-                if (this.mOnReceivedSensorDataListener != null)
-                    this.mOnReceivedSensorDataListener.onReceivedSensorData(legacyData);
+            } else if (eventType.compareTo(EVENT_TYPE_ON_RECEIVED_DATA_FROM_TARGET) == 0) {
+                String listenerName = intent.getStringExtra
+                        (KEY_ON_RECEIVED_SENSOR_DATA_LISTENER_NAME);
+                String data = intent.getStringExtra(KEY_ON_RECEIVED_SENSOR_DATA_DATA);
+                if (this.mOnReceivedDataFromTarget != null)
+                    this.mOnReceivedDataFromTarget.onReceivedDataFromTarget(listenerName, data);
             } else if (eventType.compareTo(EVENT_TYPE_ON_RESULT_UPDATE_APP_LIST) == 0) {
                 Parcelable[] appListParcelable = intent.getParcelableArrayExtra
                         (KEY_ON_RESULT_UPDATE_APP_LIST_APP_LIST);
@@ -164,7 +167,7 @@ abstract public class ANTControllerBroadcastReceiver extends BroadcastReceiver {
     private OnCommChannelStateChangedListener mOnCommChannelStateChangedListener;
     private OnAppStateChangedListener mOnAppStateChangedListener;
     private OnReceivedEventListener mOnReceivedEventListener;
-    private OnReceivedSensorDataListener mOnReceivedSensorDataListener;
+    private OnReceivedDataFromTarget mOnReceivedDataFromTarget;
     private OnReceivedAppConfigListener mOnReceivedAppConfigListener;
     private OnResultUpdateAppListListener mOnResultUpdateAppListListener;
     private OnResultGetFileListListener mOnResultGetFileListListener;
@@ -184,8 +187,8 @@ abstract public class ANTControllerBroadcastReceiver extends BroadcastReceiver {
         this.mOnReceivedEventListener = listener;
     }
 
-    public void setOnReceivedSensorDataListener(OnReceivedSensorDataListener listener) {
-        this.mOnReceivedSensorDataListener = listener;
+    public void setOnReceivedSensorDataListener(OnReceivedDataFromTarget listener) {
+        this.mOnReceivedDataFromTarget = listener;
     }
 
     public void setOnReceivedAppConfigListener(OnReceivedAppConfigListener listener) {
@@ -228,8 +231,8 @@ abstract public class ANTControllerBroadcastReceiver extends BroadcastReceiver {
         public void onReceivedAppConfig(int appId, String legacyData);
     }
 
-    public interface OnReceivedSensorDataListener {
-        public void onReceivedSensorData(String legacyData);
+    public interface OnReceivedDataFromTarget {
+        public void onReceivedDataFromTarget(String listenerName, String data);
     }
 
     public interface OnResultUpdateAppListListener {

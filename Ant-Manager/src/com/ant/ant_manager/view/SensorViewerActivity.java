@@ -41,7 +41,9 @@ import com.ant.ant_manager.controller.LegacyJSONParser;
 import com.ant.ant_manager.controller.ANTControllerBroadcastReceiver;
 import com.ant.ant_manager.controller.ANTControllerService;
 
-public class SensorViewerActivity extends Activity {
+import static android.R.id.message;
+
+abstract public class SensorViewerActivity extends Activity {
     // ANTControllerService
     private ANTControllerService mControllerServiceStub = null;
     private PrivateControllerBroadcastReceiver mControllerBroadcastReceiver;
@@ -80,7 +82,6 @@ public class SensorViewerActivity extends Activity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_sensor_viewer);
 
         // Parameters
         Intent intent = this.getIntent();
@@ -121,6 +122,7 @@ public class SensorViewerActivity extends Activity {
         sensor7.setGraphLineColor(Color.YELLOW);
     }
 
+    @Override
     protected void onDestroy() {
         super.onDestroy();
 
@@ -142,8 +144,9 @@ public class SensorViewerActivity extends Activity {
         }
     }
 
-    public void onMsgToSensorViewer(String message) {
-        Log.d(TAG, "Message coming : " + message);
+    abstract public void onMessageFromTarget(String listenerName, String message);
+
+    public void onSensorViewerMessage(String message) {
         LegacyJSONParser jp = new LegacyJSONParser(message);
 
         Double val1 = Double.parseDouble(jp.getValueByKey(sensor1.getSensorName()));
@@ -200,6 +203,7 @@ public class SensorViewerActivity extends Activity {
         }
     }
 
+    @Override
     public void onResume() {
         super.onResume();
 
@@ -250,6 +254,7 @@ public class SensorViewerActivity extends Activity {
         super.onBackPressed();
     }
 
+    @Override
     public void onPause() {
         super.onPause();
         mControllerServiceStub.terminateAppOneWay(this.mAppId);
@@ -297,10 +302,15 @@ public class SensorViewerActivity extends Activity {
 
     class PrivateControllerBroadcastReceiver extends ANTControllerBroadcastReceiver {
         PrivateControllerBroadcastReceiver() {
-            this.setOnReceivedSensorDataListener(new OnReceivedSensorDataListener() {
+            this.setOnReceivedSensorDataListener(new OnReceivedDataFromTarget() {
                 @Override
-                public void onReceivedSensorData(String legacyData) {
-                    onMsgToSensorViewer(legacyData);
+                public void onReceivedDataFromTarget(String listenerName, String data) {
+                    Log.d(TAG, "Message coming for " + listenerName + ": " + message);
+                    if (listenerName.compareTo("sensorviewer") == 0) {
+                        onSensorViewerMessage(data);
+                    } else {
+                        onMessageFromTarget(listenerName, data);
+                    }
                 }
             });
         }

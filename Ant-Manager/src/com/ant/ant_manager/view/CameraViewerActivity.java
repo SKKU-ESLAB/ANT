@@ -44,7 +44,7 @@ import com.ant.ant_manager.view.cameraviewer.GStreamerSurfaceView;
 
 import org.freedesktop.gstreamer.GStreamer;
 
-public class CameraViewerActivity extends Activity implements SurfaceHolder.Callback {
+abstract public class CameraViewerActivity extends Activity implements SurfaceHolder.Callback {
     private static final String TAG = "CameraViewerActivity";
 
     // Intent
@@ -388,7 +388,7 @@ public class CameraViewerActivity extends Activity implements SurfaceHolder.Call
     class PrivateControllerBroadcastReceiver extends ANTControllerBroadcastReceiver {
         PrivateControllerBroadcastReceiver() {
             this.setOnCommChannelStateChangedListener(new OnCommChannelStateChangedListener() {
-                @Override
+                    @Override
                 public void onCommChannelStateChanged(int prevState, int newState) {
                     if (newState == CommChannelService.STATE_CONNECTED_LARGE_DATA) {
                         // Succeed to connect large data port

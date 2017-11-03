@@ -41,7 +41,9 @@ import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.ant.ant_manager.view.main.ImageClassifierMainIcon;
 import com.ant.ant_manager.view.main.LargeDataTestMainIcon;
+import com.ant.ant_manager.view.main.MotionClassifierMainIcon;
 import com.ant.cmfw.service.CommChannelService;
 import com.ant.ant_manager.R;
 import com.ant.ant_manager.controller.ANTControllerBroadcastReceiver;
@@ -566,6 +568,10 @@ public class MainActivity extends Activity {
                         this.mMainIconList.add(new CameraViewerMainIcon(this, app.getAppId()));
                     } else if (app.getName().compareTo("SensorViewer") == 0) {
                         this.mMainIconList.add(new SensorViewerMainIcon(this, app.getAppId()));
+                    } else if (app.getName().compareTo("MotionClassifier") == 0) {
+                        this.mMainIconList.add(new MotionClassifierMainIcon(this, app.getAppId()));
+                    } else if (app.getName().compareTo("ImageClassifier") == 0) {
+                        this.mMainIconList.add(new ImageClassifierMainIcon(this, app.getAppId()));
                     }
                 } else {
                     // User app

@@ -44,7 +44,7 @@ import com.ant.ant_manager.model.message.params.ParamsListenAppState;
 import com.ant.ant_manager.model.message.params.ParamsSendConfigPage;
 import com.ant.ant_manager.model.message.params.ParamsSendEventPage;
 import com.ant.ant_manager.model.message.params.ParamsUpdateAppConfig;
-import com.ant.ant_manager.model.message.params.ParamsUpdateSensorData;
+import com.ant.ant_manager.model.message.params.ParamsSendToCompanion;
 import com.ant.ant_manager.view.remoteui.RemoteNotiUI;
 
 import org.xmlpull.v1.XmlPullParser;
@@ -541,14 +541,15 @@ public class ANTControllerService extends Service {
         }
 
         @Override
-        public void onUpdateSensorData(BaseMessage message) {
+        public void onSendToCompanion(BaseMessage message) {
             // Get parameters
             CompanionMessage payload = (CompanionMessage) message.getPayload();
-            ParamsUpdateSensorData params = payload.getParamsUpdateSensorData();
-            String legacyData = params.legacyData;
+            ParamsSendToCompanion params = payload.getParamsSendToCompanion();
+            String listenerName = params.listenerName;
+            String data = params.data;
 
             // Listeners
-            ANTControllerBroadcastSender.onReceivedSensorData(self, legacyData);
+            ANTControllerBroadcastSender.onReceivedDataFromTarget(self, listenerName, data);
         }
 
         @Override

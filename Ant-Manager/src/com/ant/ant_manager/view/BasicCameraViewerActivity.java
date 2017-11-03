@@ -1,4 +1,7 @@
-package com.ant.ant_manager.model.message.params;
+package com.ant.ant_manager.view;
+
+import android.os.Bundle;
+import android.view.MenuItem;
 
 /* Copyright (c) 2017 SKKU ESLAB, and contributors. All rights reserved.
  *
@@ -16,10 +19,30 @@ package com.ant.ant_manager.model.message.params;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-public class ParamsUpdateSensorData {
-    public ParamsUpdateSensorData(String legacyData) {
-        this.legacyData = legacyData;
+public class BasicCameraViewerActivity extends CameraViewerActivity {
+    // Called when the activity is first created.
+    @Override
+    public void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
     }
-    public String legacyData;
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        return super.onOptionsItemSelected(item);
+    }
 }
