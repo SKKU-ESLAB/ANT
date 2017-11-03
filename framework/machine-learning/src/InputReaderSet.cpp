@@ -23,12 +23,12 @@
 #define SENSOR_INPUT_URI "/thing/sensor"
 #define CAMERA_INPUT_URI "/thing/camera"
 
-InputReaderSet::InputReaderSet() {
+InputReaderSet::InputReaderSet(DBusConnection* dbusConnection) {
   // TODO: resolve hard-coded input readers
   std::string kSensorInputURI(SENSOR_INPUT_URI);
   std::string kCameraInputURI(CAMERA_INPUT_URI);
   this->mInputReaders.insert(std::pair<std::string, InputReader*>(
-        kSensorInputURI, (InputReader*)new SensorInputReader()));
+        kSensorInputURI, (InputReader*)new SensorInputReader(dbusConnection)));
   this->mInputReaders.insert(std::pair<std::string, InputReader*>(
         kCameraInputURI, (InputReader*)new CameraInputReader()));
 }
