@@ -22,7 +22,8 @@
 #include "MLTensor.h"
 #include "ANTdbugLog.h"
 
-InferenceUnit* ModelPackageLoader::loadBuiltin(std::string modelName) {
+InferenceUnit* ModelPackageLoader::loadBuiltin(std::string modelName,
+    InputReaderSet* inputReaderSet) {
   // Load built-in model and create a new inference unit
 
   // Properties of new inference unit
@@ -74,7 +75,8 @@ InferenceUnit* ModelPackageLoader::loadBuiltin(std::string modelName) {
       inferenceRunner, // inferenceRunner
       inputLayout, // inputLayout
       outputLayout, // outputLayout
-      parameters);
+      parameters,
+      inputReaderSet);
   return newIU;
 }
 

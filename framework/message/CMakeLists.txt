@@ -21,6 +21,7 @@ set(MESSAGE_sources
   ${MESSAGE_SOURCE_DIR}/cJSON.c)
 
 add_library(ant-message SHARED ${MESSAGE_sources})
+add_dependencies(ant-message ant-cmfw)
 
 target_link_libraries(ant-message
   ant-cmfw
