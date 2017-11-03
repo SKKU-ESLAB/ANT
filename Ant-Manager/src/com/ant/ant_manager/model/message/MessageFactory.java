@@ -42,17 +42,19 @@ public class MessageFactory {
     }
 
     // Make AppCoreMessage from bottom
-    public static BaseMessage makeAppCoreMessage(String uri, int commandType) {
+    public static BaseMessage makeAppCoreMessage(String senderUri, String uri, int commandType) {
         AppCoreMessage payload = new AppCoreMessage(commandType);
-        BaseMessage message = new BaseMessage(currentMessageId++, uri, BaseMessage.Type_AppCore);
+        BaseMessage message = new BaseMessage(currentMessageId++, senderUri, uri, BaseMessage
+                .Type_AppCore);
         message.setPayload(payload);
         return message;
     }
 
     // Make AppMessage from bottom
-    public static BaseMessage makeAppMessage(String uri, int commandType) {
+    public static BaseMessage makeAppMessage(String senderUri, String uri, int commandType) {
         AppMessage payload = new AppMessage(commandType);
-        BaseMessage message = new BaseMessage(currentMessageId++, uri, BaseMessage.Type_App);
+        BaseMessage message = new BaseMessage(currentMessageId++, senderUri, uri, BaseMessage
+                .Type_App);
         message.setPayload(payload);
         return message;
     }
@@ -64,6 +66,9 @@ public class MessageFactory {
         // messageId
         String messageIdStr = thisObj.get(BaseMessage.ANT_MESSAGE_KEY_MESSAGE_NUM).asText();
         int messageId = Integer.parseInt(messageIdStr);
+
+        // sender URI
+        String senderUri = thisObj.get(BaseMessage.ANT_MESSAGE_KEY_SENDER_URI).asText();
 
         // URI
         String uri = thisObj.get(BaseMessage.ANT_MESSAGE_KEY_URI).asText();
@@ -86,7 +91,8 @@ public class MessageFactory {
         JsonNode payloadObj = thisObj.get(BaseMessage.ANT_MESSAGE_KEY_PAYLOAD);
 
         // Allocate and open a new BaseMessage
-        BaseMessage newMessage = new BaseMessage(messageId, uri, type, isFileAttached, fileName);
+        BaseMessage newMessage = new BaseMessage(messageId, senderUri, uri, type, isFileAttached,
+                fileName);
         switch (type) {
             case BaseMessage.Type_AppCoreAck: {
                 AppCoreAckMessage messagePayload = makeAppCoreAckMessageFromJSON(payloadObj);

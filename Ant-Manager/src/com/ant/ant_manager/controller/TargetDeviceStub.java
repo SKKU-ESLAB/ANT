@@ -43,6 +43,7 @@ public class TargetDeviceStub {
     private CommChannelService mCommChannelServiceStub = null;
     private PrivateCommBroadcastReceiver mCommBroadcastReceiver;
 
+    private final String kCompanionDeviceURI = "/comp0";
     private final String kAppBaseURI = "/thing/apps";
     private final String kAppCoreURI = "/thing/appcore";
 
@@ -64,28 +65,28 @@ public class TargetDeviceStub {
     }
 
     public int getAppList() {
-        BaseMessage newMessage = MessageFactory.makeAppCoreMessage(kAppCoreURI, AppCoreMessage
-                .Type_GetAppList);
+        BaseMessage newMessage = MessageFactory.makeAppCoreMessage(kCompanionDeviceURI,
+                kAppCoreURI, AppCoreMessage.Type_GetAppList);
         return this.sendMessage(newMessage);
     }
 
     public int listenAppState(int appId) {
-        BaseMessage newMessage = MessageFactory.makeAppCoreMessage(kAppCoreURI, AppCoreMessage
-                .Type_ListenAppState);
+        BaseMessage newMessage = MessageFactory.makeAppCoreMessage(kCompanionDeviceURI,
+                kAppCoreURI, AppCoreMessage.Type_ListenAppState);
         AppCoreMessage appCorePayload = (AppCoreMessage) newMessage.getPayload();
         appCorePayload.setParamsListenAppState(appId);
         return this.sendMessage(newMessage);
     }
 
     public int initializeApp() {
-        BaseMessage newMessage = MessageFactory.makeAppCoreMessage(kAppCoreURI, AppCoreMessage
-                .Type_InitializeApp);
+        BaseMessage newMessage = MessageFactory.makeAppCoreMessage(kCompanionDeviceURI,
+                kAppCoreURI, AppCoreMessage.Type_InitializeApp);
         return this.sendMessage(newMessage);
     }
 
     public int installApp(int appId, File packageFile) {
-        BaseMessage newMessage = MessageFactory.makeAppCoreMessage(kAppCoreURI, AppCoreMessage
-                .Type_InstallApp);
+        BaseMessage newMessage = MessageFactory.makeAppCoreMessage(kCompanionDeviceURI,
+                kAppCoreURI, AppCoreMessage.Type_InstallApp);
         AppCoreMessage appCorePayload = (AppCoreMessage) newMessage.getPayload();
         appCorePayload.setParamsInstallApp(appId, packageFile.getName());
         newMessage.attachFile(packageFile.getAbsolutePath());
@@ -93,63 +94,63 @@ public class TargetDeviceStub {
     }
 
     public int launchApp(int appId) {
-        BaseMessage newMessage = MessageFactory.makeAppCoreMessage(kAppCoreURI, AppCoreMessage
-                .Type_LaunchApp);
+        BaseMessage newMessage = MessageFactory.makeAppCoreMessage(kCompanionDeviceURI,
+                kAppCoreURI, AppCoreMessage.Type_LaunchApp);
         AppCoreMessage appCorePayload = (AppCoreMessage) newMessage.getPayload();
         appCorePayload.setParamsLaunchApp(appId);
         return this.sendMessage(newMessage);
     }
 
     public int terminateApp(int appId) {
-        BaseMessage newMessage = MessageFactory.makeAppCoreMessage(kAppCoreURI, AppCoreMessage
-                .Type_TerminateApp);
+        BaseMessage newMessage = MessageFactory.makeAppCoreMessage(kCompanionDeviceURI,
+                kAppCoreURI, AppCoreMessage.Type_TerminateApp);
         AppCoreMessage appCorePayload = (AppCoreMessage) newMessage.getPayload();
         appCorePayload.setParamsTerminateApp(appId);
         return this.sendMessage(newMessage);
     }
 
     public int removeApp(int appId) {
-        BaseMessage newMessage = MessageFactory.makeAppCoreMessage(kAppCoreURI, AppCoreMessage
-                .Type_RemoveApp);
+        BaseMessage newMessage = MessageFactory.makeAppCoreMessage(kCompanionDeviceURI,
+                kAppCoreURI, AppCoreMessage.Type_RemoveApp);
         AppCoreMessage appCorePayload = (AppCoreMessage) newMessage.getPayload();
         appCorePayload.setParamsRemoveApp(appId);
         return this.sendMessage(newMessage);
     }
 
     public int getFileList(String path) {
-        BaseMessage newMessage = MessageFactory.makeAppCoreMessage(kAppCoreURI, AppCoreMessage
-                .Type_GetFileList);
+        BaseMessage newMessage = MessageFactory.makeAppCoreMessage(kCompanionDeviceURI,
+                kAppCoreURI, AppCoreMessage.Type_GetFileList);
         AppCoreMessage appCorePayload = (AppCoreMessage) newMessage.getPayload();
         appCorePayload.setParamsGetFileList(path);
         return this.sendMessage(newMessage);
     }
 
     public int getFile(String path) {
-        BaseMessage newMessage = MessageFactory.makeAppCoreMessage(kAppCoreURI, AppCoreMessage
-                .Type_GetFile);
+        BaseMessage newMessage = MessageFactory.makeAppCoreMessage(kCompanionDeviceURI,
+                kAppCoreURI, AppCoreMessage.Type_GetFile);
         AppCoreMessage appCorePayload = (AppCoreMessage) newMessage.getPayload();
         appCorePayload.setParamsGetFile(path);
         return this.sendMessage(newMessage);
     }
 
     public int getRootPath() {
-        BaseMessage newMessage = MessageFactory.makeAppCoreMessage(kAppCoreURI, AppCoreMessage
-                .Type_GetRootPath);
+        BaseMessage newMessage = MessageFactory.makeAppCoreMessage(kCompanionDeviceURI,
+                kAppCoreURI, AppCoreMessage.Type_GetRootPath);
         return this.sendMessage(newMessage);
     }
 
     public int updateAppConfig(int appId, String legacyData) {
         String appURI = kAppBaseURI + "/" + appId;
-        BaseMessage newMessage = MessageFactory.makeAppMessage(appURI, AppMessage
-                .Type_UpdateAppConfig);
+        BaseMessage newMessage = MessageFactory.makeAppMessage(kCompanionDeviceURI, appURI,
+                AppMessage.Type_UpdateAppConfig);
         AppMessage appPayload = (AppMessage) newMessage.getPayload();
         appPayload.setParamsUpdateAppConfig(legacyData);
         return this.sendMessage(newMessage);
     }
 
     public int getAppIcon(int appId) {
-        BaseMessage newMessage = MessageFactory.makeAppCoreMessage(kAppCoreURI, AppCoreMessage
-                .Type_GetAppIcon);
+        BaseMessage newMessage = MessageFactory.makeAppCoreMessage(kCompanionDeviceURI,
+                kAppCoreURI, AppCoreMessage.Type_GetAppIcon);
         AppCoreMessage appCorePayload = (AppCoreMessage) newMessage.getPayload();
         appCorePayload.setParamsGetAppIcon(appId);
         return this.sendMessage(newMessage);
@@ -330,8 +331,8 @@ public class TargetDeviceStub {
         }
     }
 
-    public TargetDeviceStub(ANTControllerService ownerService, TargetDeviceStubListener
-            listener, String downloadPath) {
+    public TargetDeviceStub(ANTControllerService ownerService, TargetDeviceStubListener listener,
+                            String downloadPath) {
         this.mOwnerService = ownerService;
         this.mListener = listener;
         this.mDownloadPath = downloadPath;
