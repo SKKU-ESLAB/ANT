@@ -24,6 +24,7 @@
 #include "MLMessage.h"
 #include "InferenceUnit.h"
 #include "InferenceUnitDirectory.h"
+#include "InputReaderSet.h"
 
 #include <iostream>
 #include <string>
@@ -58,6 +59,9 @@ class MLDaemon
 
     // Main loop
     void run();
+
+    // Initialize
+    void initialize();
 
     // Testing mode
     void runTest(std::string modelName);
@@ -94,6 +98,9 @@ class MLDaemon
     bool stopIU(int iuid);
     std::string getIUResourceUsage(int iuid);
     bool runModel(std::string modelName);
+
+    // Input Reader Set
+    InputReaderSet* mInputReaderSet = NULL;
 
     // Inference Unit Directory
     InferenceUnitDirectory mInferenceUnitDirectory;

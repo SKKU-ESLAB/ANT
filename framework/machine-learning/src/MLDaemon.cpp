@@ -33,6 +33,10 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 
+#include <dbus/dbus.h>
+#include <dbus/dbus-glib.h>
+#include <dbus/dbus-glib-lowlevel.h>
+
 #include "MLDaemon.h"
 #include "ANTdbugLog.h"
 #include "ModelPackageLoader.h"
@@ -57,6 +61,9 @@ void MLDaemon::run() {
   this->mDbusChannel->run();
   this->mMessageRouter->addRoutingEntry(APPS_URI, this->mDbusChannel);
 
+  // Initialize
+  this->initialize();
+
   // LocalChannel: run on main thread
   // Main loop starts to run in LocalChannel::run()
   this->mLocalChannel->setListener(this);
@@ -64,9 +71,18 @@ void MLDaemon::run() {
   this->mLocalChannel->run();
 }
 
+void MLDaemon::initialize() {
+  // Initialize InputReaderSet
+  DBusConnection* dbusConnection = this->mDbusChannel->getDbusConnection();
+  this->mInputReaderSet = new InputReaderSet(dbusConnection);
+}
+
 // Testing mode
 void MLDaemon::runTest(std::string modelName) {
   this->mIsTestMode = true;
+
+  // Initialize
+  this->initialize();
 
   // Run model
   if(modelName.compare("motionclassifier") == 0) {
@@ -595,7 +611,7 @@ bool MLDaemon::runModel(std::string modelName) {
 
 int MLDaemon::loadBuiltin(std::string modelName) {
   // Model Package Loader: Load a built-in model and make inference unit
-  InferenceUnit* iu = ModelPackageLoader::loadBuiltin(modelName);
+  InferenceUnit* iu = ModelPackageLoader::loadBuiltin(modelName, this->mInputReaderSet);
   iu->setOutputListener(this);
 
   // Insert the Infernce Unit to Inference Unit Directory

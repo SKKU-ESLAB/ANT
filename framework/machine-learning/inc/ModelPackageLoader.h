@@ -22,11 +22,14 @@
 
 #include "InferenceUnit.h"
 #include "MLDataUnit.h"
+#include "InputReaderSet.h"
 
 class ModelPackageLoader {
   public:
-    static InferenceUnit* load(std::string modelPackagePath, MLDataUnit& params);
-    static InferenceUnit* loadBuiltin(std::string modelName);
+    static InferenceUnit* load(std::string modelPackagePath,
+        MLDataUnit& params);
+    static InferenceUnit* loadBuiltin(std::string modelName,
+        InputReaderSet* inputReaderSet);
 };
 
 #endif // !defined(__MODEL_PACKAGE_LOADER_H__)
