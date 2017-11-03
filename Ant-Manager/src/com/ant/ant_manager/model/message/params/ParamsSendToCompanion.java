@@ -1,6 +1,4 @@
-package com.ant.ant_manager.view;
-
-import android.app.Activity;
+package com.ant.ant_manager.model.message.params;
 
 /* Copyright (c) 2017 SKKU ESLAB, and contributors. All rights reserved.
  *
@@ -18,5 +16,13 @@ import android.app.Activity;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-public class PrototypeMotionClassifierActivity extends Activity {
+
+public class ParamsSendToCompanion {
+    public ParamsSendToCompanion(String listenerName, String data) {
+        this.listenerName = listenerName;
+        this.data = data;
+    }
+
+    public String listenerName;
+    public String data;
 }

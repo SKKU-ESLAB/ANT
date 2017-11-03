@@ -218,8 +218,8 @@ public class TargetDeviceStub {
                 this.mListener.onSendEventPage(message);
                 break;
             }
-            case CompanionMessage.Type_UpdateSensorData: {
-                this.mListener.onUpdateSensorData(message);
+            case CompanionMessage.Type_SendToCompanion: {
+                this.mListener.onSendToCompanion(message);
                 break;
             }
             case CompanionMessage.Type_NotDetermined:

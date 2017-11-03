@@ -49,18 +49,18 @@ public class ANTControllerBroadcastSender {
         service.sendBroadcast(broadcastIntent);
     }
 
-    static public void onReceivedEvent(Service service, int appId, String legacyData,
-                                       boolean isNoti) {
+    static public void onReceivedEvent(Service service, int appId, String legacyData, boolean
+            isNoti) {
         Intent broadcastIntent = new Intent();
         broadcastIntent.setAction(ANTControllerBroadcastReceiver.ACTION);
         broadcastIntent.putExtra(ANTControllerBroadcastReceiver.KEY_EVENT_TYPE,
                 ANTControllerBroadcastReceiver.EVENT_TYPE_ON_RECEIVED_EVENT);
-        broadcastIntent.putExtra(ANTControllerBroadcastReceiver
-                .KEY_ON_RECEIVED_EVENT_APP_ID, appId);
+        broadcastIntent.putExtra(ANTControllerBroadcastReceiver.KEY_ON_RECEIVED_EVENT_APP_ID,
+                appId);
         broadcastIntent.putExtra(ANTControllerBroadcastReceiver
                 .KEY_ON_RECEIVED_EVENT_LEGACY_DATA, legacyData);
-        broadcastIntent.putExtra(ANTControllerBroadcastReceiver
-                .KEY_ON_RECEIVED_EVENT_IS_NOTI, isNoti);
+        broadcastIntent.putExtra(ANTControllerBroadcastReceiver.KEY_ON_RECEIVED_EVENT_IS_NOTI,
+                isNoti);
         service.sendBroadcast(broadcastIntent);
     }
 
@@ -76,13 +76,15 @@ public class ANTControllerBroadcastSender {
         service.sendBroadcast(broadcastIntent);
     }
 
-    static public void onReceivedSensorData(Service service, String legacyData) {
+    static public void onReceivedDataFromTarget(Service service, String listenerName, String data) {
         Intent broadcastIntent = new Intent();
         broadcastIntent.setAction(ANTControllerBroadcastReceiver.ACTION);
         broadcastIntent.putExtra(ANTControllerBroadcastReceiver.KEY_EVENT_TYPE,
-                ANTControllerBroadcastReceiver.EVENT_TYPE_ON_RECEIVED_SENSOR_DATA);
+                ANTControllerBroadcastReceiver.EVENT_TYPE_ON_RECEIVED_DATA_FROM_TARGET);
         broadcastIntent.putExtra(ANTControllerBroadcastReceiver
-                .KEY_ON_RECEIVED_SENSOR_DATA_LEGACY_DATA, legacyData);
+                .KEY_ON_RECEIVED_SENSOR_DATA_LISTENER_NAME, listenerName);
+        broadcastIntent.putExtra(ANTControllerBroadcastReceiver.KEY_ON_RECEIVED_SENSOR_DATA_DATA,
+                data);
         service.sendBroadcast(broadcastIntent);
     }
 
@@ -104,8 +106,8 @@ public class ANTControllerBroadcastSender {
                 ANTControllerBroadcastReceiver.EVENT_TYPE_ON_RESULT_GET_FILE_LIST);
         broadcastIntent.putExtra(ANTControllerBroadcastReceiver
                 .KEY_ON_RESULT_GET_FILE_LIST_COMMAND_MESSAGE_ID, commandMessageId);
-        broadcastIntent.putExtra(ANTControllerBroadcastReceiver
-                .KEY_ON_RESULT_GET_FILE_LIST_PATH, path);
+        broadcastIntent.putExtra(ANTControllerBroadcastReceiver.KEY_ON_RESULT_GET_FILE_LIST_PATH,
+                path);
         broadcastIntent.putExtra(ANTControllerBroadcastReceiver
                 .KEY_ON_RESULT_GET_FILE_LIST_FILE_LIST, fileList);
         service.sendBroadcast(broadcastIntent);

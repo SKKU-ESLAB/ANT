@@ -20,7 +20,7 @@ package com.ant.ant_manager.model.message;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.ant.ant_manager.model.message.params.ParamsSendConfigPage;
 import com.ant.ant_manager.model.message.params.ParamsSendEventPage;
-import com.ant.ant_manager.model.message.params.ParamsUpdateSensorData;
+import com.ant.ant_manager.model.message.params.ParamsSendToCompanion;
 
 // CompanionMessage: message sent to companion device
 // - Decoding(makeFromJSON): Java
@@ -31,8 +31,7 @@ public class CompanionMessage extends BaseMessagePayload {
     public static final int Type_SendEventPage = 1; // params: int appId, string legacyData,
     //                                                         boolean isNoti
     public static final int Type_SendConfigPage = 2; // params: int appId, string legacyData
-    public static final int Type_UpdateSensorData = 3; //params: string legacyData
-
+    public static final int Type_SendToCompanion = 3; // params: string listenerName, string data
     // JSON field name
     static final String COMPANION_MESSAGE_KEY_COMMAND_TYPE = "commandType";
     static final String COMPANION_MESSAGE_KEY_PAYLOAD = "payload";
@@ -74,13 +73,16 @@ public class CompanionMessage extends BaseMessagePayload {
         return new ParamsSendConfigPage(appId, legacyData);
     }
 
-    public ParamsUpdateSensorData getParamsUpdateSensorData() {
+    public ParamsSendToCompanion getParamsSendToCompanion() {
         ObjectNode paramsObj = (ObjectNode) this.mCompanionPayloadObj;
 
-        // legacyData
-        String legacyData = paramsObj.get("legacyData").toString();
+        // listenerName
+        String listenerName = paramsObj.get("listenerName").toString();
 
-        return new ParamsUpdateSensorData(legacyData);
+        // data
+        String data = paramsObj.get("data").toString();
+
+        return new ParamsSendToCompanion(listenerName, data);
     }
 
     public int getCommandType() {

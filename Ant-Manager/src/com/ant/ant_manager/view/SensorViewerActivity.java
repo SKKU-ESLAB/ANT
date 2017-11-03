@@ -41,6 +41,8 @@ import com.ant.ant_manager.controller.LegacyJSONParser;
 import com.ant.ant_manager.controller.ANTControllerBroadcastReceiver;
 import com.ant.ant_manager.controller.ANTControllerService;
 
+import static android.R.id.message;
+
 abstract public class SensorViewerActivity extends Activity {
     // ANTControllerService
     private ANTControllerService mControllerServiceStub = null;
@@ -80,7 +82,6 @@ abstract public class SensorViewerActivity extends Activity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_sensor_viewer);
 
         // Parameters
         Intent intent = this.getIntent();
@@ -143,8 +144,9 @@ abstract public class SensorViewerActivity extends Activity {
         }
     }
 
-    public void onMsgToSensorViewer(String message) {
-        Log.d(TAG, "Message coming : " + message);
+    abstract public void onMessageFromTarget(String listenerName, String message);
+
+    public void onSensorViewerMessage(String message) {
         LegacyJSONParser jp = new LegacyJSONParser(message);
 
         Double val1 = Double.parseDouble(jp.getValueByKey(sensor1.getSensorName()));
@@ -300,10 +302,15 @@ abstract public class SensorViewerActivity extends Activity {
 
     class PrivateControllerBroadcastReceiver extends ANTControllerBroadcastReceiver {
         PrivateControllerBroadcastReceiver() {
-            this.setOnReceivedSensorDataListener(new OnReceivedSensorDataListener() {
+            this.setOnReceivedSensorDataListener(new OnReceivedDataFromTarget() {
                 @Override
-                public void onReceivedSensorData(String legacyData) {
-                    onMsgToSensorViewer(legacyData);
+                public void onReceivedDataFromTarget(String listenerName, String data) {
+                    Log.d(TAG, "Message coming for " + listenerName + ": " + message);
+                    if (listenerName.compareTo("sensorviewer") == 0) {
+                        onSensorViewerMessage(data);
+                    } else {
+                        onMessageFromTarget(listenerName, data);
+                    }
                 }
             });
         }

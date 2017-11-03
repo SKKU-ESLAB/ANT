@@ -19,10 +19,14 @@ package com.ant.ant_manager.view;
 
 import android.os.Bundle;
 import android.view.MenuItem;
+import android.widget.TextView;
+
+import com.ant.ant_manager.R;
 
 public class MotionClassifierActivity extends SensorViewerActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+        setContentView(R.layout.activity_motion_classifier);
         super.onCreate(savedInstanceState);
     }
 
@@ -49,5 +53,13 @@ public class MotionClassifierActivity extends SensorViewerActivity {
     @Override
     public void onPause() {
         super.onPause();
+    }
+
+    @Override
+    public void onMessageFromTarget(String listenerName, String message) {
+        if (listenerName.compareTo("motionclassifier") == 0) {
+            TextView textViewClassified = (TextView) this.findViewById(R.id.textViewClassified);
+            textViewClassified.setText("Result: " + message);
+        }
     }
 }

@@ -20,9 +20,12 @@ package com.ant.ant_manager.view;
 import android.os.Bundle;
 import android.view.MenuItem;
 
+import com.ant.ant_manager.R;
+
 public class BasicSensorViewerActivity extends SensorViewerActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+        setContentView(R.layout.activity_sensor_viewer);
         super.onCreate(savedInstanceState);
     }
 
@@ -49,5 +52,10 @@ public class BasicSensorViewerActivity extends SensorViewerActivity {
     @Override
     public void onPause() {
         super.onPause();
+    }
+
+    @Override
+    public void onMessageFromTarget(String listenerName, String message) {
+        // Not implemented
     }
 }
