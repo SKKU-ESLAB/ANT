@@ -25,6 +25,7 @@ set(ACM_sources
   ${ACM_SOURCE_DIR}/AppList.cpp)
 
 add_executable(ant-appcore ${ACM_sources} $<TARGET_OBJECTS:miniunz>)
+add_dependencies(ant-appcore ant-message)
 
 target_link_libraries(ant-appcore
   ant-message ant-cmfw

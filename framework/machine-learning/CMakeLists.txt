@@ -20,6 +20,7 @@ set(MLFW_sources
   ${MLFW_SOURCE_DIR}/ANNInferenceRunner.cpp)
 
 add_executable(ant-ml ${MLFW_sources})
+add_dependencies(ant-ml ant-message)
 
 target_link_libraries(ant-ml
   ant-message ant-cmfw pthread fann doublefann fixedfann floatfann)
