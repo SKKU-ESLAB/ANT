@@ -81,6 +81,10 @@ void MLDaemon::initialize() {
 void MLDaemon::runTest(std::string modelName) {
   this->mIsTestMode = true;
 
+  // Run DbusChannel to initialize only dbus.
+  // This dbus will be used by only SensorInputReader.
+  this->mDbusChannel->run();
+
   // Initialize
   this->initialize();
 
