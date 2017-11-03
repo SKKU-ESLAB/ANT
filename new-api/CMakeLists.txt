@@ -8,3 +8,4 @@ add_custom_target(
   COMMENT "Building New ANT API"
   WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
   )
+add_dependencies(new-api ant-message)

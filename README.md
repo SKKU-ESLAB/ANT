@@ -43,7 +43,7 @@ $ cd ${ANT_ROOT_DIR}
 $ mkdir build
 $ cd build
 $ cmake ..
-$ make   ## Please do not give -j option
+$ make -j4
 ```
 
 ### How to Install
