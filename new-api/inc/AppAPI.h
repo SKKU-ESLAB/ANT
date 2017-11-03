@@ -62,7 +62,6 @@ class AppAPI
     static void sendConfigPage(const FunctionCallbackInfo<Value>& args);
     static void getData(const FunctionCallbackInfo<Value>& args);
     static void onTermination(const FunctionCallbackInfo<Value>& args);
-    static void sendMsgToSensorViewer(const FunctionCallbackInfo<Value>& args);
 };
 
 #endif // !defined(__APP_API_H__)

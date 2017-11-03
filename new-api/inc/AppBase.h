@@ -66,7 +66,7 @@ class AppBase
     // Send companion commands
     void sendEventPageToCompanion(const char* jsonData, bool isNoti);
     void sendConfigPageToCompanion(const char* jsonData);
-    void updateSensorDataToCompanion(const char* jsonData);
+    void sendToCompanion(const char* listenerName, const char* data);
 
     // Send machine learning commands
     void runModel(std::string modelName, Local<Function> callback);

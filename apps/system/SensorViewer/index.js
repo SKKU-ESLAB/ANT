@@ -20,6 +20,7 @@
 var ant_api_dir = process.env.ANT_BIN_DIR + "/api/";
 var api = require(ant_api_dir + "ant");
 var appApi = api.app();
+var commApi = api.comm();
 var sensorApi = require(ant_api_dir + "sensor-api");
 var NIL_MSG_TO_SENSOR_VIEWER = "1102";
 
@@ -67,6 +68,7 @@ var repeat = setInterval(function() {
     + "\",\"Vibration\":\"" + sensorData.VIBRATION
     + "\",\"Temperature\":\"" + sensorData.TEMP
     + "\"}";
-  appApi.sendMsgToSensorViewer(str);
+  // Notify to companion's SensorViewer
+  commApi.sendToCompanion("sensorviewer", str);
   console.log("Sent\n");
 }, 500);

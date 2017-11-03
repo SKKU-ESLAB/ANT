@@ -8,6 +8,7 @@
         'src/AppAPI.cpp',
         'src/AppAPIInternal.cpp',
         'src/MLAPI.cpp',
+        'src/CommAPI.cpp'
        ],
       'link_settings': {
         'libraries': [

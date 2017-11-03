@@ -111,15 +111,15 @@ void AppBase::sendConfigPageToCompanion(const char* jsonData) {
   this->mLocalChannel->sendMessage(companionMessage);
 }
 
-void AppBase::updateSensorDataToCompanion(const char* jsonData) {
+void AppBase::sendToCompanion(const char* listenerName, const char* data) {
   // Make companion message
   BaseMessage* companionMessage
     = MessageFactory::makeCompanionMessage(this->mLocalChannel->getUri(),
         COMPANION_DEVICE_URI,
-        CompanionMessageCommandType::UpdateSensorData); 
+        CompanionMessageCommandType::SendToCompanion); 
   CompanionMessage* companionPayload
     = (CompanionMessage*)companionMessage->getPayload();
-  companionPayload->setParamsUpdateSensorData(jsonData);
+  companionPayload->setParamsSendToCompanion(listenerName, data);
 
   // Send companion message
   this->mLocalChannel->sendMessage(companionMessage);

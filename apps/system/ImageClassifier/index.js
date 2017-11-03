@@ -16,11 +16,11 @@
  */
 
 var ant_api_dir = process.env.ANT_BIN_DIR + "/api/";
-var api = require(ant_api_dir + "api");
+var api = require(ant_api_dir + "ant");
 var appApi = api.app();
 var mlApi = api.ml();
 
 mlApi.runModel("imageclassifier", function(outputData) {
-  // TODO: implement it
   // notify to application
+  // Since output is drawn in camera frame, output need not to be handled.
 });
