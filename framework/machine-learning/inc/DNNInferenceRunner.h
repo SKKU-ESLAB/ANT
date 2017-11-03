@@ -25,6 +25,34 @@
 
 #include "InferenceRunner.h"
 
+// For Caffe Framework
+#define CPU_ONLY
+#include <caffe/caffe.hpp>
+#include <opencv2/core/core.hpp>
+#include <opencv2/highgui/highgui.hpp>
+#include <opencv2/imgproc/imgproc.hpp>
+#include <algorithm>
+#include <iosfwd>
+#include <memory>
+#include <utility>
+
+// For Connection with Camera Framework
+#include <sys/shm.h>
+#include <semaphore.h>
+#include <errno.h>
+#include <dbus/dbus.h>
+
+#define SHM_KEY_FOR_BUFFER 5315
+#define CAMERA_DEFAULT_BUF_SIZE CAMERA_480P_BUF_SIZE
+#define CAMERA_480P_BUF_SIZE (RAW_480P_WIDTH * RAW_480P_HEIGHT * 3)
+#define RAW_480P_WIDTH 640
+#define RAW_480P_HEIGHT 480
+
+using namespace caffe;  // NOLINT(build/namespaces)
+using std::string;
+
+typedef std::pair<string, float> Prediction;
+
 class DNNInferenceRunner
 : public InferenceRunner {
   public:
@@ -35,6 +63,47 @@ class DNNInferenceRunner
 
     // Get resource usage of inference runner
     virtual std::string getResourceUsage();
+
+  private:
+    bool initClassifier(const string& model_file,
+        const string& trained_file,
+        const string& mean_file,
+        const string& label_file);
+
+    std::vector<Prediction> classify(const cv::Mat& img, int N = 5);
+    void setMean(const string& mean_file);
+    std::vector<float> predict(const cv::Mat& img);
+    void wrapInputLayer(std::vector<cv::Mat>* input_channels);
+    void preprocess(const cv::Mat& img,
+        std::vector<cv::Mat>* input_channels);
+
+    bool initSemaphore();
+    bool releaseSemaphore();
+    bool initSharedMemorySpace();
+    bool releaseSharedMemorySpace();
+    IplImage* retrieveFrame();
+    bool initDBus();
+    bool streamingStart();
+
+    shared_ptr<Net<float> > mNet;
+    cv::Size mInputGeometry;
+    int mNumChannels;
+    cv::Mat mMean;
+    std::vector<string> mLabels;
+
+    bool mIsStreaming = false;
+    IplImage mFrame;
+    unsigned mBufferSize;
+    void* mShmPtr;
+    int mShmId;
+    sem_t* mSem;
+    DBusConnection* mConnection;
+    DBusError mError;
 };
+
+static bool pairCompare(const std::pair<float, int>& lhs,
+                        const std::pair<float, int>& rhs);
+static std::vector<int> argmax(const std::vector<float>& v, int N);
+static void sendDBusMsg(DBusConnection* conn, const char* msg);
 
 #endif // !defined(__DNN_INFERENCE_RUNNER_H__)
