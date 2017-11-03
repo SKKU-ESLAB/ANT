@@ -32,6 +32,7 @@
 // Static variables
 OnTerminateJSAsync* OnTerminateJSAsync::sSingleton;
 OnUpdateAppConfigJSAsync* OnUpdateAppConfigJSAsync::sSingleton;
+OnRunModelJSAsync* OnRunModelJSAsync::sSingleton;
 
 void AppBase::run() {
   // URI
