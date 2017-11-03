@@ -17,7 +17,6 @@
 
 #include "CameraDevice.h"
 
-// TODO: plan to remove OpenCV decoupling
 #include "ANTRawRequest.h"
 
 CameraDevice::CameraDevice(int camera_id, GstElement *main_bin, GMainLoop *loop)
@@ -31,7 +30,7 @@ CameraDevice::CameraDevice(int camera_id, GstElement *main_bin, GMainLoop *loop)
   this->mPipeline = gst_pipeline_new(NULL);
   this->mMainBin = main_bin;
 
-  this->opencv_num_users = 0;
+  this->copy_shm_num_users = 0;
   
   GstIterator *iter = gst_bin_iterate_elements(GST_BIN(this->mMainBin));
   GValue item = G_VALUE_INIT;
@@ -124,10 +123,10 @@ bool CameraDevice::processRequest(CameraRequest *request)
       return this->preRecordingStart(request);
     case kPreRecordingStop:
       return this->preRecordingStop(request);
-    case kOpenCVStart:
-      return this->openCVStart(request);
-    case kOpenCVStop:
-      return this->openCVStop(request);
+    case kCopyShmStart:
+      return this->copyShmStart(request);
+    case kCopyShmStop:
+      return this->copyShmStop(request);
     case kSensorOverlayStart:
       return this->sensorOverlayStart(request);
     case kSensorOverlayStop:
@@ -282,12 +281,12 @@ bool CameraDevice::preRecordingStop(CameraRequest *request)
   return true;
 }
 
-bool CameraDevice::openCVStart(CameraRequest *request)
+bool CameraDevice::copyShmStart(CameraRequest *request)
 {
-  ANTRawRequest *raw_request = ANTRawRequest::getInstance(kOpenCVStart, NULL);
+  ANTRawRequest *raw_request = ANTRawRequest::getInstance(kCopyShmStart, NULL);
 
-  GstElement *opencv_bin = request->getBin();
-  gst_bin_add(GST_BIN(this->mPipeline), opencv_bin);
+  GstElement *copy_shm_bin = request->getBin();
+  gst_bin_add(GST_BIN(this->mPipeline), copy_shm_bin);
 
   request->setTee(this->mRawTee);
   request->requestTeePad();
@@ -300,7 +299,7 @@ bool CameraDevice::openCVStart(CameraRequest *request)
 
   // TODO: time set
   g_signal_connect(request->getLastElement(), "new-sample",
-      G_CALLBACK(openCVBufferFromSinkCB), (gpointer)request);
+      G_CALLBACK(copyShmBufferFromSinkCB), (gpointer)request);
 
   if (this->mRequestCount == 0) {
     ANT_LOG_DBG(CAM, "Get pipeline not started");
@@ -316,18 +315,18 @@ bool CameraDevice::openCVStart(CameraRequest *request)
   return true;
 }
 
-bool CameraDevice::openCVStop(CameraRequest *request)
+bool CameraDevice::copyShmStop(CameraRequest *request)
 {
   GstPad *sink_pad;
 
-  ANTRawRequest *raw_request = ANTRawRequest::getInstance(kOpenCVStart, NULL);
-  this->decreaseOpenCVNumUsers();
-  if (this->getOpenCVNumUsers() > 0) {
-    ANT_LOG_DBG(CAM, "OpenCV Bin is still in use");
+  ANTRawRequest *raw_request = ANTRawRequest::getInstance(kCopyShmStart, NULL);
+  this->decreaseCopyShmNumUsers();
+  if (this->getCopyShmNumUsers() > 0) {
+    ANT_LOG_DBG(CAM, "CopyShm Bin is still in use");
     delete request;
     return true;
   }
-  ANT_LOG_DBG(CAM, "OpenCV Bin is no longer used");
+  ANT_LOG_DBG(CAM, "CopyShm Bin is no longer used");
   
   timeOutCB(raw_request);
 
@@ -410,8 +409,8 @@ bool CameraDevice::deleteRequest(dbusRequest *msg_handle, RequestType type)
     target_type = kStreamingStop;
   else if (type == kPreRecordingStop)
     target_type = kPreRecordingStart;
-  else if (type == kOpenCVStop)
-    target_type = kOpenCVStart;
+  else if (type == kCopyShmStop)
+    target_type = kCopyShmStart;
   else {
     ANT_LOG_WARN(CAM, "Given request type is inappropriate (%d)", type);
     return false;
@@ -613,15 +612,14 @@ static GstFlowReturn jpegBufferFromSinkCB(GstElement *ele, gpointer _request)
 }
 
 
-static GstFlowReturn openCVBufferFromSinkCB(GstElement *ele, gpointer _request)
+static GstFlowReturn copyShmBufferFromSinkCB(GstElement *ele, gpointer _request)
 {
   GstSample *sample;
   GstBuffer *buffer;
   GstMapInfo map;
   ANTRawRequest *raw_request = (ANTRawRequest*)_request;
 
-  char *buffer_ptr = (char*)raw_request->getBufferPtr();
-  unsigned* buffer_size_ptr = (unsigned*)raw_request->getBufferSizePtr();
+  char *shm_buffer_ptr = (char*)raw_request->getBufferPtr();
   sem_t *sem = raw_request->getSemaphore();
 
   sample = gst_app_sink_pull_sample(GST_APP_SINK(ele));
@@ -629,10 +627,9 @@ static GstFlowReturn openCVBufferFromSinkCB(GstElement *ele, gpointer _request)
 
   if (gst_buffer_map(buffer, &map, GST_MAP_READ)) {
     sem_wait(sem);
-    *buffer_size_ptr = map.size;
-    memcpy((char*)buffer_ptr, (char*)map.data, map.size);
-    gst_buffer_unmap(buffer, &map);
+    memcpy((char*)shm_buffer_ptr, (char*)map.data, map.size);
     sem_post(sem);
+    gst_buffer_unmap(buffer, &map);
   }
   gst_buffer_unref(buffer);
 

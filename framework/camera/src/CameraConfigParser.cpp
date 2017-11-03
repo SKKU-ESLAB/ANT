@@ -70,7 +70,7 @@ int CameraConfigParser::readyCameraConfig()
   this->mStreamingConfig = cJSON_GetObjectItem(root, "streaming")->valuestring;
   this->mPreRecordingInitConfig = cJSON_GetObjectItem(root, "pre_recording_init")->valuestring;
   this->mPreRecordingConfig = cJSON_GetObjectItem(root, "pre_recording")->valuestring;
-  this->mOpenCVConfig = cJSON_GetObjectItem(root, "opencv")->valuestring;
+  this->mCopyShmConfig = cJSON_GetObjectItem(root, "copy_shm")->valuestring;
 
   ANT_LOG_DBG(CAM, "Number of camera = %d", camera_num);
   ANT_LOG_DBG(CAM, "Recording = %s", this->mRecordingConfig);
@@ -78,7 +78,7 @@ int CameraConfigParser::readyCameraConfig()
   ANT_LOG_DBG(CAM, "Streaming = %s", this->mStreamingConfig);
   ANT_LOG_DBG(CAM, "Pre-Recording Init = %s", this->mPreRecordingInitConfig);
   ANT_LOG_DBG(CAM, "Pre-Recording = %s", this->mPreRecordingConfig);
-  ANT_LOG_DBG(CAM, "OpenCV = %s", this->mOpenCVConfig);
+  ANT_LOG_DBG(CAM, "CopyShm = %s", this->mCopyShmConfig);
 
   return camera_num;
 }
@@ -119,7 +119,7 @@ GstElement* CameraConfigParser::getPreRecordingBin()
   return gst_parse_bin_from_description(this->mPreRecordingConfig, TRUE, NULL);
 }
 
-GstElement* CameraConfigParser::getOpenCVBin()
+GstElement* CameraConfigParser::getCopyShmBin()
 {
-  return gst_parse_bin_from_description(this->mOpenCVConfig, TRUE, NULL);
+  return gst_parse_bin_from_description(this->mCopyShmConfig, TRUE, NULL);
 }
