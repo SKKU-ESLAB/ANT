@@ -2,16 +2,16 @@
 #define ANT_DBUS_INTERFACE
 #include <string>
 
-static const char *dbus_path = "/org/ant/camera/daemon";
-static const char *dbus_interface = "org.ant.camera.daemon";
+static const char *dbus_path = "/org/ant/cameraManager";
+static const char *dbus_interface = "org.ant.cameraManager";
 
 static const char *rec_start_request = "recStart";
 static const char *rec_stop_request = "recStop";
 
 static const char *snap_start_request = "jpegStart";
 
-static const char *opencv_start_request = "openCVStart";
-static const char *opencv_stop_request = "openCVStop";
+static const char *copy_shm_start_request = "copyShmStart";
+static const char *copy_shm_stop_request = "copyShmStop";
 
 static const char *streaming_start_request = "streamingStart";
 static const char *streaming_stop_request = "streamingStop";
