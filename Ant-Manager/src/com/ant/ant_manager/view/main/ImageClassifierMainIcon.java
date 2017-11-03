@@ -5,8 +5,8 @@ import android.graphics.BitmapFactory;
 import android.widget.Toast;
 
 import com.ant.ant_manager.R;
-import com.ant.ant_manager.view.BasicCameraViewerActivity;
 import com.ant.ant_manager.view.CameraViewerActivity;
+import com.ant.ant_manager.view.ImageClassifierActivity;
 import com.ant.ant_manager.view.MainActivity;
 
 /* Copyright (c) 2017 SKKU ESLAB, and contributors. All rights reserved.
@@ -25,12 +25,13 @@ import com.ant.ant_manager.view.MainActivity;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-public class CameraViewerMainIcon extends MainIcon {
+
+public class ImageClassifierMainIcon extends MainIcon {
     private int mAppId;
 
-    public CameraViewerMainIcon(MainActivity ownerActivity, int appId) {
-        super(ownerActivity, "Camera", BitmapFactory.decodeResource(ownerActivity.getResources(),
-                R.drawable.cam));
+    public ImageClassifierMainIcon(MainActivity ownerActivity, int appId) {
+        super(ownerActivity, "Image Classifier", BitmapFactory.decodeResource(ownerActivity
+                .getResources(), R.drawable.imageclassifier));
         this.mAppId = appId;
     }
 
@@ -41,7 +42,7 @@ public class CameraViewerMainIcon extends MainIcon {
                     "connected", Toast.LENGTH_SHORT).show();
             return;
         }
-        Intent intent = new Intent(this.mOwnerActivity, BasicCameraViewerActivity.class);
+        Intent intent = new Intent(this.mOwnerActivity, ImageClassifierActivity.class);
         intent.putExtra(CameraViewerActivity.INTENT_KEY_APP_ID, this.mAppId);
         mOwnerActivity.startActivity(intent);
     }
@@ -49,6 +50,7 @@ public class CameraViewerMainIcon extends MainIcon {
     @Override
     public void onLongClick() {
         // System app -> cannot terminate
-        Toast.makeText(this.mOwnerActivity, "System app cannot be terminated.", Toast.LENGTH_LONG).show();
+        Toast.makeText(this.mOwnerActivity, "System app cannot be terminated.", Toast
+                .LENGTH_LONG).show();
     }
 }

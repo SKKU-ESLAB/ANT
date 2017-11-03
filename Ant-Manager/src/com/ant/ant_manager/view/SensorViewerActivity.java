@@ -41,7 +41,7 @@ import com.ant.ant_manager.controller.LegacyJSONParser;
 import com.ant.ant_manager.controller.ANTControllerBroadcastReceiver;
 import com.ant.ant_manager.controller.ANTControllerService;
 
-public class SensorViewerActivity extends Activity {
+abstract public class SensorViewerActivity extends Activity {
     // ANTControllerService
     private ANTControllerService mControllerServiceStub = null;
     private PrivateControllerBroadcastReceiver mControllerBroadcastReceiver;
@@ -121,6 +121,7 @@ public class SensorViewerActivity extends Activity {
         sensor7.setGraphLineColor(Color.YELLOW);
     }
 
+    @Override
     protected void onDestroy() {
         super.onDestroy();
 
@@ -200,6 +201,7 @@ public class SensorViewerActivity extends Activity {
         }
     }
 
+    @Override
     public void onResume() {
         super.onResume();
 
@@ -250,6 +252,7 @@ public class SensorViewerActivity extends Activity {
         super.onBackPressed();
     }
 
+    @Override
     public void onPause() {
         super.onPause();
         mControllerServiceStub.terminateAppOneWay(this.mAppId);
