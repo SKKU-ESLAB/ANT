@@ -23,12 +23,16 @@
 #include <vector>
 #include <map>
 
+#include <dbus/dbus.h>
+#include <dbus/dbus-glib.h>
+#include <dbus/dbus-glib-lowlevel.h>
+
 #include "InputReader.h"
 #include "MLTensor.h"
 
 class InputReaderSet {
   public:
-    InputReaderSet();
+    InputReaderSet(DBusConnection* dbusConnection);
 
     // Read input tensor from source
     //   - Child class of InputReader should implement it.

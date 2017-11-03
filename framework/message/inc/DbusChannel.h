@@ -40,6 +40,9 @@ class DbusChannel: public Channel {
     // Channel function
     virtual void run();
 
+    // If other module want to access d-bus directly, use this function
+    DBusConnection* getDbusConnection() { return this->mDbusConnection; }
+
 	protected:
     // Initialize d-bus
     void initializeDbus();

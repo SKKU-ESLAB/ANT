@@ -119,7 +119,8 @@ class InferenceUnit {
         InferenceRunner* inferenceRunner,
         MLDataUnitLayout* inputLayout,
         MLDataUnitLayout* outputLayout,
-        MLDataUnit* parameters)
+        MLDataUnit* parameters,
+        InputReaderSet* inputReaderSet)
     : mName(name),
     mState(InferenceUnitState::Initialized),
     mModelPackagePath(modelPackagePath),
@@ -128,10 +129,8 @@ class InferenceUnit {
     mParameters(parameters),
     mPid(-1),
     mInferenceRunner(inferenceRunner),
-    mIsThreadRunning(false) {
-      // Initialize InputReaderSet
-      this->mInputReaderSet = new InputReaderSet();
-
+    mIsThreadRunning(false),
+    mInputReaderSet(inputReaderSet) {
       // Initialize InputMap
       std::map<std::string, MLTensorLayout>& inputTensorMap
         = this->mInputLayout->getMap();
