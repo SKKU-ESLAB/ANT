@@ -10,7 +10,10 @@ set(CMAKE_VERBOSE_MAKEFILE ON)
 set(CMAKE_BUILD_TYPE RELEASE)
 
 set(DRIVER_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/drivers)
-set(driver_sources ${DRIVER_SOURCE_DIR}/jetsonGPIO.c ${DRIVER_SOURCE_DIR}/sensor0_button.c)
+set(driver_sources 
+  ${DRIVER_SOURCE_DIR}/jetsonGPIO.c 
+  ${DRIVER_SOURCE_DIR}/sensor0_button.c
+  )
 
 ADD_DEFINITIONS(-Wl,-Wall -O2 -fPIC -rdynamic)
 ADD_LIBRARY(sensors SHARED ${driver_sources})
@@ -28,7 +31,7 @@ LINK_DIRECTORIES(
 
 set_target_properties( sensors
 	PROPERTIES
-	LIBRARY_OUTPUT_DIRECTORY  "${CMAKE_SOURCE_DIR}/out/sensor-drivers")
+	LIBRARY_OUTPUT_DIRECTORY  ${CMAKE_SOURCE_DIR}/out/sensor-drivers)
 
 add_custom_target(
 	make-sensor-driver-dir ALL
