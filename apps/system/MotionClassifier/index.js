@@ -58,6 +58,8 @@ var repeat = setInterval(function() {
   sensorData.TEMP =
     (sensorData.TEMP >= 0) ? sensorApi.Get("TEMP").TEMP : -1;
 
+  if(sensorData.ACC === undefined) sensorData.ACC = -1;
+
   var str = sensorData.BUTTON
     + " " + sensorData.ACC
     + " " + sensorData.MOTION
@@ -71,7 +73,10 @@ var repeat = setInterval(function() {
   console.log("Sent\n");
 }, 500);
 
-mlApi.runModel("motionclassifier", function(outputData) {
-  // Notify to companion's MotionClassifier
-  commApi.sendToCompanion("motionclassifier", outputData);
-});
+setTimeout(function() {
+  mlApi.runModel("motionclassifier", function(outputData) {
+    // Notify to companion's MotionClassifier
+    console.log("machine learning data output received: " + outputData);
+    commApi.sendToCompanion("motionclassifier", outputData);
+  });
+}, 3000);
