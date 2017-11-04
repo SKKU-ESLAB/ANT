@@ -243,7 +243,7 @@ void CommChannel::onRoutedMessage(BaseMessage* message) {
 
 void CommChannel::onReceivedMessage(BaseMessage* message) {
   // Route message to the target of the base message
-  this->mMessageRouter->routeMessage(message);
+  this->mMessageRouter->routeMessage(this, message);
 }
 
 int CommChannel::getIpAddress(const char* interfaceName, char* ipAddr) {
