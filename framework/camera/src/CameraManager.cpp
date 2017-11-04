@@ -199,10 +199,14 @@ DBusHandlerResult msg_dbus_filter(DBusConnection *connection,
     return communicator->copyShmStart(msg, controller, config_parser);
   else if (dbus_message_is_signal(msg, "org.ant.cameraManager", "copyShmStop"))
     return communicator->copyShmStop(msg, controller, config_parser);
-  else if (dbus_message_is_signal(msg, "org.ant.cameraManager", "sensorOverlayStart"))
-    return communicator->sensorOverlayStart(msg, controller, config_parser);
-  else if (dbus_message_is_signal(msg, "org.ant.cameraManager", "sensorOverlayStop"))
-    return communicator->sensorOverlayStop(msg, controller, config_parser);
+  else if (dbus_message_is_signal(msg, "org.ant.cameraManager", "textOverlayStart"))
+    return communicator->textOverlayStart(msg, controller, config_parser);
+  else if (dbus_message_is_signal(msg, "org.ant.cameraManager", "textOverlayStop"))
+    return communicator->textOverlayStop(msg, controller, config_parser);
+  else if (dbus_message_is_signal(msg, "org.ant.cameraManager", "showWindowStart"))
+    return communicator->showWindowStart(msg, controller, config_parser);
+  else if (dbus_message_is_signal(msg, "org.ant.cameraManager", "showWindowStop"))
+    return communicator->showWindowStop(msg, controller, config_parser);
 
   ANT_LOG_WARN(CAM, "Receive unidentified D-bus message");
   return DBUS_HANDLER_RESULT_NOT_YET_HANDLED;

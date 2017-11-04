@@ -52,9 +52,13 @@ class CameraCommunicator {
         CameraController *controller, CameraConfigParser *config_parser);
     DBusHandlerResult copyShmStop(DBusMessage *msg,
         CameraController *controller, CameraConfigParser *config_parser);
-    DBusHandlerResult sensorOverlayStart(DBusMessage *msg,
+    DBusHandlerResult textOverlayStart(DBusMessage *msg,
         CameraController *controller, CameraConfigParser *config_parser);
-    DBusHandlerResult sensorOverlayStop(DBusMessage *msg,
+    DBusHandlerResult textOverlayStop(DBusMessage *msg,
+        CameraController *controller, CameraConfigParser *config_parser);
+    DBusHandlerResult showWindowStart(DBusMessage *msg,
+        CameraController *controller, CameraConfigParser *config_parser);
+    DBusHandlerResult showWindowStop(DBusMessage *msg,
         CameraController *controller, CameraConfigParser *config_parser);
 
   private:

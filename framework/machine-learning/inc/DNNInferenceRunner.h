@@ -104,6 +104,6 @@ class DNNInferenceRunner
 static bool pairCompare(const std::pair<float, int>& lhs,
                         const std::pair<float, int>& rhs);
 static std::vector<int> argmax(const std::vector<float>& v, int N);
-static void sendDBusMsg(DBusConnection* conn, const char* msg);
+static void sendDBusMsg(DBusConnection* conn, const char* msg, const char* text);
 
 #endif // !defined(__DNN_INFERENCE_RUNNER_H__)

@@ -35,9 +35,8 @@ class CameraConfigParser {
     GstElement* getStreamingBin();
     GstElement* getPreRecordingInitBin();
     GstElement* getPreRecordingBin();
-    
     GstElement* getCopyShmBin();
-    GstElement* getFaceDetectBin();
+    GstElement* getShowWindowBin();
 
   public:
     cJSON *mCameraConfigCjson;
@@ -46,9 +45,8 @@ class CameraConfigParser {
     char *mStreamingConfig;
     char *mPreRecordingInitConfig;
     char *mPreRecordingConfig;
-    
     char *mCopyShmConfig;
-    char *mFaceDetectConfig;
+    char *mShowWindowConfig;
 };
 
 #endif /* CAMERA_CONFIG_PARSER_H */

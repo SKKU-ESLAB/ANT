@@ -43,8 +43,10 @@ class CameraDevice {
     bool preRecordingStop(CameraRequest *request);
     bool copyShmStart(CameraRequest *request);
     bool copyShmStop(CameraRequest *request);
-    bool sensorOverlayStart(CameraRequest *request);
-    bool sensorOverlayStop(CameraRequest *request);
+    bool textOverlayStart(CameraRequest *request);
+    bool textOverlayStop(CameraRequest *request);
+    bool showWindowStart(CameraRequest *request);
+    bool showWindowStop(CameraRequest *request);
 
     GstElement* getPipeline()
     { return this->mPipeline; }
@@ -61,6 +63,8 @@ class CameraDevice {
     { return this->mDelayedValve; }
     GstElement* getCopyShmValve()
     { return this->mCopyShmValve; }
+    GstElement* getTextOverlay()
+    { return this->mTextOverlay; }
 
     unsigned getCopyShmNumUsers()
     { return this->copy_shm_num_users; }
