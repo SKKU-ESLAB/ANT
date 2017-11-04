@@ -1,6 +1,7 @@
 /* Copyright (c) 2017 SKKU ESLAB, and contributors. All rights reserved.
  *
  * Contributor: Gyeonghwan Hong<redcarrottt@gmail.com>
+ *              Hayun Lee<lhy920806@gmail.com>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,6 +15,28 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
+/*
+ * Caffe LICENSE
+ *
+ * COPYRIGHT
+ *
+ * All contributions by the University of California:
+ * Copyright (c) 2014-2017 The Regents of the University of California (Regents)
+ * All rights reserved.
+ *
+ * All other contributions:
+ * Copyright (c) 2014-2017, the respective contributors
+ * All rights reserved.
+ *
+ * Caffe uses a shared copyright model: each contributor holds copyright over
+ * their contributions to Caffe. The project versioning records all such
+ * contribution and copyright details. If a contributor wants to further mark
+ * their specific copyright on a particular contribution, they should indicate
+ * their copyright solely in the commit message of the change when it is
+ * committed.
+ */
+
 
 #include <stdio.h>
 
@@ -63,8 +86,11 @@ MLDataUnit* DNNInferenceRunner::run(MLDataUnit* inputData) {
   }
 
   MLTensor* outputTensor = new MLTensor(outputTensorLayout);
-  char outputStr[30];
-  strncpy(outputStr, predictions[0].first.c_str(), 30);
+  char outputStr[100];
+  strncpy(outputStr, predictions[0].first.c_str()+10, 100);
+  strtok(outputStr, ",");
+
+  sendDBusMsg(this->mConnection, "textOverlayStart", outputStr);
   outputTensor->assignData(outputStr);
 
   MLDataUnit* outputData = new MLDataUnit();
@@ -319,7 +345,7 @@ bool DNNInferenceRunner::initDBus() {
 bool DNNInferenceRunner::streamingStart() {
   ANT_DBG_VERB("Streaming (CAMFW -> MLFW) start!!");
   this->initDBus();
-  sendDBusMsg(this->mConnection, "copyShmStart");
+  sendDBusMsg(this->mConnection, "copyShmStart", NULL);
   sleep(2);
 
   this->mBufferSize = CAMERA_DEFAULT_BUF_SIZE;
@@ -344,17 +370,26 @@ bool DNNInferenceRunner::streamingStart() {
   return true;
 }
 
-static void sendDBusMsg(DBusConnection* conn, const char* msg) {
+static void sendDBusMsg(DBusConnection* conn, const char* msg, const char* text) {
   DBusMessage* message;
   message = dbus_message_new_signal("/org/ant/cameraManager", "org.ant.cameraManager", msg);
 
   unsigned pid = getpid();
   unsigned camera_num = 0;
 
-  dbus_message_append_args(message,
-      DBUS_TYPE_UINT64, &pid,
-      DBUS_TYPE_UINT64, &camera_num,
-      DBUS_TYPE_INVALID);
+  if (text == NULL) {
+    dbus_message_append_args(message,
+        DBUS_TYPE_UINT64, &pid,
+        DBUS_TYPE_UINT64, &camera_num,
+        DBUS_TYPE_INVALID);
+  }
+  else {
+    dbus_message_append_args(message,
+        DBUS_TYPE_UINT64, &pid,
+        DBUS_TYPE_UINT64, &camera_num,
+        DBUS_TYPE_STRING, &text,
+        DBUS_TYPE_INVALID);
+  }
   dbus_connection_send(conn, message, NULL);
   dbus_message_unref(message);
 }
