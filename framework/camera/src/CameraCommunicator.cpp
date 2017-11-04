@@ -424,64 +424,125 @@ DBusHandlerResult CameraCommunicator::copyShmStop(DBusMessage *msg,
   return DBUS_HANDLER_RESULT_HANDLED;
 }
 
-DBusHandlerResult CameraCommunicator::sensorOverlayStart(DBusMessage *msg,
+DBusHandlerResult CameraCommunicator::textOverlayStart(DBusMessage *msg,
     CameraController *controller, CameraConfigParser *config_parser)
 {
-  ANT_LOG_DBG(CAM, "Get sensor start request");
+  ANT_LOG_DBG(CAM, "Get text overlay start request");
   bool ret;
 
-  dbusSensorRequest *msg_handle = (dbusSensorRequest*)malloc(sizeof(dbusSensorRequest));
+  dbusTextRequest *msg_handle = (dbusTextRequest*)malloc(sizeof(dbusTextRequest));
 
   dbus_message_get_args(msg, NULL,
       DBUS_TYPE_UINT64, &(msg_handle->pid),
       DBUS_TYPE_UINT64, &(msg_handle->camera_id),
-      DBUS_TYPE_STRING, &(msg_handle->sensor_name),
+      DBUS_TYPE_STRING, &(msg_handle->text_content),
       DBUS_TYPE_INVALID);
 
   ANT_LOG_DBG(CAM, "PID : %u", msg_handle->pid);
   ANT_LOG_DBG(CAM, "Camera ID : %u", msg_handle->camera_id);
-  ANT_LOG_DBG(CAM, "Sensor Name : %s", msg_handle->sensor_name);
+  ANT_LOG_DBG(CAM, "Text Content : %s", msg_handle->text_content);
 
-  CameraRequest *request = new CameraRequest(kSensorOverlayStart);
+  CameraRequest *request = new CameraRequest(kTextOverlayStart);
   request->setMsgHandle(msg_handle);
 
   CameraDevice *device = controller->getDeviceById(msg_handle->camera_id);
   request->setCameraDevice(device);
   ret = device->processRequest(request);
   if (!ret) {
-    ANT_LOG_ERR(CAM, "Sensor overlay start failed");
+    ANT_LOG_ERR(CAM, "Text overlay start failed");
     return DBUS_HANDLER_RESULT_NOT_YET_HANDLED;
   }
 
   return DBUS_HANDLER_RESULT_HANDLED;
 }
 
-DBusHandlerResult CameraCommunicator::sensorOverlayStop(DBusMessage *msg,
+DBusHandlerResult CameraCommunicator::textOverlayStop(DBusMessage *msg,
     CameraController *controller, CameraConfigParser *config_parser)
 {
-  ANT_LOG_DBG(CAM, "Get sensor stop request");
+  ANT_LOG_DBG(CAM, "Get text overlay stop request");
   bool ret;
 
-  dbusSensorRequest *msg_handle = (dbusSensorRequest*)malloc(sizeof(dbusSensorRequest));
+  dbusTextRequest *msg_handle = (dbusTextRequest*)malloc(sizeof(dbusTextRequest));
 
   dbus_message_get_args(msg, NULL,
       DBUS_TYPE_UINT64, &(msg_handle->pid),
       DBUS_TYPE_UINT64, &(msg_handle->camera_id),
-      DBUS_TYPE_STRING, &(msg_handle->sensor_name),
+      DBUS_TYPE_STRING, &(msg_handle->text_content),
       DBUS_TYPE_INVALID);
 
   ANT_LOG_DBG(CAM, "PID : %u", msg_handle->pid);
   ANT_LOG_DBG(CAM, "Camera ID : %u", msg_handle->camera_id);
-  ANT_LOG_DBG(CAM, "Sensor Name : %s", msg_handle->sensor_name);
+  ANT_LOG_DBG(CAM, "Text Content : %s", msg_handle->text_content);
 
-  CameraRequest *request = new CameraRequest(kSensorOverlayStop);
+  CameraRequest *request = new CameraRequest(kTextOverlayStop);
   request->setMsgHandle(msg_handle);
 
   CameraDevice *device = controller->getDeviceById(msg_handle->camera_id);
   request->setCameraDevice(device);
   ret = device->processRequest(request);
   if (!ret) {
-    ANT_LOG_ERR(CAM, "Sensor overlay start failed");
+    ANT_LOG_ERR(CAM, "Text overlay start failed");
+    return DBUS_HANDLER_RESULT_NOT_YET_HANDLED;
+  }
+
+  return DBUS_HANDLER_RESULT_HANDLED;
+}
+
+DBusHandlerResult CameraCommunicator::showWindowStart(DBusMessage *msg,
+    CameraController *controller, CameraConfigParser *config_parser)
+{
+  ANT_LOG_DBG(CAM, "Get show window start request");
+  bool ret;
+
+  dbusRequest *msg_handle = (dbusRequest*)malloc(sizeof(dbusRequest));
+
+  dbus_message_get_args(msg, NULL,
+      DBUS_TYPE_UINT64, &(msg_handle->pid),
+      DBUS_TYPE_UINT64, &(msg_handle->camera_id),
+      DBUS_TYPE_INVALID);
+
+  ANT_LOG_DBG(CAM, "PID : %u", msg_handle->pid);
+  ANT_LOG_DBG(CAM, "Camera ID : %u", msg_handle->camera_id);
+
+  GstElement *show_window_bin = config_parser->getShowWindowBin();
+  CameraRequest *request = new CameraRequest(kShowWindowStart, show_window_bin);
+  request->setMsgHandle(msg_handle);
+
+  CameraDevice *device = controller->getDeviceById(msg_handle->camera_id);
+  request->setCameraDevice(device);
+  ret = device->processRequest(request);
+  if (!ret) {
+    ANT_LOG_ERR(CAM, "Show window start failed");
+    return DBUS_HANDLER_RESULT_NOT_YET_HANDLED;
+  }
+
+  return DBUS_HANDLER_RESULT_HANDLED;
+}
+
+DBusHandlerResult CameraCommunicator::showWindowStop(DBusMessage *msg,
+    CameraController *controller, CameraConfigParser *config_parser)
+{
+  ANT_LOG_DBG(CAM, "Get show window stop request");
+  bool ret;
+
+  dbusRequest *msg_handle = (dbusRequest*)malloc(sizeof(dbusRequest));
+
+  dbus_message_get_args(msg, NULL,
+      DBUS_TYPE_UINT64, &(msg_handle->pid),
+      DBUS_TYPE_UINT64, &(msg_handle->camera_id),
+      DBUS_TYPE_INVALID);
+
+  ANT_LOG_DBG(CAM, "PID : %u", msg_handle->pid);
+  ANT_LOG_DBG(CAM, "Camera ID : %u", msg_handle->camera_id);
+
+  CameraRequest *request = new CameraRequest(kShowWindowStop);
+  request->setMsgHandle(msg_handle);
+
+  CameraDevice *device = controller->getDeviceById(msg_handle->camera_id);
+  request->setCameraDevice(device);
+  ret = device->processRequest(request);
+  if (!ret) {
+    ANT_LOG_ERR(CAM, "Show window start failed");
     return DBUS_HANDLER_RESULT_NOT_YET_HANDLED;
   }
 

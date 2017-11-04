@@ -61,7 +61,7 @@ static void send_delay_streaming_start(DBusConnection *conn)
   dbus_message_unref(message);
 }
 
-static void send_sensor_overlay(DBusConnection *conn)
+static void send_text_overlay(DBusConnection *conn)
 {
   printf("Sensor overlay start\n");
   DBusMessage *message;
@@ -83,7 +83,7 @@ static void send_sensor_overlay(DBusConnection *conn)
   dbus_message_unref(message);
 }
 
-static void send_sensor_overlay_stop(DBusConnection *conn)
+static void send_text_overlay_stop(DBusConnection *conn)
 {
   printf("Sensor overlay stop\n");
   DBusMessage *message;
@@ -105,7 +105,7 @@ static void send_sensor_overlay_stop(DBusConnection *conn)
   dbus_message_unref(message);
 }
 
-static void send_rec_init(DBusConnection *conn, char* file_name)
+static void send_rec_start(DBusConnection *conn, char* file_name)
 {
   printf("Recording Start\n");
   DBusMessage *message;
@@ -140,7 +140,7 @@ static void send_rec_init(DBusConnection *conn, char* file_name)
   dbus_message_unref(message);
 }
 
-static void send_rec_start(DBusConnection *conn, char* file_name)
+static void send_snapshot_start(DBusConnection *conn, char* file_name)
 {
   printf("start\n");
   DBusMessage *message;
@@ -174,9 +174,9 @@ static void send_rec_start(DBusConnection *conn, char* file_name)
   dbus_message_unref(message);
 }
 
-static void send_rec_term(DBusConnection *conn)
+static void send_copy_shm_start(DBusConnection *conn)
 {
-  printf("termination\n");
+  printf("Copy Shared Memory Start\n");
   DBusMessage *message;
   message = dbus_message_new_signal(dbus_path, dbus_interface, copy_shm_start_request);
 
@@ -220,7 +220,7 @@ static void send_stream_start(DBusConnection *conn)
 
 static void send_stream_stop(DBusConnection *conn)
 {
-	printf("streaming stop");
+	printf("streaming stop\n");
 	DBusMessage *message;
 	message = dbus_message_new_signal(dbus_path, dbus_interface, streaming_stop_request);
 	dbus_connection_send(conn, message, NULL);
@@ -228,9 +228,29 @@ static void send_stream_stop(DBusConnection *conn)
 
 }
 
+static void send_show_window_start(DBusConnection *conn)
+{
+	printf("show window start\n");
+	DBusMessage *message;
+	message = dbus_message_new_signal(dbus_path, dbus_interface, "showWindowStart");
+
+  unsigned pid = getpid();
+  unsigned camera_num = 0;
+  printf("Camera Number : ");
+  scanf("%d", &camera_num);
+
+	dbus_message_append_args(message,
+      DBUS_TYPE_UINT64, &pid,
+      DBUS_TYPE_UINT64, &camera_num,
+			DBUS_TYPE_INVALID);
+	
+	dbus_connection_send(conn, message, NULL);
+	dbus_message_unref(message);
+}
+
 int main(int argc, char** argv)
 {
- int num;
+ RequestType num;
  DBusConnection *conn;
  DBusError error;
  dbus_error_init (&error);
@@ -249,24 +269,26 @@ int main(int argc, char** argv)
  for(;;)
  {
 	 scanf("%d", &num); 
-   if(num == 0)
-	 	send_rec_init(conn, argv[1]); 
-	 else if(num == 1) 
-		send_rec_start(conn, argv[1]);	 
-	 else if(num == 2)
-		send_rec_term(conn);
-	 else if(num == 3)
+   if(num == kRecordingStart)
+	 	send_rec_start(conn, argv[1]); 
+	 else if(num == kSnapshot) 
+		send_snapshot_start(conn, argv[1]);	 
+	 else if(num == kCopyShmStart)
+		send_copy_shm_start(conn);
+	 else if(num == kStreamingStart)
 		 send_stream_start(conn);
-	 else if(num == 4)
+	 else if(num == kStreamingStop)
 		 send_stream_stop(conn);
-   else if(num == 5)
-     send_sensor_overlay(conn);
-	 else if(num == 6)
-		 send_sensor_overlay_stop(conn);
-	 else if(num == 7)
+   else if(num == kTextOverlayStart)
+     send_text_overlay(conn);
+	 else if(num == kTextOverlayStop)
+		 send_text_overlay_stop(conn);
+	 else if(num == kPreRecordingInit)
 		 send_delay_streaming_start(conn);
-	 else if(num == 8)
+	 else if(num == kPreRecordingStart)
 		 send_event_rec_start(conn, argv[1]);
+   else if(num == kShowWindowStop)
+     send_show_window_start(conn);
 	 else
 		 break;
  }
