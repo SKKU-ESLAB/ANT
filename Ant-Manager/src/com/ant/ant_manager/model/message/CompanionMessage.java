@@ -77,10 +77,10 @@ public class CompanionMessage extends BaseMessagePayload {
         ObjectNode paramsObj = (ObjectNode) this.mCompanionPayloadObj;
 
         // listenerName
-        String listenerName = paramsObj.get("listenerName").toString();
+        String listenerName = paramsObj.get("listenerName").asText();
 
         // data
-        String data = paramsObj.get("data").toString();
+        String data = paramsObj.get("data").asText();
 
         return new ParamsSendToCompanion(listenerName, data);
     }

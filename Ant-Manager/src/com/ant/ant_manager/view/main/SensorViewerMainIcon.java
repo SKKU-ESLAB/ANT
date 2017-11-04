@@ -5,8 +5,8 @@ import android.graphics.BitmapFactory;
 import android.widget.Toast;
 
 import com.ant.ant_manager.R;
+import com.ant.ant_manager.view.BasicSensorViewerActivity;
 import com.ant.ant_manager.view.MainActivity;
-import com.ant.ant_manager.view.SensorViewerActivity;
 
 /* Copyright (c) 2017 SKKU ESLAB, and contributors. All rights reserved.
  *
@@ -40,8 +40,8 @@ public class SensorViewerMainIcon extends MainIcon {
                     "connected", Toast.LENGTH_SHORT).show();
             return;
         }
-        Intent intent = new Intent(this.mOwnerActivity, SensorViewerActivity.class);
-        intent.putExtra(SensorViewerActivity.INTENT_KEY_APP_ID, this.mAppId);
+        Intent intent = new Intent(this.mOwnerActivity, BasicSensorViewerActivity.class);
+        intent.putExtra(BasicSensorViewerActivity.INTENT_KEY_APP_ID, this.mAppId);
         mOwnerActivity.startActivity(intent);
     }
 
