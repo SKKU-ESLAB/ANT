@@ -1,6 +1,7 @@
 /* Copyright (c) 2017 SKKU ESLAB, and contributors. All rights reserved.
  *
- * Contributor: Gyeonghwan Hong<redcarrottt@gmail.com>
+ * Contributor: Jongwon Park<jong1prk@gmail.com>
+ *              Gyeonghwan Hong<redcarrottt@gmail.com>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -43,6 +44,14 @@ std::string getDataDir() {
   return dataDirStr;
 }
 
+#define DEMO 1
+#define TEST_ON 1
+
+#if DEMO
+bool is_read_input = false;
+FILE *fp;
+#endif
+
 MLDataUnit* ANNInferenceRunner::run(MLDataUnit* inputData) {
   // Now DNN output is given as dummy data.
  
@@ -60,12 +69,35 @@ MLDataUnit* ANNInferenceRunner::run(MLDataUnit* inputData) {
     return NULL;
   }
 
+#if DEMO
+  if (is_read_input == false) {
+    char filename[128] = "/home/pi/ANT/framework/machine-learning/src/acc_test.txt";
+    fp = fopen(filename, "r");
+    if (fp == NULL) {
+      printf("File open fail\n");
+      return NULL;
+    }
+
+    is_read_input = true;
+  }
+  float input0, input1, input2;
+  
+  int ret = fscanf(fp, "%f %f %f\n", &input0, &input1, &input2);
+  /*
+  if (ret == 0) {
+    fclose(fp);
+    return NULL;
+  }
+  */
+
+#else
   MLTensor* inputTensor = inputData->findTensor("input");
   if(inputTensor == NULL) return NULL;
   void* inputBuffer = inputTensor->bytesValue();
   float input0 = *(((float*)inputBuffer) + 0);
   float input1 = *(((float*)inputBuffer) + 1);
   float input2 = *(((float*)inputBuffer) + 2);
+#endif
   int outputShape[] = {30};
   MLTensorLayout outputTensorLayout(1, outputShape, MLDataType::Char);
 
@@ -74,7 +106,7 @@ MLDataUnit* ANNInferenceRunner::run(MLDataUnit* inputData) {
   int outputidx = 0;
 
   inputstr[0] = input0;
-  inputstr[1] = input1;
+  inputstr[1] = input1-1;
   inputstr[2] = input2;
   calc_out = fann_run(ann, inputstr);
 

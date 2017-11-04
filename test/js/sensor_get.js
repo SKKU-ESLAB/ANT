@@ -33,10 +33,11 @@ var sensorData = {
   "VIBRATION": -1,
   "TEMP": -1
 };
-var data = sensorApi.Get("ACC");
+var data;
 
 // Report sensor data periodically
 var repeat = setInterval(function() {
-  console.log("X Y X" + "|" + data.X + " " + data.Y + " " + data.Z);
+  data = sensorApi.Get("ACC");
+  console.log("X Y Z" + "|" + data.X + " " + data.Y + " " + data.Z);
 
 }, 500);

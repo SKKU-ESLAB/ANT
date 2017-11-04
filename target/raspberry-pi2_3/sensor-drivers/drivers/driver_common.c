@@ -2,6 +2,7 @@
 #include <wiringPi.h>
 #include <wiringPiI2C.h>
 
+#include <stdio.h>
 
 #define Clock 27
 #define Address 28
@@ -81,7 +82,6 @@ unsigned int ADC_Read(unsigned char channel)
 	value |= LSB;
 
 	ADC_LOCK = 0;
-
 	return value;
 
 }
