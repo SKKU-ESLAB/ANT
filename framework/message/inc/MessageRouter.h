@@ -36,7 +36,7 @@ class MessageRouter {
     // Routing functions
     void addRoutingEntry(std::string uriString, Channel* channel);
     void removeRoutingEntry(std::string uriString);
-    void routeMessage(BaseMessage* message);
+    void routeMessage(Channel* originalChannel, BaseMessage* message);
 
   protected:
     Channel* findBestChannelLocked(std::string uriString);

@@ -50,17 +50,18 @@ void initAppBase(){
   gAppBase->completeLaunchingApp();
 }
 
-void init(Local<Object> exports, Local<Object> module) {
+void init(Local<Object> exports) {
   initAppBase();
 
   // Initialize API object's prototypes
   AppAPI::InitPrototype(exports->GetIsolate());
   MLAPI::InitPrototype(exports->GetIsolate());
+  CommAPI::InitPrototype(exports->GetIsolate());
 
   // Set entries as API object's constructors
-  NODE_SET_METHOD(module, "app", AppAPI::NewInstance);
-  NODE_SET_METHOD(module, "ml", MLAPI::NewInstance);
-  NODE_SET_METHOD(module, "comm", CommAPI::NewInstance);
+  NODE_SET_METHOD(exports, "app", AppAPI::NewInstance);
+  NODE_SET_METHOD(exports, "ml", MLAPI::NewInstance);
+  NODE_SET_METHOD(exports, "comm", CommAPI::NewInstance);
 }
 
 NODE_MODULE(NODE_GYP_MODULE_NAME, init)
