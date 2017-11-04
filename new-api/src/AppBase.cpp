@@ -32,6 +32,7 @@
 // Static variables
 OnTerminateJSAsync* OnTerminateJSAsync::sSingleton;
 OnUpdateAppConfigJSAsync* OnUpdateAppConfigJSAsync::sSingleton;
+OnRunModelJSAsync* OnRunModelJSAsync::sSingleton;
 
 void AppBase::run() {
   // URI
@@ -46,6 +47,7 @@ void AppBase::run() {
   // Run DbusChannel: run on child thread
   this->mDbusChannel->run();
   this->mMessageRouter->addRoutingEntry(APPCORE_URI, this->mDbusChannel);
+  this->mMessageRouter->addRoutingEntry(ML_URI, this->mDbusChannel);
   this->mMessageRouter->addRoutingEntry(COMPANION_DEVICE_URI,
       this->mDbusChannel);
 
@@ -339,6 +341,7 @@ void AppBase::runModel(std::string modelName, Local<Function> callback) {
       this->mLocalChannel->getUri(), ML_URI, MLMessageCommandType::RunModel);
   MLMessage* mlPayload = (MLMessage*)mlMessage->getPayload();
   mlPayload->setParamsRunModel(modelName);
+  mlMessage->setPayload(mlPayload);
 
   // Send ML message
   this->mLocalChannel->sendMessage(mlMessage);
@@ -356,5 +359,29 @@ void AppBase::onAckRunModel(BaseMessage* message) {
   // Execute JS callback
   OnRunModelJSAsync* jsAsync = OnRunModelJSAsync::get();
   jsAsync->setOutputData((uint8_t*)outputData.c_str());
+
+  // Call async native callback
   jsAsync->onAsyncEvent();
+}
+
+//Native async callbacks
+void OnRunModelJSAsync::nativeCallback(uv_async_t* handle) {
+  Isolate* isolate = Isolate::GetCurrent();
+  HandleScope scope(isolate);
+
+  OnRunModelJSAsync* self = OnRunModelJSAsync::get();
+
+  // Get arguments
+  unsigned char* outputData = self->mOutputData;
+
+  printf("[NIL] Run model value :%s\n", outputData);
+
+  // Execute onRunModel callback
+  TryCatch try_catch;
+  Handle<Value> argv[] = { String::NewFromOneByte(isolate, outputData) };
+  Local<Function> onRunModelCallback
+    = Local<Function>::New(isolate, self->mJSCallback);
+  onRunModelCallback->Call(
+      isolate->GetCurrentContext()->Global(), 1, argv);
+  return;
 }
