@@ -17,7 +17,7 @@ add_custom_target(
 add_subdirectory(framework)
 add_subdirectory(api)
 add_subdirectory(new-api)
-add_subdirectory(apps/system)
+add_subdirectory(apps)
 add_subdirectory(models)
 
 if(TARGET_BOARD STREQUAL raspberry-pi)

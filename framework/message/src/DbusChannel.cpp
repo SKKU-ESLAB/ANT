@@ -202,6 +202,6 @@ DBusHandlerResult DbusChannel::onReceivedDbusMessage(DBusConnection* connection,
   ANT_DBG_VERB("(pid=%d) Received rawMessage from DbusChannel: %s", getpid(), rawString);
 
   // Route message to the target of the ANT message
-  self->mMessageRouter->routeMessage(message);
+  self->mMessageRouter->routeMessage(self, message);
   return DBUS_HANDLER_RESULT_HANDLED;
 }

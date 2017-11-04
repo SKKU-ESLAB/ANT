@@ -112,8 +112,12 @@ def on_did_initialize(args):
             name="Camera Framework Daemon")
     run_on_daemon(command=["./ant-sensor"],
             name="Sensor Framework Daemon")
-    run_on_daemon(command=["./ant-ml"],
-            name="Machine Learning Framework Daemon")
+    if args.debugml:
+        run_on_daemon(command=["/usr/bin/gdb", "./ant-ml"],
+                name="Machine Learning Framework Daemon")
+    else:
+        run_on_daemon(command=["./ant-ml"],
+                name="Machine Learning Framework Daemon")
     return
 
 # on_did_halt_by_user: (event handler) user killed ANT manager manually
@@ -153,6 +157,9 @@ def main():
     parser.add_argument("--debug-apps", "-da", dest="debugapps",
             action="store_true",
             help="Debug Apps")
+    parser.add_argument("--debug-ml", "-dm", dest="debugml",
+            action="store_true",
+            help="Debug ML Daemon")
     args = parser.parse_args()
 
     # Register signal handlers

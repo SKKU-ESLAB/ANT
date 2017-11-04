@@ -80,7 +80,7 @@ void AppList::initializeDefaultApps(std::string systemAppsDir) {
     App* app = new App(this->mNextAppId++, true, systemAppNames[i],
         packagePath, mainJSFileName, iconFileName,
         AppState::Ready);
-    ANT_DBG_ERR("Add %s: %s, %s",
+    ANT_DBG_VERB("Add %s: %s, %s",
         systemAppNames[i], packagePath, mainJSFileName);
     this->add(app);
     this->flush(app);

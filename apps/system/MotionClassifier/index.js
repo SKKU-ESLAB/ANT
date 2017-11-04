@@ -58,21 +58,25 @@ var repeat = setInterval(function() {
   sensorData.TEMP =
     (sensorData.TEMP >= 0) ? sensorApi.Get("TEMP").TEMP : -1;
 
-  var str = "{\"type\":\"" + NIL_MSG_TO_SENSOR_VIEWER
-    + "\",\"Touch\":\"" + sensorData.BUTTON
-    + "\",\"Accelerometer\":\"" + sensorData.ACC
-    + "\",\"Motion\":\"" + sensorData.MOTION
-    + "\",\"Sound\":\"" + sensorData.SOUND
-    + "\",\"Light\":\"" + sensorData.LIGHT
-    + "\",\"Vibration\":\"" + sensorData.VIBRATION
-    + "\",\"Temperature\":\"" + sensorData.TEMP
-    + "\"}";
+  if(sensorData.ACC === undefined) sensorData.ACC = -1;
+
+  var str = sensorData.BUTTON
+    + " " + sensorData.ACC
+    + " " + sensorData.MOTION
+    + " " + sensorData.SOUND
+    + " " + sensorData.LIGHT
+    + " " + sensorData.VIBRATION
+    + " " + sensorData.TEMP;
+
   // Notify to companion's SensorViewer
   commApi.sendToCompanion("sensorviewer", str);
   console.log("Sent\n");
 }, 500);
 
-mlApi.runModel("motionclassifier", function(outputData) {
-  // Notify to companion's MotionClassifier
-  commApi.sendToCompanion("motionclassifier", outputData);
-});
+setTimeout(function() {
+  mlApi.runModel("motionclassifier", function(outputData) {
+    // Notify to companion's MotionClassifier
+    console.log("machine learning data output received: " + outputData);
+    commApi.sendToCompanion("motionclassifier", outputData);
+  });
+}, 3000);

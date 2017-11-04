@@ -183,7 +183,7 @@ class MLAckMessage : public BaseMessagePayload {
     // No ack message for StartIU
     // No ack message for StopIU
     bool getParamsGetIUResourceUsage(std::string& data);
-    bool getParamsRunModel(std::string outputData);
+    bool getParamsRunModel(std::string& outputData);
 
     // Set command-specific parameters
     void setMLAckPayloadObj(cJSON* mlAckPayloadObj) {

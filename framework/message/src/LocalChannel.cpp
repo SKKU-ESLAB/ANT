@@ -38,5 +38,5 @@ void LocalChannel::onRoutedMessage(BaseMessage* message) {
 
 void LocalChannel::sendMessage(BaseMessage* message) {
   // Pass the given message to MessageRouter
-  this->mMessageRouter->routeMessage(message);
+  this->mMessageRouter->routeMessage(this, message);
 }

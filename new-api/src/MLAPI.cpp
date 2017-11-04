@@ -107,7 +107,7 @@ void MLAPI::RunModel(const FunctionCallbackInfo<Value>& args) {
 
   std::string modelName;
   Local<Function> callback;
-  
+
   // Check arguments
   if (args.Length() != 2) {
     isolate->ThrowException(Exception::TypeError(getV8String(isolate,

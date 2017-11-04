@@ -78,11 +78,17 @@ void MessageRouter::printRoutingTable() {
   pthread_mutex_unlock(&this->mMasterRoutingTableMutex);
 }
 
-void MessageRouter::routeMessage(BaseMessage* message) {
+void MessageRouter::routeMessage(Channel* originalChannel, BaseMessage* message) {
   std::string uriString = message->getUri().c_str();
 
   // Find all the target entry of given URI 
   Channel* targetChannel = this->findBestChannelLocked(uriString);
+
+  // Prevent message flooding
+  // If original channel and target channel are same, message may be flooded.
+  if(originalChannel == targetChannel) {
+    return;
+  }
 
   // If the message did not routed at all, make a warning message
   if(targetChannel != NULL) {
@@ -90,10 +96,6 @@ void MessageRouter::routeMessage(BaseMessage* message) {
         (int)getpid(), uriString.c_str(),
         targetChannel->getName().c_str(), message->toJSONString());
     targetChannel->routeMessage(message);
-  } else {
-    ANT_DBG_WARN("(pid=%d) Message did not routed!: %s",
-        (int)getpid(), message->toJSONString());
-    this->printRoutingTable();
   }
 }
 

@@ -445,13 +445,8 @@ void CompanionMessage::setParamsSendConfigPage(int appId,
 void CompanionMessage::setParamsSendToCompanion(std::string listenerName,
     std::string data) {
   cJSON* payloadObj = cJSON_CreateObject();
-  cJSON* listenerNameObj = cJSON_Parse(listenerName.c_str());
-  cJSON* dataObj = cJSON_Parse(data.c_str());
-  if(listenerNameObj == NULL || dataObj == NULL) {
-    ANT_DBG_ERR("SendToCompanion: cannot parse listenerName or data");
-  }
-  cJSON_AddItemToObject(payloadObj, "listenerName", listenerNameObj);
-  cJSON_AddItemToObject(payloadObj, "data", dataObj);
+  cJSON_AddStringToObject(payloadObj, "listenerName", listenerName.c_str());
+  cJSON_AddStringToObject(payloadObj, "data", data.c_str());
 
   this->mCompanionPayloadObj = payloadObj;
 }
