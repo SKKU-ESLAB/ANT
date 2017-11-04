@@ -18,7 +18,7 @@ char* ACC_get(void *data)
 {
 	int i;
 	int val_x, val_y, val_z;
-	double b;
+  double b;
 	float a;
 	static char value[20];
 
@@ -39,9 +39,9 @@ char* ACC_get(void *data)
 
 	delay(300);
 
-	//printf("X_Axis : %d \n", val_x);
-	//printf("Y_Axis : %d \n", val_y);
-	//printf("Z_Axis : %d \n", val_z);
+	printf("X_Axis : %d \n", val_x);
+	printf("Y_Axis : %d \n", val_y);
+	printf("Z_Axis : %d \n", val_z);
 
 	b = (double)(abs(val_x - 320)) / (abs(val_z - 320));
 
