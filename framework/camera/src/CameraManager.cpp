@@ -179,29 +179,29 @@ DBusHandlerResult msg_dbus_filter(DBusConnection *connection,
   CameraController *controller = cam->getController();
   CameraConfigParser *config_parser = cam->getConfigParser();
 
-  if (dbus_message_is_signal(msg, "org.ant.camera.daemon","recStart"))
+  if (dbus_message_is_signal(msg, "org.ant.cameraManager","recStart"))
     return communicator->recordingStart(msg, controller, config_parser);
-  else if (dbus_message_is_signal(msg, "org.ant.camera.daemon", "recStop"))
+  else if (dbus_message_is_signal(msg, "org.ant.cameraManager", "recStop"))
     return communicator->recordingStop(msg, controller, config_parser);
-  else if (dbus_message_is_signal(msg, "org.ant.camera.daemon", "jpegStart"))
+  else if (dbus_message_is_signal(msg, "org.ant.cameraManager", "jpegStart"))
     return communicator->snapshotStart(msg, controller, config_parser);
-  else if (dbus_message_is_signal(msg, "org.ant.camera.daemon", "streamingStart"))
+  else if (dbus_message_is_signal(msg, "org.ant.cameraManager", "streamingStart"))
     return communicator->streamingStart(msg, controller, config_parser);
-  else if (dbus_message_is_signal(msg, "org.ant.camera.daemon", "streamingStop"))
+  else if (dbus_message_is_signal(msg, "org.ant.cameraManager", "streamingStop"))
     return communicator->streamingStop(msg, controller, config_parser);
-  else if (dbus_message_is_signal(msg, "org.ant.camera.daemon", "preRecordingInit"))
+  else if (dbus_message_is_signal(msg, "org.ant.cameraManager", "preRecordingInit"))
     return communicator->preRecordingInit(msg, controller, config_parser);
-  else if (dbus_message_is_signal(msg, "org.ant.camera.daemon", "preRecordingStart"))
+  else if (dbus_message_is_signal(msg, "org.ant.cameraManager", "preRecordingStart"))
     return communicator->preRecordingStart(msg, controller, config_parser);
-  else if (dbus_message_is_signal(msg, "org.ant.camera.daemon", "preRecordingStop"))
+  else if (dbus_message_is_signal(msg, "org.ant.cameraManager", "preRecordingStop"))
     return communicator->preRecordingStop(msg, controller, config_parser);
-  else if (dbus_message_is_signal(msg, "org.ant.camera.daemon", "openCVStart"))
-    return communicator->openCVStart(msg, controller, config_parser);
-  else if (dbus_message_is_signal(msg, "org.ant.camera.daemon", "openCVStop"))
-    return communicator->openCVStop(msg, controller, config_parser);
-  else if (dbus_message_is_signal(msg, "org.ant.camera.daemon", "sensorOverlayStart"))
+  else if (dbus_message_is_signal(msg, "org.ant.cameraManager", "copyShmStart"))
+    return communicator->copyShmStart(msg, controller, config_parser);
+  else if (dbus_message_is_signal(msg, "org.ant.cameraManager", "copyShmStop"))
+    return communicator->copyShmStop(msg, controller, config_parser);
+  else if (dbus_message_is_signal(msg, "org.ant.cameraManager", "sensorOverlayStart"))
     return communicator->sensorOverlayStart(msg, controller, config_parser);
-  else if (dbus_message_is_signal(msg, "org.ant.camera.daemon", "sensorOverlayStop"))
+  else if (dbus_message_is_signal(msg, "org.ant.cameraManager", "sensorOverlayStop"))
     return communicator->sensorOverlayStop(msg, controller, config_parser);
 
   ANT_LOG_WARN(CAM, "Receive unidentified D-bus message");

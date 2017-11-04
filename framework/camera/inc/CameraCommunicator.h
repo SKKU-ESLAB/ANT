@@ -48,9 +48,9 @@ class CameraCommunicator {
         CameraController *controller, CameraConfigParser *config_parser);
     DBusHandlerResult preRecordingStop(DBusMessage *msg,
         CameraController *controller, CameraConfigParser *config_parser);
-    DBusHandlerResult openCVStart(DBusMessage *msg,
+    DBusHandlerResult copyShmStart(DBusMessage *msg,
         CameraController *controller, CameraConfigParser *config_parser);
-    DBusHandlerResult openCVStop(DBusMessage *msg,
+    DBusHandlerResult copyShmStop(DBusMessage *msg,
         CameraController *controller, CameraConfigParser *config_parser);
     DBusHandlerResult sensorOverlayStart(DBusMessage *msg,
         CameraController *controller, CameraConfigParser *config_parser);
