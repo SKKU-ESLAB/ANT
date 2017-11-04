@@ -341,6 +341,7 @@ void AppBase::runModel(std::string modelName, Local<Function> callback) {
       this->mLocalChannel->getUri(), ML_URI, MLMessageCommandType::RunModel);
   MLMessage* mlPayload = (MLMessage*)mlMessage->getPayload();
   mlPayload->setParamsRunModel(modelName);
+  mlMessage->setPayload(mlPayload);
 
   // Send ML message
   this->mLocalChannel->sendMessage(mlMessage);
@@ -358,6 +359,8 @@ void AppBase::onAckRunModel(BaseMessage* message) {
   // Execute JS callback
   OnRunModelJSAsync* jsAsync = OnRunModelJSAsync::get();
   jsAsync->setOutputData((uint8_t*)outputData.c_str());
+
+  // Call async native callback
   jsAsync->onAsyncEvent();
 }
 

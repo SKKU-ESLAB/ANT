@@ -59,6 +59,8 @@ var repeat = setInterval(function() {
   sensorData.TEMP =
     (sensorData.TEMP >= 0) ? sensorApi.Get("TEMP").TEMP : -1;
 
+  if(sensorData.ACC === undefined) sensorData.ACC = -1;
+
   var str = sensorData.BUTTON
     + " " + sensorData.ACC
     + " " + sensorData.MOTION

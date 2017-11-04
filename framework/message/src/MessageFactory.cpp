@@ -126,6 +126,20 @@ BaseMessage* MessageFactory::makeBaseMessageFromJSON(cJSON* messageObj) {
         newMessage->setPayload(messagePayload);
         break;
       }
+    case BaseMessageType::ML:
+      {
+        MLMessage* messagePayload = makeMLMessageFromJSON(
+            payloadObj);
+        newMessage->setPayload(messagePayload);
+        break;
+      }
+    case BaseMessageType::MLAck:
+      {
+        MLAckMessage* messagePayload = makeMLAckMessageFromJSON(
+            payloadObj);
+        newMessage->setPayload(messagePayload);
+        break;
+      }
     default:
       // These types cannot be handled.
       break;

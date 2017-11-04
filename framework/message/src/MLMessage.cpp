@@ -352,7 +352,7 @@ bool MLAckMessage::getParamsGetIUResourceUsage(std::string& data) {
   return true;
 }
 
-bool MLAckMessage::getParamsRunModel(std::string outputData) {
+bool MLAckMessage::getParamsRunModel(std::string& outputData) {
   cJSON* outputDataObj = cJSON_GetObjectItem(this->mMLAckPayloadObj, "outputData");
   RETURN_IF_INVALID_CJSON_OBJ(outputDataObj, false);
   outputData.assign(outputDataObj->valuestring);

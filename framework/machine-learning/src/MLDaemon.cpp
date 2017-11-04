@@ -589,6 +589,9 @@ void MLDaemon::runModel(BaseMessage* message) {
       return;
     }
   }
+
+  // ACK message will be sent later
+  this->mListenIUOutputList.push_back(originalMessage);
 }
 
 #define PATH_BUFFER_SIZE 1024
