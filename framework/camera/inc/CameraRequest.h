@@ -33,8 +33,10 @@ typedef enum _RequestType {
   kPreRecordingStop,
   kCopyShmStart,
   kCopyShmStop,
-  kSensorOverlayStart,
-  kSensorOverlayStop,
+  kTextOverlayStart,
+  kTextOverlayStop,
+  kShowWindowStart,
+  kShowWindowStop,
 } RequestType;
 
 class CameraRequest {
@@ -116,10 +118,10 @@ typedef struct _dbusStreamingRequest {
   unsigned port;
 } dbusStreamingRequest;
 
-typedef struct _dbusSensorRequest {
+typedef struct _dbusTextRequest {
   unsigned pid;
   unsigned camera_id;
-  const char *sensor_name;
-} dbusSensorRequest;
+  const char *text_content;
+} dbusTextRequest;
 
 #endif /* CAMERA_REQUEST_H */

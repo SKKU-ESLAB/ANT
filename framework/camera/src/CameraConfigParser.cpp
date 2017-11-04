@@ -71,6 +71,7 @@ int CameraConfigParser::readyCameraConfig()
   this->mPreRecordingInitConfig = cJSON_GetObjectItem(root, "pre_recording_init")->valuestring;
   this->mPreRecordingConfig = cJSON_GetObjectItem(root, "pre_recording")->valuestring;
   this->mCopyShmConfig = cJSON_GetObjectItem(root, "copy_shm")->valuestring;
+  this->mShowWindowConfig = cJSON_GetObjectItem(root, "show_window")->valuestring;
 
   ANT_LOG_DBG(CAM, "Number of camera = %d", camera_num);
   ANT_LOG_DBG(CAM, "Recording = %s", this->mRecordingConfig);
@@ -79,6 +80,7 @@ int CameraConfigParser::readyCameraConfig()
   ANT_LOG_DBG(CAM, "Pre-Recording Init = %s", this->mPreRecordingInitConfig);
   ANT_LOG_DBG(CAM, "Pre-Recording = %s", this->mPreRecordingConfig);
   ANT_LOG_DBG(CAM, "CopyShm = %s", this->mCopyShmConfig);
+  ANT_LOG_DBG(CAM, "Show window = %s", this->mShowWindowConfig);
 
   return camera_num;
 }
@@ -122,4 +124,9 @@ GstElement* CameraConfigParser::getPreRecordingBin()
 GstElement* CameraConfigParser::getCopyShmBin()
 {
   return gst_parse_bin_from_description(this->mCopyShmConfig, TRUE, NULL);
+}
+
+GstElement* CameraConfigParser::getShowWindowBin()
+{
+  return gst_parse_bin_from_description(this->mShowWindowConfig, TRUE, NULL);
 }

@@ -127,10 +127,14 @@ bool CameraDevice::processRequest(CameraRequest *request)
       return this->copyShmStart(request);
     case kCopyShmStop:
       return this->copyShmStop(request);
-    case kSensorOverlayStart:
-      return this->sensorOverlayStart(request);
-    case kSensorOverlayStop:
-      return this->sensorOverlayStop(request);
+    case kTextOverlayStart:
+      return this->textOverlayStart(request);
+    case kTextOverlayStop:
+      return this->textOverlayStop(request);
+    case kShowWindowStart:
+      return this->showWindowStart(request);
+    case kShowWindowStop:
+      return this->showWindowStop(request);
     default:
       ANT_LOG_ERR(CAM, "Invalid request type (%d)", type);
       break;
@@ -343,13 +347,41 @@ bool CameraDevice::copyShmStop(CameraRequest *request)
   return true;
 }
 
-bool CameraDevice::sensorOverlayStart(CameraRequest *request)
+bool CameraDevice::textOverlayStart(CameraRequest *request)
+{
+  GstElement *textoverlay_ele = this->mTextOverlay;
+  dbusTextRequest *msg_handle = (dbusTextRequest *)request->getMsgHandle();
+
+  g_object_set(G_OBJECT(textoverlay_ele), "text", msg_handle->text_content, NULL);
+
+  return true;
+}
+
+bool CameraDevice::textOverlayStop(CameraRequest *request)
 {
   return true;
 }
 
-bool CameraDevice::sensorOverlayStop(CameraRequest *request)
+bool CameraDevice::showWindowStart(CameraRequest *request)
 {
+  GstElement *show_window_bin = request->getBin();
+  gst_bin_add(GST_BIN(this->mPipeline), show_window_bin);
+
+  dbusRequest *msg_handle = (dbusRequest *)request->getMsgHandle();
+
+  request->setTee(this->mMainTee);
+  request->requestTeePad();
+  request->linkPads();
+
+  this->pushRequest(request);
+
+  return true;
+}
+
+bool CameraDevice::showWindowStop(CameraRequest *request)
+{
+  dbusRequest *msg_handle = (dbusRequest *)request->getMsgHandle();
+  deleteRequest(msg_handle, kShowWindowStop);
   return true;
 }
 

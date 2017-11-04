@@ -26,6 +26,22 @@ static const gchar *delay_streaming_stop_request = "delayStreamingStop";
 static const gchar *event_rec_start_request = "eventRecStart";
 static const gchar *event_rec_stop_request = "eventRecStop";
 
+typedef enum _RequestType {
+  kRecordingStart,
+  kRecordingStop,
+  kSnapshot,
+  kStreamingStart,
+  kStreamingStop,
+  kPreRecordingInit,
+  kPreRecordingStart,
+  kPreRecordingStop,
+  kCopyShmStart,
+  kCopyShmStop,
+  kTextOverlayStart,
+  kTextOverlayStop,
+  kShowWindowStart,
+  kShowWindowStop,
+} RequestType;
 
 typedef struct _dbusReques{
   unsigned camera_num;
