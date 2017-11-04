@@ -74,8 +74,14 @@ static int initSharedMemorySpace(int _req_count, int _buffer_size,
     void** _shm_ptr, key_t _shmkey)
 {
   int shmid;
-  shmid = shmget((key_t)_shmkey,
-      (_buffer_size*_req_count)+(sizeof(int)*_req_count), 0666|IPC_CREAT);
+  //shmid = shmget((key_t)_shmkey,
+  //    (_buffer_size*_req_count)+(sizeof(int)*_req_count), 0666|IPC_CREAT);
+  // TODO: Support to _req_count (currently only _req_count==1)
+  if (_req_count != 1) {
+    ANT_LOG_ERR(CAM, "Currently not support about _req_count!=1");
+    return -1;
+  }
+  shmid = shmget((key_t)_shmkey, _buffer_size, 0666|IPC_CREAT);
 
   if(shmid == -1)
   {
@@ -105,6 +111,7 @@ static int uinitSharedMemorySpace(int _shm_id)
 static bool initSemaphore(const char *path, sem_t **_sem)
 {
   assert(path != NULL);
+  sem_unlink(path);
   *_sem = sem_open(path, O_CREAT, 0666, 1);
   if((*_sem) == SEM_FAILED)
   {

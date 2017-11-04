@@ -41,8 +41,8 @@ class CameraDevice {
     bool preRecordingInit(CameraRequest *request);
     bool preRecordingStart(CameraRequest *request);
     bool preRecordingStop(CameraRequest *request);
-    bool openCVStart(CameraRequest *request);
-    bool openCVStop(CameraRequest *request);
+    bool copyShmStart(CameraRequest *request);
+    bool copyShmStop(CameraRequest *request);
     bool sensorOverlayStart(CameraRequest *request);
     bool sensorOverlayStop(CameraRequest *request);
 
@@ -59,15 +59,15 @@ class CameraDevice {
     { return this->mH264Tee; }
     GstElement* getDelayedValve()
     { return this->mDelayedValve; }
-    GstElement* getOpenCVValve()
-    { return this->mOpenCVValve; }
+    GstElement* getCopyShmValve()
+    { return this->mCopyShmValve; }
 
-    unsigned getOpenCVNumUsers()
-    { return this->opencv_num_users; }
-    void increaseOpenCVNumUsers()
-    { this->opencv_num_users++; }
-    void decreaseOpenCVNumUsers()
-    { this->opencv_num_users--; }
+    unsigned getCopyShmNumUsers()
+    { return this->copy_shm_num_users; }
+    void increaseCopyShmNumUsers()
+    { this->copy_shm_num_users++; }
+    void decreaseCopyShmNumUsers()
+    { this->copy_shm_num_users--; }
 
   private:
     int mCameraId;
@@ -81,12 +81,12 @@ class CameraDevice {
     GstElement *mTextOverlay;
     GstElement *mClockOverlay;
     GstElement *mDelayedValve;
-    GstElement *mOpenCVValve;
+    GstElement *mCopyShmValve;
     guint mBusWatchId;
     std::list<CameraRequest*> *mRequestList;
     int mRequestCount;
 
-    unsigned opencv_num_users;
+    unsigned copy_shm_num_users;
 };
 
 static gboolean busCB(GstBus *bus, GstMessage *message, gpointer user_data);
@@ -99,6 +99,6 @@ static GstPadProbeReturn eventProbeCB(GstPad *pad, GstPadProbeInfo *info,
 static unsigned fileWrite(const char *file_path, char *buffer, unsigned size);
 static GstFlowReturn jpegBufferFromSinkCB(GstElement *ele, gpointer _request);
 
-static GstFlowReturn openCVBufferFromSinkCB(GstElement *ele, gpointer _request);
+static GstFlowReturn copyShmBufferFromSinkCB(GstElement *ele, gpointer _request);
 
 #endif /* CAMERA_DEVICE_H */

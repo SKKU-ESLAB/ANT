@@ -36,7 +36,7 @@ class CameraConfigParser {
     GstElement* getPreRecordingInitBin();
     GstElement* getPreRecordingBin();
     
-    GstElement* getOpenCVBin();
+    GstElement* getCopyShmBin();
     GstElement* getFaceDetectBin();
 
   public:
@@ -47,7 +47,7 @@ class CameraConfigParser {
     char *mPreRecordingInitConfig;
     char *mPreRecordingConfig;
     
-    char *mOpenCVConfig;
+    char *mCopyShmConfig;
     char *mFaceDetectConfig;
 };
 

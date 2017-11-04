@@ -41,7 +41,7 @@ bool CameraCommunicator::initCommunication(void *cam,
   }
 
   dbus_bus_add_match(this->mDBusConnection,
-      "type='signal', interface='org.ant.camera.daemon'", &this->mDBusError);
+      "type='signal', interface='org.ant.cameraManager'", &this->mDBusError);
   if (dbus_error_is_set(&this->mDBusError)) {
     ANT_LOG_ERR(CAM, "D-Bus 'adds a match rule' failed");
     dbus_error_free(&this->mDBusError);
@@ -345,10 +345,10 @@ DBusHandlerResult CameraCommunicator::preRecordingStop(DBusMessage *msg,
   return DBUS_HANDLER_RESULT_HANDLED;
 }
 
-DBusHandlerResult CameraCommunicator::openCVStart(DBusMessage *msg,
+DBusHandlerResult CameraCommunicator::copyShmStart(DBusMessage *msg,
     CameraController *controller, CameraConfigParser *config_parser)
 {
-  ANT_LOG_DBG(CAM, "Get OpenCV start request");
+  ANT_LOG_DBG(CAM, "Get CopyShm start request");
   bool ret;
 
   dbusRequest *msg_handle = (dbusRequest*)malloc(sizeof(dbusRequest));
@@ -367,14 +367,14 @@ DBusHandlerResult CameraCommunicator::openCVStart(DBusMessage *msg,
   }
 
   CameraDevice *device = controller->getDeviceById(msg_handle->camera_id);
-  if (device->getOpenCVNumUsers() > 0) {
-    ANT_LOG_DBG(CAM, "OpenCV already started");
+  if (device->getCopyShmNumUsers() > 0) {
+    ANT_LOG_DBG(CAM, "CopyShm already started");
     return DBUS_HANDLER_RESULT_HANDLED;
   }
   
-  GstElement *opencv_bin = config_parser->getOpenCVBin();
-  ANTRawRequest *raw_request = ANTRawRequest::getInstance(kOpenCVStart, opencv_bin);
-  device->increaseOpenCVNumUsers();
+  GstElement *copy_shm_bin = config_parser->getCopyShmBin();
+  ANTRawRequest *raw_request = ANTRawRequest::getInstance(kCopyShmStart, copy_shm_bin);
+  device->increaseCopyShmNumUsers();
   
   CameraRequest *request = (CameraRequest *)raw_request;
   request->setMsgHandle(msg_handle);
@@ -382,17 +382,17 @@ DBusHandlerResult CameraCommunicator::openCVStart(DBusMessage *msg,
   request->setCameraDevice(device);
   ret = device->processRequest(request);
   if (!ret) {
-    ANT_LOG_ERR(CAM, "OpenCV start failed");
+    ANT_LOG_ERR(CAM, "CopyShm start failed");
     return DBUS_HANDLER_RESULT_NOT_YET_HANDLED;
   }
 
   return DBUS_HANDLER_RESULT_HANDLED;
 }
 
-DBusHandlerResult CameraCommunicator::openCVStop(DBusMessage *msg,
+DBusHandlerResult CameraCommunicator::copyShmStop(DBusMessage *msg,
     CameraController *controller, CameraConfigParser *config_parser)
 {
-  ANT_LOG_DBG(CAM, "Get OpenCV stop request");
+  ANT_LOG_DBG(CAM, "Get CopyShm stop request");
   bool ret;
 
   dbusRequest *msg_handle = (dbusRequest*)malloc(sizeof(dbusRequest));
@@ -410,14 +410,14 @@ DBusHandlerResult CameraCommunicator::openCVStop(DBusMessage *msg,
     return DBUS_HANDLER_RESULT_HANDLED;
   }
 
-  CameraRequest *request = new CameraRequest(kOpenCVStop);
+  CameraRequest *request = new CameraRequest(kCopyShmStop);
   request->setMsgHandle(msg_handle);
 
   CameraDevice *device = controller->getDeviceById(msg_handle->camera_id);
   request->setCameraDevice(device);
   ret = device->processRequest(request);
   if (!ret) {
-    ANT_LOG_ERR(CAM, "OpenCV stop failed");
+    ANT_LOG_ERR(CAM, "CopyShm stop failed");
     return DBUS_HANDLER_RESULT_NOT_YET_HANDLED;
   }
 

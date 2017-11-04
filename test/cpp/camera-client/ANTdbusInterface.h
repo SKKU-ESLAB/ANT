@@ -3,8 +3,8 @@
 #include <glib.h>
 #include <string>
 
-static const gchar *dbus_path = "/org/ant/camera/daemon";
-static const gchar *dbus_interface = "org.ant.camera.daemon";
+static const gchar *dbus_path = "/org/ant/cameraManager";
+static const gchar *dbus_interface = "org.ant.cameraManager";
 
 //static const gchar *rec_init_request = "recInit";
 static const gchar *rec_start_request = "recStart";
@@ -12,8 +12,8 @@ static const gchar *rec_stop_request = "recStop";
 
 static const gchar *snap_start_request = "jpegStart";
 
-static const gchar *opencv_start_request = "openCVStart";
-static const gchar *opencv_stop_request = "openCVStop";
+static const gchar *copy_shm_start_request = "copyShmStart";
+static const gchar *copy_shm_stop_request = "copyShmStop";
 
 static const gchar *streaming_start_request = "streamingStart";
 static const gchar *streaming_stop_request = "streamingStop";
