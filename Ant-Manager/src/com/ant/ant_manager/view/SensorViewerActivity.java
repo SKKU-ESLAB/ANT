@@ -18,6 +18,7 @@ package com.ant.ant_manager.view;
  * limitations under the License.
  */
 
+import android.annotation.SuppressLint;
 import android.app.ActionBar;
 import android.app.Activity;
 import android.content.ComponentName;
@@ -33,15 +34,16 @@ import android.util.Log;
 import android.view.MenuItem;
 import android.widget.TextView;
 
+import com.ant.ant_manager.R;
+import com.ant.ant_manager.controller.ANTControllerBroadcastReceiver;
+import com.ant.ant_manager.controller.ANTControllerService;
 import com.jjoe64.graphview.GraphView;
 import com.jjoe64.graphview.series.DataPoint;
 import com.jjoe64.graphview.series.LineGraphSeries;
-import com.ant.ant_manager.R;
-import com.ant.ant_manager.controller.LegacyJSONParser;
-import com.ant.ant_manager.controller.ANTControllerBroadcastReceiver;
-import com.ant.ant_manager.controller.ANTControllerService;
 
-import static android.R.id.message;
+import java.util.ArrayList;
+
+import static com.ant.ant_manager.R.drawable.sensor;
 
 abstract public class SensorViewerActivity extends Activity {
     // ANTControllerService
@@ -60,24 +62,31 @@ abstract public class SensorViewerActivity extends Activity {
     private LineGraphSeries<DataPoint> mSeries2;
     private double graph2LastXValue = 5d;
 
-    SensorData sensor1;
-    SensorData sensor2;
-    SensorData sensor3;
-    SensorData sensor4;
-    SensorData sensor5;
-    SensorData sensor6;
-    SensorData sensor7;
-
-    String sensorName1 = "Touch";
-    String sensorName2 = "Accelerometer";
-    String sensorName3 = "Motion";
-    String sensorName4 = "Sound";
-    String sensorName5 = "Light";
-    String sensorName6 = "Vibration";
-    String sensorName7 = "Temperature";
+    ArrayList<SensorData> mSensorDataList = new ArrayList<>();
+    int numSensors = 7;
+    String[] mSensorNameList = {"Touch", "Accelerometer", "Motion", "Sound", "Light",
+            "Vibration", "Temperature"};
+    int[] mSensorGraphViewList = {R.id.graph1, R.id.graph2, R.id.graph3, R.id.graph4, R.id
+            .graph5, R.id.graph6, R.id.graph7};
+    int[] mSensorTextViewList = {R.id.textView11, R.id.textView22, R.id.textView33, R.id
+            .textView4, R.id.textView5, R.id.textView6, R.id.textView7};
+    int[] mSensorGraphLineColor = {Color.RED, Color.BLUE, Color.WHITE, Color.YELLOW, Color.WHITE,
+            Color.BLUE, Color.YELLOW};
 
     private final String TAG = "SensorViewer";
     private boolean mIsUIReady = false;
+
+    protected void initializeSensorDataList() {
+        for (int i = 0; i < numSensors; i++) {
+            String sensorName = this.mSensorNameList[i];
+            GraphView sensorGraphView = (GraphView) findViewById(this.mSensorGraphViewList[i]);
+            TextView sensorTextView = (TextView) findViewById(this.mSensorTextViewList[i]);
+            SensorData newSensorData = new SensorData(0, 100, sensorName, sensorGraphView,
+                    sensorTextView);
+            this.mSensorDataList.add(newSensorData);
+            newSensorData.setGraphLineColor(this.mSensorGraphLineColor[i]);
+        }
+    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -94,32 +103,10 @@ abstract public class SensorViewerActivity extends Activity {
         ActionBar actionBar = getActionBar();
         actionBar.setTitle("Sensor Viewer");
         actionBar.setDisplayHomeAsUpEnabled(true);
-        actionBar.setLogo(R.drawable.sensor);
+        actionBar.setLogo(sensor);
         actionBar.setDisplayUseLogoEnabled(true);
 
-
-        sensor1 = new SensorData(0, 100, sensorName1, (GraphView) findViewById(R.id.graph1),
-                (TextView) findViewById(R.id.textView11));
-        sensor2 = new SensorData(0, 100, sensorName2, (GraphView) findViewById(R.id.graph2),
-                (TextView) findViewById(R.id.textView22));
-        sensor3 = new SensorData(0, 100, sensorName3, (GraphView) findViewById(R.id.graph3),
-                (TextView) findViewById(R.id.textView33));
-        sensor4 = new SensorData(0, 100, sensorName4, (GraphView) findViewById(R.id.graph4),
-                (TextView) findViewById(R.id.textView4));
-        sensor5 = new SensorData(0, 100, sensorName5, (GraphView) findViewById(R.id.graph5),
-                (TextView) findViewById(R.id.textView5));
-        sensor6 = new SensorData(0, 100, sensorName6, (GraphView) findViewById(R.id.graph6),
-                (TextView) findViewById(R.id.textView6));
-        sensor7 = new SensorData(0, 100, sensorName7, (GraphView) findViewById(R.id.graph7),
-                (TextView) findViewById(R.id.textView7));
-
-        sensor1.setGraphLineColor(Color.RED);
-        sensor2.setGraphLineColor(Color.BLUE);
-        sensor3.setGraphLineColor(Color.WHITE);
-        sensor4.setGraphLineColor(Color.YELLOW);
-        sensor5.setGraphLineColor(Color.WHITE);
-        sensor6.setGraphLineColor(Color.BLUE);
-        sensor7.setGraphLineColor(Color.YELLOW);
+        this.initializeSensorDataList();
     }
 
     @Override
@@ -147,58 +134,22 @@ abstract public class SensorViewerActivity extends Activity {
     abstract public void onMessageFromTarget(String listenerName, String message);
 
     public void onSensorViewerMessage(String message) {
-        LegacyJSONParser jp = new LegacyJSONParser(message);
+        String[] tokens = message.split("\\s+");
+        if (tokens.length < 7) {
+            Log.e(TAG, "# of tokens is too small! : " + message);
+            return;
+        }
 
-        Double val1 = Double.parseDouble(jp.getValueByKey(sensor1.getSensorName()));
-        Double val2 = Double.parseDouble(jp.getValueByKey(sensor2.getSensorName()));
-        Double val3 = Double.parseDouble(jp.getValueByKey(sensor3.getSensorName()));
-        Double val4 = Double.parseDouble(jp.getValueByKey(sensor4.getSensorName()));
-        Double val5 = Double.parseDouble(jp.getValueByKey(sensor5.getSensorName()));
-        Double val6 = Double.parseDouble(jp.getValueByKey(sensor6.getSensorName()));
-        Double val7 = Double.parseDouble(jp.getValueByKey(sensor7.getSensorName()));
-
-        if (this.mIsUIReady == true) {
-            if (val1 >= 0) {
-                sensor1.setEnabled(true);
-                sensor1.setCurValue(val1);
-            } else {
-                sensor1.setEnabled(false);
-            }
-            if (val2 >= 0) {
-                sensor2.setEnabled(true);
-                sensor2.setCurValue(val2);
-            } else {
-                sensor2.setEnabled(false);
-            }
-            if (val3 >= 0) {
-                sensor3.setEnabled(true);
-                sensor3.setCurValue(val3);
-            } else {
-                sensor3.setEnabled(false);
-            }
-            if (val4 >= 0) {
-                sensor4.setEnabled(true);
-                sensor4.setCurValue(val4);
-            } else {
-                sensor4.setEnabled(false);
-            }
-            if (val5 >= 0) {
-                sensor5.setEnabled(true);
-                sensor5.setCurValue(val5);
-            } else {
-                sensor5.setEnabled(false);
-            }
-            if (val6 >= 0) {
-                sensor6.setEnabled(true);
-                sensor6.setCurValue(val6);
-            } else {
-                sensor6.setEnabled(false);
-            }
-            if (val7 >= 0) {
-                sensor7.setEnabled(true);
-                sensor7.setCurValue(val7);
-            } else {
-                sensor7.setEnabled(false);
+        if (this.mIsUIReady) {
+            for (int i = 0; i < this.numSensors; i++) {
+                Double sensorValue = Double.parseDouble(tokens[i]);
+                SensorData sensorData = this.mSensorDataList.get(i);
+                if (sensorValue >= 0) {
+                    sensorData.setEnabled(true);
+                    sensorData.setCurrentValue(sensorValue);
+                } else {
+                    sensorData.setEnabled(false);
+                }
             }
         }
     }
@@ -213,34 +164,13 @@ abstract public class SensorViewerActivity extends Activity {
             @Override
             public void run() {
                 graph2LastXValue += 1d;
-
-                Double sensor1Data = sensor1.getCurValue();
-                Double sensor2Data = sensor2.getCurValue();
-                Double sensor3Data = sensor3.getCurValue();
-                Double sensor4Data = sensor4.getCurValue();
-                Double sensor5Data = sensor5.getCurValue();
-                Double sensor6Data = sensor6.getCurValue();
-                Double sensor7Data = sensor7.getCurValue();
-
-                sensor1.appendData(new DataPoint(graph2LastXValue, sensor1Data), true,
-                        sensor1.getMax());
-                sensor2.appendData(new DataPoint(graph2LastXValue, sensor2Data), true,
-                        sensor2.getMax());
-                sensor3.appendData(new DataPoint(graph2LastXValue, sensor3Data), true,
-                        sensor3.getMax());
-                sensor4.appendData(new DataPoint(graph2LastXValue, sensor4Data), true,
-                        sensor4.getMax());
-                sensor5.appendData(new DataPoint(graph2LastXValue, sensor5Data), true,
-                        sensor5.getMax());
-                sensor6.appendData(new DataPoint(graph2LastXValue, sensor6Data), true,
-                        sensor6.getMax());
-                sensor7.appendData(new DataPoint(graph2LastXValue, sensor7Data), true,
-                        sensor7.getMax());
-
-                //mSeries2.appendData(new DataPoint(graph2LastXValue,
-                // randNum), true, 40);
+                for (int i = 0; i < numSensors; i++) {
+                    SensorData sensorData = mSensorDataList.get(i);
+                    Double sensorValue = sensorData.getCurrentValue();
+                    sensorData.appendData(new DataPoint(graph2LastXValue, sensorValue), true,
+                            sensorData.getMax());
+                }
                 mHandler.postDelayed(this, 200);
-
             }
 
         };
@@ -305,96 +235,94 @@ abstract public class SensorViewerActivity extends Activity {
             this.setOnReceivedSensorDataListener(new OnReceivedDataFromTarget() {
                 @Override
                 public void onReceivedDataFromTarget(String listenerName, String data) {
-                    Log.d(TAG, "Message coming for " + listenerName + ": " + message);
-                    if (listenerName.compareTo("sensorviewer") == 0) {
+                    Log.d(TAG, "Message coming for " + listenerName + ": " + data + " " +
+                            listenerName.compareTo("sensorviewer") + "!!!");
+                    if (listenerName.compareToIgnoreCase("sensorviewer") == 0) {
                         onSensorViewerMessage(data);
-                    } else {
-                        onMessageFromTarget(listenerName, data);
                     }
+                    onMessageFromTarget(listenerName, data);
                 }
             });
         }
     }
 
     class SensorData {
-        int min;
-        int max;
-        double curValue;
-        String sensorName;
+        private int mMin;
+        private int mMax;
+        private double mCurrentValue;
+        private String mSensorName;
 
-        GraphView graph;
-        TextView textV;
+        private GraphView mGraphView;
+        private TextView mTextView;
 
-        LineGraphSeries<DataPoint> mSeries;
-        int mUniqueColor;
-        boolean mIsEnabled = false;
+        private LineGraphSeries<DataPoint> mLineGraphSeries;
+        private int mUniqueColor;
+        private boolean mIsEnabled = false;
 
-        public SensorData(int min, int max, String sensorName, GraphView graph, TextView textV) {
-            this.min = min;
-            this.max = max;
-            this.graph = graph;
-            this.curValue = 0.0;
-            this.sensorName = sensorName;
-            this.textV = textV;
-            this.textV.setText(sensorName + "(Disconnected)");
-            mSeries = new LineGraphSeries<DataPoint>();
+        SensorData(int min, int max, String sensorName, GraphView graphView, TextView textView) {
+            this.mMin = min;
+            this.mMax = max;
+            this.mGraphView = graphView;
+            this.mCurrentValue = 0.0;
+            this.mSensorName = sensorName;
+            this.mTextView = textView;
+            this.mTextView.setText(sensorName + "(Disconnected)");
+            mLineGraphSeries = new LineGraphSeries<DataPoint>();
 
-            graph.addSeries(mSeries);
-            graph.getViewport().setXAxisBoundsManual(true);
-            graph.getViewport().setMinX(min);
-            graph.getViewport().setMaxX(max);
+            graphView.addSeries(mLineGraphSeries);
+            graphView.getViewport().setXAxisBoundsManual(true);
+            graphView.getViewport().setMinX(min);
+            graphView.getViewport().setMaxX(max);
+            graphView.getViewport().setYAxisBoundsManual(false);
 
-            graph.getViewport().setYAxisBoundsManual(false);
-
-            mSeries.setThickness(5);
-
+            mLineGraphSeries.setThickness(5);
         }
 
-        public void setCurValue(double var) {
-            this.curValue = var;
+        void setCurrentValue(double newValue) {
+            this.mCurrentValue = newValue;
         }
 
-        public double getCurValue() {
-            return this.curValue;
+        double getCurrentValue() {
+            return this.mCurrentValue;
         }
 
-
-        public void appendData(DataPoint a, boolean b, int c) {
-            mSeries.appendData(a, b, c);
+        void appendData(DataPoint dataPoint, boolean scrollToEnd, int maxDataPoints) {
+            mLineGraphSeries.appendData(dataPoint, scrollToEnd, maxDataPoints);
         }
 
-        public int getMax() {
-            return this.max;
+        int getMax() {
+            return this.mMax;
         }
 
-        public String getSensorName() {
-            return this.sensorName;
+        String getSensorName() {
+            return this.mSensorName;
         }
 
-        public void setTextViewColor(int color) {
-            textV.setTextColor(color);
+        void setTextViewColor(int color) {
+            mTextView.setTextColor(color);
         }
 
-        public void setGraphLineColor(int color) {
+        void setGraphLineColor(int color) {
             this.mUniqueColor = color;
             this.updateView();
         }
 
-        public void setEnabled(boolean isEnabled) {
+        void setEnabled(boolean isEnabled) {
             this.mIsEnabled = isEnabled;
             this.updateView();
         }
 
         private void updateView() {
             runOnUiThread(new Runnable() {
+                @SuppressLint("SetTextI18n")
                 @Override
                 public void run() {
-                    if (mIsEnabled == true) {
-                        mSeries.setColor(mUniqueColor);
-                        textV.setText(sensorName);
+                    if (mIsEnabled) {
+                        mLineGraphSeries.setColor(mUniqueColor);
+                        mTextView.setText(getSensorName());
                     } else {
-                        mSeries.setColor(Color.GRAY);
-                        textV.setText(sensorName + " (Disconnected)");
+                        mLineGraphSeries.setColor(Color.GRAY);
+                        mTextView.setText(getSensorName() + " (Disconnected)");
                     }
                 }
             });
