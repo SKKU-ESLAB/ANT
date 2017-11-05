@@ -55,8 +55,8 @@
         <activity android:name="com.ant.ant_manager.view.remoteui.RemoteNotiUIActivity"/>
         <activity android:name="com.ant.ant_manager.view.AppManagerActivity"/>
         <activity android:name="com.ant.ant_manager.view.remoteui.RemoteConfigUIActivity"/>
-        <activity android:name="com.ant.ant_manager.view.BasicSensorViewerActivity"/>
         <activity android:name="com.ant.ant_manager.view.MotionClassifierActivity"/>
+        <activity android:name="com.ant.ant_manager.view.SensorViewerActivity"/>
         <activity
             android:name="com.ant.ant_manager.view.ImageClassifierActivity"
             android:label="@string/app_name"
