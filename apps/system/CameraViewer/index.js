@@ -20,7 +20,7 @@
 
 var ant_api_dir = process.env.ANT_BIN_DIR + "/api/";
 var cameraApi = require(ant_api_dir + "camera-api");
-var api = require(ant_api_dir + "api");
+var api = require(ant_api_dir + "ant");
 var appApi = api.app();
 
 var streamObj = new cameraApi.ANTRecording();
