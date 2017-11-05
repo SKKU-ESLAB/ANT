@@ -84,6 +84,13 @@ $ sudo hciconfig hci0 piscan
 For more information, see docs/blueooth.md
 
 
+### Wifi-Direct Issues
+#### Remove the P2P group (Wifi-direct) on the wifi interface
+remove group p2p-wlan0-1 on the wifi interface wlan0
+```
+sudo wpa_cli -i wlan0 p2p_group_remove p2p-wlan0-1
+```
+
 You need target profile on ```target/TARGET_NAME/profile.env``` before running install script.
 
 ## [License](https://github.com/SKKU-ESLAB/ANT/wiki/License)
