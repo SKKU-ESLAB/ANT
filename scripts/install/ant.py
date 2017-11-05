@@ -125,6 +125,7 @@ def on_did_halt_by_user():
     log("User key interrupt is detected.")
     log("Terminating ANT...")
     run_command("./ant_p2p_setup.sh stop")
+    run_command("./ant_p2p_setup.sh deinit")
     return
 
 # on_did_dead_daemon: (event handler) daemon process is dead
