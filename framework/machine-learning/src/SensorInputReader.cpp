@@ -69,13 +69,13 @@ MLTensor* SensorInputReader::read(std::string sourceUri) {
    * It blocked
    */
   reply = dbus_connection_send_with_reply_and_block(dbus_conn, msg, 500, &error);
-  
+
   if(reply == NULL){
     fprintf(stderr, "Error: %s", error.message);
   }
 
   dbus_error_free(&error);
-  
+
   dbus_message_unref(msg);
   dbus_message_get_args(reply, NULL,
       DBUS_TYPE_STRING, &sensor_value,
