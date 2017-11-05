@@ -6,7 +6,7 @@ Raspberry-pi 3
 NVIDIA Jetson-TX1
 
 # Android
-[P2PForYourThings-android](https://github.com/esevan/P2PForYourThings-android)
+[P2PForYourThings-android](https://github.com/sinban04/P2PForYourThings-android)
 
 
 # Quick Start
