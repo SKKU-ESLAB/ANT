@@ -235,8 +235,7 @@ abstract public class SensorViewerActivity extends Activity {
             this.setOnReceivedSensorDataListener(new OnReceivedDataFromTarget() {
                 @Override
                 public void onReceivedDataFromTarget(String listenerName, String data) {
-                    Log.d(TAG, "Message coming for " + listenerName + ": " + data + " " +
-                            listenerName.compareTo("sensorviewer") + "!!!");
+                    Log.d(TAG, "Message coming for " + listenerName + ": " + data);
                     if (listenerName.compareToIgnoreCase("sensorviewer") == 0) {
                         onSensorViewerMessage(data);
                     }

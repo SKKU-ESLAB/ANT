@@ -412,7 +412,7 @@ public class CommChannelService extends Service implements CommPortListener {
 
         private void openLargeDataPort() {
             // (Enable Largedata) Step 3. Open largedata port
-            int kSleepMillisecs = 500;
+            int kSleepMillisecs = 1000;
             int kMaxTries = 10;
             boolean isOpeningSuccess = false;
             int tries = 0;
@@ -451,7 +451,7 @@ public class CommChannelService extends Service implements CommPortListener {
         }
 
         private void onFail() {
-            disableLargeDataMode();
+            //disableLargeDataMode();
         }
     }
 
@@ -501,7 +501,7 @@ public class CommChannelService extends Service implements CommPortListener {
 
                         Log.d(TAG, "No users detected for large data port over " +
                                 kThresholdMillisecs + " ms.");
-                        disableLargeDataMode();
+                        //disableLargeDataMode();
                     }
                 }
 
