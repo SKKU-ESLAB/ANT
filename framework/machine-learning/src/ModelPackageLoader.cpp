@@ -43,8 +43,8 @@ InferenceUnit* ModelPackageLoader::loadBuiltin(std::string modelName,
     MLTensorLayout inputTensorLayout(1, inputShape, MLDataType::Float);
     inputLayout->insertTensorLayout("input", inputTensorLayout);
         
-    // Set output layout: char[30] output
-    int outputShape[] = {30};
+    // Set output layout: char[100] output
+    int outputShape[] = {100};
     MLTensorLayout outputTensorLayout(1, outputShape, MLDataType::Char);
     outputLayout->insertTensorLayout("output", outputTensorLayout);
 
