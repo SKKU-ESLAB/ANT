@@ -56,7 +56,7 @@ MLDataUnit* ANNInferenceRunner::run(MLDataUnit* inputData) {
   // Now DNN output is given as dummy data.
  
   const char* act[7] = {"None", "Biking", "Sitting", "Standing", "Walking",
-    "Stair Up", "Stair down"};
+    "StairUp", "StairDown"};
   fann_type *calc_out;
   fann_type inputstr[3];
   std::string dataDir = getDataDir();
@@ -70,19 +70,10 @@ MLDataUnit* ANNInferenceRunner::run(MLDataUnit* inputData) {
   }
 
 #if DEMO
-  if (is_read_input == false) {
-    char filename[128] = "/home/pi/ANT/framework/machine-learning/src/acc_test.txt";
-    fp = fopen(filename, "r");
-    if (fp == NULL) {
-      printf("File open fail\n");
-      return NULL;
-    }
-
-    is_read_input = true;
-  }
+  FILE *fp;
   float input0, input1, input2;
-  
-  int ret = fscanf(fp, "%f %f %f\n", &input0, &input1, &input2);
+  fp = fopen("/dev/ttyACM0", "r");
+  fscanf(fp, "%f %f %f\n", &input0, &input1, &input2);
   /*
   if (ret == 0) {
     fclose(fp);
@@ -98,11 +89,11 @@ MLDataUnit* ANNInferenceRunner::run(MLDataUnit* inputData) {
   float input1 = *(((float*)inputBuffer) + 1);
   float input2 = *(((float*)inputBuffer) + 2);
 #endif
-  int outputShape[] = {30};
+  int outputShape[] = {100};
   MLTensorLayout outputTensorLayout(1, outputShape, MLDataType::Char);
 
   MLTensor* outputTensor = new MLTensor(outputTensorLayout);
-  char outputStr[30];
+  char outputStr[100];
   int outputidx = 0;
 
   inputstr[0] = input0;
@@ -121,7 +112,8 @@ MLDataUnit* ANNInferenceRunner::run(MLDataUnit* inputData) {
       calc_out[2], calc_out[3], calc_out[4], calc_out[5], calc_out[6]);
 #endif
 
-  snprintf(outputStr, 30, "%s", act[outputidx]);
+  snprintf(outputStr, 100, "%s %.5f %.5f %.5f",
+      act[outputidx], input0, input1, input2);
   outputTensor->assignData(outputStr);
 
   MLDataUnit* outputData = new MLDataUnit();

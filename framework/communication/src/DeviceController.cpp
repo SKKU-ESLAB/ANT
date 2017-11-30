@@ -58,14 +58,6 @@ bool WifiDirectDeviceController::turnOn() {
 	tmpc_get("wifi/wifi-direct/wfd_stat", wfdStatStr, 256);
   wfdStat = atoi(wfdStatStr);
   while(wfdStat == 0) {
-    // Reset before initializing Wi-fi Direct
-    {
-      char command[256]; 
-      strcpy(command, getenv("ANT_BIN_DIR"));
-      strcat(command, "/ant_p2p_setup.sh stop");
-      system(command);
-    }
-
     // Initialize Wi-fi Direct
 //    char isInitStr[256];
 //    tmpc_get("wifi/wifi-direct/init", isInitStr, 256);
@@ -77,6 +69,14 @@ bool WifiDirectDeviceController::turnOn() {
       char command[256];
       strcpy(command, getenv("ANT_BIN_DIR"));
       strcat(command, "/ant_p2p_setup.sh init");
+      system(command);
+    }
+
+    // Reset before initializing Wi-fi Direct
+    {
+      char command[256]; 
+      strcpy(command, getenv("ANT_BIN_DIR"));
+      strcat(command, "/ant_p2p_setup.sh stop");
       system(command);
     }
 

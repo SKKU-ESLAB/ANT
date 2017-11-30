@@ -59,6 +59,9 @@ void CommChannel::run() {
   // Turn on Bluetooth
   this->mBluetoothDeviceController.turnOn();
 
+  // Turn on Wi-fi Direct
+  this->mWifiDirectDeviceController.turnOn();
+
   // Start CommChannel
   this->start();
 
@@ -164,13 +167,6 @@ void CommChannel::stop() {
 }
 
 bool CommChannel::enableLargeDataMode() {
-  // Turn on Wi-fi Direct
-  bool wfdTurnOnRes = this->mWifiDirectDeviceController.turnOn();
-  if(!wfdTurnOnRes) {
-    ANT_DBG_ERR("CommChannel enableLargeData: turning on Wi-fi Direct fail");
-    return false;
-  }
-
   // Open largedata port
   bool largeDataOpenRes = this->mLargeDataPort->openConnection();
   if(!largeDataOpenRes) {

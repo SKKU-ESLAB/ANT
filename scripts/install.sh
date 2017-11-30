@@ -384,7 +384,6 @@ ln -s ${ANT_BIN_DIR}/run_ant ${ANT_SYSTEM_BIN_DIR}/run_ant
 
 # Install ANT_CONFIG_DIR
 print_progress 5 "Install ANT configs..."
-cp -R ${ANT_OUT_DIR}/config/* ${ANT_CONFIG_DIR}/
 cp ${TARGET_DIR}/camera-config.json ${ANT_CONFIG_DIR}/
 cp ${TARGET_DIR}/dhcpd.conf ${ANT_CONFIG_DIR}/
 cp ${TARGET_DIR}/p2p.conf ${ANT_CONFIG_DIR}/
