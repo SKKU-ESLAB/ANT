@@ -43,9 +43,7 @@ import com.jjoe64.graphview.series.LineGraphSeries;
 
 import java.util.ArrayList;
 
-import static com.ant.ant_manager.R.drawable.sensor;
-
-abstract public class SensorViewerActivity extends Activity {
+public class SensorViewerActivity extends Activity {
     // ANTControllerService
     private ANTControllerService mControllerServiceStub = null;
     private PrivateControllerBroadcastReceiver mControllerBroadcastReceiver;
@@ -66,10 +64,12 @@ abstract public class SensorViewerActivity extends Activity {
     int numSensors = 7;
     String[] mSensorNameList = {"Touch", "Accelerometer", "Motion", "Sound", "Light",
             "Vibration", "Temperature"};
-    int[] mSensorGraphViewList = {R.id.graph1, R.id.graph2, R.id.graph3, R.id.graph4, R.id
-            .graph5, R.id.graph6, R.id.graph7};
-    int[] mSensorTextViewList = {R.id.textView11, R.id.textView22, R.id.textView33, R.id
-            .textView4, R.id.textView5, R.id.textView6, R.id.textView7};
+    int[] mSensorGraphViewList = {R.id.touchSensorGraphView, R.id.accSensorGraphView, R.id
+            .motionSensorGraphView, R.id.soundSensorGraphView, R.id.lightSensorGraphView, R.id
+            .vibSensorGraphView, R.id.tempSensorGraphView};
+    int[] mSensorTextViewList = {R.id.touchSensorTextView, R.id.accSensorTextView, R.id
+            .motionSensorTextView, R.id.soundSensorTextView, R.id.lightSensorTextView, R.id
+            .vibSensorTextView, R.id.tempSensorTextView};
     int[] mSensorGraphLineColor = {Color.RED, Color.BLUE, Color.WHITE, Color.YELLOW, Color.WHITE,
             Color.BLUE, Color.YELLOW};
 
@@ -91,6 +91,7 @@ abstract public class SensorViewerActivity extends Activity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_sensor_viewer);
 
         // Parameters
         Intent intent = this.getIntent();
@@ -103,7 +104,7 @@ abstract public class SensorViewerActivity extends Activity {
         ActionBar actionBar = getActionBar();
         actionBar.setTitle("Sensor Viewer");
         actionBar.setDisplayHomeAsUpEnabled(true);
-        actionBar.setLogo(sensor);
+        actionBar.setLogo(R.drawable.sensor);
         actionBar.setDisplayUseLogoEnabled(true);
 
         this.initializeSensorDataList();
@@ -130,8 +131,6 @@ abstract public class SensorViewerActivity extends Activity {
                 return super.onOptionsItemSelected(item);
         }
     }
-
-    abstract public void onMessageFromTarget(String listenerName, String message);
 
     public void onSensorViewerMessage(String message) {
         String[] tokens = message.split("\\s+");
@@ -235,12 +234,10 @@ abstract public class SensorViewerActivity extends Activity {
             this.setOnReceivedSensorDataListener(new OnReceivedDataFromTarget() {
                 @Override
                 public void onReceivedDataFromTarget(String listenerName, String data) {
-                    Log.d(TAG, "Message coming for " + listenerName + ": " + data + " " +
-                            listenerName.compareTo("sensorviewer") + "!!!");
+                    Log.d(TAG, "Message coming for " + listenerName + ": " + data);
                     if (listenerName.compareToIgnoreCase("sensorviewer") == 0) {
                         onSensorViewerMessage(data);
                     }
-                    onMessageFromTarget(listenerName, data);
                 }
             });
         }
@@ -266,7 +263,7 @@ abstract public class SensorViewerActivity extends Activity {
             this.mCurrentValue = 0.0;
             this.mSensorName = sensorName;
             this.mTextView = textView;
-            this.mTextView.setText(sensorName + "(Disconnected)");
+            this.mTextView.setText(sensorName + "(Loading...)");
             mLineGraphSeries = new LineGraphSeries<DataPoint>();
 
             graphView.addSeries(mLineGraphSeries);
@@ -322,7 +319,7 @@ abstract public class SensorViewerActivity extends Activity {
                         mTextView.setText(getSensorName());
                     } else {
                         mLineGraphSeries.setColor(Color.GRAY);
-                        mTextView.setText(getSensorName() + " (Disconnected)");
+                        mTextView.setText(getSensorName() + " (Loading...)");
                     }
                 }
             });

@@ -24,6 +24,8 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.net.NetworkInfo;
+import android.net.wifi.WifiConfiguration;
+import android.net.wifi.WifiManager;
 import android.net.wifi.WpsInfo;
 import android.net.wifi.p2p.WifiP2pConfig;
 import android.net.wifi.p2p.WifiP2pDevice;
@@ -32,6 +34,7 @@ import android.net.wifi.p2p.WifiP2pManager;
 import android.util.Log;
 
 import java.util.ArrayList;
+import java.util.List;
 
 public class WifiDirectDeviceController {
     static private String TAG = "WFDController";
@@ -84,14 +87,45 @@ public class WifiDirectDeviceController {
         private Integer mConnectingResultListenerLock = 0;
         private boolean mIsConnecting = false;
 
+        private boolean mIsWifiDirectMode = true;
+
         public void start(WifiDirectConnectingResultListener connectingResultListener) {
             this.mConnectingResultListener = connectingResultListener;
 
-            this.discoverPeers();
+            if (mIsWifiDirectMode) {
+                this.discoverPeers();
+            } else {
+                this.connectWiFiAP();
+            }
         }
 
+        public void connectWiFiAP() {
+            String networkSSID = "DIRECT-CS-ANT";
+            String networkPass = "12345670";
+
+            WifiConfiguration wifiConfig = new WifiConfiguration();
+            wifiConfig.SSID = "\"" + networkSSID + "\"";
+            wifiConfig.preSharedKey = "\"" + networkPass + "\"";
+
+            WifiManager wifiManager = (WifiManager) mService.getApplicationContext()
+                    .getSystemService(Context.WIFI_SERVICE);
+            wifiManager.addNetwork(wifiConfig);
+
+            List<WifiConfiguration> foundConfigs = wifiManager.getConfiguredNetworks();
+            for (WifiConfiguration foundConfig : foundConfigs) {
+                if (foundConfig.SSID != null & foundConfig.SSID.equals("\"" + networkSSID + "\"")) {
+                    wifiManager.disconnect();
+                    wifiManager.enableNetwork(foundConfig.networkId, true);
+                    wifiManager.reconnect();
+                    this.onSuccess();
+                    break;
+                }
+            }
+            this.onFail();
+        }
+
+        // Step 1. Discover peers
         private void discoverPeers() {
-            // Step 1. Discover peers
             IntentFilter wifiP2PIntentFilter;
             wifiP2PIntentFilter = new IntentFilter();
             wifiP2PIntentFilter.addAction(WifiP2pManager.WIFI_P2P_PEERS_CHANGED_ACTION);
@@ -122,8 +156,8 @@ public class WifiDirectDeviceController {
             }
         }
 
+        // Step 2. Request peer list
         private void onPeerChanged() {
-            // Step 2. Request peer list
             Log.d(TAG, "Request peer list");
             mWifiP2pManager.requestPeers(mWifiP2pManagerChannel, new WifiDirectPeerListListener());
         }
@@ -135,9 +169,10 @@ public class WifiDirectDeviceController {
             }
         }
 
+        // Step 3. Check the given peer list
         private void onPeerListReceived(WifiP2pDeviceList peerDeviceList) {
-            // Prevent duplicated connection tries
-            if(this.mIsConnecting) {
+            // Step 3-1. Drop duplicated connection tries
+            if (this.mIsConnecting) {
                 return;
             } else {
                 Log.d(TAG, "Peer List Received");
@@ -151,16 +186,15 @@ public class WifiDirectDeviceController {
                 return;
             }
 
-            // Step 3. Check if there is peer device that we want
+            // Step 3-2. Check if there is peer device that we want
             for (WifiP2pDevice peerDevice : peerDeviceList.getDeviceList()) {
                 if (peerDevice.deviceName.compareTo(mWifiDirectName) == 0) {
-                    Log.d(TAG, "Found Wi-fi Direct device: " + mWifiDirectName + " / " +
-                            peerDevice.deviceAddress);
+                    Log.d(TAG, "Found Wi-fi peer device: name=" + mWifiDirectName + " / address="
+                            + peerDevice.deviceAddress + " / status=" + peerDevice.status);
                     if (peerDevice.status == WifiP2pDevice.AVAILABLE || peerDevice.status ==
                             WifiP2pDevice.CONNECTED || peerDevice.status == WifiP2pDevice.INVITED) {
                         Log.d(TAG, "Connecting Wi-fi Direct device: " + mWifiDirectName);
                         requestConnection(peerDevice);
-                        mWifiP2pManager.stopPeerDiscovery(mWifiP2pManagerChannel, null);
                     } else {
                         Log.d(TAG, "Not yet initiated: " + mWifiDirectName + " / " + peerDevice
                                 .status);
@@ -173,15 +207,14 @@ public class WifiDirectDeviceController {
             this.mIsConnecting = false;
         }
 
+        // Step 4. Request for connecting to the peer device
         private void requestConnection(WifiP2pDevice peerDevice) {
-            final WifiP2pDevice kPeerDevice = peerDevice;
-            // Step 4. Request for connecting to the peer device
             WifiP2pConfig wifiP2pConfig = new WifiP2pConfig();
-            wifiP2pConfig.deviceAddress = kPeerDevice.deviceAddress;
-            if (kPeerDevice.wpsPbcSupported()) {
+            wifiP2pConfig.deviceAddress = peerDevice.deviceAddress;
+            if (peerDevice.wpsPbcSupported()) {
                 wifiP2pConfig.wps.setup = WpsInfo.PBC;
                 Log.d(TAG, "WPS: PBC");
-            } else if (kPeerDevice.wpsKeypadSupported()) {
+            } else if (peerDevice.wpsKeypadSupported()) {
                 wifiP2pConfig.wps.setup = WpsInfo.KEYPAD;
                 wifiP2pConfig.wps.pin = "12345670";
                 Log.d(TAG, "WPS:KeyPad");
@@ -190,7 +223,10 @@ public class WifiDirectDeviceController {
                 Log.d(TAG, "WPS:Display");
             }
 
-            Log.d(TAG, "Request to connect Wi-fi connection");
+            // Start to watch Bluetooth device's status
+            mState.startToWatchDeviceState();
+
+            Log.d(TAG, "Request to connect Wi-fi Direct connection");
             mWifiP2pManager.connect(mWifiP2pManagerChannel, wifiP2pConfig, new WifiP2pManager
                     .ActionListener() {
                 @Override
@@ -198,6 +234,7 @@ public class WifiDirectDeviceController {
                     new Thread() {
                         @Override
                         public void run() {
+                            Log.d(TAG, "Wi-fi Direct Connection Success");
                             ConnectProcedure.this.onSuccess();
                         }
                     }.start();
@@ -205,7 +242,7 @@ public class WifiDirectDeviceController {
 
                 @Override
                 public void onFailure(int reason) {
-                    onFail();
+                    Log.d(TAG, "Wi-fi Direct Connection Fail");
                 }
             });
         }
@@ -249,7 +286,7 @@ public class WifiDirectDeviceController {
             this.mIsConnected = true;
 
             // Start to watch Bluetooth device's status
-            this.startToWatchDeviceState();
+            //this.startToWatchDeviceState();
 
             // Notify Wi-fi direct device connection event to listeners
             for (WifiDirectDeviceStateListener listener : this.mDeviceStateListeners) {
@@ -269,7 +306,7 @@ public class WifiDirectDeviceController {
             }
         }
 
-        private void startToWatchDeviceState() {
+        public void startToWatchDeviceState() {
             IntentFilter filter = new IntentFilter();
             filter.addAction(WifiP2pManager.WIFI_P2P_CONNECTION_CHANGED_ACTION);
             this.mWifiDirectDeviceStatusReceiver = new WifiDirectDeviceStatusReceiver();
@@ -291,9 +328,13 @@ public class WifiDirectDeviceController {
                 if (WifiP2pManager.WIFI_P2P_CONNECTION_CHANGED_ACTION.compareTo(action) == 0) {
                     NetworkInfo networkInfo = (NetworkInfo) intent.getParcelableExtra
                             (WifiP2pManager.EXTRA_NETWORK_INFO);
-                    if (!networkInfo.isConnectedOrConnecting() || !networkInfo.isAvailable()) {
-                        transitToDisconnected();
-                    }
+                    Log.d(TAG, "Wi-fi Direct state change listener: Android-side state=" +
+                            networkInfo.getState());
+//                    if (!networkInfo.isConnectedOrConnecting() || !networkInfo.isAvailable()) {
+//                        Log.d(TAG, "Transit wi-fi direct state to disconnected: Android-side " +
+//                                "state=" + networkInfo.getState());
+//                        transitToDisconnected();
+//                    }
                 }
             }
         }
