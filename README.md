@@ -93,7 +93,7 @@ sudo wpa_cli -i wlan0 p2p_group_remove p2p-wlan0-1
 
 You need target profile on ```target/TARGET_NAME/profile.env``` before running install script.
 
-# Demo Video
+## Demo Video
 
 * [ANT Framework 1.0 (Youtube)](https://www.youtube.com/watch?v=QHFb4IKi8wM&t=34s)
 
