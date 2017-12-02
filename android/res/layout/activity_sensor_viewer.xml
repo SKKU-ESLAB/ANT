@@ -1,0 +1,172 @@
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="fill_parent"
+    android:layout_height="match_parent"
+
+    tools:context="com.ant.graphtest.MainActivity" >
+	
+	<ScrollView
+            android:layout_width="fill_parent"
+            android:layout_height="wrap_content">
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical">
+		
+		<LinearLayout
+		    android:layout_width="match_parent"
+		    android:layout_height="wrap_content"
+		    android:background="#f6f792"
+		    android:orientation="vertical">
+
+			<TextView
+			    android:id="@+id/touchSensorTextView"
+			    android:layout_width="wrap_content"
+			    android:layout_height="wrap_content"
+			    android:gravity="center_horizontal"
+			    android:textSize="18sp" 
+			    android:textColor="#000000"/>
+
+			<com.jjoe64.graphview.GraphView
+			    android:id="@+id/touchSensorGraphView"
+			    android:layout_width="match_parent"
+			    android:layout_height="100dip"
+			    
+			    android:layout_marginLeft="0dp" />
+
+		</LinearLayout>
+
+		<LinearLayout
+		    android:layout_width="match_parent"
+		    android:layout_height="wrap_content"
+		    android:background="#a0e0a9"
+		    android:orientation="vertical" >
+
+			<TextView
+			    android:id="@+id/accSensorTextView"
+			    android:layout_width="wrap_content"
+			    android:layout_height="wrap_content"
+			    android:textColor="#000000"
+			    android:textSize="18sp"/>
+
+			<com.jjoe64.graphview.GraphView
+			    android:id="@+id/accSensorGraphView"
+			    android:layout_width="match_parent"
+			    android:layout_height="100dip"
+			    android:layout_marginTop="5dp"
+			    android:paddingTop="0dp" />
+
+		</LinearLayout>
+
+		<LinearLayout
+		    android:layout_width="match_parent"
+		    android:layout_height="wrap_content"
+		    android:background="#ed7b76"
+		    android:orientation="vertical" >
+
+			<TextView
+			    android:id="@+id/motionSensorTextView"
+			    android:layout_width="wrap_content"
+			    android:layout_height="wrap_content"
+			    android:textSize="18sp"
+			    android:textColor="#000000"/>
+
+			<com.jjoe64.graphview.GraphView
+			    android:id="@+id/motionSensorGraphView"
+			    android:layout_width="match_parent"
+			    android:layout_height="100dip"
+			    android:layout_marginTop="5dp"
+			    android:paddingTop="0dp" />
+
+		</LinearLayout>
+
+		<LinearLayout
+		    android:layout_width="match_parent"
+		    android:layout_height="wrap_content"
+		    android:background="#f8bf7b"
+		    android:orientation="vertical" >
+
+			<TextView
+			    android:id="@+id/soundSensorTextView"
+			    android:layout_width="wrap_content"
+			    android:layout_height="wrap_content"
+			    android:textSize="18sp"
+			    android:textColor="#000000"/>
+
+			<com.jjoe64.graphview.GraphView
+			    android:id="@+id/soundSensorGraphView"
+			    android:layout_width="match_parent"
+			    android:layout_height="100dip"
+			    android:layout_marginTop="5dp"
+			    android:paddingTop="0dp" />
+
+		</LinearLayout>
+		
+		<LinearLayout
+		    android:layout_width="match_parent"
+		    android:layout_height="wrap_content"
+		    android:background="#5ea0a4"
+		    android:orientation="vertical" >
+
+			<TextView
+			    android:id="@+id/lightSensorTextView"
+			    android:layout_width="wrap_content"
+			    android:layout_height="wrap_content"
+			    android:textSize="18sp"
+			    android:textColor="#000000"/>
+
+			<com.jjoe64.graphview.GraphView
+			    android:id="@+id/lightSensorGraphView"
+			    android:layout_width="match_parent"
+			    android:layout_height="100dip"
+			    android:layout_marginTop="5dp"
+			    android:paddingTop="0dp" />
+
+		</LinearLayout>
+		
+		<LinearLayout
+		    android:layout_width="match_parent"
+		    android:layout_height="wrap_content"
+		    android:background="#ff4f5c"
+		    android:orientation="vertical" >
+
+			<TextView
+			    android:id="@+id/vibSensorTextView"
+			    android:layout_width="wrap_content"
+			    android:layout_height="wrap_content"
+			    android:textSize="18sp" 
+			    android:textColor="#000000"/>
+
+			<com.jjoe64.graphview.GraphView
+			    android:id="@+id/vibSensorGraphView"
+			    android:layout_width="match_parent"
+			    android:layout_height="100dip"
+			    android:layout_marginTop="5dp"
+			    android:paddingTop="0dp" />
+
+		</LinearLayout>
+		
+		<LinearLayout
+		    android:layout_width="match_parent"
+		    android:layout_height="wrap_content"
+		    android:background="#00ada7"
+		    android:orientation="vertical" >
+
+			<TextView
+			    android:id="@+id/tempSensorTextView"
+			    android:layout_width="wrap_content"
+			    android:layout_height="wrap_content"
+			    android:textSize="18sp"
+			    android:textColor="#000000"/>
+
+			<com.jjoe64.graphview.GraphView
+			    android:id="@+id/tempSensorGraphView"
+			    android:layout_width="match_parent"
+			    android:layout_height="100dip"
+			    android:layout_marginTop="5dp"
+			    android:paddingTop="0dp" />
+
+		</LinearLayout>
+    </LinearLayout>
+</ScrollView>
+</RelativeLayout>
