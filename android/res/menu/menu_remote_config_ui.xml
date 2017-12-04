@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android" >
+    
+    <item
+        android:id="@+id/action_config_ok"
+        android:orderInCategory="100"
+        android:showAsAction="always"
+        android:title="@string/alert_dialog_ok"/>
+
+
+</menu>

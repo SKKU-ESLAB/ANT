@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+          package="com.ant.ant_manager"
+          android:versionCode="1"
+          android:versionName="1.0">
+
+    <uses-sdk
+        android:minSdkVersion="23"
+        android:targetSdkVersion="26"/>
+
+    <uses-permission android:name="android.permission.INTERNET"/>
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"/>
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"/>
+    <uses-permission android:name="android.permission.ACCESS_DOWNLOAD_MANAGER"/>
+    <uses-permission android:name="android.permission.DOWNLOAD_WITHOUT_NOTIFICATION"/>
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION"/>
+    <uses-permission android:name="android.permission.BLUETOOTH_ADMIN"/>
+    <uses-permission android:name="android.permission.BLUETOOTH"/>
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>
+    <uses-permission android:name="android.permission.ACCESS_WIFI_STATE"/>
+    <uses-permission android:name="android.permission.CHANGE_WIFI_STATE"/>
+    <uses-permission android:name="android.permission.CHANGE_NETWORK_STATE"/>
+    <uses-permission android:name="android.permission.WAKE_LOCK"/>
+    <uses-permission android:name="android.permission.READ_PHONE_STATE"/>
+
+    <application
+        android:allowBackup="true"
+        android:fullBackupContent="false"
+        android:icon="@mipmap/ic_launcher"
+        android:label="@string/app_name"
+        android:theme="@style/AppTheme">
+        <activity
+            android:name="com.ant.ant_manager.view.MainActivity"
+            android:label="@string/app_name"
+            android:theme="@android:style/Theme.NoTitleBar">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN"/>
+                <category android:name="android.intent.category.LAUNCHER"/>
+            </intent-filter>
+        </activity>
+
+        <service android:name="com.ant.cmfw.service.CommChannelService"/>
+        <service android:name="com.ant.ant_manager.controller.ANTControllerService"/>
+
+        <activity
+            android:name="com.ant.cmfw.devicecontrollers.bluetooth.BluetoothConnectorActivity"
+            android:theme="@android:style/Theme.DeviceDefault.Dialog"/>
+        <activity
+            android:name=".view.BasicCameraViewerActivity"
+            android:label="@string/app_name"
+            android:screenOrientation="landscape"
+            android:theme="@android:style/Theme.NoTitleBar">
+        </activity>
+        <activity android:name="com.ant.ant_manager.view.AppMarketActivity"/>
+        <activity android:name="com.ant.ant_manager.view.remoteui.RemoteNotiUIActivity"/>
+        <activity android:name="com.ant.ant_manager.view.AppManagerActivity"/>
+        <activity android:name="com.ant.ant_manager.view.remoteui.RemoteConfigUIActivity"/>
+        <activity android:name="com.ant.ant_manager.view.MotionClassifierActivity"/>
+        <activity android:name="com.ant.ant_manager.view.SensorViewerActivity"/>
+        <activity
+            android:name="com.ant.ant_manager.view.ImageClassifierActivity"
+            android:label="@string/app_name"
+            android:screenOrientation="landscape"
+            android:theme="@android:style/Theme.NoTitleBar"/>
+        <activity android:name="com.ant.ant_manager.view.FileManagerActivity"/>
+        <activity android:name="com.ant.ant_manager.view.EventLogViewerActivity"/>
+
+        <provider
+            android:name="android.support.v4.content.FileProvider"
+            android:authorities="com.ant.ant_manager.provider"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/paths"/>
+        </provider>
+    </application>
+
+</manifest>
