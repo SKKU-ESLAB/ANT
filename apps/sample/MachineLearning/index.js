@@ -16,49 +16,56 @@
  */
 
 var api = require('ant');
-var mlAPI = api.ml();
-var appAPI = api.app();
+var appApi = api.app();
 
-// Load model and make inference unit
-mlAPI.loadAsync('mobilenet.antmodel', {widthMult: 1.0, resMult: 224},
-    function(iu) {
-      // Set inference unit’s input
-      classifier.setInputAsync('input_image', '/thing/camera/0',
-          function() {
-            // Set inference unit’s output callback
-            classifier.setOnOutputAsync(
-                function(outputs) {
-                  var predicted = outputs["labeled_predict"];
+var mlApi = api.ml();
 
-                  // Send remote UI
-                  var notiPage = appAPI.makeEventPage("Object Classification");
-                  notiPage = appAPI.addEventText(notiPage,
-                      "This object is " + predicted);
-                  appAPI.sendEventPage(notiPage);
-                });
-          });
+appApi.onLaunch(function() {
+  // Load model and make inference unit
+  mlApi.loadAsync('mobilenet.antmodel', {widthMult: 1.0, resMult: 224},
+      function(iu) {
+        // Set inference unit’s input
+        classifier.setInputAsync('input_image', '/thing/camera/0',
+            function() {
+              // Set inference unit’s output callback
+              classifier.setOnOutputAsync(
+                  function(outputs) {
+                    var predicted = outputs["labeled_predict"];
 
-      // Start inference unit
-      classifier.startAsync(
-          function() {
-            // Callback
-          });
+                    // Send remote UI
+                    var notiPage = appApi.makeEventPage("Object Classification");
+                    notiPage = appApi.addEventText(notiPage,
+                        "This object is " + predicted);
+                    appApi.sendEventPage(notiPage);
+                  });
+            });
 
-      // Stop inference unit
-      classifier.stopAsync(
-          function() {
-            // Callback
-          });
+        // Start inference unit
+        classifier.startAsync(
+            function() {
+              // Callback
+            });
 
-      // Unload inference unit
-      classifier.unloadAsync(
-          function() {
-            // Callback
-          });
-    });
+        // Stop inference unit
+        classifier.stopAsync(
+            function() {
+              // Callback
+            });
 
-// Inference units can be accessed by other apps
-mlAPI.getInferenceUnitsAsync(function(iuList) {
-  // handle inference units...
+        // Unload inference unit
+        classifier.unloadAsync(
+            function() {
+              // Callback
+            });
+      });
+
+  // Inference units can be accessed by other apps
+  mlApi.getInferenceUnitsAsync(function(iuList) {
+    // handle inference units...
+  });
 });
 
+appApi.onTermination(function() {
+});
+
+appApi.appReady();

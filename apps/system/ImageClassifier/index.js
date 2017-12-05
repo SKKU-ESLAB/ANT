@@ -17,38 +17,27 @@
 
 var ant_api_dir = process.env.ANT_BIN_DIR + "/api/";
 var api = require(ant_api_dir + "ant");
-var cameraApi = require(ant_api_dir + "camera-api");
 var appApi = api.app();
+
+var cameraApi = require(ant_api_dir + "camera-api");
+var recordingObj = new cameraApi.ANTRecording();
 var mlApi = api.ml();
 
-var streamObj = new cameraApi.ANTRecording();
+var cameraNum = 0;
+var ipAddress = "192.168.49.1";
+var portNum = 5000;
 
-//require('date-utils');
-var count=0;
-var dt;
-var d;
+appApi.onLaunch(function() {
+  recordingObj.streamingStart(cameraNum, ipAddress, portNum);
 
-//dt = new Date();
-//d = dt.toFormat('YYYY-MM-DD HH24:MI:SS');
-
-//two API Set
-
-/*******************************  API MODEL *******************************/
-// Start API : count = N; Send Number of N Frames over network than callback callback
-// Start API : count = 0; Send Number of Infinte Frames over network unless stop API is invoked
-/******************************** API SAMPLE *****************************/
-// streamObj.start(int n, function(err, data); n != 0 : finite Number of Frame n == 0 : Infinite Number of Frame
-// streamObj.stop(); //aborting
-
-streamObj.streamingStart(0, "192.168.49.1", 5000);
-
-
-appApi.onTermination(function(){
-			console.log('<onTermination Called');
-			streamObj.streamingStop(0, "192.168.49.1", 5000);
-		});
-
-mlApi.runModel("imageclassifier", function(outputData) {
-  // notify to application
-  // Since output is drawn in camera frame, output need not to be handled.
+  mlApi.runModel("imageclassifier", function(outputData) {
+    // notify to application
+    // Since output is drawn in camera frame, output need not to be handled.
+  });
 });
+
+appApi.onTermination(function() {
+  recordingObj.streamingStop(cameraNum, ipAddress, portNum);
+});
+
+appApi.appReady();
