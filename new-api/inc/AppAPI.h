@@ -61,6 +61,9 @@ class AppAPI
     static void addTimeDialog(const FunctionCallbackInfo<Value>& args);
     static void sendConfigPage(const FunctionCallbackInfo<Value>& args);
     static void getData(const FunctionCallbackInfo<Value>& args);
+
+    static void appReady(const FunctionCallbackInfo<Value>& args);
+    static void onLaunch(const FunctionCallbackInfo<Value>& args);
     static void onTermination(const FunctionCallbackInfo<Value>& args);
 };
 

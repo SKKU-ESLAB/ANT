@@ -85,7 +85,13 @@ void AppAPI::InitPrototype(Isolate* isolate) {
   NODE_SET_PROTOTYPE_METHOD(funcTemplate,
       "getData", getData);
 
-  // Termination
+  // App Ready
+  NODE_SET_PROTOTYPE_METHOD(funcTemplate,
+      "appReady", appReady);
+  
+  // Lifecycle callbacks
+  NODE_SET_PROTOTYPE_METHOD(funcTemplate,
+      "onLaunch", onLaunch);
   NODE_SET_PROTOTYPE_METHOD(funcTemplate,
       "onTermination", onTermination);
 
@@ -1023,6 +1029,48 @@ void AppAPI::getData(const FunctionCallbackInfo<Value>& args) {
   args.GetReturnValue().Set(getV8String(isolate, "N/A"));
 }
 // [MORE] return multiple choice -> array
+
+// appReady(function)
+void AppAPI::appReady(const FunctionCallbackInfo<Value>& args) {
+  Isolate* isolate = Isolate::GetCurrent();
+  HandleScope scope(isolate);
+
+  // Check arguments
+  if ((args.Length() != 0)) {
+    isolate->ThrowException(Exception::TypeError(getV8String(isolate,
+            "Invalid Use : 0 arguments expected")));
+    return;
+  }
+
+  // App ready
+  gAppBase->appReady();
+
+  return;
+}
+
+// onLaunch(function)
+void AppAPI::onLaunch(const FunctionCallbackInfo<Value>& args) {
+  Isolate* isolate = Isolate::GetCurrent();
+  HandleScope scope(isolate);
+
+  // Arguments
+  Local<Function> onLaunchCallback;
+
+  // Check arguments
+  if ((args.Length() != 1) ||	!args[0]->IsFunction()) {
+    isolate->ThrowException(Exception::TypeError(getV8String(isolate,
+            "Invalid Use : 1 arguments expected [Callback Function]")));
+    return;
+  }
+
+  // Get argument 0
+  onLaunchCallback = Local<Function>::Cast(args[0]);
+
+  // Register onTerminate callback
+  gAppBase->setOnLaunch(onLaunchCallback);
+
+  return;
+}
 
 // onTermination(function)
 void AppAPI::onTermination(const FunctionCallbackInfo<Value>& args) {

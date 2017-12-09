@@ -18,13 +18,21 @@
 var ant_api_dir = process.env.ANT_BIN_DIR + "/api/";
 var api = require(ant_api_dir + "ant");
 var appApi = api.app();
+
 var mlApi = api.ml();
 var commApi = api.comm();
 
-setTimeout(function() {
-  mlApi.runModel("motionclassifier", function(outputData) {
-    // Notify to companion's MotionClassifier
-    console.log("machine learning data output received: " + outputData);
-    commApi.sendToCompanion("motionclassifier", outputData);
-  });
-}, 3000);
+appApi.onLaunch(function() {
+  setTimeout(function() {
+    mlApi.runModel("motionclassifier", function(outputData) {
+      // Notify to companion's MotionClassifier
+      console.log("machine learning data output received: " + outputData);
+      commApi.sendToCompanion("motionclassifier", outputData);
+    });
+  }, 3000);
+});
+
+appApi.onTermination(function() {
+});
+
+appApi.appReady();

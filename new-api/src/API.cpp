@@ -45,9 +45,6 @@ void initAppBase(){
 
   gAppBase = new AppBase();
   gAppBase->run();
-
-  // Send CompleteLaunchingApp command to appcore
-  gAppBase->completeLaunchingApp();
 }
 
 void init(Local<Object> exports) {
