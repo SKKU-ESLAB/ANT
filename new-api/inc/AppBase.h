@@ -29,12 +29,14 @@
 
 using namespace v8;
 
+class OnLaunchJSAsync;
 class OnTerminateJSAsync;
 class OnUpdateAppConfigJSAsync;
 
 class AppBase
 : public LocalChannelListener {
   public:
+    friend class OnLaunchJSAsync;
     friend class OnTerminateJSAsync;
     friend class OnUpdateAppConfigJSAsync;
 
@@ -56,7 +58,11 @@ class AppBase
     // LocalChannelListener
     virtual void onReceivedMessage(BaseMessage* message);
 
+    // App Ready
+    void appReady();
+
     // Set JS Async callbacks
+    void setOnLaunch(Local<Function> callback);
     void setOnTerminate(Local<Function> callback);
     void setOnUpdateAppConfig(Local<Function> callback);
 
@@ -146,6 +152,26 @@ class JSAsync {
     Persistent<Function> mJSCallback;
     bool mIsCallbacksEnabled = false;
     AppBase* mAppBase;
+};
+
+class OnLaunchJSAsync
+: public JSAsync {
+  public:
+    static OnLaunchJSAsync* get() {
+      if(sSingleton == NULL) {
+        sSingleton = new OnLaunchJSAsync();
+      }
+      return sSingleton;
+    }
+
+  protected:
+    OnLaunchJSAsync()
+      : JSAsync(OnLaunchJSAsync::nativeCallback) {
+    }
+
+    static void nativeCallback(uv_async_t* handle);
+
+    static OnLaunchJSAsync* sSingleton;
 };
 
 class OnTerminateJSAsync

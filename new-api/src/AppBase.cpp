@@ -30,6 +30,7 @@
 #define PATH_BUFFER_SIZE 1024
 
 // Static variables
+OnLaunchJSAsync* OnLaunchJSAsync::sSingleton;
 OnTerminateJSAsync* OnTerminateJSAsync::sSingleton;
 OnUpdateAppConfigJSAsync* OnUpdateAppConfigJSAsync::sSingleton;
 OnRunModelJSAsync* OnRunModelJSAsync::sSingleton;
@@ -70,6 +71,18 @@ void AppBase::completeLaunchingApp() {
 
   // Send appcore message
   this->mLocalChannel->sendMessage(appcoreMessage);
+
+  // Async callback
+  OnLaunchJSAsync* jsAsync = OnLaunchJSAsync::get();
+
+  // If no async is set, quit the application in force.
+  if(!jsAsync->isCallbacksEnabled()) {
+    ANT_DBG_ERR("You have to specify onLaunch handler!");
+    exit(1);
+  }
+
+  // Call async native callback
+  jsAsync->onAsyncEvent();
 }
 
 // Send companion commands
@@ -201,6 +214,40 @@ void AppBase::onReceivedMessage(BaseMessage* message) {
     default:
       ANT_DBG_ERR("Invalid Message Type");
       break;
+  }
+}
+
+// App Ready
+void AppBase::appReady() {
+  // Send CompleteLaunchingApp command to appcore
+  this->completeLaunchingApp();
+}
+
+// Launch async callback
+void AppBase::setOnLaunch(Local<Function> jsCallback) {
+  OnLaunchJSAsync* jsAsync = OnLaunchJSAsync::get();
+  jsAsync->setCallback(this, jsCallback);
+}
+
+void OnLaunchJSAsync::nativeCallback(uv_async_t* handle) {
+  Isolate* isolate = Isolate::GetCurrent();
+  HandleScope scope(isolate);
+
+  OnLaunchJSAsync* self = OnLaunchJSAsync::get();
+
+  printf("[NIL] launch Event (app id: %d)\n", self->mAppBase->mAppId);
+
+  // Execute JS callback: no arguments
+  TryCatch try_catch;
+  Handle<Value> argv[] = { };
+  Local<Function> jsCallback
+    = Local<Function>::New(isolate, self->mJSCallback);
+  jsCallback->Call(isolate->GetCurrentContext()->Global(), 0, argv);
+
+  if (try_catch.HasCaught()) {
+    Local<Value> exception = try_catch.Exception();
+    String::Utf8Value exception_str(exception);
+    printf("Exception in onLaunch Callback: %s\n", *exception_str);
   }
 }
 
