@@ -99,6 +99,7 @@ sudo cp ${ANT_REPO_DIR}/dep/ant-dbus-config/ant.conf /etc/dbus-1/system.d/ant.co
 print_progress 8 "Install wpa_supplicant, wpa_cli and deletesem..."
 cd ${ANT_REPO_DIR}/dep/hostap/wpa_supplicant
 make -j4
+
 cd ${ANT_REPO_DIR}/dep/deletesem
 gcc -o deletesem deletesem.c -lpthread
 

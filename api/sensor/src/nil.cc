@@ -428,8 +428,116 @@ void On(const FunctionCallbackInfo<Value>& args) {
 	//return scope.Close(Integer::New(rq_num));
   args.GetReturnValue().Set(rq_num);
 }
+
+
+void SetActuator(const FunctionCallbackInfo<Value>& args) {
+  const char* actuatorName;
+	char* actuatorValue;
+	char* valueType;
+	char* valueName;
+
+	Isolate* isolate = Isolate::GetCurrent();
+	HandleScope scope(isolate);
+	DBusMessage* msg;
+	DBusMessage* reply;
+	DBusError error;
+
+  //------------------- Argument check-----------------------------//
+	if (args.Length() != 2) {
+		isolate->ThrowException(Exception::TypeError(
+								String::NewFromUtf8(isolate,
+										"Invalid Use : 2 arguments expected [Actuator Name], [Value]")));
+		return ;
+	}
+	if (!args[0]->IsString()) { //IsInteger, IsFunction, etc...
+		isolate->ThrowException(Exception::TypeError(
+								String::NewFromUtf8(isolate,("Wrong arguments"))));
+		return ;
+	}
+  if( !args[1]->IsInt32()) {
+    isolate->ThrowException(Exception::TypeError(
+          String::NewFromUtf8(isolate, ("Wrong arguments"))));
+
+  }
+	//----------------------------------------------------------------//
+	//--------------------- Sensor Name Check -------------------------//
+  // Check if the sensor is supported 	
+
+	v8::String::Utf8Value param1(args[0]->ToString());
+  
+	std::string name_c = std::string(*param1);
+	actuatorName = name_c.c_str();
+
+	if ( check_sensor_name(actuatorName) == -1){
+		isolate->ThrowException(Exception::TypeError(
+								String::NewFromUtf8(isolate,"This sensor is not supported!")));
+		return ;
+	}
+	//----------------------------------------------------------------//
+
+
+	//-------------------- DBus Message Initilizing -----------------// 
+	//
+	msg = dbus_message_new_method_call("org.ant.sensorManager", // target for the method call
+		"/", // object to call on
+		"org.ant.sensorManager", // interface to call on
+		"Get"); // method name
+	if (NULL == msg) {
+		printf("Message Null\n");
+		isolate->ThrowException(Exception::TypeError(
+								String::NewFromUtf8(isolate,"Fail to create message")));
+		return ;
+	}
+
+	dbus_message_append_args(msg,
+		DBUS_TYPE_STRING, &actuatorName,
+		DBUS_TYPE_INVALID);
+	//
+	//----------------------------------------------------------------//
+	
+	//----------------------------------------------------------------//
+	// send message and get a reply
+	//
+	dbus_error_init(&error);
+
+	if (antCon == NULL){
+		printf("Why null? \n");
+		antCon = dbus_bus_get(DBUS_BUS_SYSTEM, &error);
+	}
+	
+	reply = dbus_connection_send_with_reply_and_block(antCon, msg, 500, &error); // Timeout 500 milli seconds
+
+	if (reply == NULL){
+		printf("Get Null Reply \n");
+		printf("Error : %s\n", error.message);
+	}
+	dbus_error_free(&error);
+	dbus_message_unref(msg);
+	//
+	//----------------------------------------------------------------//
+
+
+	//----------------------------------------------------------------//
+	//
+	dbus_message_get_args(reply, NULL,
+		DBUS_TYPE_STRING, &actuatorValue,
+		DBUS_TYPE_STRING, &valueType,
+		DBUS_TYPE_STRING, &valueName,
+		DBUS_TYPE_INVALID);
+
+	dbus_message_unref(reply);
+
+	//
+	//----------------------------------------------------------------//
+
+  return ;
+//	return parsingToReturn(args, sensorValue, valueType, valueName);
+	//Refer this : http://luismreis.github.io/node-bindings-guide/docs/returning.html
+	//About return value from Native to Java	
+}
+
+
 void Get(const FunctionCallbackInfo<Value>& args) {
-  __ENTER__;
   const char* sensorName;
 	char* sensorValue;
 	char* valueType;
@@ -455,8 +563,8 @@ void Get(const FunctionCallbackInfo<Value>& args) {
 	}
 	//----------------------------------------------------------------//
 	//--------------------- Sensor Name Check -------------------------//
-	// 서포트 리스트와 비교해서, 지원하는 센서인지 체크
-	//
+  // Check if the sensor is supported 	
+
 	v8::String::Utf8Value param1(args[0]->ToString());
 	std::string name_c = std::string(*param1);
 	sensorName = name_c.c_str();
@@ -481,7 +589,7 @@ void Get(const FunctionCallbackInfo<Value>& args) {
 								String::NewFromUtf8(isolate,"Fail to create message")));
 		return ;
 	}
-printf("after\n");
+
 	dbus_message_append_args(msg,
 		DBUS_TYPE_STRING, &sensorName,
 		DBUS_TYPE_INVALID);
@@ -855,6 +963,7 @@ void init(Handle<Object> exports) {
 	// 4.0.0
   NODE_SET_METHOD(exports, "GetSensorlist", GetSensorlist);
 	NODE_SET_METHOD(exports, "Get", Get);
+	NODE_SET_METHOD(exports, "Set", SetActuator);
   NODE_SET_METHOD(exports, "On", On);
   NODE_SET_METHOD(exports, "EventRegister", On);
   NODE_SET_METHOD(exports, "EventUpdate", Update);

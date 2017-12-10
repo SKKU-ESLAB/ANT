@@ -429,6 +429,58 @@ static sensorManagerEventUnregister(DBusConnection *connection, DBusMessage *mes
 	}
 	return DBUS_HANDLER_RESULT_HANDLED;
 }
+
+
+static sensorManagerEventSet(DBusConnection *connection, DBusMessage *message, void *iface_user_data){
+	pthread_t tid;
+	unsigned int pid;
+	int rq_num;
+	requestData *rd;
+	sensorList* sl;
+
+	char* sensor_name;
+	char* sensor_value;
+	DBusMessage *reply;
+
+  
+
+//	dbus_message_get_args(message, NULL,
+//		DBUS_TYPE_STRING, &(sensor_name),
+//		DBUS_TYPE_INVALID);
+//
+//	sl = getSensorByName(sensor_head_main, sensor_name);
+//
+//	if (sl->status == SENSOR_STOP){
+//		sensorStart(sl, NULL);
+//		sensor_value = sensorGet(sl, NULL);
+//		sensorStop(sl, NULL);
+//	}
+//	else
+//		sensor_value = sensorGet(sl, NULL);
+//
+//	//////////////////////////////////////////////////
+//	//printf("sensord data : %s \n", sl->sensor_data_ori);
+//
+//	reply = dbus_message_new_method_return(message);
+//	if (reply == NULL){
+//		printf("Reply Null Error!\n");
+//  }
+//
+//
+//  dbus_message_append_args(reply,
+//		DBUS_TYPE_STRING, &sensor_value,
+//		DBUS_TYPE_STRING, &(sl->dev->valueType),
+//		DBUS_TYPE_STRING, &(sl->dev->valueName),
+//		DBUS_TYPE_INVALID);
+//
+//  //printf("Send reply message\n");
+//	dbus_connection_send(connection, reply, NULL);
+
+	return DBUS_HANDLER_RESULT_HANDLED;
+}
+
+
+
 static sensorManagerEventGet(DBusConnection *connection, DBusMessage *message, void *iface_user_data){
 	pthread_t tid;
 	unsigned int pid;
@@ -474,6 +526,7 @@ static sensorManagerEventGet(DBusConnection *connection, DBusMessage *message, v
 
 	return DBUS_HANDLER_RESULT_HANDLED;
 }
+
 //Respone function for d-bus message
 static DBusHandlerResult dbus_response(DBusConnection *connection, DBusMessage *message, void *user_data)
 {
@@ -509,6 +562,10 @@ static DBusHandlerResult dbus_response(DBusConnection *connection, DBusMessage *
 	else if (dbus_message_is_method_call(message, ANT_BUS_NAME, "Get"))  // Senseor data
 	{
 		return sensorManagerEventGet(connection, message, user_data);
+	}
+	else if (dbus_message_is_method_call(message, ANT_BUS_NAME, "Set"))  // Senseor data
+	{
+		return sensorManagerEventSet(connection, message, user_data);
 	}
 	else if (dbus_message_is_method_call(message, "org.freedesktop.DBus.Introspectable", "Introspect")){
 		return introspect(connection, message, user_data);
