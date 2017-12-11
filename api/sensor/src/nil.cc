@@ -432,10 +432,8 @@ void On(const FunctionCallbackInfo<Value>& args) {
 
 void SetActuator(const FunctionCallbackInfo<Value>& args) {
   const char* actuatorName;
-	char* actuatorValue;
-	char* valueType;
-	char* valueName;
-
+	char* response;
+  int actuator_value;
 	Isolate* isolate = Isolate::GetCurrent();
 	HandleScope scope(isolate);
 	DBusMessage* msg;
@@ -464,15 +462,22 @@ void SetActuator(const FunctionCallbackInfo<Value>& args) {
   // Check if the sensor is supported 	
 
 	v8::String::Utf8Value param1(args[0]->ToString());
+   
   
 	std::string name_c = std::string(*param1);
 	actuatorName = name_c.c_str();
+  actuator_value = args[1]->IntegerValue();
+
+  /* for a while, i do not maintain the actuator list
+
 
 	if ( check_sensor_name(actuatorName) == -1){
 		isolate->ThrowException(Exception::TypeError(
 								String::NewFromUtf8(isolate,"This sensor is not supported!")));
 		return ;
 	}
+  */
+
 	//----------------------------------------------------------------//
 
 
@@ -481,7 +486,7 @@ void SetActuator(const FunctionCallbackInfo<Value>& args) {
 	msg = dbus_message_new_method_call("org.ant.sensorManager", // target for the method call
 		"/", // object to call on
 		"org.ant.sensorManager", // interface to call on
-		"Get"); // method name
+		"Set"); // method name
 	if (NULL == msg) {
 		printf("Message Null\n");
 		isolate->ThrowException(Exception::TypeError(
@@ -491,6 +496,7 @@ void SetActuator(const FunctionCallbackInfo<Value>& args) {
 
 	dbus_message_append_args(msg,
 		DBUS_TYPE_STRING, &actuatorName,
+   	DBUS_TYPE_INT32, &actuator_value, 
 		DBUS_TYPE_INVALID);
 	//
 	//----------------------------------------------------------------//
@@ -520,11 +526,10 @@ void SetActuator(const FunctionCallbackInfo<Value>& args) {
 	//----------------------------------------------------------------//
 	//
 	dbus_message_get_args(reply, NULL,
-		DBUS_TYPE_STRING, &actuatorValue,
-		DBUS_TYPE_STRING, &valueType,
-		DBUS_TYPE_STRING, &valueName,
+		DBUS_TYPE_STRING, &response,
 		DBUS_TYPE_INVALID);
 
+  printf("resopnse: %s\n", response);
 	dbus_message_unref(reply);
 
 	//

@@ -438,43 +438,36 @@ static sensorManagerEventSet(DBusConnection *connection, DBusMessage *message, v
 	requestData *rd;
 	sensorList* sl;
 
-	char* sensor_name;
-	char* sensor_value;
+	char* actuator_name;
+	int actuator_value;
+  char* response = "HiHi";
 	DBusMessage *reply;
 
   
+  
+	dbus_message_get_args(message, NULL,
+		DBUS_TYPE_STRING, &(actuator_name),
+    DBUS_TYPE_INT32, &(actuator_value),
+		DBUS_TYPE_INVALID);
 
-//	dbus_message_get_args(message, NULL,
-//		DBUS_TYPE_STRING, &(sensor_name),
-//		DBUS_TYPE_INVALID);
-//
-//	sl = getSensorByName(sensor_head_main, sensor_name);
-//
-//	if (sl->status == SENSOR_STOP){
-//		sensorStart(sl, NULL);
-//		sensor_value = sensorGet(sl, NULL);
-//		sensorStop(sl, NULL);
-//	}
-//	else
-//		sensor_value = sensorGet(sl, NULL);
-//
-//	//////////////////////////////////////////////////
-//	//printf("sensord data : %s \n", sl->sensor_data_ori);
-//
-//	reply = dbus_message_new_method_return(message);
-//	if (reply == NULL){
-//		printf("Reply Null Error!\n");
-//  }
-//
-//
-//  dbus_message_append_args(reply,
-//		DBUS_TYPE_STRING, &sensor_value,
-//		DBUS_TYPE_STRING, &(sl->dev->valueType),
-//		DBUS_TYPE_STRING, &(sl->dev->valueName),
-//		DBUS_TYPE_INVALID);
-//
-//  //printf("Send reply message\n");
-//	dbus_connection_send(connection, reply, NULL);
+  printf("actuator: %s, value: %d\n", actuator_name, actuator_value); 
+
+  /* set actuator value */
+  
+
+
+	reply = dbus_message_new_method_return(message);
+	if (reply == NULL){
+		printf("Reply Null Error!\n");
+  }
+
+
+  dbus_message_append_args(reply,
+		DBUS_TYPE_STRING, &response,
+		DBUS_TYPE_INVALID);
+
+  //printf("Send reply message\n");
+	dbus_connection_send(connection, reply, NULL);
 
 	return DBUS_HANDLER_RESULT_HANDLED;
 }
