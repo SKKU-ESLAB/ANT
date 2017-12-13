@@ -470,7 +470,6 @@ void SetActuator(const FunctionCallbackInfo<Value>& args) {
 
   /* for a while, i do not maintain the actuator list
 
-
 	if ( check_sensor_name(actuatorName) == -1){
 		isolate->ThrowException(Exception::TypeError(
 								String::NewFromUtf8(isolate,"This sensor is not supported!")));
