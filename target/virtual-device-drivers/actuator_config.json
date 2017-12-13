@@ -1,0 +1,13 @@
+{
+  "target_name":"virtual_target",
+  "actuator_num": 1,
+  "actuator1": 
+  {
+    "name":"VIRT_ACT",
+    "value_type": "INT",
+    "start_func": "VIRT_ACT_start",
+    "stop_func": "VIRT_ACT_stop",
+    "set_func": "VIRT_ACT_set"
+  }
+}
+

@@ -39,7 +39,7 @@ int SensorInputReader::parsing_string(char* string, char *value){
 	
 	//printf("input : %s\n", string);
 
-	for (i = 0; i < MAX_STRING_LENTGH; i++){
+	for (i = 0; i < 1024; i++){
 		if (string[i] != ' ')
 			break;
 	}
@@ -94,7 +94,7 @@ MLTensor* SensorInputReader::read(std::string sourceUri) {
   sensor_name = (char*) malloc(30 * sizeof(char));
   sscanf("/thing/sensor/%s", sensor_name); 
   str_len = strlen(sensor_name); 
-  sensor_name[str-len-1] = '\0';
+  sensor_name[str_len-1] = '\0';
   
   srand(time(NULL));
 
@@ -168,18 +168,19 @@ MLTensor* SensorInputReader::read(std::string sourceUri) {
  
   int inputShape[] = {0};
   inputShape[0] = element_num;
-  
+
+  MLTensorLayout* inputTensorLayout;
   if(data_type == 1){
-    MLTensorLayout inputTensorLayout(1, inputShape, MLDataType::Float); 
+    inputTensorLayout = new MLTensorLayout(1, inputShape, MLDataType::Float); 
   } else if (data_type == 2){
-    MLTensorLayout inputTensorLayout(1, inputShape, MLDataType::INT32); 
+    inputTensorLayout = new MLTensorLayout(1, inputShape, MLDataType::Int32); 
   } else if (data_type == 3){
 
   } else {
-
+  
   }
-
-  MLTensor* inputTensor = new MLTensor(inputTensorLayout);
+ 
+  MLTensor* inputTensor = new MLTensor(*inputTensorLayout);
 
   inputTensor->assignData(data);
 

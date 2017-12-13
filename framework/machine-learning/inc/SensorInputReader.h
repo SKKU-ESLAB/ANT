@@ -47,6 +47,7 @@ class SensorInputReader
   protected:
     DBusConnection* mDBusConnection;
     DBusConnection* get_dbus_connection();
+    int parsing_string(char* string, char *value);
 };
 
 #endif // !defined(__SENSOR_INPUT_READER_H__)
