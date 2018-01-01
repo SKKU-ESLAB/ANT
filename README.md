@@ -22,7 +22,7 @@ $ cd P2PForYourThings
 $ sudo apt-get install libbluetooth-dev
 ```
 
-Check your bluetooth version using
+Check your bluetooth version and if it's > 5.x, then
 ```
 $ sudo vi /etc/systemd/system/dbus-org.bluez.service
 
