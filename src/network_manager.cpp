@@ -284,7 +284,7 @@ void NetworkManager::increase_adapter_cb_wrapper(DevState stat) {
 }
 
 void NetworkManager::increase_adapter() {
-
+ 
   // The adapter is already increasing adapter
   if (state == kNetStatIncr || state == kNetStatDecr) {
     //OPEL_DBG_WARN("Data ports are busy");
@@ -299,6 +299,8 @@ void NetworkManager::increase_adapter() {
     return;
   }
 
+
+  clock_gettime(CLOCK_MONOTONIC, &increase_time);
   //OPEL_DBG_LOG("Increasing data adapter...");
   prev_state = state;
   state = kNetStatIncr;
@@ -366,6 +368,10 @@ void NetworkManager::decrease_adapter_cb_wrapper(DevState stat) {
 }
 
 void NetworkManager::decrease_adapter() {
+  struct timespec now;
+  int diff_time;
+
+  
   // The adapter is already increasing or decreasing adapter
   if (state == kNetStatIncr || state == kNetStatDecr) {
     OPEL_DBG_WARN("Data ports are busy");
@@ -378,7 +384,17 @@ void NetworkManager::decrease_adapter() {
   SegmentManager::get_instance()->is_changing_adapter = 0;
       return;
   }
-  
+ 
+  clock_gettime(CLOCK_MONOTONIC, &now);
+  diff_time = now.tv_sec - increase_time.tv_sec;
+  printf("diff time: %d\n", diff_time);
+  if(diff_time < 10) {
+    OPEL_DBG_ERR("Not much time elasped after increasing adapter");
+    SegmentManager::get_instance()->is_changing_adapter = 0;
+    return ;
+  }
+
+  clock_gettime(CLOCK_MONOTONIC, &increase_time);
   OPEL_DBG_LOG("Decreasing data adapter...");
   
   prev_state = state;

@@ -34,7 +34,7 @@
 #define kSegMaxQueueSize 104857600 // Maximum 100MB Queue
 #define kSegSize 512
 #define kSegThreshold 512
-#define kSegQueueThreshold 30*(kSegThreshold / 512)
+#define kSegQueueThreshold 50*(kSegThreshold / 512)
 
 #define kSegFreeThreshold 256
 

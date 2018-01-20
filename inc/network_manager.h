@@ -30,6 +30,8 @@
 #include <mutex>
 #include <condition_variable>
 
+#include <time.h>
+
 
 namespace cm {
 typedef enum {
@@ -90,7 +92,8 @@ class NetworkManager {
   std::mutex lock[kNetMaxPort];
   std::list<NetworkAdapter *> adapter_list[kNetMaxPort];
   NetworkAdapter *connecting_adapter;
-  
+
+  struct timespec increase_time;
 
   std::thread *th_recver;
 

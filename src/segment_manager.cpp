@@ -297,7 +297,7 @@ Segment *SegmentManager::dequeue(SegQueueType type) {
       if(start_decrease == 1){
     
 
-      if(try_dequeue > 3){
+      if(try_dequeue > 1){
         try_dequeue = 0;
         if(is_changing_adapter == 0){
           is_changing_adapter = 2;
