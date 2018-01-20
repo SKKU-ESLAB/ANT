@@ -118,12 +118,12 @@ int main() {
     if(iter < 10 && iter2 == 0) {
       sleep(13);
 
-      sprintf(file_dir, "/home/pi/HOME/data/10k.mp4");
+      sprintf(file_dir, "/home/pi/data/10k");
     }
     else {
       //sleep(1);
       usleep(1000);
-      sprintf(file_dir, "/home/pi/HOME/data/1m.mp4");
+      sprintf(file_dir, "/home/pi/data/1m");
 
       if(iter2 == 5){
         iter = 0;
