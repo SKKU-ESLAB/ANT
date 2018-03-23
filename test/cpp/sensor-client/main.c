@@ -36,9 +36,10 @@ int check_sensor_name(const char* name){
 	int i;
 
 	for (i = 0; sensor_num; i++){
-		if (!strcmp(name, sensor_list[i]))
+		if (!strncmp(name, sensor_list[i], strlen(name)))
 			return i;
 	}
+  printf("aa\n");
 	return -1;
 }
 
@@ -287,8 +288,8 @@ void On(const FunctionCallbackInfo<Value>& args) {
 */
 
 void Get(char* _sensor, char** output) {
-  const char* sensorName;
-	char* sensorValue;
+  printf("Get function\n");
+  char* sensorValue;
 	char* valueType;
 	char* valueName;
 
@@ -318,7 +319,7 @@ void Get(char* _sensor, char** output) {
 	}
 
 	dbus_message_append_args(msg,
-	  DBUS_TYPE_STRING, &sensorName,
+	  DBUS_TYPE_STRING, &_sensor,
 		DBUS_TYPE_INVALID
     );
 
@@ -329,9 +330,9 @@ void Get(char* _sensor, char** output) {
 		printf("Why null? \n");
 		antCon = dbus_bus_get(DBUS_BUS_SYSTEM, &error);
 	}
-	
-	reply = dbus_connection_send_with_reply_and_block(antCon, msg, 500, &error); // Timeout 500 milli seconds
 
+	// Timeout 500 milli seconds
+	reply = dbus_connection_send_with_reply_and_block(antCon, msg, 500, &error); 
 	if (reply == NULL){
 		printf("Get Null Reply \n");
 		printf("Error : %s\n", error.message);
@@ -348,7 +349,7 @@ void Get(char* _sensor, char** output) {
 	dbus_message_unref(reply);
 
   /* Return value */
-  strncpy(*output, sensorValue, sizeof(sensorValue) );  
+  strncpy(*output, sensorValue, sizeof(sensorValue));  
 
   return ;
 }
@@ -582,7 +583,7 @@ void read_sensorlist()
   sprintf(json_file_path, "%s/sensor_config.json", ant_sensor_dir);
   infile = fopen(json_file_path, "r");
   if(infile == NULL){
-    fprintf(stderr, "Cannot read the sensor configuration file");
+    fprintf(stderr, "Cannot read the sensor configuration file\n");
     exit(1);
   }
   fseek(infile, 0L, SEEK_END);
@@ -624,7 +625,7 @@ void read_sensorlist()
     }
     // add to the sensor_list
     strcpy(sensor_list[i], sensor_name);
-    printf("sensor %d: %s", i+1, sensor_list[i]);
+    printf("sensor %d: %s\n", i+1, sensor_list[i]);
   }  
   
   
@@ -646,54 +647,55 @@ int main(int argc, char* argv[]) {
 	if (atexit(exit_handler)) fprintf(stderr, "Failed to register exit_handler1\n"); 
   signal(SIGINT, sigint_handler);
 
+  char *tmp;
+  char *command;
+  char *target_sensor;
+  char *output;
+  int str_len;
+  tmp = (char*) malloc(100 * sizeof(char));
+
+  command = (char*) malloc(100 * sizeof(char));
+  target_sensor = (char*) malloc(100 * sizeof(char));
+  output = (char*) malloc(100 * sizeof(char));
+
   while(1){
-    char *temp;
-    char *command;
-    char *get_sensor;
-    char *output;
-    temp = (char*) malloc(100 * sizeof(char));
-    /*
-
-    command = (char*) malloc(100 * sizeof(char));
-    get_sensor = (char*) malloc(100 * sizeof(char));
-    output = (char*) malloc(100 * sizeof(char));
-*/
     printf("[sensor-client] Input Command: ");
-    
-    if(fgets(temp, 100, stdin) != NULL){
-      /*
-      sscanf(temp, "%s %s",command, get_sensor);
-      if(strncmp(command, "Get", 3)){
-          printf("Execute Get command\n");
-          Get(get_sensor, &output);  
-      } else if(strncmp(command, "On", 2)){
+   
+    if(fgets(command, 100, stdin) != NULL){
+      printf("Input Sensor Name: ");
+      if(fgets(target_sensor, 100, stdin) != NULL){
 
-      } else if(strncmp(command, "Exit", 4)){
-        printf("exit the sensor client program.\n");
-        break;
-      } else if(strncmp(command, "exit", 4)){
-        printf("exit the sensor client program.\n");
-        break;
+        if(!strncmp(command, "Get", 3)){
+            printf("Execute Get command\n");
+            
+            str_len = strlen(target_sensor);
+            target_sensor[str_len-1] = '\0';
+            
+            Get(target_sensor, &output);
+            printf("sensor value: %s\n", output);
+
+        } else if(!strncmp(command, "On", 2)){
+          printf("not implemented yet\n");
+  
+        } else if(!strncmp(command, "Exit", 4)){
+          printf("exit the sensor client program.\n");
+          break;
+        } else if(!strncmp(command, "exit", 4)){
+          printf("exit the sensor client program.\n");
+          break;
+        } else {
+          printf("Command not found! \n ");
+          printf("Please refer to the sensor list when the program starts\n\n");
+          
+        }
+  
+        //Get("ACC", &tmp);
       }
-      else {
-        fprintf(stderr, "Command not found! \n");
-      }
-      */
-      Get("ACC", &temp);
     }
 
   } /* End While */
   
 
-  
-  /*
-  NODE_SET_METHOD(exports, "GetSensorlist", GetSensorlist);
-	NODE_SET_METHOD(exports, "Get", Get);
-  NODE_SET_METHOD(exports, "On", On);
-  NODE_SET_METHOD(exports, "EventRegister", On);
-  NODE_SET_METHOD(exports, "EventUpdate", Update);
-  NODE_SET_METHOD(exports, "EventUnregister", Unregister);
-  */
 
 }
 
