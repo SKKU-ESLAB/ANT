@@ -22,6 +22,7 @@
 DBusConnection *connection;
 static sensorHead *sensor_head_main;
 
+
 void pid_to_char(unsigned int input, char* output){
 	unsigned int value = input;
 	unsigned int temp;
@@ -429,6 +430,69 @@ static sensorManagerEventUnregister(DBusConnection *connection, DBusMessage *mes
 	}
 	return DBUS_HANDLER_RESULT_HANDLED;
 }
+
+
+static sensorManagerEventSet(DBusConnection *connection, DBusMessage *message, void *iface_user_data){
+	pthread_t tid;
+	unsigned int pid;
+	int rq_num;
+  int ret;
+	actuatorList* al;
+  actuatorHead* actuator_head_main = get_actuator_head();
+
+	char* actuator_name;
+	int actuator_value;
+  char* response;
+  char* response1 = "NO";
+  char* response0 = "YES";
+	DBusMessage *reply;
+
+  
+  
+	dbus_message_get_args(message, NULL,
+		DBUS_TYPE_STRING, &(actuator_name),
+    DBUS_TYPE_INT32, &(actuator_value),
+		DBUS_TYPE_INVALID);
+
+  printf("actuator: %s, value: %d\n", actuator_name, actuator_value); 
+
+  /* set actuator value */
+ 
+	al = get_actuator_by_name(actuator_head_main, actuator_name);
+
+	if (al->status == SENSOR_STOP){
+		actuator_start(al, NULL);
+		ret = actuator_set(al, &actuator_value);
+		actuator_stop(al, NULL);
+	}
+	else
+		ret = actuator_set(al, &actuator_value);
+
+  response = response1;
+  if(ret == 0){
+    response = response0;
+  } else if (ret == 1){
+    response = response1;
+  }
+
+
+	reply = dbus_message_new_method_return(message);
+	if (reply == NULL){
+		printf("Reply Null Error!\n");
+  }
+
+  dbus_message_append_args(reply,
+		DBUS_TYPE_STRING, &response,
+		DBUS_TYPE_INVALID);
+
+  //printf("Send reply message\n");
+	dbus_connection_send(connection, reply, NULL);
+
+	return DBUS_HANDLER_RESULT_HANDLED;
+}
+
+
+
 static sensorManagerEventGet(DBusConnection *connection, DBusMessage *message, void *iface_user_data){
 	pthread_t tid;
 	unsigned int pid;
@@ -474,6 +538,7 @@ static sensorManagerEventGet(DBusConnection *connection, DBusMessage *message, v
 
 	return DBUS_HANDLER_RESULT_HANDLED;
 }
+
 //Respone function for d-bus message
 static DBusHandlerResult dbus_response(DBusConnection *connection, DBusMessage *message, void *user_data)
 {
@@ -510,10 +575,15 @@ static DBusHandlerResult dbus_response(DBusConnection *connection, DBusMessage *
 	{
 		return sensorManagerEventGet(connection, message, user_data);
 	}
+	else if (dbus_message_is_method_call(message, ANT_BUS_NAME, "Set"))  // Senseor data
+	{
+		return sensorManagerEventSet(connection, message, user_data);
+	}
 	else if (dbus_message_is_method_call(message, "org.freedesktop.DBus.Introspectable", "Introspect")){
 		return introspect(connection, message, user_data);
 	}
 }
+
 void initDbus(){
 	int retval;
 
@@ -569,11 +639,13 @@ void initDbus(){
 
 }
 
+
 /*
  *  This function is the alternatives to macro DEVICE_OPS_REGISTER(dev).
  *  From the version Alpha3, registering the sensor is done by sensor manager.
  *  Before Alpha3, each sensor driver registered its data structures and functions.
  */
+
 void load_sensors(){
   char *ant_sensor_dir;
   const char *error = NULL;
@@ -723,10 +795,154 @@ void load_sensors(){
  
 }
 
+void load_actuators(){
+  char *ant_sensor_dir;
+  const char *error = NULL;
+  int actuator_num;
+  //printf("%s\n",getenv("ANT_DIR"));
+  ant_sensor_dir = getenv("ANT_SENSOR_DRIVER_DIR");  
+  if(!ant_sensor_dir){
+    fprintf(stderr, "No environement variable: ANT_SENSOR_DRIVER_DIR\n");
+    exit(1);
+  }
+  
+  // load the configuration file (json)
+  FILE *infile;
+  char *buffer;
+  long numbytes;
+  char json_file_path[200];
+
+  sprintf(json_file_path, "%s/actuator_config.json", ant_sensor_dir);
+  infile = fopen(json_file_path, "r");
+  if(infile == NULL){
+    fprintf(stderr, "Cannot read the actuator configuration file");
+    exit(1);
+  }
+  fseek(infile, 0L, SEEK_END);
+  numbytes = ftell(infile);
+  fseek(infile, 0L, SEEK_SET);
+
+  buffer = (char*) calloc(numbytes, sizeof(char));
+  if(buffer == NULL)
+  {
+    fprintf(stderr,"error while allocating buffer!");
+    exit(1);
+  }
+  fread(buffer,sizeof(char), numbytes, infile);
+  fclose(infile);
+  
+  // Get the root object of the json
+  cJSON *root = NULL;
+  root = cJSON_Parse(buffer);
+
+  if(!root){
+    fprintf(stderr, "Error before: [%s]\n", cJSON_GetErrorPtr());
+    exit(1);
+  }
+ 
+  // find the target name and # of actuators
+  char *target_name = cJSON_GetObjectItem(root, "target_name")->valuestring;
+  actuator_num = cJSON_GetObjectItem(root, "actuator_num")->valueint;
+  
+  // make actuator_ops structures
+  /*
+   *  This data strcuture should be keep alive until the program exits.
+   *  Sensor Manager executes infinite loop, and never stops until killed by signal.
+   *  Therefore, i didn't insert any free() function of this data structure.
+   *  Please keep this in mind.
+   *
+   *  actuatorList refers to this data structure.
+   *  Please see the add_actuator() function.
+   */
+  actuator_ops_list = (struct actuator_ops*)malloc(actuator_num * sizeof(struct actuator_ops));
+
+  // load the dynamic library
+  char library_path[200];
+  sprintf(library_path, "%s/libactuators.so", ant_sensor_dir);
+  //printf("the library_path: %s\n", library_path);
+
+  void *handle = dlopen(library_path, RTLD_LAZY);
+  error = dlerror();
+  if(!handle){
+    fprintf(stderr, "Error while loading so file: %s\n",error);
+    exit(1);
+  }
+
+  int i;
+  for(i=0; i<actuator_num; i++){
+    // read the actuator_index from the json
+    char actuator_index[10];
+    sprintf(actuator_index, "actuator%d",i+1);
+    cJSON *actuator_object = cJSON_GetObjectItem(root, actuator_index);
+    
+    char* actuator_name = cJSON_GetObjectItem(actuator_object, "name")->valuestring;
+    if(actuator_name == NULL)
+      fprintf(stderr, "error while reading the actuator name\n");
+    char* value_type = cJSON_GetObjectItem(actuator_object, "value_type")->valuestring;
+    if(value_type == NULL)
+      fprintf(stderr, "error while reading the actuator value type\n");
+
+    char* start_func_name = cJSON_GetObjectItem(actuator_object, "start_func")->valuestring;
+    if(start_func_name == NULL)
+      fprintf(stderr, "error while reading the actuator start function name\n");
+
+    char* stop_func_name = cJSON_GetObjectItem(actuator_object, "stop_func")->valuestring;
+    if(stop_func_name == NULL)
+      fprintf(stderr, "error while reading the actuator stop function name\n");
+
+    char* set_func_name = cJSON_GetObjectItem(actuator_object, "set_func")->valuestring;
+    if(set_func_name == NULL){
+        fprintf(stderr, "error while reading the actuator set function name\n");
+    }
+  
+    actuator_ops_list[i].name = (char*) malloc( 20*sizeof(char));
+    actuator_ops_list[i].valueType = (char*) malloc( 20*sizeof(char));
+
+    // set the name, value type, value name of the actuator ops
+    strcpy(actuator_ops_list[i].name, actuator_name);
+    strcpy(actuator_ops_list[i].valueType, value_type);
+
+    // find the functions in the shared objece and set the device ops
+    actuator_ops_list[i].start = dlsym(handle, start_func_name);
+    if((error = dlerror()) != NULL){
+      fprintf(stderr, "Error while reading symbol: %s\n",error);
+      exit(1);
+    }
+    actuator_ops_list[i].stop = dlsym(handle, stop_func_name);
+    if((error = dlerror()) != NULL){
+      fprintf(stderr, "Error while reading symbol: %s\n",error);
+      exit(1);
+    }
+    actuator_ops_list[i].set = dlsym(handle, set_func_name);
+    if((error = dlerror()) != NULL){
+      fprintf(stderr, "Error while reading symbol: %s\n",error);
+      exit(1);
+    }
+
+    // call add_sensor() function to add to sensor list
+    add_actuator(&actuator_ops_list[i]);
+
+  } // End of for loop
+
+
+  cJSON_Delete(root);
+  free(buffer);
+
+  /*
+   *  I will not call dlclose(), 
+   *  because until now, sensor driver is used until the program end.
+   *  In later use, when we need to add and remove the sensor driver,
+   *  then, we need to use dlclose() in the proper position.
+   */
+  //dlclose(handle);
+ 
+}
+
 int main(void)
 {
  
   load_sensors();
+  load_actuators();
 	sensorThreadInit();
 	initDbus();
 

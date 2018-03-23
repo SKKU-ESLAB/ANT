@@ -8,7 +8,7 @@ add_custom_target(
   COMMAND mkdir -p ${CMAKE_SOURCE_DIR}/out/bin/api
   COMMAND mkdir -p ${CMAKE_SOURCE_DIR}/out/config
   COMMAND mkdir -p ${CMAKE_SOURCE_DIR}/out/libs
-  COMMAND mkdir -p ${CMAKE_SOURCE_DIR}/out/sensor-drivers
+  COMMAND mkdir -p ${CMAKE_SOURCE_DIR}/out/device-drivers
   COMMAND mkdir -p ${CMAKE_SOURCE_DIR}/out/system-apps
   COMMENT "Make out directory"
   WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
@@ -21,10 +21,10 @@ add_subdirectory(apps)
 add_subdirectory(models)
 
 if(TARGET_BOARD STREQUAL raspberry-pi)
-  add_subdirectory(target/raspberry-pi2_3/sensor-drivers)
+  add_subdirectory(target/raspberry-pi2_3/device-drivers)
 elseif(TARGET_BOARD STREQUAL tegraTX)
-  add_subdirectory(target/tegraTX1/sensor-drivers)
+  add_subdirectory(target/tegraTX1/device-drivers)
 else()
-  add_subdirectory(target/virtual-sensor-drivers)
+  add_subdirectory(target/virtual-device-drivers)
   
 endif()

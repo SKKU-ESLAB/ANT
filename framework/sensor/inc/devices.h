@@ -16,6 +16,7 @@
  * limitations under the License.
  */
 
+
 #include <pthread.h>
 #include "sensor_manager.h"
 
@@ -68,6 +69,32 @@ typedef struct {
 	int	count;
 }sensorHead;
 
+/*
+ * Actuator
+ */
+struct actuator_ops {
+	char *name;
+	int status;
+	char *valueType;
+	//Data type 배열 추가 
+	void (*start) (void *data);
+	void (*stop) (void *data);
+	char* (*set) (void *data);
+};
+
+struct actuator_ops *actuator_ops_list;
+
+typedef struct Actuator_List{
+	struct actuator_ops *dev;
+	int status;
+
+	struct Actuator_List* next;
+}actuatorList;
+
+typedef struct {
+	actuatorList *start;
+	int	count;
+}actuatorHead;
 
 
 void addDevice(const struct device_ops *dev);
@@ -87,6 +114,11 @@ static void module_exit(void)	\
 sensorHead* initSensors(void);
 sensorHead* getSensorHead(void);
 sensorList* getSensorByName(sensorHead* sh, char* sensor_name);
+
+actuatorHead* init_actuators(void);
+actuatorHead* get_actuator_head(void);
+actuatorList* get_actuator_by_name(actuatorHead* ah, char* actuator_name);
+void add_actuator(const struct actuator_ops *dev);
 
 
 static inline int sensorStart(sensorList* sl, void *data)
@@ -126,6 +158,49 @@ static inline char* sensorGet(sensorList* sl, void *data)
 
 	return '\0';
 }
+
+/*
+ * Actuator funcitons
+ */
+static inline int actuator_start(actuatorList* al, void *data)
+{
+	const struct actuator_ops *dev = al->dev;
+
+	if (dev && dev->start){
+		dev->start(data);
+		al->status = SENSOR_RUNNING;
+		return 0;
+	}
+
+	return -1;
+}
+
+static inline int actuator_stop(actuatorList* al, void *data)
+{
+	const struct actuator_ops *dev = al->dev;
+
+	if (dev && dev->stop) {
+		dev->stop(data);  
+		al->status = SENSOR_STOP;
+			
+		return 0;
+	}
+
+	return -1;
+}
+
+static inline int actuator_set(actuatorList* al, void *data)
+{
+	const struct actuator_ops *dev = al->dev;
+
+	if (dev && dev->set) {		
+		dev->set(data);
+    return 0;
+	}
+
+	return -1;
+}
+
 
 #endif
 
