@@ -1,9 +1,9 @@
 # P2PForYourThings
 C++ APIs for you to easily setup and communicate via smart P2P (using available p2p modules among Wi-Fi Direct / Bluetooth / Bluetooth LE)
 
-= Supported Devices =
-Raspberry-pi 3
-NVIDIA Jetson-TX1
+## Supported Devices
+* Raspberry-pi 3
+* NVIDIA Jetson-TX1
 
 # Android
 [P2PForYourThings-android](https://github.com/sinban04/P2PForYourThings-android)
@@ -22,7 +22,7 @@ $ cd P2PForYourThings
 $ sudo apt-get install libbluetooth-dev
 ```
 
-Check your bluetooth version and if it's > 5.x, then
+Check your bluetooth version and if it is equal to or higher than 5.0, then
 ```
 $ sudo vi /etc/systemd/system/dbus-org.bluez.service
 
@@ -38,11 +38,11 @@ $ sudo chmod 777 /var/run/sdp
 $ iw list
 ```
 
-- Modify the wpa_supplicant.conf (/etc/wpa_supplicant/wpa_supplicant.conf)
+- Modify the wpa_supplicant.conf (```/etc/wpa_supplicant/wpa_supplicant.conf```)
 Add two parameters
 
 > update_config=1
-
+>
 > driver_param=p2p_device=1
 
 - Install UDHCPD for wifi-direct
@@ -51,7 +51,7 @@ $ sudo apt-get install udhcpd
 $ sudo touch /var/lib/misc/udhcpd.leases
 ```
 
-- Set wpa_supplicant configuration
+- Set ```wpa_supplicant``` configuration
 ```
 sudo wpa_supplicant -iwlan0 -c /etc/wpa_supplicant/wpa_supplicant.conf
 ```
@@ -64,7 +64,7 @@ $ mkdir bin obj ./device/obj
 $ make
 ```
 Then you can find the binary file of the communicator test example,
-which is in the tests/ directory.
+which is in the ```tests/``` directory.
 
 ## How to Run
 ```
@@ -97,7 +97,7 @@ $ sudo hciconfig hci0 piscan
 ```
 
 ### Change the hci0 interface name
-e.g., change the name of the bluetooth interface to 'pi'
+e.g., change the name of the bluetooth interface to ```pi```
 ```
 $ sudo hciconfig hci0 name pi
 ```
@@ -122,7 +122,7 @@ $ ps -ef | grep bluetooth
 
 ## Wifi-Direct Issues
 ### Remove the P2P group (Wifi-direct) on the wifi interface
-remove group p2p-wlan0-1 on the wifi interface wlan0
+remove group ```p2p-wlan0-1``` on the wifi interface ```wlan0```
 ```
 sudo wpa_cli -i wlan0 p2p_group_remove p2p-wlan0-1
 ```
