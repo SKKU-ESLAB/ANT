@@ -34,7 +34,7 @@
 namespace cm {
 class TCPServerOverWfdAdapter : public NetworkAdapter {
  public:
-  TCPServerOverWfdAdapter(uint32_t id, int port, char *dev_name);
+  TCPServerOverWfdAdapter(uint32_t id, int port, const char *dev_name);
 
  private:
   int port;

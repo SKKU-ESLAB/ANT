@@ -36,13 +36,15 @@
 #include <bluetooth/rfcomm.h>
 
 namespace cm {
-RfcommServerOverBt::RfcommServerOverBt(uint16_t id, char *svc_uuid) {
+RfcommServerOverBt::RfcommServerOverBt(uint16_t id, const char *svc_uuid) {
   this->dev_id = id;
   net_dev_type = kBluetooth;
 
   sent_data = 0;
 
-  str2uuid(svc_uuid, &(this->svc_uuid));
+  char buffer[100];
+  snprintf(buffer, 100, "%s", svc_uuid);
+  str2uuid(buffer, &(this->svc_uuid));
   set_controllable();
 }
 RfcommServerOverBt::~RfcommServerOverBt() {
