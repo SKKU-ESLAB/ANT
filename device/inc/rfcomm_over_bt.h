@@ -31,7 +31,7 @@
 namespace cm {
 class RfcommServerOverBt : public NetworkAdapter {
  public:
-  RfcommServerOverBt (uint16_t id, char *svc_uuid);
+  RfcommServerOverBt (uint16_t id, const char *svc_uuid);
   ~RfcommServerOverBt ();
  private:
   int port;

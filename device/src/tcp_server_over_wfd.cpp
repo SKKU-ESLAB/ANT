@@ -29,7 +29,7 @@
 
 namespace cm {
 TCPServerOverWfdAdapter::TCPServerOverWfdAdapter(uint32_t id, int port,
-                                                 char *dev_name){
+                                                 const char *dev_name){
   this->port = port;
   this->dev_id = id;
   net_dev_type = kWifiDirect;
