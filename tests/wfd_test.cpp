@@ -1,6 +1,9 @@
-/* Copyright 2016 Eunsoo Park (esevan.park@gmail.com). All rights reserved
- * 
- * Contact: Eunsoo Park (esevan.park@gmail.com)
+/* Copyright 2017-2018 All Rights Reserved.
+ *  Gyeonghwan Hong (redcarrottt@gmail.com)
+ *  Eunsoo Park (esevan.park@gmail.com)
+ *  
+ * [Contact]
+ *  Gyeonghwan Hong (redcarrottt@gmail.com)
  *
  * Licensed under the Apache License, Version 2.0(the "License");
  * you may not use this file except in compliance with the License.
@@ -14,6 +17,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 
 #include <wifi_control.h>
 
