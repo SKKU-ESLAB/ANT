@@ -284,7 +284,6 @@ void NetworkManager::increase_adapter_cb_wrapper(DevState stat) {
 }
 
 void NetworkManager::increase_adapter() {
- 
   // The adapter is already increasing adapter
   if (state == kNetStatIncr || state == kNetStatDecr) {
     //OPEL_DBG_WARN("Data ports are busy");
@@ -295,10 +294,8 @@ void NetworkManager::increase_adapter() {
   if (state <= kNetStatConnecting) {
     //OPEL_DBG_ERR("Control port is not opened yet");
     SegmentManager::get_instance()->is_changing_adapter = 0;
-
     return;
   }
-
 
   clock_gettime(CLOCK_MONOTONIC, &increase_time);
   //OPEL_DBG_LOG("Increasing data adapter...");

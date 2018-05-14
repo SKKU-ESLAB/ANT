@@ -35,7 +35,7 @@
 #include <bluetooth/rfcomm.h>
 
 namespace cm {
-RfcommServerOverBt::RfcommServerOverBt(uint16_t id, const char *svc_uuid) {
+RfcommServerOverBtAdapter::RfcommServerOverBtAdapter(uint16_t id, const char *svc_uuid) {
   this->dev_id = id;
   net_dev_type = kBluetooth;
 
@@ -46,17 +46,17 @@ RfcommServerOverBt::RfcommServerOverBt(uint16_t id, const char *svc_uuid) {
   str2uuid(buffer, &(this->svc_uuid));
   set_controllable();
 }
-RfcommServerOverBt::~RfcommServerOverBt() {
+RfcommServerOverBtAdapter::~RfcommServerOverBtAdapter() {
 
 }
 
-bool RfcommServerOverBt::device_on() {
+bool RfcommServerOverBtAdapter::device_on() {
   return true;
 }
-bool RfcommServerOverBt::device_off() {
+bool RfcommServerOverBtAdapter::device_off() {
   return true;
 }
-bool RfcommServerOverBt::make_connection() {
+bool RfcommServerOverBtAdapter::make_connection() {
   int res = bt_open();
   if (res < 0) return false;
 
@@ -73,7 +73,7 @@ bool RfcommServerOverBt::make_connection() {
   return true;
 }
 
-int RfcommServerOverBt::str2uuid(char *str, uuid_t *uuid) {
+int RfcommServerOverBtAdapter::str2uuid(char *str, uuid_t *uuid) {
   if (strlen(str) != 36)
     return -1;
   
@@ -101,11 +101,11 @@ int RfcommServerOverBt::str2uuid(char *str, uuid_t *uuid) {
   return 0;
 }
 
-int RfcommServerOverBt::uuid2strn(uuid_t *uuid, char *str, int len) {
+int RfcommServerOverBtAdapter::uuid2strn(uuid_t *uuid, char *str, int len) {
   return sdp_uuid2strn(uuid, str, len);
 }
 
-int RfcommServerOverBt::bt_register_service() {
+int RfcommServerOverBtAdapter::bt_register_service() {
   char service_name[256];
   char service_dsc[256];
   char service_prov[256];
@@ -175,7 +175,7 @@ int RfcommServerOverBt::bt_register_service() {
   return res;
 }
 
-int RfcommServerOverBt::bt_dynamic_bind_rc() {
+int RfcommServerOverBtAdapter::bt_dynamic_bind_rc() {
   int err;
   int tmp_port;
   struct sockaddr_rc sockaddr;
@@ -201,7 +201,7 @@ int RfcommServerOverBt::bt_dynamic_bind_rc() {
   return err;
 }
 
-int RfcommServerOverBt::bt_open() {
+int RfcommServerOverBtAdapter::bt_open() {
   if (serv_sock > 0) {
     if (session != NULL) return serv_sock;
 
@@ -237,7 +237,7 @@ int RfcommServerOverBt::bt_open() {
   return serv_sock;
 }
 
-int RfcommServerOverBt::send(const void *buf, size_t len) {
+int RfcommServerOverBtAdapter::send(const void *buf, size_t len) {
   int sent = 0;
   //fp = fopen("bt.log", "a");
 
@@ -263,7 +263,7 @@ int RfcommServerOverBt::send(const void *buf, size_t len) {
   return sent;
 }
 
-int RfcommServerOverBt::recv(void *buf, size_t len) {
+int RfcommServerOverBtAdapter::recv(void *buf, size_t len) {
   int recved = 0;
 
   if (cli_sock <= 0)
@@ -283,15 +283,15 @@ int RfcommServerOverBt::recv(void *buf, size_t len) {
   return recved;
 }
 
-uint16_t RfcommServerOverBt::get_id() {
+uint16_t RfcommServerOverBtAdapter::get_id() {
   return dev_id;
 }
 
-void RfcommServerOverBt::on_control_recv(const void *buf, size_t len) {
+void RfcommServerOverBtAdapter::on_control_recv(const void *buf, size_t len) {
   return;
 }
 
-bool RfcommServerOverBt::close_connection() { 
+bool RfcommServerOverBtAdapter::close_connection() { 
   close(cli_sock);
   close(serv_sock);
 

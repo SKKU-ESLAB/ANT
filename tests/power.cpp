@@ -52,10 +52,10 @@ void receiving_thread() {
 
 int main() {
   Communicator *cm = Communicator::get_instance();
-  RfcommServerOverBt ca(1234, "150e8400-e29b-41d4-a716-446655440000");
-  RfcommServerOverBt na3(3333, "150e8400-1234-41d4-a716-446655440000");
-  RfcommServerOverBt na31(3334, "6be60100-3629-11e7-a919-92ebcb67fe33");
-  RfcommServerOverBt na32(3335, "6be60470-3629-11e7-a919-92ebcb67fe33");
+  RfcommServerOverBtAdapter ca(1234, "150e8400-e29b-41d4-a716-446655440000");
+  RfcommServerOverBtAdapter na3(3333, "150e8400-1234-41d4-a716-446655440000");
+  RfcommServerOverBtAdapter na31(3334, "6be60100-3629-11e7-a919-92ebcb67fe33");
+  RfcommServerOverBtAdapter na32(3335, "6be60470-3629-11e7-a919-92ebcb67fe33");
 
   TCPServerOverEthAdapter na(2345, 2345);
   TCPServerOverEthAdapter na4(5555, 5555);

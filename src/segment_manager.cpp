@@ -44,8 +44,6 @@ SegmentManager::SegmentManager(void) {
 
   try_dequeue = 0;
   is_changing_adapter = 0;
-  num_increase = 0;
-  trigger = prev_trigger = 0;
   is_start = 0;
   is_finish = 0;
   wfd_state = 0;
@@ -76,24 +74,6 @@ void SegmentManager::serialize_segment_header(Segment *seg) {
 
 int SegmentManager::send_to_segment_manager(uint8_t *data, size_t len) {
   assert(data != NULL && len > 0);
-  
-
-  //std::unique_lock<std::mutex> exp_lck(exp_lock);
-  //struct timeval temp, temp0;
-
-
-  //fp2 = fopen("log2.txt","a");
-  //gettimeofday(&start, NULL);
-
-  prev_trigger = trigger;
-  if(len > 100*1024){
-    trigger = 1;
-  } else {
-    trigger = 0;
-  }
-  if(prev_trigger == 1 && trigger == 0){
-    start_decrease = 1;
-  }
 
   uint32_t offset = 0;
   uint32_t num_of_segments =((len + kSegSize - 1) / kSegSize);
@@ -101,7 +81,6 @@ int SegmentManager::send_to_segment_manager(uint8_t *data, size_t len) {
 
   /* Reserve sequence numbers to this thread */
   uint32_t allocated_seq_no = get_seq_no(num_of_segments);
-  
   
   int seg_idx;
   for (seg_idx = 0; seg_idx < num_of_segments; seg_idx ++) {
@@ -127,16 +106,6 @@ int SegmentManager::send_to_segment_manager(uint8_t *data, size_t len) {
     enqueue(kSegSend, seg);
   }
 
-  //OPEL_DBG_LOG("wait for lock release");
-  //is_finish = 1;
-  //exp_wait.wait(exp_lck);
-  //OPEL_DBG_LOG("lock released\n");
-
-  //gettimeofday(&end, NULL);
-  //fprintf(fp2, " %ld \n",1000000 * (end.tv_sec - start.tv_sec) + (end.tv_usec - start.tv_usec));
-  //printf("total: %ld \n",1000000 * (end.tv_sec - start.tv_sec) + (end.tv_usec - start.tv_usec));
-  //fclose(fp2);
-  
   return 0;
 }
 
@@ -199,46 +168,47 @@ void SegmentManager::enqueue(SegQueueType type, Segment *seg) {
   std::unique_lock<std::mutex> lck(lock[type]);
   bool segment_enqueued = false;
 
-  /* If the sequence number is the right next one,
-   * It executes enqueuing logic normally.
-   */
   if (seg->seq_no == next_seq_no[type]) {
+    /*
+     * If the sequence number is the right next one,
+     * it executes enqueuing logic normally.
+     */
     next_seq_no[type]++;
     queue[type].push_back(seg);
     queue_size[type]++;
     segment_enqueued = true;
   }
-  /* If the sequence number is not the next expected one,
-   * It enqueues its segments to the pending queue, not normal queue.
-   */
   else {
+    /*
+     * If the sequence number is not the next expected one,
+     * it enqueues its segments to the pending queue, not normal queue.
+     */
     if (seg->seq_no <= next_seq_no[type]){
       OPEL_DBG_ERR("Sequence # Error!: %d > %d, %s", 
           seg->seq_no, next_seq_no[type], type == kSegSend? "Send":"Recv");
-    
     }
     assert(seg->seq_no > next_seq_no[type]);
 
     std::list<Segment *>::iterator curr_it = pending_queue[type].begin();
 
-    /* First, if we received unsequential data, 
-     * we put a requested segment into pending queue */
+    /*
+     * If we received a unsequential segment, put it into pending queue.
+     * Pending queue should retain segments in order of sequence number.
+     */
     while (curr_it != pending_queue[type].end()) {
       Segment *walker = *curr_it;
       assert(walker->seq_no != seg->seq_no);
-
-      if (walker->seq_no > seg->seq_no)
-        break;
-
+      if (walker->seq_no > seg->seq_no) break;
       curr_it++;
     }
     pending_queue[type].insert(curr_it, seg);
 
   }
 
-  /*  Finally, we put all consequent segments into type queue 
-   *  (If no segment in the pending queue matches to the next seq_no,
-   *  Then this process is just skipped.)
+  /*
+   * Finally, we put all the consequent segments into type queue.
+   * If no segment in the pending queue matches to the next seq_no,
+   * Then this process is just skipped.
    */
   std::list<Segment *>::iterator curr_it = pending_queue[type].begin();
   while (curr_it != pending_queue[type].end() &&
@@ -252,19 +222,16 @@ void SegmentManager::enqueue(SegQueueType type, Segment *seg) {
     pending_queue[type].erase(to_erase);
   }
 
-  /*  Dynamic adapter control
-   *  Increase the adapter with the queue's threshold 
+  /* 
+   * Dynamic adapter control 1
+   * Increase adapter when queue size is over threshold.
    */
-  if (type == kSegSend ) {
-    if (queue_size[type] > queue_threshold ){
-      if(is_changing_adapter == 0 /*&& num_increase < 2*/){
-        num_increase++;
+  if (type == kSegSend) {
+    if (queue_size[type] > queue_threshold){
+      if (is_changing_adapter == 0){
+        /* Increase adapter */
         is_changing_adapter = 1;
         NetworkManager::get_instance()->increase_adapter();
-        
-        //OPEL_DBG_LOG("Increase adapter!"); 
-      } else {
-        //OPEL_DBG_LOG("Is changing adapter now\n");
       }
     }
   }
@@ -272,71 +239,44 @@ void SegmentManager::enqueue(SegQueueType type, Segment *seg) {
   if (segment_enqueued) not_empty[type].notify_all();
 }
 
-/*  Dequeue the segment from the queue.
- *  Note that this function is used for sending & receiving queue.
+/*
+ * Dequeue the segment from the queue.
+ * Note that this function is used for sending & receiving queue.
  */
 Segment *SegmentManager::dequeue(SegQueueType type) { 
   assert(type < kSegMaxQueueType);
   std::unique_lock<std::mutex> lck(lock[type]);
 
+  /* 
+   * Dynamic adapter control 2
+   * Decrease adapter when queue size is under threshold for a while.
+   */
+  if (type == kSegSend && queue_size[type] == 0) {
+    if (try_dequeue > 1) {
+      try_dequeue = 0;
+      if (is_changing_adapter == 0) {
+        is_changing_adapter = 2;
+        NetworkManager::get_instance()->decrease_adapter();
+      }
+    } else {
+      try_dequeue++;
+      OPEL_DBG_LOG("try_dequeue++: %d\n", try_dequeue);
+    }
+    return NULL;       
+  }
+
+  /* If queue is empty, wait until some segment is enqueued */
   if (queue_size[type] == 0) {
-   
- /*  
-    if(type == 0){
-      if(is_finish == 1){
-        exp_wait.notify_one();
-        OPEL_DBG_LOG("notify one");
-        is_finish = 0;
-      }
-    }
-
-*/
-
-    // When it's sending queue
-    if(type == kSegSend){
-      if(start_decrease == 1){
-    
-
-      if(try_dequeue > 1){
-        try_dequeue = 0;
-        if(is_changing_adapter == 0){
-          is_changing_adapter = 2;
-          NetworkManager::get_instance()->decrease_adapter();
-          start_decrease = 0;
-
-          //OPEL_DBG_LOG("Decrease Adapter!\n");
-        } else {
-          OPEL_DBG_LOG("cannot decrease adapter, now\n");
-        }
-
-      } else {
-        try_dequeue++;
-        OPEL_DBG_LOG("try_dequeue ++: %d\n",try_dequeue);
-      }
-
-      } //start_decrease
-
-     return NULL;       
-
-
-    } else { // When it's receiving queue
-      OPEL_DBG_LOG("receiving queue is empty. wait for another\n");
-      not_empty[type].wait(lck);
-
-    }
-    
-
-  }
-
-  if (queue_size[type] == 0){
-    if(type == kSegSend){
+    if(type == kSegSend) {
       OPEL_DBG_LOG("sending queue is empty. wait for another\n");
-      not_empty[type].wait(lck);
+    } else {
+      OPEL_DBG_LOG("receiving queue is empty. wait for another\n");
     }
-    
- 
+
+    not_empty[type].wait(lck);
   }
 
+  /* Dequeue from queue */
   Segment *ret = queue[type].front();
   if (ret == NULL) {
     OPEL_DBG_LOG("Queue[%s] is NULL(empty)", type==0? "send":"recv");
