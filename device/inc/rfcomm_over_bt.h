@@ -29,10 +29,10 @@
 #include <bluetooth/sdp_lib.h>
 
 namespace cm {
-class RfcommServerOverBt : public NetworkAdapter {
+class RfcommServerOverBtAdapter : public NetworkAdapter {
  public:
-  RfcommServerOverBt (uint16_t id, const char *svc_uuid);
-  ~RfcommServerOverBt ();
+  RfcommServerOverBtAdapter (uint16_t id, const char *svc_uuid);
+  ~RfcommServerOverBtAdapter ();
  private:
   int port;
   sdp_session_t *session;

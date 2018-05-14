@@ -67,7 +67,7 @@ void receiving_thread() {
 int main() {
   Communicator *cm = Communicator::get_instance();
   TCPServerOverEthAdapter ethAdapter(2345, 2345);
-  RfcommServerOverBt btAdapter(3333, "150e8400-1234-41d4-a716-446655440000");
+  RfcommServerOverBtAdapter btAdapter(3333, "150e8400-1234-41d4-a716-446655440000");
   TCPServerOverWfdAdapter wfdAdapter(3456, 3456, "OPEL");
 
   printf("Step 1. Initializing Network Adapters\n");

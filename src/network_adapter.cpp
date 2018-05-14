@@ -60,8 +60,8 @@ NetworkAdapter::~NetworkAdapter() {
     NetworkManager::get_instance()->remove_data_adapter(this);
 }
 
-/*  This function is the core function which manages the network adapter
- *  This tries to make the adapter in the target state
+/* 
+ * Try to make an adapter in the target state
  */
 void NetworkAdapter::dev_switch(DevState stat, DevStatCb cb) {
   switch (stat) {
@@ -310,16 +310,16 @@ void NetworkAdapter::run_sender(void) {
   printf("sender thread created! tid: %d\n", (unsigned int)syscall(224));
   SegmentManager *sm = SegmentManager::get_instance();
 
-  if(net_dev_type == kWifiDirect){
+  if(net_dev_type == kWifiDirect) {
     sm->wfd_state = 1;
     OPEL_DBG_LOG("WiFi Direct sender thread start working\n");
-  } else if (net_dev_type == kBluetooth){
+  } else if (net_dev_type == kBluetooth) {
     OPEL_DBG_LOG("Bluetooth sender thread start working\n"); 
   }
 
  while (true) { 
-    if(net_dev_type == kBluetooth){
-      while(sm->wfd_state == 1){
+    if (net_dev_type == kBluetooth) {
+      while (sm->wfd_state == 1) {
         OPEL_DBG_LOG("Wifi-direct is on. stop BT sender thread\n");
         /*
         std::unique_lock<std::mutex> lck1(sender_lock);
@@ -331,7 +331,7 @@ void NetworkAdapter::run_sender(void) {
       }
     }
 
-   if(sender_semaphore == 1){
+    if (sender_semaphore == 1){
       OPEL_DBG_LOG("sender semaphore is 1. stop sender thread\n");
       if(net_dev_type == kWifiDirect){
         sm->wfd_state = 0;
@@ -347,7 +347,7 @@ void NetworkAdapter::run_sender(void) {
     }
 
     if (to_send == NULL) {
-      if (stat < kDevCon){
+      if (stat < kDevCon) {
         OPEL_DBG_WARN("device is not in connection");
         if(net_dev_type == kWifiDirect){
           sm->wfd_state = 0;

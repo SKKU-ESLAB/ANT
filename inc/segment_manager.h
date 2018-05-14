@@ -115,10 +115,6 @@ class SegmentManager {
 
    
   uint8_t try_dequeue;  // # of try to dequeue
-  int num_increase;
-  int trigger, prev_trigger;
-  int start_decrease;
-   
   
   // for experiment
   int is_start, is_finish;
