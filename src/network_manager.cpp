@@ -23,6 +23,7 @@
 
 #include <dbug_log.h>
 #include <segment_manager.h>
+#include <network_switcher.h>
 
 #include <string.h>
 #include <thread>
@@ -214,8 +215,7 @@ void NetworkManager::install_control_cb(DevState res) {
       th_recver = NULL;
     }
     // Create control_recver_thread
-    th_recver =
-        new std::thread(std::bind(&NetworkManager::run_control_recver, this));
+    th_recver = new std::thread(std::bind(&NetworkManager::run_control_recver, this));
     th_recver->detach();
   } else {
     sleep(1);
@@ -268,15 +268,14 @@ void NetworkManager::increase_adapter_cb(DevState stat) {
     OPEL_DBG_LOG("Adapter connected :%d ", connecting_adapter->dev_id);
     state = kNetStatData;
     connecting_adapter = NULL;
-    SegmentManager::get_instance()->queue_threshold += kSegQueueThreshold;
+    OPEL_DBG_LOG("increase the queue_threshold\n");
+    NetworkSwitcher::get_instance()->inc_queue_threshold();
   } else {
     // Failed to connect, roll back state
     OPEL_DBG_LOG("Adapter Connection Failed\n");
     state = prev_state;
   }
-  SegmentManager::get_instance()->is_changing_adapter = 0;
-  //sleep(2);
-  //decrease_adapter();
+  NetworkSwitcher::get_instance()->done_switch();
 }
 
 void NetworkManager::increase_adapter_cb_wrapper(DevState stat) {
@@ -287,13 +286,13 @@ void NetworkManager::increase_adapter() {
   // The adapter is already increasing adapter
   if (state == kNetStatIncr || state == kNetStatDecr) {
     //OPEL_DBG_WARN("Data ports are busy");
-    SegmentManager::get_instance()->is_changing_adapter = 0;
+    NetworkSwitcher::get_instance()->done_switch();
     return;
   }
 
   if (state <= kNetStatConnecting) {
     //OPEL_DBG_ERR("Control port is not opened yet");
-    SegmentManager::get_instance()->is_changing_adapter = 0;
+    NetworkSwitcher::get_instance()->done_switch();
     return;
   }
 
@@ -307,7 +306,7 @@ void NetworkManager::increase_adapter() {
   if (na == NULL) {
     //OPEL_DBG_WARN("All devices are already up");
     state = prev_state;
-    SegmentManager::get_instance()->is_changing_adapter = 0;
+    NetworkSwitcher::get_instance()->done_switch();
     return;
   }
 
@@ -351,13 +350,13 @@ void NetworkManager::decrease_adapter_cb(DevState stat) {
     }
     connecting_adapter = NULL;
     OPEL_DBG_LOG("decrease the queue_threshold\n");
-    SegmentManager::get_instance()->queue_threshold -= kSegQueueThreshold;
+    NetworkSwitcher::get_instance()->dec_queue_threshold();
   } else {
     OPEL_DBG_LOG("Adapter is not disabled\n");
     // If failed to connect, roll back state
     state = prev_state;
   }
-  SegmentManager::get_instance()->is_changing_adapter = 0;
+  NetworkSwitcher::get_instance()->done_switch();
 }
 
 void NetworkManager::decrease_adapter_cb_wrapper(DevState stat) {
@@ -372,13 +371,13 @@ void NetworkManager::decrease_adapter() {
   // The adapter is already increasing or decreasing adapter
   if (state == kNetStatIncr || state == kNetStatDecr) {
     OPEL_DBG_WARN("Data ports are busy");
-  SegmentManager::get_instance()->is_changing_adapter = 0;
+    NetworkSwitcher::get_instance()->done_switch();
     return;
   }
 
   if (state <= kNetStatConnecting){
       OPEL_DBG_ERR("Control port is not opened yet");
-  SegmentManager::get_instance()->is_changing_adapter = 0;
+      NetworkSwitcher::get_instance()->done_switch();
       return;
   }
  
@@ -387,7 +386,7 @@ void NetworkManager::decrease_adapter() {
   printf("diff time: %d\n", diff_time);
   if(diff_time < 10) {
     OPEL_DBG_ERR("Not much time elasped after increasing adapter");
-    SegmentManager::get_instance()->is_changing_adapter = 0;
+      NetworkSwitcher::get_instance()->done_switch();
     return ;
   }
 
@@ -402,7 +401,7 @@ void NetworkManager::decrease_adapter() {
   if(na == NULL){
     OPEL_DBG_WARN("All devices are already down");
     state = prev_state;
-  SegmentManager::get_instance()->is_changing_adapter = 0;
+    NetworkSwitcher::get_instance()->done_switch();
     return;
   }
   decreasing_adapter_id = na->dev_id;

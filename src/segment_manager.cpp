@@ -40,10 +40,7 @@ SegmentManager::SegmentManager(void) {
   next_seq_no[kSegRecv] = 0;
   free_list_size = 0;
   seq_no = 0;
-  queue_threshold = 0;
 
-  try_dequeue = 0;
-  is_changing_adapter = 0;
   is_start = 0;
   is_finish = 0;
   wfd_state = 0;
@@ -70,7 +67,6 @@ void SegmentManager::serialize_segment_header(Segment *seg) {
   memcpy(seg->data, &net_seq_no, sizeof(uint32_t));
   memcpy(seg->data+4, &net_flag_len, sizeof(uint32_t));
 }
-
 
 int SegmentManager::send_to_segment_manager(uint8_t *data, size_t len) {
   assert(data != NULL && len > 0);
@@ -222,20 +218,6 @@ void SegmentManager::enqueue(SegQueueType type, Segment *seg) {
     pending_queue[type].erase(to_erase);
   }
 
-  /* 
-   * Dynamic adapter control 1
-   * Increase adapter when queue size is over threshold.
-   */
-  if (type == kSegSend) {
-    if (queue_size[type] > queue_threshold){
-      if (is_changing_adapter == 0){
-        /* Increase adapter */
-        is_changing_adapter = 1;
-        NetworkManager::get_instance()->increase_adapter();
-      }
-    }
-  }
-
   if (segment_enqueued) not_empty[type].notify_all();
 }
 
@@ -246,24 +228,6 @@ void SegmentManager::enqueue(SegQueueType type, Segment *seg) {
 Segment *SegmentManager::dequeue(SegQueueType type) { 
   assert(type < kSegMaxQueueType);
   std::unique_lock<std::mutex> lck(lock[type]);
-
-  /* 
-   * Dynamic adapter control 2
-   * Decrease adapter when queue size is under threshold for a while.
-   */
-  if (type == kSegSend && queue_size[type] == 0) {
-    if (try_dequeue > 1) {
-      try_dequeue = 0;
-      if (is_changing_adapter == 0) {
-        is_changing_adapter = 2;
-        NetworkManager::get_instance()->decrease_adapter();
-      }
-    } else {
-      try_dequeue++;
-      OPEL_DBG_LOG("try_dequeue++: %d\n", try_dequeue);
-    }
-    return NULL;       
-  }
 
   /* If queue is empty, wait until some segment is enqueued */
   if (queue_size[type] == 0) {
