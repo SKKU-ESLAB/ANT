@@ -364,10 +364,6 @@ void NetworkManager::decrease_adapter_cb_wrapper(DevState stat) {
 }
 
 void NetworkManager::decrease_adapter() {
-  struct timespec now;
-  int diff_time;
-
-  
   // The adapter is already increasing or decreasing adapter
   if (state == kNetStatIncr || state == kNetStatDecr) {
     OPEL_DBG_WARN("Data ports are busy");
@@ -380,22 +376,13 @@ void NetworkManager::decrease_adapter() {
       NetworkSwitcher::get_instance()->done_switch();
       return;
   }
- 
-  clock_gettime(CLOCK_MONOTONIC, &now);
-  diff_time = now.tv_sec - increase_time.tv_sec;
-  printf("diff time: %d\n", diff_time);
-  if(diff_time < 10) {
-    OPEL_DBG_ERR("Not much time elasped after increasing adapter");
-      NetworkSwitcher::get_instance()->done_switch();
-    return ;
-  }
 
   clock_gettime(CLOCK_MONOTONIC, &increase_time);
   OPEL_DBG_LOG("Decreasing data adapter...");
   
   prev_state = state;
   state = kNetStatDecr;
-  
+
   /* Select one of the data adapters on */
   NetworkAdapter *na = select_device_on();
   if(na == NULL){
@@ -426,6 +413,7 @@ void NetworkManager::decrease_adapter() {
   na->dev_switch(kDevDiscon, decrease_adapter_cb_wrapper); 
  __OPEL_FUNCTION_EXIT__; 
 }
+
 /*  This function selects the adapter off in the list to use additionally.
  *  This selecting algorithm can be optimized for better output.
  */

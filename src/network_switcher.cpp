@@ -69,7 +69,7 @@ void NetworkSwitcher::run_switcher(void) {
        * Dynamic adapter control 2
        * Decrease adapter when queue size is under threshold for a while.
        */
-      if (this->mTryDequeue > 0) {
+      if (this->mTryDequeue > 1) {
         this->mTryDequeue = 0;
         if (this->mStatus == kNSStatusIdle) {
           /* Decrease adapter */
