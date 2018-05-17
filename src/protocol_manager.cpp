@@ -41,7 +41,7 @@ void ProtocolManager::data_to_protocol_data(const uint8_t *dat,
   ret_pd -> data = dat;
 
 #ifdef COMMUNICATOR_UNIT_TEST
-  OPEL_DBG_LOG("%d\t%u\t[%s]",
+  LOG_VERB("%d\t%u\t[%s]",
                ret_pd -> id,
                ret_pd -> len,
                ret_pd -> data);
@@ -85,7 +85,7 @@ uint32_t ProtocolManager::serialize(ProtocolData *pd,
   serialize_data(buf + offset, payload_size, serialized_vector + data_offset);
 
 #ifdef COMMUNICATOR_UNIT_TEST
-  OPEL_DBG_LOG("%p\t(%u)\tFrom %p~%p(%u)",
+  LOG_VERB("%p\t(%u)\tFrom %p~%p(%u)",
                serialized_vector,
                vector_size,
                buf + offset,
@@ -98,7 +98,7 @@ uint32_t ProtocolManager::serialize(ProtocolData *pd,
     buf_test = *(buf);
     buf_test = *(buf + offset + payload_size -1);
   }
-  OPEL_DBG_LOG("Done");
+  LOG_VERB("Done");
 #endif /* COMMUNICATOR_UNIT_TEST */
 
   *ret_vector = serialized_vector;

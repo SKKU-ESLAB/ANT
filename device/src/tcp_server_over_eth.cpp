@@ -45,7 +45,7 @@ TCPServerOverEthAdapter::TCPServerOverEthAdapter(uint32_t id, int port) {
 
   if (setsockopt(serv_sock, SOL_SOCKET, SO_REUSEADDR, (char *)&reuse,
                  sizeof(int)) == -1) {
-    OPEL_DBG_LOG("Socket setup failed");
+    LOG_VERB("Socket setup failed");
     return;
   }
 
@@ -77,17 +77,17 @@ bool TCPServerOverEthAdapter::device_off(void) {
 bool TCPServerOverEthAdapter::make_connection(void) {
   int caddr_len = sizeof(caddr);
 
-  OPEL_DBG_LOG("Eth %d] Accepting...client",port);
+  LOG_VERB("Eth %d] Accepting...client",port);
   cli_sock = accept(serv_sock, (struct sockaddr *)&caddr, (socklen_t *)&caddr_len);
   if (cli_sock < 0) {
-    OPEL_DBG_WARN("Eth %d] Accept failed", port);
+    LOG_WARN("Eth %d] Accept failed", port);
     return false;
   }
   else {
-    OPEL_DBG_WARN("Eth %d] Accepted", port);
+    LOG_WARN("Eth %d] Accepted", port);
   }
 
-  OPEL_DBG_VERB("Eth %d] TCP Client connected", port);
+  LOG_DEBUG("Eth %d] TCP Client connected", port);
 
   return true;
 }
@@ -101,12 +101,12 @@ int TCPServerOverEthAdapter::send(const void *buf, size_t len) {
   while (sent < len) {
     int sent_bytes = write(cli_sock, buf, len);
     if (sent_bytes <= 0) {
-      OPEL_DBG_WARN("Eth %d] Cli sock closed",port);
+      LOG_WARN("Eth %d] Cli sock closed",port);
       return -1;
     }
 
     sent += sent_bytes;
-    OPEL_DBG_LOG("Eth %d] sent the data: %d\n", port, sent_bytes);
+    LOG_VERB("Eth %d] sent the data: %d\n", port, sent_bytes);
   }
  
   return sent;
@@ -121,7 +121,7 @@ int TCPServerOverEthAdapter::recv(void *buf, size_t len) {
   while (recved < len) {
     int recv_bytes = read(cli_sock, buf, len);
     if (recv_bytes <= 0) {
-      OPEL_DBG_WARN("Cli sock closed");
+      LOG_WARN("Cli sock closed");
       return -1;
     }
 
@@ -136,7 +136,7 @@ void TCPServerOverEthAdapter::on_control_recv(const void *buf, size_t len) {
 
   msg[len] = 0;
   memcpy(msg, buf, len);
-  OPEL_DBG_LOG("Got : %s", msg);
+  LOG_VERB("Got : %s", msg);
 
   delete[] msg;
 

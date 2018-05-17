@@ -180,7 +180,7 @@ void SegmentManager::enqueue(SegQueueType type, Segment *seg) {
      * it enqueues its segments to the pending queue, not normal queue.
      */
     if (seg->seq_no <= next_seq_no[type]){
-      OPEL_DBG_ERR("Sequence # Error!: %d > %d, %s", 
+      LOG_ERR("Sequence # Error!: %d > %d, %s", 
           seg->seq_no, next_seq_no[type], type == kSegSend? "Send":"Recv");
     }
     assert(seg->seq_no > next_seq_no[type]);
@@ -232,9 +232,9 @@ Segment *SegmentManager::dequeue(SegQueueType type) {
   /* If queue is empty, wait until some segment is enqueued */
   if (queue_size[type] == 0) {
     if(type == kSegSend) {
-      OPEL_DBG_LOG("sending queue is empty. wait for another\n");
+      LOG_VERB("sending queue is empty. wait for another\n");
     } else {
-      OPEL_DBG_LOG("receiving queue is empty. wait for another\n");
+      LOG_VERB("receiving queue is empty. wait for another\n");
     }
 
     not_empty[type].wait(lck);
@@ -243,7 +243,7 @@ Segment *SegmentManager::dequeue(SegQueueType type) {
   /* Dequeue from queue */
   Segment *ret = queue[type].front();
   if (ret == NULL) {
-    OPEL_DBG_LOG("Queue[%s] is NULL(empty)", type==0? "send":"recv");
+    LOG_VERB("Queue[%s] is NULL(empty)", type==0? "send":"recv");
     return NULL;
   }
   queue[type].pop_front();
@@ -318,7 +318,7 @@ void SegmentManager::reset(void) {
 }
 
 void SegmentManager::notify_queue() {
-  OPEL_DBG_LOG("notify all\n");
+  LOG_VERB("notify all\n");
   not_empty[kSegSend].notify_all();
   not_empty[kSegRecv].notify_all();
 }

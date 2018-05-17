@@ -29,7 +29,7 @@
 #include <network_manager.h>
 
 /**
- * < Memory Free Timing >
+ * < When to Free Buffer >
  * [*] Sending
  * When ProtocolManager::serialize() method is invoked, memory will be allocated.
  * ProtocolManager is in charge of allocating this memory.
@@ -79,7 +79,7 @@ int Communicator::send_data(const void *buf, uint32_t len) {
   // Hand over the data to the Protocol Manager
   sent_bytes = ProtocolManager::send_packet(serialized_vector, packet_size);
   if (unlikely(sent_bytes < 0)) {
-    OPEL_DBG_ERR("Sending stopped(%u/%u) by %d",
+    LOG_ERR("Sending stopped(%u/%u) by %d",
                  curr_offset,
                  len,
                  sent_bytes);

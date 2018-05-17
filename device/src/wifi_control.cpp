@@ -45,7 +45,7 @@ static struct sigaction act, old;
 
 static void udhcp_sighandler(int signo, siginfo_t *sinfo, void *context) {
   do {
-    //OPEL_DBG_LOG("%s : %d", strsignal(signo), sinfo->si_pid);
+    //LOG_VERB("%s : %d", strsignal(signo), sinfo->si_pid);
     if (signo != SIGCHLD || udhcpd_pid == 0) break;
     
     if (sinfo->si_pid == udhcpd_pid) {
@@ -77,7 +77,7 @@ static int run_cli(char *res_buf, size_t len, char *const params[], int v = 0) {
   // UDHCPD cli
   if (v == 2) {
     if ((pid = fork()) < 0) {
-      OPEL_DBG_ERR("Fork error");
+      LOG_ERR("Fork error");
       return errno;
     } else if (pid == 0) {
       int zero_fd = open("/dev/zero", O_WRONLY);
@@ -85,22 +85,22 @@ static int run_cli(char *res_buf, size_t len, char *const params[], int v = 0) {
       execv(UDHCPD_PATH, params);
     } else {
       udhcpd_pid = pid;
-      OPEL_DBG_LOG("UDHCPD_PID : %d", pid);
+      LOG_VERB("UDHCPD_PID : %d", pid);
       return 0;
     }
   }
 
   if (pipe(fd) < 0) {
-    OPEL_DBG_ERR("pipe open error");
+    LOG_ERR("pipe open error");
     return errno;
   }
   dup2(1, bk);
 
   if ((pid = fork()) < 0) {
-    OPEL_DBG_ERR("fork error");
+    LOG_ERR("fork error");
     return errno;
   } else if (pid > 0) {
-    //OPEL_DBG_LOG("Forked PID : %d", pid);
+    //LOG_VERB("Forked PID : %d", pid);
     /* Parent process */
     close(fd[1]);
 
@@ -108,7 +108,7 @@ static int run_cli(char *res_buf, size_t len, char *const params[], int v = 0) {
     int read_bytes = read(fd[0], buf, 1024);
 
     if (read_bytes < 0) {
-      OPEL_DBG_ERR("%d/%d read error", pid, udhcpd_pid);
+      LOG_ERR("%d/%d read error", pid, udhcpd_pid);
       return errno;
     }
 
@@ -185,7 +185,7 @@ inline static int wifi_direct_ip_setup(void) {
   assert(wpa_cli_intf_name[0] != '\0');
 
   int ret = run_cli(buf, 256, params, 1);
-  //OPEL_DBG_LOG(buf);
+  //LOG_VERB(buf);
 
   return ret;
 }
@@ -223,16 +223,16 @@ inline static int wifi_dhcp_setup(void) {
   close(conf_fd);
 
   int ret = run_cli(buf, 256, params, 2);
-  //OPEL_DBG_LOG("dhcp:%s", buf);
+  //LOG_VERB("dhcp:%s", buf);
   return ret;
 }
 
 extern int wifi_dhcp_close(void) {
   if (unlink(DHCPD_CONF_PATH) != 0)
-    OPEL_DBG_WARN("%s", strerror(errno));
+    LOG_WARN("%s", strerror(errno));
 
   if (udhcpd_pid == 0) {
-    OPEL_DBG_WARN("udhcpd is not alive");
+    LOG_WARN("udhcpd is not alive");
     return 0;
   }
 
@@ -246,7 +246,7 @@ extern int wifi_direct_server_up(char *device_name) {
   int ret;
 
   if (wpa_cli_intf_name[0] != '\0') {
-    OPEL_DBG_LOG("WFD is already up-%s", wpa_cli_intf_name);
+    LOG_VERB("WFD is already up-%s", wpa_cli_intf_name);
     return -1;
   }
 
@@ -259,17 +259,17 @@ extern int wifi_direct_server_up(char *device_name) {
     return ret;
 
   if (wpa_cli_dev_name[0] == '\0') {
-    OPEL_DBG_LOG("%s", buf);
+    LOG_VERB("%s", buf);
     char *ptrptr;
     char *ptr = strtok_r(buf, "\t \n\'", &ptrptr);
     while (ptr != NULL) {
       if (strstr(ptr, "p2p-dev")) {
         snprintf(wpa_cli_dev_name, sizeof(wpa_cli_dev_name), "%s", ptr);
       } else if (strstr(ptr, "FAIL")) {
-        OPEL_DBG_WARN("P2P Group add failed");
+        LOG_WARN("P2P Group add failed");
         return -1;
       } else if (strstr(ptr, "OK")) {
-        OPEL_DBG_LOG("P2P Group added");
+        LOG_VERB("P2P Group added");
       }
 
       ptr = strtok_r(NULL, "\t \n\'", &ptrptr);
@@ -288,9 +288,9 @@ extern int wifi_direct_server_up(char *device_name) {
     if (strstr(ptr, "p2p-wlan")) {
       snprintf(wpa_cli_intf_name, sizeof(wpa_cli_intf_name), "%s", ptr);
     } else if (strstr(ptr, "PONG")) {
-      OPEL_DBG_LOG("Added interface:%s", wpa_cli_intf_name);
+      LOG_VERB("Added interface:%s", wpa_cli_intf_name);
     } else if (strstr(ptr, "FAIL")) {
-      OPEL_DBG_WARN("P2P Group add failed");
+      LOG_WARN("P2P Group add failed");
       wpa_cli_intf_name[0] = '\0';
       return -1;
     }
@@ -309,28 +309,28 @@ extern int wifi_direct_server_down(void) {
   int ret;
 
   if (wpa_cli_intf_name[0] == '\0') {
-    OPEL_DBG_LOG("WFD is not up");
+    LOG_VERB("WFD is not up");
     return -1;
   }
 
 
   ret = wifi_direct_p2p_group_remove(buf, 1024);
-  OPEL_DBG_LOG(buf);
+  LOG_VERB(buf);
 
   char *ptrptr;
   char *ptr = strtok_r(buf, "\t \n\'", &ptrptr);
   while (ptr != NULL) {
     if (strstr(ptr, "OK")) {
-      OPEL_DBG_LOG("Succedded to remove p2p group");
+      LOG_VERB("Succedded to remove p2p group");
       wpa_cli_intf_name[0] = '\0';
       return ret;
     } else if (strstr(ptr, "FAIL")) {
-      OPEL_DBG_LOG("Failed to remove p2p group");
+      LOG_VERB("Failed to remove p2p group");
       return -1;
     }
   }
 
-  OPEL_DBG_ERR("Assertion: Must not reach here");
+  LOG_ERR("Assertion: Must not reach here");
   return -1;
 }
 
@@ -338,7 +338,7 @@ extern int wifi_direct_server_reset(char *pin, size_t len) {
   char buf[1024] = {0, };
   int ret;
   if (wpa_cli_intf_name[0] == '\0') {
-    OPEL_DBG_LOG("WFD is not up");
+    LOG_VERB("WFD is not up");
     return -1;
   }
 
@@ -347,7 +347,7 @@ extern int wifi_direct_server_reset(char *pin, size_t len) {
     return ret;
 
   // Selected interface 'p2p-wlan0-9' 33996608
-  OPEL_DBG_LOG("Pin parsing %s", buf);
+  LOG_VERB("Pin parsing %s", buf);
   char *ptrptr;
   char *ptr = strtok_r(buf, "\t \n\'", &ptrptr);  // Selected
   ptr = strtok_r(NULL, "\t \n\'", &ptrptr);  // interface
@@ -355,10 +355,10 @@ extern int wifi_direct_server_reset(char *pin, size_t len) {
   ptr = strtok_r(NULL, "\t \n\'", &ptrptr);  // 33996608
 
   snprintf(pin, len, "%s", ptr);
-  OPEL_DBG_LOG("Pin:%s", ptr);
+  LOG_VERB("Pin:%s", ptr);
 
   if (udhcpd_pid == 0) {
-    OPEL_DBG_LOG("UDHCP is off > turn it up");
+    LOG_VERB("UDHCP is off > turn it up");
     wifi_dhcp_setup();
   }
 
@@ -369,12 +369,12 @@ extern int wifi_get_p2p_device_addr(char *dev_addr, size_t len) {
   char buf[1024];
   int ret;
   if (wpa_cli_intf_name[0] == '\0') {
-    OPEL_DBG_LOG("WFD is not up");
+    LOG_VERB("WFD is not up");
     return -1;
   }
 
   ret = wifi_direct_wpa_cli_get_status(buf, 1024);
-  //OPEL_DBG_LOG("Status: %s", buf);
+  //LOG_VERB("Status: %s", buf);
   if (ret != 0)
     return ret;
 
@@ -384,10 +384,10 @@ extern int wifi_get_p2p_device_addr(char *dev_addr, size_t len) {
     if (strstr(ptr, "p2p_device_address")) {
       // p2p_device_address=XX
       sscanf(ptr, "%*[^=]=%s", dev_addr);
-      //OPEL_DBG_LOG("p2p_device_address=%s", dev_addr);
+      //LOG_VERB("p2p_device_address=%s", dev_addr);
       break;
     } else if (strstr(ptr, "FAIL")) {
-      OPEL_DBG_WARN("Get p2p device address failed");
+      LOG_WARN("Get p2p device address failed");
       return -1;
     }
 
@@ -410,21 +410,21 @@ extern int wifi_direct_ip_addr(char *buf, size_t len) {
   int ret = wifi_direct_wpa_cli_get_status(buf, 1024);
   if (ret != 0)
     return ret;
-  //OPEL_DBG_LOG("Status: %s", buf);
+  //LOG_VERB("Status: %s", buf);
 
   char *ptrptr;
   char *ptr = strtok_r(buf, "\t \n\'", &ptrptr);
   while (ptr != NULL) {
     if (strstr(ptr, "ip_address")) {
       sscanf(ptr, "%*[^=]=%s", buf);
-      OPEL_DBG_LOG("IP_Device_Addrress = %s", buf);
+      LOG_VERB("IP_Device_Addrress = %s", buf);
       return 0;
     }
 
     ptr = strtok_r(NULL, "\t \n\'", &ptrptr);
   }
 
-  OPEL_DBG_WARN("Get IP address failed");
+  LOG_WARN("Get IP address failed");
   return -1;
 }
 }  /* namespace wifi */
