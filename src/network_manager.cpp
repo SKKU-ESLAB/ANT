@@ -93,25 +93,25 @@ void NetworkManager::run_control_recver(void) {
   
   NetworkAdapter *na = adapter_list[kNetCtrl].front();
   assert(na != NULL);
-  OPEL_DBG_LOG("Control recver activated");
+  LOG_VERB("Control recver activated");
   
   while (true) {
     // Control data parsing
     res = na->recv(data, 1);
     if (res <= 0) {
-      OPEL_DBG_LOG("Control adapter could be closed");
+      LOG_VERB("Control adapter could be closed");
       sleep(1);
       /*
-      OPEL_DBG_ERR("Control adapter has been closed");
+      LOG_ERR("Control adapter has been closed");
       break;
       */
     } else {
     /*  If the control message is 'increase adapter', */
     if (data[0] == kCtrlReqIncr) {
-      OPEL_DBG_VERB("DataIncr request arrived");
+      LOG_DEBUG("DataIncr request arrived");
       res = na->recv(data, 2);
       if (res <= 0) {
-        OPEL_DBG_VERB("Control adapter has been closed");
+        LOG_DEBUG("Control adapter has been closed");
         break;
       }
 
@@ -121,7 +121,7 @@ void NetworkManager::run_control_recver(void) {
       memcpy(&ndev_id, data, 2);
       dev_id = ntohs(ndev_id);
 
-      OPEL_DBG_VERB("Data adapter increasing %x", dev_id);
+      LOG_DEBUG("Data adapter increasing %x", dev_id);
 
       NetworkAdapter *data_na = NULL;
 
@@ -143,7 +143,7 @@ void NetworkManager::run_control_recver(void) {
       na->dev_switch(kDevCon, increase_adapter_cb_wrapper);
     } else if (data[0] == kCtrlReqDecr) {
     } else if (data[0] == kCtrlReqPriv) {
-      OPEL_DBG_LOG("Private data arrived");
+      LOG_VERB("Private data arrived");
       uint16_t ndev_id;
       uint16_t dev_id;
       uint32_t nlen;
@@ -176,7 +176,7 @@ void NetworkManager::run_control_recver(void) {
       } while (false);
 
       if (res <= 0) {
-        OPEL_DBG_VERB("Control adapter closed");
+        LOG_DEBUG("Control adapter closed");
         break;
       }
     }
@@ -189,12 +189,12 @@ void NetworkManager::run_control_recver(void) {
 
 void NetworkManager::send_control_data(const void *data, size_t len) {
   if (state < kNetStatControl) {
-    OPEL_DBG_WARN("Communicator disconnected");
+    LOG_WARN("Communicator disconnected");
     return;
   }
 
   if (state != kNetStatIncr && state != kNetStatDecr) {
-    OPEL_DBG_WARN("Control data MUST BE sent in only increasing or decreasing adapters");
+    LOG_WARN("Control data MUST BE sent in only increasing or decreasing adapters");
     return;
   }
 
@@ -209,7 +209,7 @@ void NetworkManager::install_control_cb(DevState res) {
   // After the adapter is connected
   if (res == kDevCon) {
     NetworkManager::get_instance()->state = kNetStatControl;
-    OPEL_DBG_VERB("Communicator successfully connected");
+    LOG_DEBUG("Communicator successfully connected");
     if (th_recver != NULL) {
       delete th_recver;
       th_recver = NULL;
@@ -220,13 +220,13 @@ void NetworkManager::install_control_cb(DevState res) {
   } else {
     sleep(1);
     NetworkManager::get_instance()->connect_control_adapter();
-    OPEL_DBG_WARN("Communicator re-trying to connect...");
+    LOG_WARN("Communicator re-trying to connect...");
   }
 }
 
 void NetworkManager::connect_control_adapter() {
   if (unlikely(state > kNetStatDiscon)) {
-    OPEL_DBG_WARN("Invalid trial:Control adapter is not in disconnected state");
+    LOG_WARN("Invalid trial:Control adapter is not in disconnected state");
     return;
   }
   NetworkAdapter *na = adapter_list[kNetCtrl].front();
@@ -238,12 +238,12 @@ void NetworkManager::connect_control_adapter() {
 void NetworkManager::install_control_adapter(NetworkAdapter *na) {
   // Keep only one control adapter in connection 
   if (state > kNetStatDiscon || adapter_list[kNetCtrl].size() > 0) {
-    OPEL_DBG_WARN("Control port already installed");
+    LOG_WARN("Control port already installed");
     return;
   }
   // Already in the connecting state
   if (state == kNetStatConnecting) {
-    OPEL_DBG_WARN("Already connting control port");
+    LOG_WARN("Already connting control port");
     return;
   }
 
@@ -265,14 +265,14 @@ void NetworkManager::increase_adapter_cb(DevState stat) {
   assert(state == kNetStatIncr);
 
   if (stat == kDevCon) {
-    OPEL_DBG_LOG("Adapter connected :%d ", connecting_adapter->dev_id);
+    LOG_VERB("Adapter connected :%d ", connecting_adapter->dev_id);
     state = kNetStatData;
     connecting_adapter = NULL;
-    OPEL_DBG_LOG("increase the queue_threshold\n");
+    LOG_VERB("increase the queue_threshold\n");
     NetworkSwitcher::get_instance()->inc_queue_threshold();
   } else {
     // Failed to connect, roll back state
-    OPEL_DBG_LOG("Adapter Connection Failed\n");
+    LOG_VERB("Adapter Connection Failed\n");
     state = prev_state;
   }
   NetworkSwitcher::get_instance()->done_switch();
@@ -285,26 +285,26 @@ void NetworkManager::increase_adapter_cb_wrapper(DevState stat) {
 void NetworkManager::increase_adapter() {
   // The adapter is already increasing adapter
   if (state == kNetStatIncr || state == kNetStatDecr) {
-    //OPEL_DBG_WARN("Data ports are busy");
+    //LOG_WARN("Data ports are busy");
     NetworkSwitcher::get_instance()->done_switch();
     return;
   }
 
   if (state <= kNetStatConnecting) {
-    //OPEL_DBG_ERR("Control port is not opened yet");
+    //LOG_ERR("Control port is not opened yet");
     NetworkSwitcher::get_instance()->done_switch();
     return;
   }
 
   clock_gettime(CLOCK_MONOTONIC, &increase_time);
-  //OPEL_DBG_LOG("Increasing data adapter...");
+  //LOG_VERB("Increasing data adapter...");
   prev_state = state;
   state = kNetStatIncr;
 
   /* Select the data adapter available */
   NetworkAdapter *na = select_device();
   if (na == NULL) {
-    //OPEL_DBG_WARN("All devices are already up");
+    //LOG_WARN("All devices are already up");
     state = prev_state;
     NetworkSwitcher::get_instance()->done_switch();
     return;
@@ -340,19 +340,19 @@ void NetworkManager::decrease_adapter_cb(DevState stat) {
   assert(state == kNetStatDecr);
 
   if (stat == kDevDiscon) {
-    OPEL_DBG_LOG("Adapter disconnected :%d ", connecting_adapter->dev_id);
+    LOG_VERB("Adapter disconnected :%d ", connecting_adapter->dev_id);
     if(is_data_adapter_on()){ 
-      //OPEL_DBG_LOG("there is the adapter on\n");
+      //LOG_VERB("there is the adapter on\n");
       state = kNetStatData;
     } else {
-      //OPEL_DBG_LOG("there is no adapter on\n");
+      //LOG_VERB("there is no adapter on\n");
       state = kNetStatControl;
     }
     connecting_adapter = NULL;
-    OPEL_DBG_LOG("decrease the queue_threshold\n");
+    LOG_VERB("decrease the queue_threshold\n");
     NetworkSwitcher::get_instance()->dec_queue_threshold();
   } else {
-    OPEL_DBG_LOG("Adapter is not disabled\n");
+    LOG_VERB("Adapter is not disabled\n");
     // If failed to connect, roll back state
     state = prev_state;
   }
@@ -366,19 +366,19 @@ void NetworkManager::decrease_adapter_cb_wrapper(DevState stat) {
 void NetworkManager::decrease_adapter() {
   // The adapter is already increasing or decreasing adapter
   if (state == kNetStatIncr || state == kNetStatDecr) {
-    OPEL_DBG_WARN("Data ports are busy");
+    LOG_WARN("Data ports are busy");
     NetworkSwitcher::get_instance()->done_switch();
     return;
   }
 
   if (state <= kNetStatConnecting){
-      OPEL_DBG_ERR("Control port is not opened yet");
+      LOG_ERR("Control port is not opened yet");
       NetworkSwitcher::get_instance()->done_switch();
       return;
   }
 
   clock_gettime(CLOCK_MONOTONIC, &increase_time);
-  OPEL_DBG_LOG("Decreasing data adapter...");
+  LOG_VERB("Decreasing data adapter...");
   
   prev_state = state;
   state = kNetStatDecr;
@@ -386,7 +386,7 @@ void NetworkManager::decrease_adapter() {
   /* Select one of the data adapters on */
   NetworkAdapter *na = select_device_on();
   if(na == NULL){
-    OPEL_DBG_WARN("All devices are already down");
+    LOG_WARN("All devices are already down");
     state = prev_state;
     NetworkSwitcher::get_instance()->done_switch();
     return;
@@ -411,7 +411,7 @@ void NetworkManager::decrease_adapter() {
 
   connecting_adapter = na;
   na->dev_switch(kDevDiscon, decrease_adapter_cb_wrapper); 
- __OPEL_FUNCTION_EXIT__; 
+ __FUNCTION_EXIT__; 
 }
 
 /*  This function selects the adapter off in the list to use additionally.
@@ -457,10 +457,10 @@ NetworkAdapter *NetworkManager::select_device_on() {
     it++;
   }
   if(num_on > 1){
-    OPEL_DBG_LOG("working adapter is more than once\n");
+    LOG_VERB("working adapter is more than once\n");
     return res;
   } else {
-    OPEL_DBG_LOG("working adapter is one or 0\n");
+    LOG_VERB("working adapter is one or 0\n");
     return NULL;
   }
 }

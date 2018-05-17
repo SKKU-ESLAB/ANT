@@ -63,10 +63,10 @@ bool RfcommServerOverBtAdapter::make_connection() {
   struct sockaddr_rc cli_addr = {0, };
   socklen_t opt = sizeof(cli_addr);
 
-  OPEL_DBG_LOG("Bluetooth accept...");
+  LOG_VERB("Bluetooth accept...");
   cli_sock = accept(serv_sock, (struct sockaddr *)&cli_addr, &opt);
   if (cli_sock < 0) {
-    OPEL_DBG_WARN("Bluetooth accept failed(%s)", strerror(errno));
+    LOG_WARN("Bluetooth accept failed(%s)", strerror(errno));
     return false;
   }
 
@@ -156,7 +156,7 @@ int RfcommServerOverBtAdapter::bt_register_service() {
     bdaddr_t my_bdaddr_local = {0, 0, 0, 0xff, 0xff, 0xff};
     t_session = sdp_connect(&my_bdaddr_any, &my_bdaddr_local, SDP_RETRY_IF_BUSY);
     if (NULL == t_session) {
-      OPEL_DBG_ERR("Cannot connect to bluetooth sdp server");
+      LOG_ERR("Cannot connect to bluetooth sdp server");
       res = -1;
       break;
     }
@@ -189,7 +189,7 @@ int RfcommServerOverBtAdapter::bt_dynamic_bind_rc() {
     sockaddr.rc_channel = tmp_port;
     err = bind(serv_sock, (struct sockaddr *)&sockaddr, sizeof(struct sockaddr_rc));
     if (!err) {
-      OPEL_DBG_LOG("BT port binded : %d", tmp_port);
+      LOG_VERB("BT port binded : %d", tmp_port);
       return tmp_port;
     }
 
@@ -214,23 +214,23 @@ int RfcommServerOverBtAdapter::bt_open() {
 
   serv_sock = socket(AF_BLUETOOTH, SOCK_STREAM, BTPROTO_RFCOMM);
   if (serv_sock < 0) {
-    OPEL_DBG_WARN("Bluetooth socket open failed(%s)", strerror(errno));
+    LOG_WARN("Bluetooth socket open failed(%s)", strerror(errno));
     return -1;
   }
 
   port = bt_dynamic_bind_rc();
   if (port < 1 || port > 30) {
-    OPEL_DBG_WARN("Bluetooth socket bind failed(%s)", strerror(errno));
+    LOG_WARN("Bluetooth socket bind failed(%s)", strerror(errno));
     return -1;
   }
 
   if (bt_register_service() < 0) {
-    OPEL_DBG_WARN("Bluetooth sdp session creation failed(%s)", strerror(errno));
+    LOG_WARN("Bluetooth sdp session creation failed(%s)", strerror(errno));
     return -1;
   }
 
   if (listen(serv_sock, 1) < 0) {
-    OPEL_DBG_WARN("Listening failed(%s)", strerror(errno));
+    LOG_WARN("Listening failed(%s)", strerror(errno));
     return -1;
   }
   
@@ -242,19 +242,19 @@ int RfcommServerOverBtAdapter::send(const void *buf, size_t len) {
   //fp = fopen("bt.log", "a");
 
   if (cli_sock <= 0){
-    OPEL_DBG_WARN("Socket closed\n");
+    LOG_WARN("Socket closed\n");
     return -1;
   }
 
   while (sent < len) {
     int sent_bytes = write(cli_sock, buf, len);
     if (sent_bytes <= 0) {
-      OPEL_DBG_WARN("Cli sock closed");
+      LOG_WARN("Cli sock closed");
       return -1;
     }
 
     sent += sent_bytes;
-    //OPEL_DBG_LOG("BT %d] sent : %d\n", port, sent_bytes);
+    //LOG_VERB("BT %d] sent : %d\n", port, sent_bytes);
   }
 
   sent_data += sent;
@@ -272,12 +272,12 @@ int RfcommServerOverBtAdapter::recv(void *buf, size_t len) {
   while (recved < len) {
     int recv_bytes = read(cli_sock, buf, len);
     if (recv_bytes <= 0) {
-      OPEL_DBG_WARN("Cli sock closed");
+      LOG_WARN("Cli sock closed");
       return -1;
     }
 
     recved += recv_bytes;
-    OPEL_DBG_LOG("BT %d] recv : %d\n", port, recv_bytes);
+    LOG_VERB("BT %d] recv : %d\n", port, recv_bytes);
   }
 
   return recved;

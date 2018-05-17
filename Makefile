@@ -35,3 +35,6 @@ power_exp: tests/power.cpp $(OBJ) $(DEV_OBJ)
 
 wfd_test: tests/wfd_test.cpp device/src/wifi_control.cpp
 	$(CC) -o $(BIN_DIR)/$@ $^ -I$(INC) $(LIB) $(FLAG) -I$(DEV_INC)
+
+clean:
+	rm ./obj/*.o ./bin/*

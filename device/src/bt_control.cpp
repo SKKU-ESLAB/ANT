@@ -32,16 +32,16 @@ static int run_cli(char *res_buf, size_t len, char *const params[]) {
   static int initialized;
 
   if (pipe(fd) < 0) {
-    OPEL_DBG_ERR("pipe open error");
+    LOG_ERR("pipe open error");
     return errno;
   }
   dup2(1, bk);
 
   if ((pid = fork()) < 0) {
-    OPEL_DBG_ERR("fork error");
+    LOG_ERR("fork error");
     return errno;
   } else if (pid > 0) {
-    //OPEL_DBG_LOG("Forked PID : %d", pid);
+    //LOG_VERB("Forked PID : %d", pid);
     /* Parent process */
     close(fd[1]);
 
@@ -49,7 +49,7 @@ static int run_cli(char *res_buf, size_t len, char *const params[]) {
     int read_bytes = read(fd[0], buf, 1024);
 
     if (read_bytes < 0) {
-      OPEL_DBG_ERR("%d/%d read error", pid, udhcpd_pid);
+      LOG_ERR("%d/%d read error", pid, udhcpd_pid);
       return errno;
     }
 

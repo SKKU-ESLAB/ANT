@@ -78,7 +78,7 @@ void NetworkSwitcher::run_switcher(void) {
         }
       } else {
         this->mTryDequeue++;
-        OPEL_DBG_LOG("TryDequeue++: %d\n", this->mTryDequeue);
+        LOG_VERB("TryDequeue++: %d\n", this->mTryDequeue);
       }
     }
     usleep(SLEEP_USECS);

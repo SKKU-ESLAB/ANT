@@ -18,6 +18,8 @@
  * limitations under the License.
  */
 
+#define LOG_LEVEL 2
+
 #include <rfcomm_over_bt.h>
 #include <tcp_server_over_eth.h>
 #include <tcp_server_over_wfd.h>

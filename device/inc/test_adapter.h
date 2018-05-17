@@ -32,7 +32,7 @@ class TestAdapter : public NetworkAdapter {
  public:
   TestAdapter() {
     snprintf(dev_name, sizeof(dev_name), "Test Adapter");
-    OPEL_DBG_LOG("Test Adapter created");
+    LOG_VERB("Test Adapter created");
     copied = false;
     set_controllable();
   }
@@ -47,32 +47,32 @@ class TestAdapter : public NetworkAdapter {
   unsigned lenn;
   bool copied;
   bool device_on() {
-    OPEL_DBG_LOG("Devince ON");
+    LOG_VERB("Devince ON");
     return true;
   }
   bool device_off() {
-    OPEL_DBG_LOG("Device OFF");
+    LOG_VERB("Device OFF");
     return true;
   }
   bool make_connection(void) {
-    OPEL_DBG_LOG("Connected");
+    LOG_VERB("Connected");
     sch = true;
     return true;
   }
   bool close_connection(void) {
-    OPEL_DBG_LOG("Closed");
+    LOG_VERB("Closed");
     sch = false;
     return true;
   }
   size_t send(const void *buf, size_t len) {
     if (sch) {
-      OPEL_DBG_LOG("Sent:%x (%u)", buf, len);
+      LOG_VERB("Sent:%x (%u)", buf, len);
       memcpy(buff, buf, len);
       lenn = len;
       copied = true;
       usleep(100000);
     } else {
-      OPEL_DBG_LOG("Failed sending", buf, len);
+      LOG_VERB("Failed sending", buf, len);
     }
 
     return lenn;
@@ -83,7 +83,7 @@ class TestAdapter : public NetworkAdapter {
         if (copied) {
           memcpy(buf, buff, (lenn < len)? lenn:len);
           copied = false;
-          OPEL_DBG_LOG("Recv:%s (%u)",
+          LOG_VERB("Recv:%s (%u)",
                        (unsigned char*)buf + 4,
                        (lenn < len)? lenn : len);
           return (lenn < len)? lenn : len;
@@ -92,7 +92,7 @@ class TestAdapter : public NetworkAdapter {
         }
       }
     } else {
-      OPEL_DBG_LOG("Failed recving", buf, len);
+      LOG_VERB("Failed recving", buf, len);
     }
     return sch;
   }

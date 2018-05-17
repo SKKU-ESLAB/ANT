@@ -76,16 +76,16 @@ void NetworkAdapter::dev_switch(DevState stat, DevStatCb cb) {
       device_off_cb = cb;
       std::thread(std::bind(&NetworkAdapter::dev_off, this)).detach();
       */
-      OPEL_DBG_ERR("Not implemented bug");
+      LOG_ERR("Not implemented bug");
       break;
     case kDevDiscon:
       if (this->stat == kDevDiscon) {
-        OPEL_DBG_WARN("Already disconnected");
+        LOG_WARN("Already disconnected");
         return;
       }
 
       if (this->stat == kDevDisconnecting) {
-        OPEL_DBG_WARN("Device is busy");
+        LOG_WARN("Device is busy");
         return;
       }
       this->stat = kDevDisconnecting;
@@ -95,7 +95,7 @@ void NetworkAdapter::dev_switch(DevState stat, DevStatCb cb) {
     case kDevCon:
       // Can connect the device only if it's in the disconnect state
       if (this->stat > kDevDiscon) {
-        OPEL_DBG_WARN("Cannot connect this adapter: stat(%d)", this->stat);
+        LOG_WARN("Cannot connect this adapter: stat(%d)", this->stat);
         return;
       }
 
@@ -109,7 +109,7 @@ void NetworkAdapter::dev_switch(DevState stat, DevStatCb cb) {
 void NetworkAdapter::set_data_adapter(void) {
   // Check if the adapter is initialized
   if (at == kATInitialized) {
-    OPEL_DBG_WARN("Already initialized: %d", at & kATCtrl);
+    LOG_WARN("Already initialized: %d", at & kATCtrl);
     return;
   }
   // Install the adapter as the data adapter
@@ -122,13 +122,13 @@ void NetworkAdapter::set_data_adapter(void) {
 void NetworkAdapter::set_control_adapter(void) {
   // Check if the adapter is initialized
   if (at & kATInitialized) {
-    OPEL_DBG_WARN("Already initialized: %d", at & kATCtrl);
+    LOG_WARN("Already initialized: %d", at & kATCtrl);
     return;
   }
   
   // Check if the adapter is controllable
   if ((at & kATCtrlable) == 0) {
-    OPEL_DBG_WARN("Not controllable adapter %d", dev_id);
+    LOG_WARN("Not controllable adapter %d", dev_id);
     return;
   }
   // Install the control adapter
@@ -139,20 +139,20 @@ void NetworkAdapter::set_control_adapter(void) {
 
 void NetworkAdapter::join_threads(){
   
-  OPEL_DBG_LOG("wait for the sender thread to end\n");
+  LOG_VERB("wait for the sender thread to end\n");
   sender_semaphore = 1;
   //sender_start.notify_one();
   th_sender->join(); 
   sender_semaphore = 0;
 
-  OPEL_DBG_LOG("wait for the recver thread to end\n");
+  LOG_VERB("wait for the recver thread to end\n");
   recver_semaphore = 1;
   //recver_start.notify_one();
   th_recver->join(); 
   recver_semaphore = 0;
   
  
-  OPEL_DBG_LOG("Joined the sender & recver thread and delete them\n");
+  LOG_VERB("Joined the sender & recver thread and delete them\n");
   delete th_sender;
   delete th_recver;
 
@@ -228,7 +228,7 @@ void NetworkAdapter::_connect(void) {
      *  Control adapter uses other thread (control_recver_thread)
      */
     if ((at & kATCtrl) == 0) {  // Data Adapter
-      OPEL_DBG_LOG("Data adapter connected");
+      LOG_VERB("Data adapter connected");
       th_sender =
           new std::thread(std::bind(&NetworkAdapter::run_sender, this));
       th_recver =
@@ -236,7 +236,7 @@ void NetworkAdapter::_connect(void) {
       //th_sender->detach();
       //th_recver->detach();
     } else { // Control Adapter
-      OPEL_DBG_LOG("Control adapter connected");
+      LOG_VERB("Control adapter connected");
       th_sender = NULL;
       th_recver = NULL;
     }
@@ -245,17 +245,17 @@ void NetworkAdapter::_connect(void) {
   }
   else {
     stat = kDevDiscon;
-    OPEL_DBG_LOG("NetworkAdapter::_connect: Not connected!\n");
+    LOG_VERB("NetworkAdapter::_connect: Not connected!\n");
   }
   if (make_connection_cb){
-    OPEL_DBG_LOG("connect callback called!\n");
+    LOG_VERB("connect callback called!\n");
     make_connection_cb(stat);
   }
   make_connection_cb = NULL;
 }
 
 void NetworkAdapter::_close(void) {
-  __OPEL_FUNCTION_ENTER__;
+  __FUNCTION_ENTER__;
   if (stat != kDevDisconnecting)
     return;
 
@@ -265,11 +265,11 @@ void NetworkAdapter::_close(void) {
 
     while(1){
     if(th_sender == NULL && th_recver == NULL){
-      OPEL_DBG_LOG("No thread exists\n");
+      LOG_VERB("No thread exists\n");
     
       bool res = close_connection();
       if (res) {
-        OPEL_DBG_LOG("connection closed\n");
+        LOG_VERB("connection closed\n");
         stat = kDevDiscon;
       } else {
         stat = kDevCon;
@@ -279,23 +279,23 @@ void NetworkAdapter::_close(void) {
     
     }
     else {
-      OPEL_DBG_WARN("Still threads exist. Let's wait more\n"); 
+      LOG_WARN("Still threads exist. Let's wait more\n"); 
 
     }
 
     }//end_while
 
   } else { // Control Adapter
-    OPEL_DBG_ERR("Try to turn off the control adapter\n");
+    LOG_ERR("Try to turn off the control adapter\n");
     exit(1);
   }
 
 
   if (close_connection_cb) {
-    OPEL_DBG_LOG("Call close_connection callback\n");
+    LOG_VERB("Call close_connection callback\n");
     close_connection_cb(stat);
   } else{
-    OPEL_DBG_LOG("No callback\n");
+    LOG_VERB("No callback\n");
   }
   close_connection_cb = NULL;
 }
@@ -312,30 +312,30 @@ void NetworkAdapter::run_sender(void) {
 
   if(net_dev_type == kWifiDirect) {
     sm->wfd_state = 1;
-    OPEL_DBG_LOG("WiFi Direct sender thread start working\n");
+    LOG_VERB("WiFi Direct sender thread start working\n");
   } else if (net_dev_type == kBluetooth) {
-    OPEL_DBG_LOG("Bluetooth sender thread start working\n"); 
+    LOG_VERB("Bluetooth sender thread start working\n"); 
   }
 
  while (true) { 
     if (net_dev_type == kBluetooth) {
       while (sm->wfd_state == 1) {
-        OPEL_DBG_LOG("Wifi-direct is on. stop BT sender thread\n");
+        LOG_VERB("Wifi-direct is on. stop BT sender thread\n");
         /*
         std::unique_lock<std::mutex> lck1(sender_lock);
         sender_start.wait(lck1); 
         */
         sleep(1);
-        OPEL_DBG_LOG("Is wfd on? %d\n", sm->wfd_state);
+        LOG_VERB("Is wfd on? %d\n", sm->wfd_state);
 
       }
     }
 
     if (sender_semaphore == 1){
-      OPEL_DBG_LOG("sender semaphore is 1. stop sender thread\n");
+      LOG_VERB("sender semaphore is 1. stop sender thread\n");
       if(net_dev_type == kWifiDirect){
         sm->wfd_state = 0;
-        OPEL_DBG_LOG("wfd off. wfd_state: %d\n", sm->wfd_state);
+        LOG_VERB("wfd off. wfd_state: %d\n", sm->wfd_state);
       }
       break;
     }
@@ -348,10 +348,10 @@ void NetworkAdapter::run_sender(void) {
 
     if (to_send == NULL) {
       if (stat < kDevCon) {
-        OPEL_DBG_WARN("device is not in connection");
+        LOG_WARN("device is not in connection");
         if(net_dev_type == kWifiDirect){
           sm->wfd_state = 0;
-        OPEL_DBG_LOG("wfd off. wfd_state: %d\n", sm->wfd_state);
+        LOG_VERB("wfd off. wfd_state: %d\n", sm->wfd_state);
       }
         break;
       } else {
@@ -361,10 +361,10 @@ void NetworkAdapter::run_sender(void) {
 
     int len = kSegHeaderSize + kSegSize;
     const void *data = to_send->data;
-    //OPEL_DBG_LOG("to_send seq_no: %d", to_send->seq_no);
+    //LOG_VERB("to_send seq_no: %d", to_send->seq_no);
     bool res = this->send(data, len); 
     if (!res) {
-      OPEL_DBG_WARN("Sending failed at %s (%s)", dev_name, strerror(errno));
+      LOG_WARN("Sending failed at %s (%s)", dev_name, strerror(errno));
       return_sending_failed_packet(to_send);
       break;
     }
@@ -380,9 +380,9 @@ void NetworkAdapter::run_recver(void) {
   Segment *free_seg = sm->get_free_segment();
 
   if(net_dev_type == kWifiDirect){
-    OPEL_DBG_LOG("WiFi Direct recver thread start working\n");
+    LOG_VERB("WiFi Direct recver thread start working\n");
   } else if (net_dev_type = kBluetooth){
-    OPEL_DBG_LOG("Bluetooth recver thread start working\n"); 
+    LOG_VERB("Bluetooth recver thread start working\n"); 
   }
 
 
@@ -390,7 +390,7 @@ void NetworkAdapter::run_recver(void) {
 
     if(net_dev_type == kBluetooth){
       while(sm->wfd_state == 1){
-        OPEL_DBG_LOG("Wifi-direct is on. stop BT recver thread\n");
+        LOG_VERB("Wifi-direct is on. stop BT recver thread\n");
         /*
         std::unique_lock<std::mutex> lck2(recver_lock);
         recver_start.wait(lck2);
@@ -400,7 +400,7 @@ void NetworkAdapter::run_recver(void) {
     }
     
    if(recver_semaphore == 1){
-     OPEL_DBG_LOG("recver semaphore is 1. stop recver thread\n");
+     LOG_VERB("recver semaphore is 1. stop recver thread\n");
      break;
    }
 
@@ -408,7 +408,7 @@ void NetworkAdapter::run_recver(void) {
     int len = kSegSize + kSegHeaderSize;
     int res = this->recv(buf, len);
     if (res < len) {
-      OPEL_DBG_WARN("Recving failed at %s (%s)", dev_name, strerror(errno));
+      LOG_WARN("Recving failed at %s (%s)", dev_name, strerror(errno));
       sm->free_segment(free_seg);
       break;
     }
@@ -421,7 +421,7 @@ void NetworkAdapter::run_recver(void) {
     free_seg->seq_no = ntohl(net_seq_no);
     free_seg->flag_len = ntohl(net_flag_len);
 
-    OPEL_DBG_LOG("Recved:%d/%d(%d)", free_seg->seq_no, free_seg->flag_len, res);
+    LOG_VERB("Recved:%d/%d(%d)", free_seg->seq_no, free_seg->flag_len, res);
     sm->enqueue(kSegRecv, free_seg);
     free_seg = sm->get_free_segment();
   }
@@ -440,7 +440,7 @@ void NetworkAdapter::send_ctrl_msg(const void *buf, int len) {
   uint32_t net_len = htonl(len);
 
   if ((at & kATCtrl) == kATCtrl) {
-    OPEL_DBG_WARN("Cannot transfer private data in control adapter");
+    LOG_WARN("Cannot transfer private data in control adapter");
     return;
   }
 
