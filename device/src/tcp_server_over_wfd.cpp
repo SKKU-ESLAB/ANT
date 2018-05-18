@@ -177,7 +177,7 @@ bool TCPServerOverWfdAdapter::close_connection() {
   return true;
 }
 
-int TCPServerOverWfdAdapter::send(const void *buf, size_t len) {
+int TCPServerOverWfdAdapter::send_impl(const void *buf, size_t len) {
   int sent = 0;
   //fp = fopen("wfd.log", "a");
 
@@ -201,7 +201,7 @@ int TCPServerOverWfdAdapter::send(const void *buf, size_t len) {
   return sent;
 }
 
-int TCPServerOverWfdAdapter::recv(void *buf, size_t len) {
+int TCPServerOverWfdAdapter::recv_impl(void *buf, size_t len) {
   int recved = 0;
 
   if (cli_sock <= 0) return -1;

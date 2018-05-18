@@ -21,7 +21,12 @@
 
 #ifndef INC_COMMUNICATOR_H_
 #define INC_COMMUNICATOR_H_
+
+#include <segment_manager.h>
+#include <network_manager.h>
+
 #include <stdint.h>
+
 namespace cm {
 
 enum CommErr {
@@ -30,9 +35,7 @@ enum CommErr {
 };
 
 class Communicator {
- public:
-    static Communicator *get_instance(void);
-
+  public:
     /**
      * If data size is big, it is recommanded to use following
      * libraries in a thread
@@ -46,10 +49,26 @@ class Communicator {
      */
     int recv_data(void **buf);
 
-    void finalize(void);
 
- private:
-    Communicator(void);
+    void finalize(void) {
+      SegmentManager::get_instance()->free_segment_all();
+    }
+
+    /* Singleton */
+    static Communicator* get_instance(void) {
+      if (singleton == NULL) {
+        singleton = new Communicator();
+      }
+      return singleton;
+    }
+
+  private:
+    /* Singleton */
+    static Communicator* singleton;
+    Communicator(void) {
+      SegmentManager *sm = SegmentManager::get_instance();
+      NetworkManager *nm = NetworkManager::get_instance();
+    }
 };
 
 } /* namespace cm */

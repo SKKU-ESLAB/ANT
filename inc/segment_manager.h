@@ -22,6 +22,8 @@
 #ifndef INC_SEGMENT_MANAGER_H_
 #define INC_SEGMENT_MANAGER_H_
 
+#include <counter.h>
+
 #include <stdint.h>
 #include <list>
 #include <mutex>
@@ -74,15 +76,15 @@ typedef enum {
  * (*c.f.) Segment Header (seq_no + flag_len) is delicate to memroy alignment.
  *    You need to be careful with the segment header.
  */
+#define SEGMENT_DATA_SIZE (kSegSize + kSegHeaderSize)
 typedef struct {
   uint32_t seq_no;
   uint32_t flag_len;    // To present the size of the segment(consider the flag)
-  uint8_t data[kSegSize + kSegHeaderSize];
+  uint8_t data[SEGMENT_DATA_SIZE];
 } Segment;
 
 class SegmentManager {
  public:
-  static SegmentManager *get_instance(void);
   int wfd_state;
 
   /* Used in protocol manager */
@@ -101,43 +103,70 @@ class SegmentManager {
 
   void notify_queue(void);
 
-  uint32_t get_queue_size(int type) {
-    return this->queue_size[type];
+  uint32_t get_queue_length(int type) {
+    return this->mQueueLength[type].get_size();
+  }
+
+  uint32_t get_queue_data_size(int type) {
+    return this->mQueueLength[type].get_size() * SEGMENT_DATA_SIZE;
+  }
+
+  uint64_t get_send_request_per_sec() {
+    return this->mSendRequest.get_speed();
+  }
+
+  /* Singleton */
+  static SegmentManager* get_instance(void) {
+    if (singleton == NULL)
+      singleton = new SegmentManager();
+    return singleton;
   }
 
  private:
-  SegmentManager(void);
+  /* Singleton */
+  static SegmentManager* singleton;
+  SegmentManager(void) {
+    this->mNextGlobalSeqNo = 0;
+    this->mNextSeqNo[kSegSend] = 0;
+    this->mNextSeqNo[kSegRecv] = 0;
+    this->mFreeSegmentListSize = 0;
 
-  std::mutex seq_no_lock;
-  uint32_t seq_no;
-  uint32_t get_seq_no(uint32_t num_segments);
-  
+    is_start = 0;
+    is_finish = 0;
+    wfd_state = 0;
+  }
+
+  std::mutex mNextGlobalSeqNoLock;
+  uint32_t mNextGlobalSeqNo;
+  uint32_t get_next_global_seq_no(uint32_t num_segments);
+
   // for experiment
   int is_start, is_finish;
   struct timeval start,end;
   FILE *fp2;
 
   /* When access to queue, lock should be acquired */
-  std::mutex lock[kSegMaxQueueType];
-  std::mutex failed_lock;
-  std::condition_variable not_empty[kSegMaxQueueType];
+  std::mutex mQueueLock[kSegMaxQueueType];
+  std::mutex mSendFailQueueLock;
+  std::condition_variable mCondEnqueued[kSegMaxQueueType];
 
-  std::mutex exp_lock;
-  std::condition_variable exp_wait;
-  uint32_t next_seq_no[kSegMaxQueueType];
-  std::list<Segment *> queue[kSegMaxQueueType];
-  std::list<Segment *> failed;
-  std::list<Segment *> pending_queue[kSegMaxQueueType];
+  uint32_t mNextSeqNo[kSegMaxQueueType];
+  std::list<Segment *> mQueues[kSegMaxQueueType];
+  std::list<Segment *> mSendFailQueue;
+  std::list<Segment *> mPendingQueues[kSegMaxQueueType];
 
-  std::mutex free_list_lock;
-  std::list<Segment *> free_list;
-  uint32_t free_list_size;
+  /* Statistics */
+  Counter mSendRequest;
+  Counter mQueueLength[kSegMaxQueueType];
 
-  uint32_t queue_size[kSegMaxQueueType];
+  /* Reserved free segment list */
+  std::mutex mFreeSegmentListLock;
+  std::list<Segment *> mFreeList;
+  uint32_t mFreeSegmentListSize;
+
   void serialize_segment_header(Segment *seg);
 
   void release_segment_from_free_list(uint32_t threshold);
-
 
   void reset_send_queue(void);
   void reset_recv_queue(void);

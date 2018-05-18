@@ -8,7 +8,7 @@ DEV_SRC=./device/src
 DEV_OBJ_DIR=./device/obj
 
 CC=g++
-FLAG=-std=c++11
+FLAG=-std=c++11 -DLOG_LEVEL=2
 LIB=-lpthread
 
 $(OBJ_DIR)/%.o: $(SRC_DIR)/%.cpp
@@ -37,4 +37,4 @@ wfd_test: tests/wfd_test.cpp device/src/wifi_control.cpp
 	$(CC) -o $(BIN_DIR)/$@ $^ -I$(INC) $(LIB) $(FLAG) -I$(DEV_INC)
 
 clean:
-	rm ./obj/*.o ./bin/*
+	rm ./obj/*.o ./bin/* ./device/obj/*.o

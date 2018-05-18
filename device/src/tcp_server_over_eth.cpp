@@ -92,7 +92,7 @@ bool TCPServerOverEthAdapter::make_connection(void) {
   return true;
 }
 
-int TCPServerOverEthAdapter::send(const void *buf, size_t len) {
+int TCPServerOverEthAdapter::send_impl(const void *buf, size_t len) {
   int sent = 0;
  
   if (cli_sock <= 0)
@@ -112,7 +112,7 @@ int TCPServerOverEthAdapter::send(const void *buf, size_t len) {
   return sent;
 }
 
-int TCPServerOverEthAdapter::recv(void *buf, size_t len) {
+int TCPServerOverEthAdapter::recv_impl(void *buf, size_t len) {
   int recved = 0;
 
   if (cli_sock <= 0)

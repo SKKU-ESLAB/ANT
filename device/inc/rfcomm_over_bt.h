@@ -33,6 +33,11 @@ class RfcommServerOverBtAdapter : public NetworkAdapter {
  public:
   RfcommServerOverBtAdapter (uint16_t id, const char *svc_uuid);
   ~RfcommServerOverBtAdapter ();
+
+ protected:
+  int send_impl(const void *buf, size_t len);
+  int recv_impl(void *buf, size_t len);
+
  private:
   int port;
   sdp_session_t *session;
@@ -49,8 +54,6 @@ class RfcommServerOverBtAdapter : public NetworkAdapter {
   bool device_off(void);
   bool make_connection(void);
   bool close_connection(void);
-  int send(const void *buf, size_t len);
-  int recv(void *buf, size_t len);
   uint16_t get_id(void);
   void on_control_recv(const void *buf, size_t len);
 

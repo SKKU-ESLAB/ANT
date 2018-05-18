@@ -237,7 +237,7 @@ int RfcommServerOverBtAdapter::bt_open() {
   return serv_sock;
 }
 
-int RfcommServerOverBtAdapter::send(const void *buf, size_t len) {
+int RfcommServerOverBtAdapter::send_impl(const void *buf, size_t len) {
   int sent = 0;
   //fp = fopen("bt.log", "a");
 
@@ -263,7 +263,7 @@ int RfcommServerOverBtAdapter::send(const void *buf, size_t len) {
   return sent;
 }
 
-int RfcommServerOverBtAdapter::recv(void *buf, size_t len) {
+int RfcommServerOverBtAdapter::recv_impl(void *buf, size_t len) {
   int recved = 0;
 
   if (cli_sock <= 0)

@@ -41,23 +41,7 @@
  * ProtocolManager is in charge of freeing this memory.
  */
 namespace cm {
-static Communicator *communicator_instance = NULL;
-
-Communicator * Communicator::get_instance(void) {
-  if (communicator_instance == NULL) {
-    communicator_instance = new Communicator();
-  }
-  return communicator_instance;
-}
-
-Communicator::Communicator(void) {
-  SegmentManager *sm = SegmentManager::get_instance();
-  NetworkManager *nm = NetworkManager::get_instance();
-}
-
-void Communicator::finalize(void) {
-  SegmentManager::get_instance() -> free_segment_all();
-}
+Communicator* Communicator::singleton = NULL;
 
 int Communicator::send_data(const void *buf, uint32_t len) {
   uint32_t curr_offset = 0;
