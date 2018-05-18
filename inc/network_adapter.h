@@ -22,9 +22,13 @@
 #ifndef INC_NETWORK_ADAPTER_H_
 #define INC_NETWORK_ADAPTER_H_
 
+#include <counter.h>
+
 #include <thread>
 #include <mutex>
 #include <condition_variable>
+
+#include <stdio.h>
 
 namespace cm {
 typedef enum {
@@ -54,17 +58,42 @@ typedef void (*DevStatCb)(DevState res);
 
 class NetworkAdapter {
   friend class NetworkManager;
- public:
-  NetworkAdapter();
-  ~NetworkAdapter();
 
+  public:
   NetworkDevice net_dev_type;  // Type of the network device (enum NetworkDevice)
   DevState get_stat(void);
   virtual void set_data_adapter(void) final;
   virtual void set_control_adapter(void) final;
   bool delete_threads();
 
- protected:
+  uint64_t get_bandwidth_up(void) {
+    this->mSendDataSize.get_speed();
+  }
+
+  uint64_t get_bandwidth_down(void) {
+    this->mReceiveDataSize.get_speed();
+  }
+
+  NetworkAdapter() {
+    at = kATUninitialized;
+    stat = kDevDiscon;
+    net_dev_type = kNone;
+
+    device_on_cb = NULL;
+    device_off_cb = NULL;
+    make_connection_cb = NULL;
+    close_connection_cb = NULL;
+    snprintf(dev_name, sizeof(dev_name), "UNKNOWN");
+
+    th_sender = NULL;
+    th_recver = NULL;
+    sender_semaphore = 0;
+    recver_semaphore = 0;
+  }
+
+  ~NetworkAdapter();
+
+  protected:
   /**
    * Followings should be implemented on a child class
    * return value is either true (on success) or false (on failure)
@@ -82,8 +111,18 @@ class NetworkAdapter {
   virtual bool close_connection(void) = 0;
 
   // If connection is closed, send and recv both should be failed
-  virtual int send(const void *buf, size_t len) = 0;
-  virtual int recv(void *buf, size_t len) = 0;
+  int send(const void *buf, size_t len) {
+    this->mSendDataSize.add(len);
+    this->send_impl(buf, len);
+  }
+
+  int recv(void *buf, size_t len) {
+    this->mReceiveDataSize.add(len);
+    this->recv_impl(buf, len);
+  }
+
+  virtual int send_impl(const void *buf, size_t len) = 0;
+  virtual int recv_impl(void *buf, size_t len) = 0;
 
   // Property information
   virtual uint16_t get_id(void) = 0;
@@ -91,7 +130,7 @@ class NetworkAdapter {
   virtual void on_control_recv(const void *buf, size_t len) = 0;
   virtual void send_ctrl_msg(const void *buf, int len) final;
 
- private:
+  private:
   typedef enum {
     kATUninitialized = 0,
     kATInitialized = 1,
@@ -107,7 +146,10 @@ class NetworkAdapter {
   std::condition_variable sender_start;
   std::condition_variable recver_start;
   int sender_semaphore, recver_semaphore;
-  
+
+  /* Statistics */
+  Counter mSendDataSize;
+  Counter mReceiveDataSize;
 
   /*
    *  Attribute: it has the state of the adapter.
@@ -127,10 +169,10 @@ class NetworkAdapter {
   DevStatCb close_connection_cb;
 
   /*  The sender_thread and recver thread will run these functions.
-   */ 
+  */ 
   void run_sender(void);
   void run_recver(void);
-  
+
   void join_threads();
 
 

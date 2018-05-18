@@ -31,19 +31,6 @@
 namespace cm {
 NetworkSwitcher* NetworkSwitcher::singleton = NULL;
 
-NetworkSwitcher* NetworkSwitcher::get_instance(void) {
-  if(NetworkSwitcher::singleton == NULL) {
-    NetworkSwitcher::singleton = new NetworkSwitcher();
-  }
-  return NetworkSwitcher::singleton;
-}
-
-NetworkSwitcher::NetworkSwitcher(void) {
-  this->mThread = NULL;
-  this->mStatus = kNSStatusIdle;
-  this->mTryDequeue = 0;
-}
-
 void NetworkSwitcher::run(void) {
   this->mThread = new std::thread(std::bind(&NetworkSwitcher::run_switcher, this));
   this->mThread->detach();
@@ -52,7 +39,7 @@ void NetworkSwitcher::run(void) {
 void NetworkSwitcher::run_switcher(void) {
   while(1) {
     SegmentManager *segmentManager = SegmentManager::get_instance();
-    uint32_t sendQueueSize = segmentManager->get_queue_size(kSegSend);
+    uint32_t sendQueueSize = segmentManager->get_queue_length(kSegSend);
 
     if (sendQueueSize > this->mQueueThreshold){
       /* 
@@ -69,16 +56,10 @@ void NetworkSwitcher::run_switcher(void) {
        * Dynamic adapter control 2
        * Decrease adapter when queue size is under threshold for a while.
        */
-      if (this->mTryDequeue > 1) {
-        this->mTryDequeue = 0;
-        if (this->mStatus == kNSStatusIdle) {
-          /* Decrease adapter */
-          this->mStatus = kNSStatusDecreasing;
-          NetworkManager::get_instance()->decrease_adapter();
-        }
-      } else {
-        this->mTryDequeue++;
-        LOG_VERB("TryDequeue++: %d\n", this->mTryDequeue);
+      if (this->mStatus == kNSStatusIdle) {
+        /* Decrease adapter */
+        this->mStatus = kNSStatusDecreasing;
+        NetworkManager::get_instance()->decrease_adapter();
       }
     }
     usleep(SLEEP_USECS);

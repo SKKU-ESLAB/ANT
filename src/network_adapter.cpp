@@ -32,22 +32,7 @@
 #include <functional>
 
 namespace cm {
-NetworkAdapter::NetworkAdapter() {
-  at = kATUninitialized;
-  stat = kDevDiscon;
-  net_dev_type = kNone;
-  
-  device_on_cb = NULL;
-  device_off_cb = NULL;
-  make_connection_cb = NULL;
-  close_connection_cb = NULL;
-  snprintf(dev_name, sizeof(dev_name), "UNKNOWN");
 
-  th_sender = NULL;
-  th_recver = NULL;
-  sender_semaphore = 0;
-  recver_semaphore = 0;
-}
 NetworkAdapter::~NetworkAdapter() {
   if (at == kATUninitialized)
     return;

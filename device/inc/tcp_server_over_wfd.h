@@ -36,6 +36,10 @@ class TCPServerOverWfdAdapter : public NetworkAdapter {
  public:
   TCPServerOverWfdAdapter(uint32_t id, int port, const char *dev_name);
 
+ protected:
+  int send_impl(const void *buf, size_t len);
+  int recv_impl(void *buf, size_t len);
+
  private:
   int port;
   int cli_sock, serv_sock;
@@ -56,8 +60,6 @@ class TCPServerOverWfdAdapter : public NetworkAdapter {
   bool device_off(void);
   bool make_connection(void);
   bool close_connection(void);
-  int send(const void *buf, size_t len);
-  int recv(void *buf, size_t len);
 
   void on_control_recv(const void *buf, size_t len);
 };

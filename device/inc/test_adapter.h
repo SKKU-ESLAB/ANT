@@ -41,6 +41,40 @@ class TestAdapter : public NetworkAdapter {
     return 0x8383;
   }
 
+ protected:
+  size_t send_impl(const void *buf, size_t len) {
+    if (sch) {
+      LOG_VERB("Sent:%x (%u)", buf, len);
+      memcpy(buff, buf, len);
+      lenn = len;
+      copied = true;
+      usleep(100000);
+    } else {
+      LOG_VERB("Failed sending", buf, len);
+    }
+
+    return lenn;
+  }
+  size_t recv_impl(void *buf, size_t len) {
+    if (sch) {
+      while (true) {
+        if (copied) {
+          memcpy(buf, buff, (lenn < len)? lenn:len);
+          copied = false;
+          LOG_VERB("Recv:%s (%u)",
+                       (unsigned char*)buf + 4,
+                       (lenn < len)? lenn : len);
+          return (lenn < len)? lenn : len;
+        } else {
+          usleep(50000);
+        }
+      }
+    } else {
+      LOG_VERB("Failed recving", buf, len);
+    }
+    return sch;
+  }
+
  private:
   bool sch;
   char buff[4096];
@@ -63,38 +97,6 @@ class TestAdapter : public NetworkAdapter {
     LOG_VERB("Closed");
     sch = false;
     return true;
-  }
-  size_t send(const void *buf, size_t len) {
-    if (sch) {
-      LOG_VERB("Sent:%x (%u)", buf, len);
-      memcpy(buff, buf, len);
-      lenn = len;
-      copied = true;
-      usleep(100000);
-    } else {
-      LOG_VERB("Failed sending", buf, len);
-    }
-
-    return lenn;
-  }
-  size_t recv(void *buf, size_t len) {
-    if (sch) {
-      while (true) {
-        if (copied) {
-          memcpy(buf, buff, (lenn < len)? lenn:len);
-          copied = false;
-          LOG_VERB("Recv:%s (%u)",
-                       (unsigned char*)buf + 4,
-                       (lenn < len)? lenn : len);
-          return (lenn < len)? lenn : len;
-        } else {
-          usleep(50000);
-        }
-      }
-    } else {
-      LOG_VERB("Failed recving", buf, len);
-    }
-    return sch;
   }
 
   virtual void on_control_recv(const void *buf, size_t len){

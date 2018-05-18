@@ -28,12 +28,18 @@
 #include <stdint.h>
 #include <list>
 #include <mutex>
+#include <thread>
 #include <condition_variable>
 
 #include <time.h>
 
 
 namespace cm {
+/* Ctrl header structure
+ * |--|----|Data|
+ *  CtrlReq (1B), DevId (2B) if Req >= 2, Data (-B) if Req == 4
+ */
+
 typedef enum {
   kCtrlReqOk = 0,
   kCtrlReqFail = 1,
@@ -42,76 +48,84 @@ typedef enum {
   kCtrlReqPriv = 4 
 } CtrlReq;
 
+typedef enum {
+  kNetCtrl = 0,
+  kNetData = 1,
+  kNetMaxPort = 2
+} PortType;
+
+typedef enum {
+  kNetStatDiscon = 0,
+  kNetStatConnecting = 1,
+  kNetStatControl = 2,
+  kNetStatIncr = 3,
+  kNetStatDecr = 4,
+  kNetStatData = 5
+} NetStat;
+
+class NetworkAdapter;
 class NetworkManager {
- public:
-  uint16_t decreasing_adapter_id;
- 
-  static NetworkManager *get_instance(void);
+  public:
+    uint16_t decreasing_adapter_id;
 
-  void install_data_adapter(NetworkAdapter *na);
-  void remove_data_adapter(NetworkAdapter *na);
+    void install_data_adapter(NetworkAdapter *na);
+    void remove_data_adapter(NetworkAdapter *na);
 
-  void install_control_adapter(NetworkAdapter *na);
-  void remove_control_adapter(NetworkAdapter *na);
+    void install_control_adapter(NetworkAdapter *na);
+    void remove_control_adapter(NetworkAdapter *na);
 
-  void increase_adapter(void);
-  void decrease_adapter(void);
-  void send_control_data(const void *data, size_t len);
- private:
-  typedef enum {
-    kNetCtrl = 0,
-    kNetData = 1,
-    kNetMaxPort = 2
-  } PortType;
+    void increase_adapter(void);
+    void decrease_adapter(void);
+    void send_control_data(const void *data, size_t len);
 
-  typedef enum {
-    kNetStatDiscon = 0,
-    kNetStatConnecting = 1,
-    kNetStatControl = 2,
-    kNetStatIncr = 3,
-    kNetStatDecr = 4,
-    kNetStatData = 5
-  } NetStat;
+    std::list<NetworkAdapter *> get_control_adapter_list() {
+      return this->mAdapterList[kNetCtrl];
+    }
+    std::list<NetworkAdapter *> get_data_adapter_list() {
+      return this->mAdapterList[kNetData];
+    }
 
-  typedef struct networkdevicestatus {
-    int num_bt;
-    int num_eth;
-    int num_wfd;
-  } netdevstat;
+    /* Singleton */
+    static NetworkManager *get_instance() {
+      if (singleton == NULL)
+        singleton = new NetworkManager();
 
-  /* Ctrl header structure
-   * |--|----|Data|
-   *  CtrlReq (1B), DevId (2B) if Req >= 2, Data (-B) if Req == 4
-   */
+      return singleton;
+    }
 
-  NetworkManager(void);
+  private:
+    /* Singleton */
+    static NetworkManager* singleton;
+    NetworkManager(void) {
+      this->mConnectingAdapter = NULL;
+      mReceiverThread = NULL;
+      this->mState = kNetStatDiscon;
+      this->mPrevState = kNetStatDiscon;
+    }
 
-  unsigned short connecting_dev_id;
-  NetStat state;
-  NetStat prev_state;
-  std::mutex lock[kNetMaxPort];
-  std::list<NetworkAdapter *> adapter_list[kNetMaxPort];
-  NetworkAdapter *connecting_adapter;
+    NetStat mState;
+    NetStat mPrevState;
+    std::mutex mPortLocks[kNetMaxPort];
+    std::list<NetworkAdapter *> mAdapterList[kNetMaxPort];
+    NetworkAdapter *mConnectingAdapter;
 
-  struct timespec increase_time;
+    std::thread *mReceiverThread;
 
-  std::thread *th_recver;
+    bool is_data_adapter_on(void);
+    static void install_control_cb_wrapper(DevState st);
+    void install_control_cb(DevState st);
+    void connect_control_adapter(void);
+    void run_control_recver(void);
+    void network_closed(void);
 
-  bool is_data_adapter_on(void);
-  static void install_control_cb_wrapper(DevState st);
-  void install_control_cb(DevState st);
-  void connect_control_adapter(void);
-  void run_control_recver(void);
-  void network_closed(void);
+    NetworkAdapter *select_adapter(void);
+    NetworkAdapter *select_adapter_on(void);
 
-  NetworkAdapter *select_device(void);
-  NetworkAdapter *select_device_on(void);
+    static void increase_adapter_cb_wrapper(DevState stat);
+    void increase_adapter_cb(DevState stat);
 
-  static void increase_adapter_cb_wrapper(DevState stat);
-  void increase_adapter_cb(DevState stat);
-
-  static void decrease_adapter_cb_wrapper(DevState stat);
-  void decrease_adapter_cb(DevState stat);
+    static void decrease_adapter_cb_wrapper(DevState stat);
+    void decrease_adapter_cb(DevState stat);
 };
 } /* namespace cm */
 #endif  /* INC_NETWORK_MANAGER_H_ */

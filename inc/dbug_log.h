@@ -44,13 +44,13 @@
     __FILE__, __func__, __LINE__, ##args); } while(0)
 
 #if LOG_LEVEL < 1
-#define LOG_DEBUG(fmt, args...) do{ _log(fmt, "[VERB] " FW_NAME " FW", 9, ##args); }while(0)
+#define LOG_DEBUG(fmt, args...) do{ _log(fmt, "[DEBUG] " FW_NAME " FW", 9, ##args); }while(0)
 #else /* LOG_LEVEL >= 1 */
 #define LOG_DEBUG(fmt, args...)
 #endif /* LOG_LEVEL < 1 */
 
 #if LOG_LEVEL < 2
-#define LOG_VERB(fmt, args...) do{ _log(fmt, "[LOG] " FW_NAME " FW", 94, ##args); }while(0)
+#define LOG_VERB(fmt, args...) do{ _log(fmt, "[VERB] " FW_NAME " FW", 94, ##args); }while(0)
 #else /* LOG_LEVEL >= 2 */
 #define LOG_VERB(fmt, args...)
 #endif /* LOG_LEVEL < 2 */

@@ -26,43 +26,51 @@
 #define kSegQueueThreshold 50*(kSegThreshold / 512)
 
 namespace cm {
-  typedef enum {
-    kNSStatusIdle = 0,
-    kNSStatusIncreasing = 1,
-    kNSStatusDecreasing = 2
-  } NSStatus;
+typedef enum {
+  kNSStatusIdle = 0,
+  kNSStatusIncreasing = 1,
+  kNSStatusDecreasing = 2
+} NSStatus;
 
-  class NetworkSwitcher {
-    public:
-      /* Singleton */
-      static NetworkSwitcher* get_instance(void);
-      void run(void);
+class NetworkSwitcher {
+  public:
+    void run(void);
 
-      void run_switcher(void);
+    void run_switcher(void);
 
-      void done_switch(void) {
-        this->mStatus = 0;
+    void done_switch(void) {
+      this->mStatus = 0;
+    }
+
+    void inc_queue_threshold(void) {
+      this->mQueueThreshold += kSegQueueThreshold;
+    }
+
+    void dec_queue_threshold(void) {
+      this->mQueueThreshold -= kSegQueueThreshold;
+    }
+
+    /* Singleton */
+    static NetworkSwitcher* get_instance(void) {
+      if(NetworkSwitcher::singleton == NULL) {
+        NetworkSwitcher::singleton = new NetworkSwitcher();
       }
+      return NetworkSwitcher::singleton;
+    }
 
-      void inc_queue_threshold(void) {
-        this->mQueueThreshold += kSegQueueThreshold;
-      }
+  private:
+    /* Singleton */
+    static NetworkSwitcher* singleton;
+    NetworkSwitcher(void) {
+      this->mThread = NULL;
+      this->mStatus = kNSStatusIdle;
+    }
 
-      void dec_queue_threshold(void) {
-        this->mQueueThreshold -= kSegQueueThreshold;
-      }
+    std::thread *mThread;
 
-    private:
-      /* Singleton */
-      static NetworkSwitcher* singleton;
-      NetworkSwitcher();
-
-      std::thread *mThread;
-
-      int mStatus;
-      uint32_t mQueueThreshold;
-      uint8_t mTryDequeue;  // # of try to dequeue
-  };
+    int mStatus;
+    uint32_t mQueueThreshold;
+};
 } /* namespace cm */
 
 #endif /* INC_NETWORK_SWITCHER_H_ */
