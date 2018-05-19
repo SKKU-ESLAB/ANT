@@ -69,11 +69,11 @@ class Counter {
       if(startTS.tv_sec == 0 && startTS.tv_usec == 0) {
         speed = 0;
       } else {
-        uint64_t interval
-          = ((uint64_t)endTS.tv_sec * 1000 * 1000 + endTS.tv_usec)
-          - ((uint64_t)startTS.tv_sec * 1000 * 1000 + startTS.tv_usec);
+        uint64_t end = (uint64_t)endTS.tv_sec * 1000 * 1000 + endTS.tv_usec;
+        uint64_t start = (uint64_t)startTS.tv_sec * 1000 * 1000 + startTS.tv_usec;
+        uint64_t interval = end - start;
 
-        if(interval != 0) {
+        if(start != 0 && interval != 0) {
           speed = (uint64_t)((float)(this->mSize - this->mPrevSize) / (float)(interval / (1000 * 1000)));
         } else {
           speed = 0;

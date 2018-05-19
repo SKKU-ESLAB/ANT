@@ -81,6 +81,10 @@ void NetworkManager::run_control_recver(void) {
   NetworkAdapter *na = mAdapterList[kNetCtrl].front();
   assert(na != NULL);
   LOG_VERB("Control recver activated");
+
+  /* Notify network switcher that control adapter is ready */
+  NetworkSwitcher *network_switcher = NetworkSwitcher::get_instance();
+  network_switcher->control_adapter_ready();
   
   while (true) {
     // Control data parsing

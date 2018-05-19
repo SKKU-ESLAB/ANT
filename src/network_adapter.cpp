@@ -349,7 +349,7 @@ void NetworkAdapter::run_sender(void) {
     //LOG_VERB("to_send seq_no: %d", to_send->seq_no);
     bool res = this->send(data, len); 
     if (!res) {
-      LOG_WARN("Sending failed at %s (%s)", dev_name, strerror(errno));
+      LOG_WARN("Sending failed at %s (%d; %s)", dev_name, errno, strerror(errno));
       return_sending_failed_packet(to_send);
       break;
     }
@@ -434,6 +434,20 @@ void NetworkAdapter::send_ctrl_msg(const void *buf, int len) {
   nm->send_control_data(&net_dev_id, 2);
   nm->send_control_data(&net_len, 4);
   nm->send_control_data(buf, len);
+}
+
+int NetworkAdapter::send(const void *buf, size_t len) {
+  int ret;
+  ret = this->send_impl(buf, len);
+  this->mSendDataSize.add(len);
+  return ret;
+}
+
+int NetworkAdapter::recv(void *buf, size_t len) {
+  int ret;
+  ret = this->recv_impl(buf, len);
+  this->mReceiveDataSize.add(len);
+  return ret;
 }
 
 }  /* namespace cm */

@@ -8,7 +8,7 @@ DEV_SRC=./device/src
 DEV_OBJ_DIR=./device/obj
 
 CC=g++
-FLAG=-std=c++11 -DLOG_LEVEL=2
+FLAG=-std=c++11 -DLOG_LEVEL=0
 LIB=-lpthread
 
 $(OBJ_DIR)/%.o: $(SRC_DIR)/%.cpp
