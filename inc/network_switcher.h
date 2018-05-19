@@ -38,6 +38,9 @@ class NetworkSwitcher {
 
     void run_switcher(void);
 
+    bool check_increase_adapter(uint64_t send_request_speed, uint32_t send_queue_data_size);
+    bool check_decrease_adapter(uint64_t bandwidth_now, uint64_t bandwidth_when_increasing);
+
     void done_switch(void) {
       this->mStatus = 0;
     }
@@ -64,12 +67,16 @@ class NetworkSwitcher {
     NetworkSwitcher(void) {
       this->mThread = NULL;
       this->mStatus = kNSStatusIdle;
+      this->mBandwidthWhenIncreasing = 0;
+      this->mCheckDecreasingOk = 0;
     }
 
     std::thread *mThread;
 
     int mStatus;
     uint32_t mQueueThreshold;
+    uint64_t mBandwidthWhenIncreasing;
+    int mCheckDecreasingOk;
 };
 } /* namespace cm */
 

@@ -74,7 +74,7 @@ class Counter {
           - ((uint64_t)startTS.tv_sec * 1000 * 1000 + startTS.tv_usec);
 
         if(interval != 0) {
-          speed = ((uint64_t)this->mSize - this->mPrevSize) / interval;
+          speed = (uint64_t)((float)(this->mSize - this->mPrevSize) / (float)(interval / (1000 * 1000)));
         } else {
           speed = 0;
         }

@@ -38,31 +38,94 @@ void NetworkSwitcher::run(void) {
 
 void NetworkSwitcher::run_switcher(void) {
   while(1) {
-    SegmentManager *segmentManager = SegmentManager::get_instance();
-    uint32_t sendQueueSize = segmentManager->get_queue_length(kSegSend);
+    /* Monitor metrics */
+    uint64_t send_request_speed;
+    uint32_t send_queue_data_size;
+    uint64_t total_bandwidth_now = 0;
 
-    if (sendQueueSize > this->mQueueThreshold){
-      /* 
-       * Dynamic adapter control 1
-       * Increase adapter when queue size is over threshold.
-       */
-      if (this->mStatus == kNSStatusIdle) {
-        /* Increase adapter */
-        this->mStatus = kNSStatusIncreasing;
-        NetworkManager::get_instance()->increase_adapter();
-      }
-    } else if (sendQueueSize == 0) {
-      /* 
-       * Dynamic adapter control 2
-       * Decrease adapter when queue size is under threshold for a while.
-       */
-      if (this->mStatus == kNSStatusIdle) {
-        /* Decrease adapter */
-        this->mStatus = kNSStatusDecreasing;
-        NetworkManager::get_instance()->decrease_adapter();
-      }
+    SegmentManager *segment_manager = SegmentManager::get_instance();
+    send_request_speed = segment_manager->get_send_request_per_sec();
+    send_queue_data_size = segment_manager->get_queue_data_size(kSegSend);
+
+    NetworkManager *network_manager = NetworkManager::get_instance();
+    int i = 0;
+    std::list<NetworkAdapter *> control_adapters = network_manager->get_control_adapter_list();
+    for(std::list<NetworkAdapter *>::iterator it = control_adapters.begin();
+        it != control_adapters.end(); it++) {
+      NetworkAdapter *adapter = *it;
+      uint64_t bandwidth_up = adapter->get_bandwidth_up();
+      uint64_t bandwidth_down = adapter->get_bandwidth_down();
+      total_bandwidth_now += bandwidth_up + bandwidth_down;
+      LOG_DEBUG(" - Control Adapter %d: Up=%lluB/s Down=%lluB/s", i, bandwidth_up, bandwidth_down);
+      i++;
     }
+
+    std::list<NetworkAdapter *> data_adapters = network_manager->get_data_adapter_list();
+    for(std::list<NetworkAdapter *>::iterator it = data_adapters.begin();
+        it != control_adapters.end(); it++) {
+      NetworkAdapter *adapter = *it;
+      uint64_t bandwidth_up = adapter->get_bandwidth_up();
+      uint64_t bandwidth_down = adapter->get_bandwidth_down();
+      total_bandwidth_now += bandwidth_up + bandwidth_down;
+      LOG_DEBUG(" - Data Adapter %d: Up=%lluB/s Down=%lluB/s", i, bandwidth_up, bandwidth_down);
+      i++;
+    }
+    LOG_VERB("* r(t): %llu, |SQ(t)|: %lu, b(t): %lu",
+        send_request_speed, send_queue_data_size, total_bandwidth_now);
+
+    /* Determine Increasing/Decreasing adapter */
+    if(this->check_increase_adapter(send_request_speed, send_queue_data_size)) {
+      /* Maintain bandwidth when increasing */
+      this->mBandwidthWhenIncreasing = total_bandwidth_now;
+
+      /* Increase Adapter */
+      this->mStatus = kNSStatusIncreasing;
+      NetworkManager::get_instance()->increase_adapter();
+    } else if(this->check_decrease_adapter(total_bandwidth_now, this->mBandwidthWhenIncreasing)) {
+      /* Decrease Adapter */
+      this->mStatus = kNSStatusDecreasing;
+      NetworkManager::get_instance()->decrease_adapter();
+    }
+
     usleep(SLEEP_USECS);
+  }
+}
+
+#define AVERAGE_INCREASE_LATENCY_SEC 8.04f /* 8.04 sec */
+#define MAX_BANDWIDTH 50000 /* 50000B/s */
+bool NetworkSwitcher::check_increase_adapter(uint64_t send_request_speed, uint32_t send_queue_data_size) {
+  /*
+   * Increase condition: LHS > RHS
+   * LHS: (average increase latency) * (r(t): send request speed) + (|SQ(t)|: send queue data size)
+   * RHS: (average increase latency) * (maximum bluetooth bandwidth)
+   */
+  if(((float)AVERAGE_INCREASE_LATENCY_SEC * send_request_speed + send_queue_data_size) >
+      ((float)AVERAGE_INCREASE_LATENCY_SEC * MAX_BANDWIDTH)) {
+    return true;
+  } else {
+    return false;
+  }
+}
+
+#define CHECK_DECREASING_OK_COUNT 6
+bool NetworkSwitcher::check_decrease_adapter(uint64_t bandwidth_now, uint64_t bandwidth_when_increasing) {
+  /*
+   * Decrease condition: LHS < RHS (6 times)
+   * LHS: (b(t): total bandwidth)
+   * RHS: (b(t_wfdon): total bandwidth when increasing)
+   */
+  if(bandwidth_when_increasing == 0) return false;
+
+  if(bandwidth_now < bandwidth_when_increasing) {
+    this->mCheckDecreasingOk++;
+    if(this->mCheckDecreasingOk >= CHECK_DECREASING_OK_COUNT) {
+      this->mCheckDecreasingOk = 0;
+      return true;
+    } else {
+      return false;
+    }
+  } else {
+    return false;
   }
 }
 }
