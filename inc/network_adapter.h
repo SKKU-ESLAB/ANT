@@ -112,13 +112,13 @@ class NetworkAdapter {
 
   // If connection is closed, send and recv both should be failed
   int send(const void *buf, size_t len) {
-    this->mSendDataSize.add(len);
     this->send_impl(buf, len);
+    this->mSendDataSize.add(len);
   }
 
   int recv(void *buf, size_t len) {
-    this->mReceiveDataSize.add(len);
     this->recv_impl(buf, len);
+    this->mReceiveDataSize.add(len);
   }
 
   virtual int send_impl(const void *buf, size_t len) = 0;
