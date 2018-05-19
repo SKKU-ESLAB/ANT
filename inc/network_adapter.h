@@ -74,6 +74,10 @@ class NetworkAdapter {
     this->mReceiveDataSize.get_speed();
   }
 
+  char* get_dev_name(void) {
+    return this->dev_name;
+  }
+
   NetworkAdapter() {
     at = kATUninitialized;
     stat = kDevDiscon;
@@ -111,16 +115,8 @@ class NetworkAdapter {
   virtual bool close_connection(void) = 0;
 
   // If connection is closed, send and recv both should be failed
-  int send(const void *buf, size_t len) {
-    this->send_impl(buf, len);
-    this->mSendDataSize.add(len);
-  }
-
-  int recv(void *buf, size_t len) {
-    this->recv_impl(buf, len);
-    this->mReceiveDataSize.add(len);
-  }
-
+  int send(const void *buf, size_t len);
+  int recv(void *buf, size_t len);
   virtual int send_impl(const void *buf, size_t len) = 0;
   virtual int recv_impl(void *buf, size_t len) = 0;
 

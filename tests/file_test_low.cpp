@@ -35,7 +35,7 @@
 
 using namespace cm;
 
-#define DEBUG_SHOW_DATA 0
+#define DEBUG_SHOW_DATA 1
 #define DEBUG_SHOW_TIME 0
 
 #if DEBUG_SHOW_TIME == 1
@@ -106,7 +106,7 @@ int main() {
     free(temp_buf);
   }
 
-  printf("now!\n");
+  printf("Wait for 3 seconds...\n");
   sleep(3);
 
 #define DATA_PATH "/home/redcarrottt/data"
@@ -135,8 +135,10 @@ int main() {
     }
     sprintf(file_dir, "%s/%s", DATA_PATH, file_name);
 
-    printf(" * Iteration %d (File: %s)\n", iter, file_dir);
+    printf(" * Iter %d (File: %s)\n", iter, file_dir);
+#if DEBUG_SHOW_DATA == 1
     printf("  - Send File: %s\n", file_dir); 
+#endif
 
     fd = open(file_dir, O_RDONLY); 
     if(fd < 0) {

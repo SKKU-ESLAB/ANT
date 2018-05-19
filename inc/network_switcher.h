@@ -27,9 +27,11 @@
 
 namespace cm {
 typedef enum {
-  kNSStatusIdle = 0,
-  kNSStatusIncreasing = 1,
-  kNSStatusDecreasing = 2
+  kNSStatusNeedControlAdapter = 0,
+  kNSStatusNeedDataAdapter = 1,
+  kNSStatusReady = 2,
+  kNSStatusIncreasing = 3,
+  kNSStatusDecreasing = 4
 } NSStatus;
 
 class NetworkSwitcher {
@@ -37,12 +39,35 @@ class NetworkSwitcher {
     void run(void);
 
     void run_switcher(void);
+    void monitor_and_handover(void);
 
     bool check_increase_adapter(uint64_t send_request_speed, uint32_t send_queue_data_size);
     bool check_decrease_adapter(uint64_t bandwidth_now, uint64_t bandwidth_when_increasing);
 
+    void control_adapter_ready(void) {
+      switch(this->mStatus) {
+        case kNSStatusNeedControlAdapter:
+          this->mStatus = kNSStatusNeedDataAdapter;
+          break;
+        case kNSStatusNeedDataAdapter:
+        case kNSStatusReady:
+        case kNSStatusIncreasing:
+        case kNSStatusDecreasing:
+          break;
+      }
+    }
+
     void done_switch(void) {
-      this->mStatus = 0;
+      switch(this->mStatus) {
+        case kNSStatusIncreasing:
+        case kNSStatusDecreasing:
+          this->mStatus = kNSStatusReady;
+          break;
+        case kNSStatusNeedControlAdapter:
+        case kNSStatusNeedDataAdapter:
+        case kNSStatusReady:
+          break;
+      }
     }
 
     void inc_queue_threshold(void) {
@@ -66,14 +91,14 @@ class NetworkSwitcher {
     static NetworkSwitcher* singleton;
     NetworkSwitcher(void) {
       this->mThread = NULL;
-      this->mStatus = kNSStatusIdle;
+      this->mStatus = kNSStatusNeedControlAdapter;
       this->mBandwidthWhenIncreasing = 0;
       this->mCheckDecreasingOk = 0;
     }
 
     std::thread *mThread;
 
-    int mStatus;
+    NSStatus mStatus;
     uint32_t mQueueThreshold;
     uint64_t mBandwidthWhenIncreasing;
     int mCheckDecreasingOk;

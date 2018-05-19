@@ -38,57 +38,78 @@ void NetworkSwitcher::run(void) {
 
 void NetworkSwitcher::run_switcher(void) {
   while(1) {
-    /* Monitor metrics */
-    uint64_t send_request_speed;
-    uint32_t send_queue_data_size;
-    uint64_t total_bandwidth_now = 0;
-
-    SegmentManager *segment_manager = SegmentManager::get_instance();
-    send_request_speed = segment_manager->get_send_request_per_sec();
-    send_queue_data_size = segment_manager->get_queue_data_size(kSegSend);
-
-    NetworkManager *network_manager = NetworkManager::get_instance();
-    int i = 0;
-    std::list<NetworkAdapter *> control_adapters = network_manager->get_control_adapter_list();
-    for(std::list<NetworkAdapter *>::iterator it = control_adapters.begin();
-        it != control_adapters.end(); it++) {
-      NetworkAdapter *adapter = *it;
-      uint64_t bandwidth_up = adapter->get_bandwidth_up();
-      uint64_t bandwidth_down = adapter->get_bandwidth_down();
-      total_bandwidth_now += bandwidth_up + bandwidth_down;
-      LOG_DEBUG(" - Control Adapter %d: Up=%lluB/s Down=%lluB/s", i, bandwidth_up, bandwidth_down);
-      i++;
-    }
-
-    std::list<NetworkAdapter *> data_adapters = network_manager->get_data_adapter_list();
-    for(std::list<NetworkAdapter *>::iterator it = data_adapters.begin();
-        it != control_adapters.end(); it++) {
-      NetworkAdapter *adapter = *it;
-      uint64_t bandwidth_up = adapter->get_bandwidth_up();
-      uint64_t bandwidth_down = adapter->get_bandwidth_down();
-      total_bandwidth_now += bandwidth_up + bandwidth_down;
-      LOG_DEBUG(" - Data Adapter %d: Up=%lluB/s Down=%lluB/s", i, bandwidth_up, bandwidth_down);
-      i++;
-    }
-    LOG_VERB("* r(t): %llu, |SQ(t)|: %lu, b(t): %lu",
-        send_request_speed, send_queue_data_size, total_bandwidth_now);
-
-    /* Determine Increasing/Decreasing adapter */
-    if(this->check_increase_adapter(send_request_speed, send_queue_data_size)) {
-      /* Maintain bandwidth when increasing */
-      this->mBandwidthWhenIncreasing = total_bandwidth_now;
-
-      /* Increase Adapter */
-      this->mStatus = kNSStatusIncreasing;
-      NetworkManager::get_instance()->increase_adapter();
-    } else if(this->check_decrease_adapter(total_bandwidth_now, this->mBandwidthWhenIncreasing)) {
-      /* Decrease Adapter */
-      this->mStatus = kNSStatusDecreasing;
-      NetworkManager::get_instance()->decrease_adapter();
+    switch(this->mStatus) {
+      case kNSStatusNeedControlAdapter:
+        break;
+      case kNSStatusNeedDataAdapter:
+        /* After connecting control adapter, at least one increase is required */
+        this->mStatus = kNSStatusIncreasing;
+        NetworkManager::get_instance()->increase_adapter(); 
+        break;
+      case kNSStatusReady:
+        this->monitor_and_handover();
+        break;
+      case kNSStatusIncreasing:
+      case kNSStatusDecreasing:
+        /* Handover do not work during increasing or decreasing adapter */
+        break;
     }
 
     usleep(SLEEP_USECS);
   }
+}
+
+void NetworkSwitcher::monitor_and_handover(void) {
+  /* Monitor metrics */
+  uint64_t send_request_speed;
+  uint32_t send_queue_data_size;
+  uint64_t total_bandwidth_now = 0;
+
+  SegmentManager *segment_manager = SegmentManager::get_instance();
+  send_request_speed = segment_manager->get_send_request_per_sec();
+  send_queue_data_size = segment_manager->get_queue_data_size(kSegSend);
+
+  NetworkManager *network_manager = NetworkManager::get_instance();
+  int i = 0;
+  std::list<NetworkAdapter *> control_adapters = network_manager->get_control_adapter_list();
+  for(std::list<NetworkAdapter *>::iterator it = control_adapters.begin();
+      it != control_adapters.end(); it++) {
+    NetworkAdapter *adapter = *it;
+    uint64_t bandwidth_up = adapter->get_bandwidth_up();
+    uint64_t bandwidth_down = adapter->get_bandwidth_down();
+    total_bandwidth_now += (bandwidth_up + bandwidth_down);
+    LOG_DEBUG("- A%d (C: %s): Up=%lluB/s Down=%lluB/s",
+        i, adapter->get_dev_name(), bandwidth_up, bandwidth_down);
+    i++;
+  }
+
+  std::list<NetworkAdapter *> data_adapters = network_manager->get_data_adapter_list();
+  for(std::list<NetworkAdapter *>::iterator it = data_adapters.begin();
+      it != data_adapters.end(); it++) {
+    NetworkAdapter *adapter = *it;
+    uint64_t bandwidth_up = adapter->get_bandwidth_up();
+    uint64_t bandwidth_down = adapter->get_bandwidth_down();
+    total_bandwidth_now += (bandwidth_up + bandwidth_down);
+    LOG_DEBUG("- A%d (D: %s): Up=%lluB/s Down=%lluB/s",
+        i, adapter->get_dev_name(), bandwidth_up, bandwidth_down);
+    i++;
+  }
+  LOG_VERB(" => r(t): %llu, |SQ(t)|: %lu, b(t): %llu",
+      send_request_speed, send_queue_data_size, total_bandwidth_now);
+
+//    /* Determine Increasing/Decreasing adapter */
+//    if(this->check_increase_adapter(send_request_speed, send_queue_data_size)) {
+//      /* Maintain bandwidth when increasing */
+//      this->mBandwidthWhenIncreasing = total_bandwidth_now;
+//
+//      /* Increase Adapter */
+//      this->mStatus = kNSStatusIncreasing;
+//      NetworkManager::get_instance()->increase_adapter();
+//    } else if(this->check_decrease_adapter(total_bandwidth_now, this->mBandwidthWhenIncreasing)) {
+//      /* Decrease Adapter */
+//      this->mStatus = kNSStatusDecreasing;
+//      NetworkManager::get_instance()->decrease_adapter();
+//    }
 }
 
 #define AVERAGE_INCREASE_LATENCY_SEC 8.04f /* 8.04 sec */
