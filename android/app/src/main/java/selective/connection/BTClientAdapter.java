@@ -3,13 +3,14 @@ package selective.connection;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothSocket;
-import android.util.Log;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.IOException;
 import java.util.Set;
 import java.util.UUID;
+
+import kr.ac.skku.nyx.selectiveconnection.LogBroadcastSender;
 
 /**
  * Created by eslab on 2017-02-20.
@@ -54,7 +55,7 @@ public class BTClientAdapter extends NetworkAdapter {
                     writer = new BufferedOutputStream(btSocket.getOutputStream());
                     reader = new BufferedInputStream(btSocket.getInputStream());
                 } catch (IOException e) {
-                    Log.d(tag, "Failed to create RFCOMM Socket corresponding to " + uuid.toString());
+                    LogBroadcastSender.sendLogMessage(tag, "Failed to create RFCOMM Socket corresponding to " + uuid.toString());
                     btSocket = null;
                 }
                 break;
@@ -67,10 +68,10 @@ public class BTClientAdapter extends NetworkAdapter {
                 btSocket.getInputStream();
                 break;
             } catch (IOException e) {
-                Log.d(tag, "Failed to connect");
+                LogBroadcastSender.sendLogMessage(tag, "Failed to connect");
             }
             try {
-                Log.d(tag, "Once more try to connect BT Client");
+                LogBroadcastSender.sendLogMessage(tag, "Once more try to connect BT Client");
                 Thread.sleep(500);
             } catch (InterruptedException e) {
                 e.printStackTrace();
@@ -117,7 +118,7 @@ public class BTClientAdapter extends NetworkAdapter {
     @Override
     public int recv(byte[] buf, int len) {
         if (reader == null) {
-            Log.d(tag, "reader is null");
+            LogBroadcastSender.sendLogMessage(tag, "reader is null");
             return -1;
         }
 
