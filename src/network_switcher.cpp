@@ -78,7 +78,7 @@ void NetworkSwitcher::monitor_and_handover(void) {
     uint64_t bandwidth_up = adapter->get_bandwidth_up();
     uint64_t bandwidth_down = adapter->get_bandwidth_down();
     total_bandwidth_now += (bandwidth_up + bandwidth_down);
-    LOG_DEBUG("- A%d (C: %s): Up=%lluB/s Down=%lluB/s",
+    LOG_VERB("- A%d (C: %s): Up=%lluB/s Down=%lluB/s",
         i, adapter->get_dev_name(), bandwidth_up, bandwidth_down);
     i++;
   }
@@ -90,7 +90,7 @@ void NetworkSwitcher::monitor_and_handover(void) {
     uint64_t bandwidth_up = adapter->get_bandwidth_up();
     uint64_t bandwidth_down = adapter->get_bandwidth_down();
     total_bandwidth_now += (bandwidth_up + bandwidth_down);
-    LOG_DEBUG("- A%d (D: %s): Up=%lluB/s Down=%lluB/s",
+    LOG_VERB("- A%d (D: %s): Up=%lluB/s Down=%lluB/s",
         i, adapter->get_dev_name(), bandwidth_up, bandwidth_down);
     i++;
   }
