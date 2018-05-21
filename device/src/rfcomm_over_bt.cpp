@@ -41,6 +41,8 @@ RfcommServerOverBtAdapter::RfcommServerOverBtAdapter(uint16_t id, const char *sv
 
   sent_data = 0;
 
+  snprintf(dev_name, sizeof(dev_name), "Rfcomm/BT");
+
   char buffer[100];
   snprintf(buffer, 100, "%s", svc_uuid);
   str2uuid(buffer, &(this->svc_uuid));

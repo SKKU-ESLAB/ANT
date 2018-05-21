@@ -33,6 +33,8 @@ TCPServerOverEthAdapter::TCPServerOverEthAdapter(uint32_t id, int port) {
 
   cli_sock = 0;
 
+  snprintf(dev_name, sizeof(dev_name), "TCPServer/Eth");
+
   serv_sock = socket(AF_INET, SOCK_STREAM, 0);
   assert(serv_sock >= 0);
 
