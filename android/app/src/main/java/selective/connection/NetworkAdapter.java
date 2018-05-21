@@ -139,7 +139,7 @@ public abstract class NetworkAdapter {
                         break;
                     }
                 } else {
-                    LogBroadcastSender.sendLogMessage(tag, "Recved : " + Short.toString(dev_id));
+                    //LogBroadcastSender.sendLogMessage(tag, "Recved : " + Short.toString(dev_id));
                 }
 
                 ByteBuffer buffer = ByteBuffer.allocate(4);
