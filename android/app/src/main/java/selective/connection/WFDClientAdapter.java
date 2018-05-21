@@ -5,17 +5,13 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
-import android.net.DhcpInfo;
 import android.net.NetworkInfo;
-import android.net.wifi.WifiManager;
 import android.net.wifi.WpsInfo;
 import android.net.wifi.p2p.WifiP2pConfig;
 import android.net.wifi.p2p.WifiP2pDevice;
 import android.net.wifi.p2p.WifiP2pDeviceList;
 import android.net.wifi.p2p.WifiP2pGroup;
-import android.net.wifi.p2p.WifiP2pInfo;
 import android.net.wifi.p2p.WifiP2pManager;
-import android.util.Log;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
@@ -24,7 +20,7 @@ import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.util.Arrays;
 
-import kr.ac.skku.nyx.selectiveconnection.MainActivity;
+import kr.ac.skku.nyx.selectiveconnection.LogBroadcastSender;
 
 import static android.os.Looper.getMainLooper;
 
@@ -111,10 +107,10 @@ public class WFDClientAdapter extends NetworkAdapter {
                     server_up_trigger.wait(5000);
                 }
                 if (dev_addr != null){
-                    Log.d(tag, "Server up");
+                    LogBroadcastSender.sendLogMessage(tag, "Server up");
                     res = true;
                 } else {
-                    Log.d(tag, "Waited");
+                    LogBroadcastSender.sendLogMessage(tag, "Waited");
                     res = false;
                 }
             } catch (InterruptedException e) {
@@ -127,13 +123,13 @@ public class WFDClientAdapter extends NetworkAdapter {
         mManager.discoverPeers(mChannel, new WifiP2pManager.ActionListener() {
             @Override
             public void onSuccess() {
-                Log.d(tag, "Discover peers succeeded");
+                LogBroadcastSender.sendLogMessage(tag, "Discover peers succeeded");
 
             }
 
             @Override
             public void onFailure(int reason) {
-                Log.d(tag, "Discover peers failed");
+                LogBroadcastSender.sendLogMessage(tag, "Discover peers failed");
             }
         });
 
@@ -148,7 +144,7 @@ public class WFDClientAdapter extends NetworkAdapter {
                 res = true;
             } else {
                 dev_addr = null;
-                Log.d(tag, "Timeout");
+                LogBroadcastSender.sendLogMessage(tag, "Timeout");
                 mManager.stopPeerDiscovery(mChannel, null);
                 res = false;
             }
@@ -180,7 +176,7 @@ public class WFDClientAdapter extends NetworkAdapter {
             if (sock != null)
                 sock.close();
 
-            Log.d(tag, "Connect to " + ip);
+            LogBroadcastSender.sendLogMessage(tag, "Connect to " + ip);
             sock = new Socket();
             sock.bind(null);
             sock.connect(new InetSocketAddress(ip, port), 2000);
@@ -191,7 +187,7 @@ public class WFDClientAdapter extends NetworkAdapter {
             res = true;
         } catch (Exception e) {
             e.printStackTrace();
-            Log.d(tag, "Failed to connect to server");
+            LogBroadcastSender.sendLogMessage(tag, "Failed to connect to server");
 
             writer = null;
             reader = null;
@@ -243,7 +239,7 @@ public class WFDClientAdapter extends NetworkAdapter {
     @Override
     public int recv(byte[] buf, int len) {
         if (reader == null) {
-            Log.d(tag, "reader is null");
+            LogBroadcastSender.sendLogMessage(tag, "reader is null");
             return -1;
         }
 
@@ -275,13 +271,13 @@ public class WFDClientAdapter extends NetworkAdapter {
         } else if (len == 8) {
             wps_pin = new String(Arrays.copyOfRange(buf, 0, len));
 
-            Log.d(tag, dev_addr + " & " + wps_pin);
+            LogBroadcastSender.sendLogMessage(tag, dev_addr + " & " + wps_pin);
             synchronized(server_up_trigger) {
                 server_up_trigger.notifyAll();
             }
         } else { //IP Addr
             ip = new String(Arrays.copyOfRange(buf, 0, len));
-            Log.d(tag, ip);
+            LogBroadcastSender.sendLogMessage(tag, ip);
 
             synchronized(ip_trigger) {
                 ip_trigger.notifyAll();
@@ -298,37 +294,37 @@ public class WFDClientAdapter extends NetworkAdapter {
             mPeerListListner = new WifiP2pManager.PeerListListener() {
                 @Override
                 public void onPeersAvailable(WifiP2pDeviceList peers) {
-                    Log.d(tag, "onPeersAvailable occurred!");
+                    LogBroadcastSender.sendLogMessage(tag, "onPeersAvailable occurred!");
                     WifiP2pConfig config = new WifiP2pConfig();
 
                     if (dev_addr == null) {
-                        Log.d(tag, "dev addr is not set yet");
+                        LogBroadcastSender.sendLogMessage(tag, "dev addr is not set yet");
                         return;
                     }
-                    Log.d(tag, "find the peer and request WFD");
+                    LogBroadcastSender.sendLogMessage(tag, "find the peer and request WFD");
 
                     for (WifiP2pDevice device : peers.getDeviceList()) {
                         if(device.deviceAddress.equals(dev_addr)) {
                             if (device.status == WifiP2pDevice.AVAILABLE) {
                                 config.deviceAddress = dev_addr;
                                 if (device.wpsPbcSupported()) {
-                                    Log.d(tag, "PBC");
+                                    LogBroadcastSender.sendLogMessage(tag, "PBC");
                                     config.wps.setup = WpsInfo.PBC;
                                 } else if(device.wpsKeypadSupported()) {
-                                    Log.d(tag, "KEYPAD");
+                                    LogBroadcastSender.sendLogMessage(tag, "KEYPAD");
                                     config.wps.setup = WpsInfo.KEYPAD;
                                 } else if(device.wpsDisplaySupported()) {
-                                    Log.d(tag, "DISPLAY");
+                                    LogBroadcastSender.sendLogMessage(tag, "DISPLAY");
                                     config.wps.setup = WpsInfo.DISPLAY;
 
                                 }
                                 config.groupOwnerIntent = 0;
                                 config.wps.pin = wps_pin;
-                                Log.d(tag, "Request to connect: " + device.deviceName + config.deviceAddress + "(" + config.wps.pin + ")");
+                                LogBroadcastSender.sendLogMessage(tag, "Request to connect: " + device.deviceName + config.deviceAddress + "(" + config.wps.pin + ")");
                                 mManager.connect(mChannel, config, new WifiP2pManager.ActionListener() {
                                     @Override
                                     public void onSuccess() {
-                                        Log.d(tag, "Manager tries to connect");
+                                        LogBroadcastSender.sendLogMessage(tag, "Manager tries to connect");
                                     }
 
                                     @Override
@@ -346,11 +342,11 @@ public class WFDClientAdapter extends NetworkAdapter {
         @Override
         public void onReceive(Context context, Intent intent) {
             String action = intent.getAction();
-            Log.d(tag, "onReceive occurred!");
+            LogBroadcastSender.sendLogMessage(tag, "onReceive occurred!");
 
             if (WifiP2pManager.WIFI_P2P_PEERS_CHANGED_ACTION.equals(action)) {
                 // Call WifiP2pManager.requestPeers() to get a list of current peers
-                Log.d(tag, "WIFI_P2P_PEERS_CHANGED_ACTION occurred");
+                LogBroadcastSender.sendLogMessage(tag, "WIFI_P2P_PEERS_CHANGED_ACTION occurred");
                 if (mManager != null) {
                     mManager.requestPeers(mChannel, mPeerListListner);
                 }
@@ -358,24 +354,23 @@ public class WFDClientAdapter extends NetworkAdapter {
                 int state = intent.getIntExtra(WifiP2pManager.EXTRA_WIFI_STATE, -1);
                 if(state == WifiP2pManager.WIFI_P2P_STATE_ENABLED)
                 {
-                    Log.d(tag, "Wifi P2P is enabled");
+                    LogBroadcastSender.sendLogMessage(tag, "Wifi P2P is enabled");
                 }
                 else
                 {
-                    Log.d(tag, "Wifi P2P is not enabled");
+                    LogBroadcastSender.sendLogMessage(tag, "Wifi P2P is not enabled");
                 }
-                Log.d(tag, "P2P state changed - " + state);
+                LogBroadcastSender.sendLogMessage(tag, "P2P state changed - " + state);
 
             } else if (WifiP2pManager.WIFI_P2P_CONNECTION_CHANGED_ACTION.equals(action)) {
                 // Respond to new connection or disconnections
                 NetworkInfo networkInfo = (NetworkInfo) intent.getParcelableExtra(WifiP2pManager.EXTRA_NETWORK_INFO);
-                Log.d(tag, "Connection changed - " + networkInfo.toString());
+                LogBroadcastSender.sendLogMessage(tag, "Connection changed - " + networkInfo.toString());
                 if (networkInfo.isConnected()) {
-                    //Log.d(tag, "Connected:" + dev_addr);
+                    //LogBroadcastSender.sendLogMessage(tag, "Connected:" + dev_addr);
                     WifiP2pGroup p2pGroup = (WifiP2pGroup) intent.getParcelableExtra(WifiP2pManager.EXTRA_WIFI_P2P_GROUP);
                     if (p2pGroup.getOwner().deviceAddress != null && p2pGroup.getOwner().deviceAddress.equals(dev_addr)) {
-                        Log.d(tag, "Con" +
-                                "nected:" + dev_addr);
+                        LogBroadcastSender.sendLogMessage(tag, "Connected:" + dev_addr);
                     }
                     synchronized(connected_trigger) {
                         connected_notified = true;
@@ -385,7 +380,7 @@ public class WFDClientAdapter extends NetworkAdapter {
             } else if (WifiP2pManager.WIFI_P2P_DISCOVERY_CHANGED_ACTION.equals(action)) {
                 int discoveryState = intent.getIntExtra(WifiP2pManager.EXTRA_DISCOVERY_STATE,
                         WifiP2pManager.WIFI_P2P_DISCOVERY_STOPPED);
-                //Log.d(tag, "Discovery state changed: " + discoveryState);
+                //LogBroadcastSender.sendLogMessage(tag, "Discovery state changed: " + discoveryState);
             }
         }
     }

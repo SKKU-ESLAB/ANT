@@ -1,13 +1,12 @@
 package selective.connection;
 
-import android.util.Log;
-
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.IOException;
 import java.net.Socket;
-import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
+
+import kr.ac.skku.nyx.selectiveconnection.LogBroadcastSender;
 
 /**
  * Created by eslab on 2017-02-13.
@@ -59,7 +58,7 @@ public class TCPClientAdapter extends NetworkAdapter {
 
             res = true;
         } catch (Exception e) {
-            Log.d(tag, "Failed to connect to server");
+            LogBroadcastSender.sendLogMessage(tag, "Failed to connect to server");
 
             writer = null;
             reader = null;
@@ -104,7 +103,7 @@ public class TCPClientAdapter extends NetworkAdapter {
     @Override
     public int recv(byte[] buf, int len) {
         if (reader == null) {
-            Log.d(tag, "reader is null");
+            LogBroadcastSender.sendLogMessage(tag, "reader is null");
             return -1;
         }
 
@@ -131,6 +130,6 @@ public class TCPClientAdapter extends NetworkAdapter {
 
     @Override
     public void on_control_recv(byte[] buf, int len) {
-        Log.d(tag, new String(Arrays.copyOfRange(buf, 0, len)));
+        LogBroadcastSender.sendLogMessage(tag, new String(Arrays.copyOfRange(buf, 0, len)));
     }
 }

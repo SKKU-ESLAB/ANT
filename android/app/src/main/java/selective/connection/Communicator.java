@@ -2,11 +2,13 @@ package selective.connection;
 
 import android.os.Handler;
 import android.os.Message;
-import android.util.Log;
+
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.ListIterator;
+
+import kr.ac.skku.nyx.selectiveconnection.LogBroadcastSender;
 
 import static selective.connection.NetworkAdapter.kDevCon;
 import static selective.connection.NetworkAdapter.kDevDiscon;
@@ -41,11 +43,11 @@ public class Communicator {
 
         packet_size = ProtocolManager.serialize(pd, buf, curr_offset, len);
         if (!(packet_size > 0)) throw new AssertionError();
-        //Log.d(tag, "serialized packet size " + packet_size);
+        //LogBroadcastSender.sendLogMessage(tag, "serialized packet size " + packet_size);
 
         sent_bytes = ProtocolManager.send_packet(packet_size);
         if (sent_bytes < 0) throw new AssertionError();
-        //Log.d(tag, "Sent bytes: " + sent_bytes);
+        //LogBroadcastSender.sendLogMessage(tag, "Sent bytes: " + sent_bytes);
 
         return sent_bytes;
     }
@@ -136,13 +138,13 @@ class ProtocolManager {
         buffer.put(serialized, vec_offset, 2);
         ret_pd.id = buffer.getShort(0);
         vec_offset += 2;
-        //Log.d(tag, "ret_pd.id is " + ret_pd.id);
+        //LogBroadcastSender.sendLogMessage(tag, "ret_pd.id is " + ret_pd.id);
 
         buffer = ByteBuffer.allocate(4);
         buffer.put(serialized, vec_offset, 4);
         ret_pd.len = buffer.getInt(0);
         vec_offset += 4;
-        //Log.d(tag, "ret_pd.len is " + ret_pd.len);
+        //LogBroadcastSender.sendLogMessage(tag, "ret_pd.len is " + ret_pd.len);
 
         return vec_offset;
     }
@@ -334,7 +336,7 @@ class SegmentManager {
         ProtocolManager.parse_header(Arrays.copyOfRange(seg.data, kSegHeaderSize, seg.data.length), pd);
         if (pd.len == 0) return null;
 
-        //Log.d(tag, "pd.len is " + pd.len);
+        //LogBroadcastSender.sendLogMessage(tag, "pd.len is " + pd.len);
         serialized = new byte[pd.len];
 
         // Handle the first segment of the data bulk, because it contains protocol data
@@ -347,7 +349,7 @@ class SegmentManager {
 
         while (cont) {
             seg = dequeue(kSegRecv);
-            //Log.d(tag, "Dequeing recved data : " + Integer.toString(seg.seq_no));
+            //LogBroadcastSender.sendLogMessage(tag, "Dequeing recved data : " + Integer.toString(seg.seq_no));
             data_size = mGetSegLenBits(seg.flag_len);
             System.arraycopy(seg.data, kSegHeaderSize, serialized, offset, data_size);
             cont = (mGetSegFlagBits(seg.flag_len) == kSegFlagMF);
@@ -373,7 +375,7 @@ class SegmentManager {
                 segment_enqueued = true;
             } else {
                 if (seg.seq_no < next_seq_no[type]) {
-                    Log.d(tag, ((type==kSegSend)? "Sending Queue" : "Recving Queue") + Integer.toString(seg.seq_no) + ":"+ Integer.toString(next_seq_no[type]));
+                    LogBroadcastSender.sendLogMessage(tag, ((type==kSegSend)? "Sending Queue" : "Recving Queue") + Integer.toString(seg.seq_no) + ":"+ Integer.toString(next_seq_no[type]));
                     throw new AssertionError();
                 }
 
@@ -402,7 +404,7 @@ class SegmentManager {
             }
 
             if (segment_enqueued) {
-                //Log.d(tag, "WakeUP!");
+                //LogBroadcastSender.sendLogMessage(tag, "WakeUP!");
                 queue[type].notifyAll();
             }
         }
@@ -422,7 +424,7 @@ class SegmentManager {
         synchronized (queue[type]) {
             if (queue_size[type] == 0) {
                 try {
-                    //Log.d(tag, "Wating for queue is filled");
+                    //LogBroadcastSender.sendLogMessage(tag, "Wating for queue is filled");
                     queue[type].wait();
                 } catch (InterruptedException e) {
                     e.printStackTrace();
@@ -534,18 +536,18 @@ class NetworkManager {
                 if (na == null) throw new AssertionError();
 
                 if (na.recv(data, 1) <= 0) {
-                    Log.d(tag, "Control adapter might be closed");
+                    LogBroadcastSender.sendLogMessage(tag, "Control adapter might be closed");
                     break;
                 } else {
-                    Log.d(tag, "Ctrl Msg: " + Byte.toString(data[0]));
+                    LogBroadcastSender.sendLogMessage(tag, "Ctrl Msg: " + Byte.toString(data[0]));
                 }
 
                 Byte ctrl_req = data[0];
 
                 if (ctrl_req == kCtrlReqIncr) {
-                    Log.d(tag, "DataIncr request arrived");
+                    LogBroadcastSender.sendLogMessage(tag, "DataIncr request arrived");
                     if (na.recv(data, 2) <= 0) {
-                        Log.d(tag, "Control adapter might be closed");
+                        LogBroadcastSender.sendLogMessage(tag, "Control adapter might be closed");
                         break;
                     }
 
@@ -553,7 +555,7 @@ class NetworkManager {
                     buffer.put(data, 0, 2);
 
                     short dev_id = buffer.getShort(0);
-                    Log.d(tag, "Device ID = " + Short.toString(dev_id));
+                    LogBroadcastSender.sendLogMessage(tag, "Device ID = " + Short.toString(dev_id));
 
                     NetworkAdapter data_na = null;
 
@@ -571,9 +573,9 @@ class NetworkManager {
                     NetworkManager.get_instance().state = kNetStatIncr;
                     data_na.connect(mDataConnectingHandler);
                 } else if (ctrl_req == kCtrlReqDecr) {
-                    Log.d(tag, "DataDecr request arrived");
+                    LogBroadcastSender.sendLogMessage(tag, "DataDecr request arrived");
                     if (na.recv(data, 2) <= 0) {
-                        Log.d(tag, "Control adapter might be closed");
+                        LogBroadcastSender.sendLogMessage(tag, "Control adapter might be closed");
                         break;
                     }
 
@@ -581,7 +583,7 @@ class NetworkManager {
                     buffer.put(data, 0, 2);
 
                     short dev_id = buffer.getShort(0);
-                    Log.d(tag, "Device ID = " + Short.toString(dev_id));
+                    LogBroadcastSender.sendLogMessage(tag, "Device ID = " + Short.toString(dev_id));
 
                     NetworkAdapter data_na = null;
 
@@ -632,7 +634,7 @@ class NetworkManager {
                     } while (false);
 
                     if (res <= 0) {
-                        Log.d(tag, "Control adapter might be closed");
+                        LogBroadcastSender.sendLogMessage(tag, "Control adapter might be closed");
                         break;
                     }
                 }
@@ -734,17 +736,17 @@ class NetworkManager {
 
     public void install_control_adapter(NetworkAdapter na) {
         if (state > kNetStatDiscon || adapter_list[kNetCtrl].size() > 0) {
-            Log.d(tag, "Control port already added");
+            LogBroadcastSender.sendLogMessage(tag, "Control port already added");
             return;
         }
 
         if (state == kNetStatConnecting) {
-            Log.d(tag, "Already connecting control port");
+            LogBroadcastSender.sendLogMessage(tag, "Already connecting control port");
             return;
         }
 
         adapter_list[kNetCtrl].offerLast(na);
-        Log.d(tag, "Connecting control adapter");
+        LogBroadcastSender.sendLogMessage(tag, "Connecting control adapter");
         connect_control_adapter();
     }
 
@@ -754,23 +756,23 @@ class NetworkManager {
 
     public void increase_adapter() {
         if (state == kNetStatIncr || state == kNetStatDecr) {
-            Log.d(tag, "Data ports are busy");
+            LogBroadcastSender.sendLogMessage(tag, "Data ports are busy");
             return;
         }
 
         if (state == kNetStatDiscon) {
-            Log.d(tag, "Control port is not opened yet");
+            LogBroadcastSender.sendLogMessage(tag, "Control port is not opened yet");
             return;
         }
 
-        Log.d(tag, "Increasing data adapter");
+        LogBroadcastSender.sendLogMessage(tag, "Increasing data adapter");
         prev_state = state;
         state = kNetStatIncr;
 
         NetworkAdapter na = select_device();
         if (na == null) {
             state = prev_state;
-            Log.d(tag, "All device has been up");
+            LogBroadcastSender.sendLogMessage(tag, "All device has been up");
             return;
         }
 
@@ -803,22 +805,22 @@ class NetworkManager {
 
     public void decrease_adapter() {
         if (state == kNetStatIncr || state == kNetStatDecr) {
-            Log.d(tag, "Data ports are busy");
+            LogBroadcastSender.sendLogMessage(tag, "Data ports are busy");
             return;
         }
 
         if (state == kNetStatDiscon) {
-            Log.d(tag, "Control port is not opened yet");
+            LogBroadcastSender.sendLogMessage(tag, "Control port is not opened yet");
             return;
         }
-        Log.d(tag, "decrease_adapter()");
+        LogBroadcastSender.sendLogMessage(tag, "decrease_adapter()");
         prev_state = state;
         state = kNetStatDecr;
 
         NetworkAdapter na = select_device_on();
         if (na == null) {
             state = prev_state;
-            Log.d(tag, "All device has been down");
+            LogBroadcastSender.sendLogMessage(tag, "All device has been down");
             return;
         }
 
@@ -871,18 +873,18 @@ class NetworkManager {
 
     private void connect_control_adapter() {
         if (state > kNetStatDiscon) {
-            Log.d(tag, "connect_control_adapter():Control port already connected");
+            LogBroadcastSender.sendLogMessage(tag, "connect_control_adapter():Control port already connected");
             return;
         }
 
         NetworkAdapter na = adapter_list[kNetCtrl].peekFirst();
         state = kNetStatConnecting;
-        Log.d(tag, "Connecting control adapter");
+        LogBroadcastSender.sendLogMessage(tag, "Connecting control adapter");
 
         na.connect(new Handler() {
             public void handleMessage(Message msg) {
                 if (msg.what == NetworkAdapter.kDevCon) {
-                    Log.d(tag, "Communicator successfully connected");
+                    LogBroadcastSender.sendLogMessage(tag, "Communicator successfully connected");
                     NetworkManager.get_instance().state = kNetStatControl;
                     NetworkManager.get_instance().recv_thread = new CtrlRecvThread(mCtrlHandler);
                     NetworkManager.get_instance().recv_thread.start();
@@ -902,12 +904,12 @@ class NetworkManager {
 
     public void send_control_data(byte[] data, int len) {
         if (state < kNetStatControl) {
-            Log.d(tag, "Communicator disconnected");
+            LogBroadcastSender.sendLogMessage(tag, "Communicator disconnected");
             return;
         }
 
         if (state != kNetStatIncr && state != kNetStatDecr) {
-            Log.d(tag, "Control data must be sent in increasing or decreasing adapters");
+            LogBroadcastSender.sendLogMessage(tag, "Control data must be sent in increasing or decreasing adapters");
             return;
         }
 
