@@ -101,7 +101,11 @@ public class MainActivity extends AppCompatActivity implements LogBroadcastRecei
                 Log.d(kTag, kLogMessage);
                 TextView logTextView = (TextView) findViewById(R.id.logTextView);
                 String text = String.valueOf(logTextView.getText());
-                logTextView.setText(logMessage + "\n" + text);
+                if (text.length() > 10000) {
+                    logTextView.setText(logMessage);
+                } else {
+                    logTextView.setText(logMessage + "\n" + text);
+                }
                 logTextView.invalidate();
             }
         });
