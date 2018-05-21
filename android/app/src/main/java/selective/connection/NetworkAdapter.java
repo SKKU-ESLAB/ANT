@@ -1,19 +1,15 @@
 package selective.connection;
 
 import android.os.Handler;
-import android.util.Log;
 
 import java.nio.ByteBuffer;
 
-import static java.sql.Types.NULL;
+import kr.ac.skku.nyx.selectiveconnection.LogBroadcastSender;
+
 import static selective.connection.SegmentManager.kSegHeaderSize;
 import static selective.connection.SegmentManager.kSegRecv;
 import static selective.connection.SegmentManager.kSegSend;
 import static selective.connection.SegmentManager.kSegSize;
-
-/**
- * Created by eslab on 2017-02-09.
- */
 
 public abstract class NetworkAdapter {
     static public final int kDevOff = 0;
@@ -38,61 +34,65 @@ public abstract class NetworkAdapter {
     private Object recver_lock;
 
     public abstract boolean device_on();
+
     public abstract boolean device_off();
+
     public abstract boolean make_connection();
+
     public abstract boolean close_connection();
 
     public abstract int send(byte[] buf, int len);
+
     public abstract int recv(byte[] buf, int len);
+
     public abstract void on_control_recv(byte[] buf, int len);
 
     private class SenderThread extends Thread {
         public void run() {
             SegmentManager sm = SegmentManager.get_instance();
-            if(dev_type == kWifiDirect){
+            if (dev_type == kWifiDirect) {
                 sm.wfd_state = 1;
             }
 
-            if(dev_type == kBluetooth){
-                Log.d(tag, "start bluetooth sender thread");
-            } else if(dev_type == kWifiDirect){
-                Log.d(tag, "start WiFi direct sender thread");
+            if (dev_type == kBluetooth) {
+                LogBroadcastSender.sendLogMessage(tag, "start bluetooth sender thread");
+            } else if (dev_type == kWifiDirect) {
+                LogBroadcastSender.sendLogMessage(tag, "start WiFi direct sender thread");
             }
 
             while (true) {
-                if(dev_type == kBluetooth){
-                    while(sm.wfd_state == 1){
+                if (dev_type == kBluetooth) {
+                    while (sm.wfd_state == 1) {
                         try {
-                            Log.d(tag, "WFD is on. stop bluetooth sender thread");
+                            LogBroadcastSender.sendLogMessage(tag, "WFD is on. stop bluetooth sender thread");
                             sleep(1000);
-                        } catch (Exception e){
+                        } catch (Exception e) {
                             e.printStackTrace();
                         }
                     }
                 }
 
-                if(sender_semaphore == 1){
-                    Log.d(tag, "sender semaphore is 1. stop sender thread");
-                    if(dev_type == kWifiDirect){
+                if (sender_semaphore == 1) {
+                    LogBroadcastSender.sendLogMessage(tag, "sender semaphore is 1. stop sender thread");
+                    if (dev_type == kWifiDirect) {
                         sm.wfd_state = 0;
                     }
                     break;
                 }
 
                 Segment to_send = sm.dequeue(kSegSend);
-                if(to_send != null){
+                if (to_send != null) {
                     int len = kSegSize + kSegHeaderSize;
                     byte[] data = to_send.data;
                     int res = send(data, len);
                     if (res < len) {
                         sm.enqueue(kSegSend, to_send);
-                        if (res <= 0)
-                            break;
+                        if (res <= 0) break;
                     }
                     sm.free_segment(to_send);
                 }
             }
-            synchronized(sender_lock) {
+            synchronized (sender_lock) {
                 sender_lock.notify();
             }
         }
@@ -103,10 +103,10 @@ public abstract class NetworkAdapter {
             SegmentManager sm = SegmentManager.get_instance();
             Segment free_seg = sm.get_free_segment();
 
-            if(dev_type == kBluetooth){
-                Log.d(tag, "start bluetooth recver thread");
-            } else if(dev_type == kWifiDirect){
-                Log.d(tag, "start WiFi direct recver thread");
+            if (dev_type == kBluetooth) {
+                LogBroadcastSender.sendLogMessage(tag, "start bluetooth recver thread");
+            } else if (dev_type == kWifiDirect) {
+                LogBroadcastSender.sendLogMessage(tag, "start WiFi direct recver thread");
             }
 
             while (true) {
@@ -115,7 +115,7 @@ public abstract class NetworkAdapter {
 
                     while(sm.wfd_state == 1){
                         try {
-                            Log.d(tag, "WFD is on. stop bluetooth recver thread");
+                            LogBroadcastSender.sendLogMessage(tag, "WFD is on. stop bluetooth recver thread");
                             sleep(1000);
                         } catch (Exception e){
                             e.printStackTrace();
@@ -123,34 +123,34 @@ public abstract class NetworkAdapter {
                     }
                 }*/
 
-                if(recver_semaphore == 1){
-                    Log.d(tag, "recver semaphore is 1. stop the recver thread");
+                if (recver_semaphore == 1) {
+                    LogBroadcastSender.sendLogMessage(tag, "recver semaphore is 1. stop the recver thread");
                     break;
                 }
 
                 int len = kSegSize + kSegHeaderSize;
-                //Log.d(tag, "Recving thread start:"+Integer.toString(dev_id));
+                //LogBroadcastSender.sendLogMessage(tag, "Recving thread start:"+Integer.toString(dev_id));
                 int res = recv(free_seg.data, len);
                 if (res < len) {
-                    Log.d(tag, "Recving failed");
+                    LogBroadcastSender.sendLogMessage(tag, "Recving failed");
                     sm.free_segment(free_seg);
 
                     if (res <= 0) {
                         break;
                     }
                 } else {
-                    Log.d(tag, "Recved : " + Short.toString(dev_id));
+                    LogBroadcastSender.sendLogMessage(tag, "Recved : " + Short.toString(dev_id));
                 }
 
                 ByteBuffer buffer = ByteBuffer.allocate(4);
                 buffer.put(free_seg.data, 0, 4);
                 free_seg.seq_no = buffer.getInt(0);
-                //Log.d(tag, "Recved Seq No : " + Integer.toString(free_seg.seq_no));
+                //LogBroadcastSender.sendLogMessage(tag, "Recved Seq No : " + Integer.toString(free_seg.seq_no));
 
                 buffer = ByteBuffer.allocate(4);
                 buffer.put(free_seg.data, 4, 4);
                 free_seg.flag_len = buffer.getInt(0);
-                //Log.d(tag, "Recved flag_len: " + Integer.toString(free_seg.flag_len));
+                //LogBroadcastSender.sendLogMessage(tag, "Recved flag_len: " + Integer.toString(free_seg.flag_len));
 
                 sm.enqueue(kSegRecv, free_seg);
                 free_seg = sm.get_free_segment();
@@ -160,7 +160,7 @@ public abstract class NetworkAdapter {
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
-            synchronized(recver_lock) {
+            synchronized (recver_lock) {
                 recver_lock.notify();
             }
         }
@@ -172,31 +172,27 @@ public abstract class NetworkAdapter {
         ConnectingThread(Handler handler) {
             mHandler = handler;
         }
+
         public void run() {
-            if (stat != kDevConnecting)
-                return;
+            if (stat != kDevConnecting) return;
 
             boolean res = make_connection();
 
             if (res) {
                 if ((at & kATCtrl) == 0) {
-                    if (send_thread != null)
-                        send_thread.interrupt();
+                    if (send_thread != null) send_thread.interrupt();
 
                     send_thread = new SenderThread();
                     send_thread.start();
 
-                    if (recv_thread != null)
-                        recv_thread.interrupt();
+                    if (recv_thread != null) recv_thread.interrupt();
 
                     recv_thread = new RecverThread();
                     recv_thread.start();
                 } else {
-                    if (send_thread != null)
-                        send_thread.interrupt();
+                    if (send_thread != null) send_thread.interrupt();
 
-                    if (recv_thread != null)
-                        recv_thread.interrupt();
+                    if (recv_thread != null) recv_thread.interrupt();
 
                     send_thread = null;
                     recv_thread = null;
@@ -219,13 +215,12 @@ public abstract class NetworkAdapter {
         }
 
         public void run() {
-            if (stat != kDevDisconnecting)
-                return;
+            if (stat != kDevDisconnecting) return;
 
-            if(send_thread != null){
+            if (send_thread != null) {
                 sender_semaphore = 1;
                 try {
-                    synchronized(sender_lock) {
+                    synchronized (sender_lock) {
                         sender_lock.wait();
                     }
                 } catch (Exception e) {
@@ -233,22 +228,22 @@ public abstract class NetworkAdapter {
                 }
                 send_thread.interrupt();
                 send_thread = null;
-                Log.d(tag, "sender thread stopped ");
+                LogBroadcastSender.sendLogMessage(tag, "sender thread stopped ");
                 sender_semaphore = 0;
             }
-            if(recv_thread != null){
+            if (recv_thread != null) {
                 recver_semaphore = 1;
                 try {
-                    synchronized(recver_lock) {
+                    synchronized (recver_lock) {
                         recver_lock.wait();
                     }
-                } catch (Exception e){
+                } catch (Exception e) {
                     e.printStackTrace();
                 }
 
                 recv_thread.interrupt();
                 recv_thread = null;
-                Log.d(tag, "recver thread stopped ");
+                LogBroadcastSender.sendLogMessage(tag, "recver thread stopped ");
                 recver_semaphore = 0;
             }
 
@@ -294,7 +289,7 @@ public abstract class NetworkAdapter {
 
     public final void set_data_adapter() {
         if ((at & kATInitialized) == kATInitialized) {
-            Log.d(tag, "Already initialized");
+            LogBroadcastSender.sendLogMessage(tag, "Already initialized");
             return;
         }
 
@@ -304,12 +299,12 @@ public abstract class NetworkAdapter {
 
     public final void set_control_adapter() {
         if ((at & kATInitialized) == kATInitialized) {
-            Log.d(tag, "Already initialized");
+            LogBroadcastSender.sendLogMessage(tag, "Already initialized");
             return;
         }
 
         if ((at & kATCtrlable) == 0) {
-            Log.d(tag, "Not controllable adapter");
+            LogBroadcastSender.sendLogMessage(tag, "Not controllable adapter");
             return;
         }
         at |= kATCtrl | kATInitialized;
@@ -319,12 +314,12 @@ public abstract class NetworkAdapter {
 
     public void connect(Handler handler) {
         if (at == kATuninitialized) {
-            Log.d(tag, "The adapter has not been installed to communicator");
+            LogBroadcastSender.sendLogMessage(tag, "The adapter has not been installed to communicator");
             return;
         }
 
         if (stat != kDevDiscon) {
-            Log.d(tag, "The adapter is not disconnected");
+            LogBroadcastSender.sendLogMessage(tag, "The adapter is not disconnected");
             return;
         }
 
@@ -339,11 +334,11 @@ public abstract class NetworkAdapter {
 
     public void close(Handler handler) {
         if (stat != kDevCon) {
-            Log.d(tag, "The adapter is not connected");
+            LogBroadcastSender.sendLogMessage(tag, "The adapter is not connected");
             return;
         }
 
-        Log.d(tag, "close adapter");
+        LogBroadcastSender.sendLogMessage(tag, "close adapter");
         stat = kDevDisconnecting;
         if (close_thread != null) {
             close_thread.interrupt();
@@ -359,13 +354,13 @@ public abstract class NetworkAdapter {
 
     public void send_ctrl_msg(byte[] data, int len) {
         if ((at & kATCtrl) == kATCtrl) {
-            Log.d(tag, "Cannot transfer private data in control adapter");
+            LogBroadcastSender.sendLogMessage(tag, "Cannot transfer private data in control adapter");
             return;
         }
 
         NetworkManager nm = NetworkManager.get_instance();
         ByteBuffer buffer = ByteBuffer.allocate(1);
-        buffer.put((byte)NetworkManager.kCtrlReqPriv);
+        buffer.put((byte) NetworkManager.kCtrlReqPriv);
 
         nm.send_control_data(buffer.array(), 1);
 
