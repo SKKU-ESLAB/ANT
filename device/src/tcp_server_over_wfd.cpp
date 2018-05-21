@@ -29,12 +29,13 @@
 
 namespace cm {
 TCPServerOverWfdAdapter::TCPServerOverWfdAdapter(uint32_t id, int port,
-                                                 const char *dev_name){
+                                                 const char *wfd_dev_name){
   this->port = port;
   this->dev_id = id;
   net_dev_type = kWifiDirect;
 
-  strncpy(this->dev_name, dev_name, 256);
+  snprintf(dev_name, sizeof(dev_name), "TCPServer/Wfd");
+  strncpy(this->wfd_dev_name, wfd_dev_name, 256);
 
   sent_data = 0;
   cli_sock = 0;
@@ -61,7 +62,7 @@ bool TCPServerOverWfdAdapter::make_connection(void) {
   LOG_VERB("WFD Server up");
 
   //Add P2P Group and be Group Owner
-  ret = wifi::wifi_direct_server_up(dev_name);
+  ret = wifi::wifi_direct_server_up(wfd_dev_name);
   if (ret < 0) return false;
 
   //Send WFD Device ADDR
