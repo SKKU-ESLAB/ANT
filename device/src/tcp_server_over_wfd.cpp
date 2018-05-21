@@ -102,7 +102,7 @@ bool TCPServerOverWfdAdapter::make_connection(void) {
   }
 
   if (ret < 0) {
-    LOG_WARN("IP is not set");
+    LOG_ERR("IP is not set");
     wifi::wifi_direct_server_down();
     return false;
   }
@@ -118,30 +118,30 @@ bool TCPServerOverWfdAdapter::make_connection(void) {
 
   if (setsockopt(serv_sock, SOL_SOCKET, SO_REUSEADDR, (char *)&reuse,
                  sizeof(int)) == -1) {
-    LOG_WARN("Socket setup failed");
+    LOG_ERR("Socket setup failed");
     wifi::wifi_direct_server_down();
     return false;
   }
   
   int err = bind(serv_sock, (struct sockaddr *)&saddr, sizeof(saddr));
   if (err < 0) {
-    LOG_WARN("Socket bind failed");
+    LOG_ERR("Socket bind failed");
     wifi::wifi_direct_server_down();
     return false;
   }
 
   err = listen(serv_sock, 5);
   if (err < 0) {
-    LOG_WARN("Socket listen failed");
+    LOG_ERR("Socket listen failed");
     wifi::wifi_direct_server_down();
     return false;
   }
 
   int caddr_len = sizeof(caddr);
-  LOG_WARN("Accepting client...");
+  LOG_VERB("Accepting client...");
   cli_sock = accept(serv_sock, (struct sockaddr *)&caddr, (socklen_t *)&caddr_len);
   if (cli_sock < 0) {
-    LOG_WARN("Accept failed %s", strerror(errno));
+    LOG_ERR("Accept failed %s", strerror(errno));
     wifi::wifi_direct_server_down();
     return false;
   }
@@ -158,7 +158,7 @@ bool TCPServerOverWfdAdapter::dev_connected_wait() {
   ret = dev_connected.wait_for(lck, std::chrono::seconds(15));
 
   if (ret == std::cv_status::timeout) {
-    LOG_VERB("Timed out");
+    LOG_WARN("Timed out");
     return false;
   }
 
@@ -191,7 +191,7 @@ int TCPServerOverWfdAdapter::send_impl(const void *buf, size_t len) {
       LOG_WARN("Cli sock closed");
       return -1;
     }
-    //LOG_VERB("WFD] sent: %d\n", sent_bytes);
+    //LOG_DEBUG("WFD] sent: %d\n", sent_bytes);
     sent += sent_bytes;
   }
 
@@ -215,7 +215,7 @@ int TCPServerOverWfdAdapter::recv_impl(void *buf, size_t len) {
     }
 
     recved += recv_bytes;
-    LOG_VERB("WFD %d] recv : %d\n", port, recv_bytes);
+    LOG_DEBUG("WFD %d] recv : %d\n", port, recv_bytes);
   }
 
   return recved;

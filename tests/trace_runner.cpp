@@ -21,21 +21,25 @@
 #include <rfcomm_over_bt.h>
 #include <tcp_server_over_eth.h>
 #include <tcp_server_over_wfd.h>
+
 #include <network_switcher.h>
-#include <thread>
 #include <communicator.h>
 #include <network_adapter.h>
+
+#include "csv.h"
+
+#include <thread>
+
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
 #include <unistd.h>
 #include <fcntl.h>
-
 #include <sys/time.h>
 
 using namespace cm;
 
-#define DEBUG_SHOW_DATA 1
+#define DEBUG_SHOW_DATA 0
 #define DEBUG_SHOW_TIME 0
 
 #if DEBUG_SHOW_TIME == 1
@@ -43,7 +47,6 @@ struct timeval start, end;
 #endif
 
 FILE *fp;
-std::mutex lock;
 std::condition_variable end_lock;
 
 void receiving_thread() {
@@ -65,7 +68,31 @@ void receiving_thread() {
   }
 }
 
-int main() {
+static char *rand_string(char *str, size_t size)
+{
+  const char charset[] = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
+  if (size) {
+    --size;
+    for (size_t n = 0; n < size; n++) {
+      int key = rand() % (int) (sizeof charset - 1);
+      str[n] = charset[key];
+    }
+    str[size] = '\0';
+  }
+  return str;
+}
+
+int main(int argc, char** argv) {
+  /* Parse arguments */
+  if(argc != 2) {
+    printf("[Usage] %s <trace_file_name>\n", argv[0]);
+    return -1;
+  }
+
+  char trace_file_name[512];
+  snprintf(trace_file_name, 512, "%s", argv[1]);
+  printf("Trace File: %s\n", trace_file_name);
+
   Communicator *cm = Communicator::get_instance();
   NetworkSwitcher::get_instance()->run();
   TCPServerOverEthAdapter ethAdapter(2345, 2345);
@@ -82,11 +109,8 @@ int main() {
   wfdAdapter.set_data_adapter();
 
   int iter = 0;
-  int iter1 = 0;
-  int iter2 = 0;
   char sending_buf[8192];
   int ret, numbytes;
-  int fd, count; 
   char *buffer; 
   char input[100];
   char file_name[200];
@@ -109,65 +133,84 @@ int main() {
   printf("Wait for 3 seconds...\n");
   sleep(3);
 
-#define DATA_PATH "/home/redcarrottt/data"
-#define SMALL_FILE_NAME "10k"
-#define LARGE_FILE_NAME "1m"
 #define BUFFER_SIZE (20*1024*1024)
-  printf("Step 3. Send Mixed Workload\n");
-  while (true) {
-    std::unique_lock<std::mutex> lck(lock);
-    if(iter1 < 10 && iter2 == 0) {
-      sleep(13);
-      sprintf(file_name, "%s", SMALL_FILE_NAME);
-    } else {
-      usleep(1000);
-      sprintf(file_name, "%s", LARGE_FILE_NAME);
-      if(iter2 == 5){
-        iter1 = 0;
-        iter2 = 0;
-      } else {
-        iter2++;
-      }
-    }
-    if(iter == 100) {
-      printf("Finish Workload\n");
-      break;
-    }
-    sprintf(file_dir, "%s/%s", DATA_PATH, file_name);
+#define SOURCE_LOCALHOST_BT "localhost (ANT-0)"
+#define SOURCE_LOCALHOST_WFD "192.168.0.33"
+  printf("Step 3. Send Workload (%s)\n", trace_file_name);
+  
+  /* Initialize CSV Parser */
+  io::CSVReader<3, io::trim_chars<>, io::double_quote_escape<',','\"'>> in(trace_file_name);
+  in.read_header(io::ignore_extra_column, "Time", "Source", "Payload");
+  std::string timestr;
+  std::string source;
+  int payload_length;
 
-    printf(" * Iter %d (File: %s)\n", iter, file_dir);
+  /* Read CSV File */
+  int recent_sent_sec = 0;
+  int recent_sent_usec = 0;
+  while(in.read_row(timestr, source, payload_length)) {
 #if DEBUG_SHOW_DATA == 1
-    printf("  - Send File: %s\n", file_dir); 
+    printf("%s %s %d\n", timestr.c_str(), source.c_str(), payload_length);
 #endif
+    if(payload_length == 0) {
+      /* In case of ACK message */
+      continue;
+    }
+    
+    if(source.find(SOURCE_LOCALHOST_BT) == std::string::npos
+        && source.find(SOURCE_LOCALHOST_WFD) == std::string::npos) {
+      /* Only replay packets sent from this device */
+      continue;
+    }
 
-    fd = open(file_dir, O_RDONLY); 
-    if(fd < 0) {
-      fprintf(stderr, "[Error] Cannot find the file: %s\n", file_dir);
+    /* Parse Time */
+    int time_sec;
+    int time_usec;
+    sscanf(timestr.c_str(), "%d.%d", &(time_sec), &(time_usec));
+    time_usec = time_usec / 1000;
+
+    /* Sleep for wait */
+    int sleep_us = (int)(time_sec * 1000*1000 + time_usec)
+        - (int)(recent_sent_sec * 1000*1000 + recent_sent_usec);
+    if(sleep_us < 0) {
+      printf("[Error] Invalid sleep time: %d(%d:%d -> %d:%d)\n",
+          sleep_us, recent_sent_sec, recent_sent_usec, time_sec, time_usec);
+      return -2;
+    }
+    /* printf(" * Packet %d (Length: %d / Time: %d:%d) Wait for %d us...\n",
+        iter, payload_length, time_sec, time_usec, sleep_us); */
+    if(iter % 1000 == 0) {
+      printf(" * Packet %d\n", iter);
+    }
+    usleep(sleep_us);
+
+    buffer = (char*) calloc(payload_length, sizeof(char));
+    if(buffer == NULL) {
+      fprintf(stderr, "[Error] Buffer allocation failed: size=%d\n", payload_length);
+      return -3;
     } else {
-      buffer = (char*) calloc (BUFFER_SIZE, sizeof(char));
-      if(buffer == NULL){
-        fprintf(stderr, "[Error] Buffer allocation failed: size=%d\n", BUFFER_SIZE);
-        exit(1);
-      } else {
-        count = read(fd, buffer, BUFFER_SIZE);
-#if DEBUG_SHOW_DATA == 1
-        printf("  - Read data: size=%d\n", count);
-#endif
-
 #if DEBUG_SHOW_TIME == 1
-        gettimeofday(&start, NULL);
+      gettimeofday(&start, NULL);
 #endif
-        // Send Data
-        ret = cm->send_data(buffer, count); 
+      /* Generate String */
+      rand_string(buffer, payload_length);
 
-        free(buffer);
-      }
-      close(fd); 
+      /* Send Data */
+      ret = cm->send_data(buffer, payload_length); 
+
+      free(buffer);
+      
+#if DEBUG_SHOW_DATA == 1
+      printf("   - Packet %d : Sent!\n", iter);
+#endif
     }
+
+    recent_sent_sec = time_sec;
+    recent_sent_usec = time_usec;
     iter++;
-    iter1++;
-    end_lock.wait(lck);
   }
+
+  printf("Finish Workload\n");
 
   return 0;
 }
