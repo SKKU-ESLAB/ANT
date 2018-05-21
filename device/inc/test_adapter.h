@@ -31,7 +31,7 @@ using namespace cm;
 class TestAdapter : public NetworkAdapter {
  public:
   TestAdapter() {
-    snprintf(dev_name, sizeof(dev_name), "Test Adapter");
+    snprintf(dev_name, sizeof(dev_name), "Test");
     LOG_VERB("Test Adapter created");
     copied = false;
     set_controllable();

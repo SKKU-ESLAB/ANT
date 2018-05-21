@@ -33,6 +33,8 @@ TCPServerOverEthAdapter::TCPServerOverEthAdapter(uint32_t id, int port) {
 
   cli_sock = 0;
 
+  snprintf(dev_name, sizeof(dev_name), "TCPServer/Eth");
+
   serv_sock = socket(AF_INET, SOCK_STREAM, 0);
   assert(serv_sock >= 0);
 
@@ -45,7 +47,7 @@ TCPServerOverEthAdapter::TCPServerOverEthAdapter(uint32_t id, int port) {
 
   if (setsockopt(serv_sock, SOL_SOCKET, SO_REUSEADDR, (char *)&reuse,
                  sizeof(int)) == -1) {
-    LOG_VERB("Socket setup failed");
+    LOG_ERR("Socket setup failed");
     return;
   }
 
@@ -80,14 +82,14 @@ bool TCPServerOverEthAdapter::make_connection(void) {
   LOG_VERB("Eth %d] Accepting...client",port);
   cli_sock = accept(serv_sock, (struct sockaddr *)&caddr, (socklen_t *)&caddr_len);
   if (cli_sock < 0) {
-    LOG_WARN("Eth %d] Accept failed", port);
+    LOG_ERR("Eth %d] Accept failed", port);
     return false;
   }
   else {
-    LOG_WARN("Eth %d] Accepted", port);
+    LOG_ERR("Eth %d] Accepted", port);
   }
 
-  LOG_DEBUG("Eth %d] TCP Client connected", port);
+  LOG_VERB("Eth %d] TCP Client connected", port);
 
   return true;
 }
@@ -106,7 +108,7 @@ int TCPServerOverEthAdapter::send_impl(const void *buf, size_t len) {
     }
 
     sent += sent_bytes;
-    LOG_VERB("Eth %d] sent the data: %d\n", port, sent_bytes);
+    LOG_DEBUG("Eth %d] sent the data: %d\n", port, sent_bytes);
   }
  
   return sent;
@@ -136,7 +138,7 @@ void TCPServerOverEthAdapter::on_control_recv(const void *buf, size_t len) {
 
   msg[len] = 0;
   memcpy(msg, buf, len);
-  LOG_VERB("Got : %s", msg);
+  LOG_DEBUG("Got : %s", msg);
 
   delete[] msg;
 

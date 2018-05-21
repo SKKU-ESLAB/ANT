@@ -48,8 +48,6 @@ class RfcommServerOverBtAdapter : public NetworkAdapter {
 
   int serv_sock, cli_sock;
 
-  char dev_name[256];
-
   bool device_on(void);
   bool device_off(void);
   bool make_connection(void);

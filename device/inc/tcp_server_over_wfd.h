@@ -34,7 +34,7 @@
 namespace cm {
 class TCPServerOverWfdAdapter : public NetworkAdapter {
  public:
-  TCPServerOverWfdAdapter(uint32_t id, int port, const char *dev_name);
+  TCPServerOverWfdAdapter(uint32_t id, int port, const char *wfd_dev_name);
 
  protected:
   int send_impl(const void *buf, size_t len);
@@ -48,11 +48,10 @@ class TCPServerOverWfdAdapter : public NetworkAdapter {
   std::mutex dev_wait_lock;
   std::condition_variable dev_connected;
 
+  char wfd_dev_name[256];
+
   FILE *fp;
   int sent_data;
-
-  char dev_name[256];
-
 
   uint16_t get_id(void);
   bool dev_connected_wait(void);

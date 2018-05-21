@@ -41,6 +41,8 @@ RfcommServerOverBtAdapter::RfcommServerOverBtAdapter(uint16_t id, const char *sv
 
   sent_data = 0;
 
+  snprintf(dev_name, sizeof(dev_name), "Rfcomm/BT");
+
   char buffer[100];
   snprintf(buffer, 100, "%s", svc_uuid);
   str2uuid(buffer, &(this->svc_uuid));
@@ -66,7 +68,7 @@ bool RfcommServerOverBtAdapter::make_connection() {
   LOG_VERB("Bluetooth accept...");
   cli_sock = accept(serv_sock, (struct sockaddr *)&cli_addr, &opt);
   if (cli_sock < 0) {
-    LOG_WARN("Bluetooth accept failed(%s)", strerror(errno));
+    LOG_ERR("Bluetooth accept failed(%s)", strerror(errno));
     return false;
   }
 
@@ -214,23 +216,23 @@ int RfcommServerOverBtAdapter::bt_open() {
 
   serv_sock = socket(AF_BLUETOOTH, SOCK_STREAM, BTPROTO_RFCOMM);
   if (serv_sock < 0) {
-    LOG_WARN("Bluetooth socket open failed(%s)", strerror(errno));
+    LOG_ERR("Bluetooth socket open failed(%s)", strerror(errno));
     return -1;
   }
 
   port = bt_dynamic_bind_rc();
   if (port < 1 || port > 30) {
-    LOG_WARN("Bluetooth socket bind failed(%s)", strerror(errno));
+    LOG_ERR("Bluetooth socket bind failed(%s)", strerror(errno));
     return -1;
   }
 
   if (bt_register_service() < 0) {
-    LOG_WARN("Bluetooth sdp session creation failed(%s)", strerror(errno));
+    LOG_ERR("Bluetooth sdp session creation failed(%s)", strerror(errno));
     return -1;
   }
 
   if (listen(serv_sock, 1) < 0) {
-    LOG_WARN("Listening failed(%s)", strerror(errno));
+    LOG_ERR("Listening failed(%s)", strerror(errno));
     return -1;
   }
   
@@ -277,7 +279,7 @@ int RfcommServerOverBtAdapter::recv_impl(void *buf, size_t len) {
     }
 
     recved += recv_bytes;
-    LOG_VERB("BT %d] recv : %d\n", port, recv_bytes);
+    LOG_DEBUG("BT %d] recv : %d\n", port, recv_bytes);
   }
 
   return recved;
