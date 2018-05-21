@@ -385,7 +385,7 @@ void NetworkAdapter::run_recver(void) {
     }
     
    if(recver_semaphore == 1){
-     LOG_VERB("recver semaphore is 1. stop recver thread\n");
+     LOG_WARN("recver semaphore is 1. stop recver thread\n");
      break;
    }
 
@@ -406,7 +406,7 @@ void NetworkAdapter::run_recver(void) {
     free_seg->seq_no = ntohl(net_seq_no);
     free_seg->flag_len = ntohl(net_flag_len);
 
-    LOG_VERB("Recved:%d/%d(%d)", free_seg->seq_no, free_seg->flag_len, res);
+    LOG_DEBUG("Recved:%d/%d(%d)", free_seg->seq_no, free_seg->flag_len, res);
     sm->enqueue(kSegRecv, free_seg);
     free_seg = sm->get_free_segment();
   }

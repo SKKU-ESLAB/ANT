@@ -218,9 +218,9 @@ Segment *SegmentManager::dequeue(SegQueueType type) {
   /* If queue is empty, wait until some segment is enqueued */
   if (this->mQueueLength[type].get_size() == 0) {
     if(type == kSegSend) {
-      LOG_VERB("sending queue is empty. wait for another\n");
+      LOG_DEBUG("sending queue is empty. wait for another\n");
     } else {
-      LOG_VERB("receiving queue is empty. wait for another\n");
+      LOG_DEBUG("receiving queue is empty. wait for another\n");
     }
 
     this->mCondEnqueued[type].wait(lck);
@@ -229,7 +229,7 @@ Segment *SegmentManager::dequeue(SegQueueType type) {
   /* Dequeue from queue */
   Segment *ret = this->mQueues[type].front();
   if (ret == NULL) {
-    LOG_VERB("Queue[%s] is NULL(empty)", type==0? "send":"recv");
+    LOG_DEBUG("Queue[%s] is NULL(empty)", type==0? "send":"recv");
     return NULL;
   }
   this->mQueues[type].pop_front();
