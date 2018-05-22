@@ -39,7 +39,10 @@ class NetworkSwitcher {
     void run(void);
 
     void run_switcher(void);
-    void monitor_and_handover(void);
+    void monitor(int &avg_send_request_speed,
+        int& avg_send_queue_data_size, int& avg_total_bandwidth_now);
+    void check_and_handover(int avg_send_request_speed,
+        int avg_send_queue_data_size, int avg_total_bandwidth_now);
 
     bool check_increase_adapter(int send_request_speed, int send_queue_data_size);
     bool check_decrease_adapter(int bandwidth_now, int bandwidth_when_increasing);

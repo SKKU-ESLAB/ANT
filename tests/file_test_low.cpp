@@ -116,8 +116,8 @@ int main() {
   printf("Step 3. Send Mixed Workload\n");
   while (true) {
     std::unique_lock<std::mutex> lck(lock);
-    if(iter1 < 10 && iter2 == 0) {
-      sleep(13);
+    if(iter1 < 3 && iter2 == 0) {
+      sleep(4);
       sprintf(file_name, "%s", SMALL_FILE_NAME);
     } else {
       usleep(1000);
@@ -159,6 +159,9 @@ int main() {
 #endif
         // Send Data
         ret = cm->send_data(buffer, count); 
+#if DEBUG_SHOW_DATA == 1
+        printf("  - Send data: size=%d\n", count);
+#endif
 
         free(buffer);
       }

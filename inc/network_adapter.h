@@ -164,13 +164,12 @@ class NetworkAdapter {
   DevStatCb make_connection_cb;
   DevStatCb close_connection_cb;
 
+  void join_threads();
+
   /*  The sender_thread and recver thread will run these functions.
   */ 
   void run_sender(void);
   void run_recver(void);
-
-  void join_threads();
-
 
   virtual void dev_switch(DevState stat, DevStatCb cb) final;
   void dev_on(void);
