@@ -85,8 +85,6 @@ typedef struct {
 
 class SegmentManager {
  public:
-  int wfd_state;
-
   /* Used in protocol manager */
   int send_to_segment_manager(uint8_t *data, size_t len);
   uint8_t *recv_from_segment_manager(void *proc_data_handle);
@@ -103,16 +101,31 @@ class SegmentManager {
 
   void notify_queue(void);
 
-  uint32_t get_queue_length(int type) {
+  int get_queue_length(int type) {
     return this->mQueueLength[type].get_size();
   }
 
-  uint32_t get_queue_data_size(int type) {
+  int get_queue_data_size(int type) {
     return this->mQueueLength[type].get_size() * SEGMENT_DATA_SIZE;
   }
 
-  uint64_t get_send_request_per_sec() {
+  int get_failed_sending_queue_data_size(int type) {
+    return this->mFailedSendingQueueLength.get_size() * SEGMENT_DATA_SIZE;
+  }
+
+  int get_send_request_per_sec() {
     return this->mSendRequest.get_speed();
+  }
+
+  void set_is_wfd_on(int wfd_on) {
+    std::unique_lock<std::mutex> lck(this->mIsWfdOnLock);
+    this->mIsWfdOn = wfd_on;
+  }
+
+  int get_is_wfd_on() {
+    std::unique_lock<std::mutex> lck(this->mIsWfdOnLock);
+    int ret = this->mIsWfdOn;
+    return ret;
   }
 
   /* Singleton */
@@ -133,8 +146,15 @@ class SegmentManager {
 
     is_start = 0;
     is_finish = 0;
-    wfd_state = 0;
+    this->mIsWfdOn = 0;
   }
+
+  /*
+   * TODO: To be deprecated
+   * Used for Disabling bluetooth receiver/sender during Wi-fi direct is turned on
+   */
+  int mIsWfdOn;
+  std::mutex mIsWfdOnLock;
 
   std::mutex mNextGlobalSeqNoLock;
   uint32_t mNextGlobalSeqNo;
@@ -158,6 +178,7 @@ class SegmentManager {
   /* Statistics */
   Counter mSendRequest;
   Counter mQueueLength[kSegMaxQueueType];
+  Counter mFailedSendingQueueLength;
 
   /* Reserved free segment list */
   std::mutex mFreeSegmentListLock;

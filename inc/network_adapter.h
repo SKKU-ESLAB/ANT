@@ -66,11 +66,11 @@ class NetworkAdapter {
   virtual void set_control_adapter(void) final;
   bool delete_threads();
 
-  uint64_t get_bandwidth_up(void) {
+  int get_bandwidth_up(void) {
     this->mSendDataSize.get_speed();
   }
 
-  uint64_t get_bandwidth_down(void) {
+  int get_bandwidth_down(void) {
     this->mReceiveDataSize.get_speed();
   }
 
@@ -164,13 +164,12 @@ class NetworkAdapter {
   DevStatCb make_connection_cb;
   DevStatCb close_connection_cb;
 
+  void join_threads();
+
   /*  The sender_thread and recver thread will run these functions.
   */ 
   void run_sender(void);
   void run_recver(void);
-
-  void join_threads();
-
 
   virtual void dev_switch(DevState stat, DevStatCb cb) final;
   void dev_on(void);

@@ -39,10 +39,13 @@ class NetworkSwitcher {
     void run(void);
 
     void run_switcher(void);
-    void monitor_and_handover(void);
+    void monitor(int &avg_send_request_speed,
+        int& avg_send_queue_data_size, int& avg_total_bandwidth_now);
+    void check_and_handover(int avg_send_request_speed,
+        int avg_send_queue_data_size, int avg_total_bandwidth_now);
 
-    bool check_increase_adapter(uint64_t send_request_speed, uint32_t send_queue_data_size);
-    bool check_decrease_adapter(uint64_t bandwidth_now, uint64_t bandwidth_when_increasing);
+    bool check_increase_adapter(int send_request_speed, int send_queue_data_size);
+    bool check_decrease_adapter(int bandwidth_now, int bandwidth_when_increasing);
 
     void control_adapter_ready(void) {
       switch(this->mStatus) {
@@ -70,14 +73,6 @@ class NetworkSwitcher {
       }
     }
 
-    void inc_queue_threshold(void) {
-      this->mQueueThreshold += kSegQueueThreshold;
-    }
-
-    void dec_queue_threshold(void) {
-      this->mQueueThreshold -= kSegQueueThreshold;
-    }
-
     /* Singleton */
     static NetworkSwitcher* get_instance(void) {
       if(NetworkSwitcher::singleton == NULL) {
@@ -87,21 +82,69 @@ class NetworkSwitcher {
     }
 
   private:
+#define METRIC_WINDOW_LENGTH 8
+
     /* Singleton */
     static NetworkSwitcher* singleton;
     NetworkSwitcher(void) {
       this->mThread = NULL;
       this->mStatus = kNSStatusNeedControlAdapter;
       this->mBandwidthWhenIncreasing = 0;
-      this->mCheckDecreasingOk = 0;
+      this->mDecreasingCheckCount = 0;
+
+      for(int i=0; i<METRIC_WINDOW_LENGTH; i++) {
+        this->mSendRequestSpeedValues[i] = 0;
+        this->mSendQueueDataSizeValues[i] = 0;
+        this->mTotalBandwidthNowValues[i] = 0;
+      }
+      this->mValuesCursor = 0;
+    }
+
+    void put_values(int send_request_speed, int send_queue_data_size,
+        int total_bandwidth_now) {
+      this->mSendRequestSpeedValues[this->mValuesCursor] = send_request_speed;
+      this->mSendQueueDataSizeValues[this->mValuesCursor] = send_queue_data_size;
+      this->mTotalBandwidthNowValues[this->mValuesCursor] = total_bandwidth_now;
+      this->mValuesCursor = (this->mValuesCursor + 1) % METRIC_WINDOW_LENGTH;
+    }
+
+    int get_average_send_request_speed() {
+      int average = 0;
+      for(int i=0; i<METRIC_WINDOW_LENGTH; i++) {
+        average += this->mSendRequestSpeedValues[i];
+      }
+      average = average / METRIC_WINDOW_LENGTH;
+      return average;
+    }
+
+    int get_average_send_queue_data_size() {
+      int average = 0;
+      for(int i=0; i<METRIC_WINDOW_LENGTH; i++) {
+        average += this->mSendQueueDataSizeValues[i];
+      }
+      average = average / METRIC_WINDOW_LENGTH;
+      return average;
+    }
+
+    int get_average_total_bandwidth_now() {
+      int average = 0;
+      for(int i=0; i<METRIC_WINDOW_LENGTH; i++) {
+        average += this->mTotalBandwidthNowValues[i];
+      }
+      average = average / METRIC_WINDOW_LENGTH;
+      return average;
     }
 
     std::thread *mThread;
 
     NSStatus mStatus;
-    uint32_t mQueueThreshold;
-    uint64_t mBandwidthWhenIncreasing;
-    int mCheckDecreasingOk;
+    int mBandwidthWhenIncreasing;
+    int mDecreasingCheckCount;
+
+    int mSendRequestSpeedValues[METRIC_WINDOW_LENGTH];
+    int mSendQueueDataSizeValues[METRIC_WINDOW_LENGTH];
+    int mTotalBandwidthNowValues[METRIC_WINDOW_LENGTH];
+    int mValuesCursor;
 };
 } /* namespace cm */
 
