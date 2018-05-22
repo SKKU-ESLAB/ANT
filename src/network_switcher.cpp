@@ -40,19 +40,40 @@ void NetworkSwitcher::run(void) {
 
 void NetworkSwitcher::run_switcher(void) {
   while(1) {
+    int avg_send_request_speed;
+    int avg_send_queue_data_size;
+    int avg_total_bandwidth_now;
+    this->monitor(avg_send_request_speed, avg_send_queue_data_size, avg_total_bandwidth_now);
+
     switch(this->mStatus) {
       case kNSStatusNeedControlAdapter:
+        printf("%s %d %lu %d\n",
+            "Need-CA",
+            avg_send_request_speed, avg_send_queue_data_size, avg_total_bandwidth_now);
         break;
       case kNSStatusNeedDataAdapter:
         /* After connecting control adapter, at least one increase is required */
+        printf("%s %d %lu %d\n",
+            "Need-DA",
+            avg_send_request_speed, avg_send_queue_data_size, avg_total_bandwidth_now);
         this->mStatus = kNSStatusIncreasing;
         NetworkManager::get_instance()->increase_adapter(); 
         break;
       case kNSStatusReady:
-        this->monitor_and_handover();
+        printf("%s %d %lu %d\n",
+            "Ready",
+            avg_send_request_speed, avg_send_queue_data_size, avg_total_bandwidth_now);
+        this->check_and_handover(avg_send_request_speed, avg_send_queue_data_size, avg_total_bandwidth_now);
         break;
       case kNSStatusIncreasing:
+        printf("%s %d %lu %d\n",
+            "Increasing",
+            avg_send_request_speed, avg_send_queue_data_size, avg_total_bandwidth_now);
+        break;
       case kNSStatusDecreasing:
+        printf("%s %d %lu %d\n",
+            "Decreasing",
+            avg_send_request_speed, avg_send_queue_data_size, avg_total_bandwidth_now);
         /* Handover do not work during increasing or decreasing adapter */
         break;
     }
@@ -61,7 +82,8 @@ void NetworkSwitcher::run_switcher(void) {
   }
 }
 
-void NetworkSwitcher::monitor_and_handover(void) {
+void NetworkSwitcher::monitor(int &avg_send_request_speed,
+    int& avg_send_queue_data_size, int& avg_total_bandwidth_now) {
   /* Monitor metrics */
   int send_request_speed;
   int send_queue_data_size;
@@ -104,35 +126,30 @@ void NetworkSwitcher::monitor_and_handover(void) {
   /* Get average */
   put_values(send_request_speed, send_queue_data_size, total_bandwidth_now);
 
-  int avg_send_request_speed = get_average_send_request_speed();
-  int avg_send_queue_data_size = get_average_send_queue_data_size();
-  int avg_total_bandwidth_now = get_average_total_bandwidth_now();
+  avg_send_request_speed = get_average_send_request_speed();
+  avg_send_queue_data_size = get_average_send_queue_data_size();
+  avg_total_bandwidth_now = get_average_total_bandwidth_now();
+}
 
-#if PRINT_DETAILS == 1
-  LOG_VERB(" => r(t): %d B/s, |SQ(t)|: %d B, b(t): %d B/s",
-      avg_send_request_speed, avg_send_queue_data_size, avg_total_bandwidth_now);
-#else
-  printf("%d %lu %d\n",
-      avg_send_request_speed, avg_send_queue_data_size, avg_total_bandwidth_now);
-#endif
-
+void NetworkSwitcher::check_and_handover(int avg_send_request_speed,
+    int avg_send_queue_data_size, int avg_total_bandwidth_now) {
     /* Determine Increasing/Decreasing adapter */
-//    if(this->check_increase_adapter(avg_send_request_speed, avg_send_queue_data_size)) {
-//      /* Maintain bandwidth when increasing */
-//      this->mBandwidthWhenIncreasing = avg_total_bandwidth_now;
-//
-//      /* Increase Adapter */
-//      this->mStatus = kNSStatusIncreasing;
-//      NetworkManager::get_instance()->increase_adapter();
-//    } else if(this->check_decrease_adapter(avg_total_bandwidth_now, this->mBandwidthWhenIncreasing)) {
-//      /* Decrease Adapter */
-//      this->mStatus = kNSStatusDecreasing;
-//      NetworkManager::get_instance()->decrease_adapter();
-//    }
+    if(this->check_increase_adapter(avg_send_request_speed, avg_send_queue_data_size)) {
+      /* Maintain bandwidth when increasing */
+      this->mBandwidthWhenIncreasing = avg_total_bandwidth_now;
+
+      /* Increase Adapter */
+      this->mStatus = kNSStatusIncreasing;
+      NetworkManager::get_instance()->increase_adapter();
+    } else if(this->check_decrease_adapter(avg_total_bandwidth_now, this->mBandwidthWhenIncreasing)) {
+      /* Decrease Adapter */
+      this->mStatus = kNSStatusDecreasing;
+      NetworkManager::get_instance()->decrease_adapter();
+    }
 }
 
 #define AVERAGE_INCREASE_LATENCY_SEC 8.04f /* 8.04 sec */
-#define MAX_BANDWIDTH 50000 /* 50000B/s */
+#define MAX_BANDWIDTH 90000 /* 90000B/s */
 bool NetworkSwitcher::check_increase_adapter(int send_request_speed, int send_queue_data_size) {
   /*
    * Increase condition: LHS > RHS
@@ -147,7 +164,7 @@ bool NetworkSwitcher::check_increase_adapter(int send_request_speed, int send_qu
   }
 }
 
-#define CHECK_DECREASING_OK_COUNT 6
+#define CHECK_DECREASING_OK_COUNT 5
 bool NetworkSwitcher::check_decrease_adapter(int bandwidth_now, int bandwidth_when_increasing) {
   /*
    * Decrease condition: LHS < RHS (6 times)

@@ -123,17 +123,20 @@ void NetworkAdapter::set_control_adapter(void) {
 }
 
 void NetworkAdapter::join_threads(){
-  
   LOG_VERB("wait for the sender thread to end\n");
   sender_semaphore = 1;
-  //sender_start.notify_one();
-  th_sender->join(); 
+  sender_start.notify_one();
+  if(th_sender->joinable()) {
+    th_sender->join(); 
+  }
   sender_semaphore = 0;
 
   LOG_VERB("wait for the recver thread to end\n");
   recver_semaphore = 1;
-  //recver_start.notify_one();
-  th_recver->join(); 
+  recver_start.notify_one();
+  if(th_recver->joinable()) {
+    th_recver->join(); 
+  }
   recver_semaphore = 0;
   
  
@@ -151,12 +154,10 @@ void NetworkAdapter::join_threads(){
   uint16_t ndev_id = htons(nm->decreasing_adapter_id);
   memcpy(buf+1, &ndev_id, 2);
   nm->send_control_data((const void *)buf, 3);
-
 }
 
 bool NetworkAdapter::delete_threads(){
-      
-  //std::thread(std::bind(&NetworkAdapter::join_threads, this)).detach();
+  std::thread(std::bind(&NetworkAdapter::join_threads, this)).detach();
 
   return true;
 }
@@ -296,7 +297,7 @@ void NetworkAdapter::run_sender(void) {
   SegmentManager *sm = SegmentManager::get_instance();
 
   if(net_dev_type == kWifiDirect) {
-    sm->wfd_state = 1;
+    sm->set_is_wfd_on(1);
     LOG_VERB("WiFi Direct sender thread start working\n");
   } else if (net_dev_type == kBluetooth) {
     LOG_VERB("Bluetooth sender thread start working\n"); 
@@ -304,44 +305,34 @@ void NetworkAdapter::run_sender(void) {
 
  while (true) { 
     if (net_dev_type == kBluetooth) {
-      while (sm->wfd_state == 1) {
-        LOG_VERB("Wifi-direct is on. stop BT sender thread\n");
+      while (sm->get_is_wfd_on() == 1) {
+        LOG_DEBUG("Wifi-direct is on. stop BT sender thread\n");
         /*
         std::unique_lock<std::mutex> lck1(sender_lock);
         sender_start.wait(lck1); 
         */
         sleep(1);
-        LOG_VERB("Is wfd on? %d\n", sm->wfd_state);
-
+        LOG_DEBUG("wfd on. is_wfd_on: %d\n", sm->get_is_wfd_on());
       }
     }
 
     if (sender_semaphore == 1){
       LOG_VERB("sender semaphore is 1. stop sender thread\n");
       if(net_dev_type == kWifiDirect){
-        sm->wfd_state = 0;
-        LOG_VERB("wfd off. wfd_state: %d\n", sm->wfd_state);
+        sm->set_is_wfd_on(0);
+        LOG_DEBUG("wfd off. is_wfd_on: %d\n", sm->get_is_wfd_on());
       }
       break;
     }
 
     Segment *to_send;
 
-    if (likely((to_send = sm->get_failed_sending()) == NULL)){
-      to_send = sm->dequeue(kSegSend);
-    }
+    /* At first, dequeue a segment from failed sending queue */
+    to_send = sm->get_failed_sending();
 
-    if (to_send == NULL) {
-      if (stat < kDevCon) {
-        LOG_WARN("device is not in connection");
-        if(net_dev_type == kWifiDirect){
-          sm->wfd_state = 0;
-        LOG_VERB("wfd off. wfd_state: %d\n", sm->wfd_state);
-      }
-        break;
-      } else {
-        continue;
-      }
+    /* If there is no failed segment, dequeue from send queue */
+    if (likely(to_send == NULL)){
+      to_send = sm->dequeue(kSegSend);
     }
 
     int len = kSegHeaderSize + kSegSize;
@@ -356,7 +347,7 @@ void NetworkAdapter::run_sender(void) {
     sm->free_segment(to_send);
   }
 
-  //dev_switch(kDevDiscon, NULL);
+  // dev_switch(kDevDiscon, NULL);
 }
 
 void NetworkAdapter::run_recver(void) {
@@ -372,9 +363,8 @@ void NetworkAdapter::run_recver(void) {
 
 
   while (true) {
-
     if(net_dev_type == kBluetooth){
-      while(sm->wfd_state == 1){
+      while(sm->get_is_wfd_on() == 1){
         LOG_VERB("Wifi-direct is on. stop BT recver thread\n");
         /*
         std::unique_lock<std::mutex> lck2(recver_lock);
