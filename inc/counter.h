@@ -34,12 +34,12 @@ class Counter {
       this->mLastAccessedTS.tv_usec = 0;
     }
 
-    void add(uint32_t diff) {
+    void add(int diff) {
       std::unique_lock<std::mutex> lock(this->mLock);
       this->mSize = this->mSize + diff;
     }
 
-    void sub(uint32_t diff) {
+    void sub(int diff) {
       std::unique_lock<std::mutex> lock(this->mLock);
       this->mSize = this->mSize - diff;
     }
@@ -54,14 +54,14 @@ class Counter {
       this->mSize--;
     }
 
-    uint32_t get_size() {
+    int get_size() {
       std::unique_lock<std::mutex> lock(this->mLock);
       return this->mSize;
     }
 
-    uint64_t get_speed() {
+    int get_speed() {
       std::unique_lock<std::mutex> lock(this->mLock);
-      uint64_t speed;
+      int speed;
       struct timeval startTS, endTS;
       startTS = this->mLastAccessedTS;
       gettimeofday(&endTS, NULL);
@@ -74,7 +74,7 @@ class Counter {
         uint64_t interval = end - start;
 
         if(start != 0 && interval != 0) {
-          speed = (uint64_t)((float)(this->mSize - this->mPrevSize) / (float)(interval / (1000 * 1000)));
+          speed = (int)((float)(this->mSize - this->mPrevSize) / ((float)interval / (1000 * 1000)));
         } else {
           speed = 0;
         }
@@ -86,8 +86,8 @@ class Counter {
   private:
     std::mutex mLock;
 
-    uint32_t mSize;
-    uint32_t mPrevSize;
+    int mSize;
+    int mPrevSize;
     struct timeval mLastAccessedTS;
 };
 } /* namespace cm */

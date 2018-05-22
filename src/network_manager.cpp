@@ -259,8 +259,8 @@ void NetworkManager::increase_adapter_cb(DevState stat) {
     LOG_VERB("Adapter connected :%d ", this->mConnectingAdapter->dev_id);
     this->mState = kNetStatData;
     this->mConnectingAdapter = NULL;
-    LOG_VERB("increase the queue_threshold\n");
-    NetworkSwitcher::get_instance()->inc_queue_threshold();
+//    LOG_VERB("increase the queue_threshold\n");
+//    NetworkSwitcher::get_instance()->inc_queue_threshold();
   } else {
     // Failed to connect, roll back state
     LOG_VERB("Adapter Connection Failed\n");
@@ -338,8 +338,8 @@ void NetworkManager::decrease_adapter_cb(DevState stat) {
       this->mState = kNetStatControl;
     }
     this->mConnectingAdapter = NULL;
-    LOG_VERB("decrease the queue_threshold\n");
-    NetworkSwitcher::get_instance()->dec_queue_threshold();
+//    LOG_VERB("decrease the queue_threshold\n");
+//    NetworkSwitcher::get_instance()->dec_queue_threshold();
   } else {
     LOG_VERB("Adapter is not disabled\n");
     // If failed to connect, roll back state
