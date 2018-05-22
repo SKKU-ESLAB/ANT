@@ -61,6 +61,9 @@ bool TCPServerOverWfdAdapter::make_connection(void) {
 
   LOG_VERB("WFD Server up");
 
+  ret = wifi::wifi_turn_on();
+  if(ret < 0) return false;
+
   //Add P2P Group and be Group Owner
   ret = wifi::wifi_direct_server_up(wfd_dev_name);
   if (ret < 0) return false;
@@ -69,6 +72,7 @@ bool TCPServerOverWfdAdapter::make_connection(void) {
   ret = wifi::wifi_get_p2p_device_addr(buf, 256);
   if (ret < 0) {
     wifi::wifi_direct_server_down();
+    wifi::wifi_turn_off();
     return false;
   }
   LOG_VERB("WFD Server added : %s", buf);
@@ -78,6 +82,7 @@ bool TCPServerOverWfdAdapter::make_connection(void) {
   ret = wifi::wifi_direct_server_reset(buf, 256);
   if (ret < 0) {
     wifi::wifi_direct_server_down();
+    wifi::wifi_turn_off();
     return false;
   }
   LOG_VERB("WFD Server PIN: %s", buf);
@@ -86,6 +91,7 @@ bool TCPServerOverWfdAdapter::make_connection(void) {
   // Wait for the P2P Client
   if (dev_connected_wait() == false) {
     wifi::wifi_direct_server_down();
+    wifi::wifi_turn_off();
     return false;
   }
   LOG_VERB("Get server's IP\n"); 
@@ -104,6 +110,7 @@ bool TCPServerOverWfdAdapter::make_connection(void) {
   if (ret < 0) {
     LOG_ERR("IP is not set");
     wifi::wifi_direct_server_down();
+    wifi::wifi_turn_off();
     return false;
   }
   send_ctrl_msg(buf, strlen(buf));
@@ -120,6 +127,7 @@ bool TCPServerOverWfdAdapter::make_connection(void) {
                  sizeof(int)) == -1) {
     LOG_ERR("Socket setup failed");
     wifi::wifi_direct_server_down();
+    wifi::wifi_turn_off();
     return false;
   }
   
@@ -127,6 +135,7 @@ bool TCPServerOverWfdAdapter::make_connection(void) {
   if (err < 0) {
     LOG_ERR("Socket bind failed");
     wifi::wifi_direct_server_down();
+    wifi::wifi_turn_off();
     return false;
   }
 
@@ -134,6 +143,7 @@ bool TCPServerOverWfdAdapter::make_connection(void) {
   if (err < 0) {
     LOG_ERR("Socket listen failed");
     wifi::wifi_direct_server_down();
+    wifi::wifi_turn_off();
     return false;
   }
 
@@ -143,6 +153,7 @@ bool TCPServerOverWfdAdapter::make_connection(void) {
   if (cli_sock < 0) {
     LOG_ERR("Accept failed %s", strerror(errno));
     wifi::wifi_direct_server_down();
+    wifi::wifi_turn_off();
     return false;
   }
 
@@ -155,7 +166,7 @@ bool TCPServerOverWfdAdapter::dev_connected_wait() {
   std::unique_lock<std::mutex> lck(dev_wait_lock);
   LOG_VERB("Wait for WFD connected");
   std::cv_status ret;
-  ret = dev_connected.wait_for(lck, std::chrono::seconds(15));
+  ret = dev_connected.wait_for(lck, std::chrono::seconds(30));
 
   if (ret == std::cv_status::timeout) {
     LOG_WARN("Timed out");
@@ -168,12 +179,20 @@ bool TCPServerOverWfdAdapter::dev_connected_wait() {
 bool TCPServerOverWfdAdapter::close_connection() {
   close(cli_sock);
   close(serv_sock);
+  LOG_VERB("Socket closed");
   
   cli_sock = 0;
   serv_sock = 0;
 
   int ret = wifi::wifi_direct_server_down();
   if (ret < 0) return false;
+  LOG_DEBUG("Wi-fi direct server down");
+
+  sleep(2);
+
+  ret = wifi::wifi_turn_off();
+  if(ret < 0) return false;
+  LOG_DEBUG("Wi-fi direct turn off");
 
   return true;
 }

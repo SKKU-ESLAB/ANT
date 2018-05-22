@@ -85,10 +85,8 @@ bool TCPServerOverEthAdapter::make_connection(void) {
     LOG_ERR("Eth %d] Accept failed", port);
     return false;
   }
-  else {
-    LOG_ERR("Eth %d] Accepted", port);
-  }
 
+  LOG_VERB("Eth %d] Accepted", port);
   LOG_VERB("Eth %d] TCP Client connected", port);
 
   return true;

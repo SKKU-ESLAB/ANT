@@ -123,26 +123,33 @@ void NetworkAdapter::set_control_adapter(void) {
 }
 
 void NetworkAdapter::join_threads(){
-  
+  SegmentManager *sm = SegmentManager::get_instance();
+  sm->set_is_wfd_on(0);
+
   LOG_VERB("wait for the sender thread to end\n");
+
   sender_semaphore = 1;
-  //sender_start.notify_one();
-  th_sender->join(); 
+//  sender_start.notify_one();
+//  if(th_sender->joinable()) {
+//    th_sender->join(); 
+//  }
   sender_semaphore = 0;
 
   LOG_VERB("wait for the recver thread to end\n");
   recver_semaphore = 1;
-  //recver_start.notify_one();
-  th_recver->join(); 
+//  recver_start.notify_one();
+//  if(th_recver->joinable()) {
+//    th_recver->join(); 
+//  }
   recver_semaphore = 0;
   
  
   LOG_VERB("Joined the sender & recver thread and delete them\n");
-  delete th_sender;
-  delete th_recver;
-
-  th_sender = NULL;
-  th_recver = NULL;
+//  delete th_sender;
+//  delete th_recver;
+//
+//  th_sender = NULL;
+//  th_recver = NULL;
 
   /* Send control message to turn off the working data adapter */
   NetworkManager *nm = NetworkManager::get_instance();
@@ -151,12 +158,10 @@ void NetworkAdapter::join_threads(){
   uint16_t ndev_id = htons(nm->decreasing_adapter_id);
   memcpy(buf+1, &ndev_id, 2);
   nm->send_control_data((const void *)buf, 3);
-
 }
 
 bool NetworkAdapter::delete_threads(){
-      
-  //std::thread(std::bind(&NetworkAdapter::join_threads, this)).detach();
+  std::thread(std::bind(&NetworkAdapter::join_threads, this)).detach();
 
   return true;
 }
@@ -244,37 +249,35 @@ void NetworkAdapter::_close(void) {
   if (stat != kDevDisconnecting)
     return;
 
-  join_threads();
-
-  if((at & kATCtrl) == 0) { //Data adapter
-
-    while(1){
-    if(th_sender == NULL && th_recver == NULL){
-      LOG_VERB("No thread exists\n");
-    
-      bool res = close_connection();
-      if (res) {
-        LOG_VERB("connection closed\n");
-        stat = kDevDiscon;
-      } else {
-        stat = kDevCon;
-      }
-
-      break;
-    
-    }
-    else {
-      LOG_WARN("Still threads exist. Let's wait more\n"); 
-
-    }
-
-    }//end_while
-
-  } else { // Control Adapter
-    LOG_ERR("Try to turn off the control adapter\n");
-    exit(1);
+  bool res = close_connection();
+  if (res) {
+    LOG_VERB("connection closed\n");
+    stat = kDevDiscon;
+  } else {
+    stat = kDevCon;
   }
 
+  join_threads();
+
+//  if((at & kATCtrl) == 0) { //Data adapter
+//    while(1){
+//    if(th_sender == NULL && th_recver == NULL){
+//      LOG_VERB("No thread exists\n");
+//    
+//      break;
+//    
+//    }
+//    else {
+//      LOG_WARN("Still threads exist. Let's wait more\n"); 
+//
+//    }
+//
+//    }//end_while
+//
+//  } else { // Control Adapter
+//    LOG_ERR("Try to turn off the control adapter\n");
+//    exit(1);
+//  }
 
   if (close_connection_cb) {
     LOG_VERB("Call close_connection callback\n");
@@ -296,7 +299,7 @@ void NetworkAdapter::run_sender(void) {
   SegmentManager *sm = SegmentManager::get_instance();
 
   if(net_dev_type == kWifiDirect) {
-    sm->wfd_state = 1;
+    sm->set_is_wfd_on(1);
     LOG_VERB("WiFi Direct sender thread start working\n");
   } else if (net_dev_type == kBluetooth) {
     LOG_VERB("Bluetooth sender thread start working\n"); 
@@ -304,44 +307,33 @@ void NetworkAdapter::run_sender(void) {
 
  while (true) { 
     if (net_dev_type == kBluetooth) {
-      while (sm->wfd_state == 1) {
-        LOG_VERB("Wifi-direct is on. stop BT sender thread\n");
+      while (sm->get_is_wfd_on() == 1) {
+        LOG_DEBUG("Wifi-direct is on. stop BT sender thread\n");
         /*
         std::unique_lock<std::mutex> lck1(sender_lock);
         sender_start.wait(lck1); 
         */
         sleep(1);
-        LOG_VERB("Is wfd on? %d\n", sm->wfd_state);
-
+        LOG_DEBUG("wfd on. is_wfd_on: %d\n", sm->get_is_wfd_on());
       }
     }
 
-    if (sender_semaphore == 1){
+    if (sender_semaphore == 1) {
       LOG_VERB("sender semaphore is 1. stop sender thread\n");
-      if(net_dev_type == kWifiDirect){
-        sm->wfd_state = 0;
-        LOG_VERB("wfd off. wfd_state: %d\n", sm->wfd_state);
+      if(net_dev_type == kWifiDirect) {
+        LOG_DEBUG("wfd off. is_wfd_on: %d\n", sm->get_is_wfd_on());
       }
       break;
     }
 
     Segment *to_send;
 
-    if (likely((to_send = sm->get_failed_sending()) == NULL)){
-      to_send = sm->dequeue(kSegSend);
-    }
+    /* At first, dequeue a segment from failed sending queue */
+    to_send = sm->get_failed_sending();
 
-    if (to_send == NULL) {
-      if (stat < kDevCon) {
-        LOG_WARN("device is not in connection");
-        if(net_dev_type == kWifiDirect){
-          sm->wfd_state = 0;
-        LOG_VERB("wfd off. wfd_state: %d\n", sm->wfd_state);
-      }
-        break;
-      } else {
-        continue;
-      }
+    /* If there is no failed segment, dequeue from send queue */
+    if (likely(to_send == NULL)){
+      to_send = sm->dequeue(kSegSend);
     }
 
     int len = kSegHeaderSize + kSegSize;
@@ -356,7 +348,9 @@ void NetworkAdapter::run_sender(void) {
     sm->free_segment(to_send);
   }
 
-  //dev_switch(kDevDiscon, NULL);
+ LOG_VERB("Sender thread ends\n");
+
+  // dev_switch(kDevDiscon, NULL);
 }
 
 void NetworkAdapter::run_recver(void) {
@@ -372,10 +366,9 @@ void NetworkAdapter::run_recver(void) {
 
 
   while (true) {
-
     if(net_dev_type == kBluetooth){
-      while(sm->wfd_state == 1){
-        LOG_VERB("Wifi-direct is on. stop BT recver thread\n");
+      while(sm->get_is_wfd_on() == 1){
+        LOG_DEBUG("Wifi-direct is on. stop BT recver thread\n");
         /*
         std::unique_lock<std::mutex> lck2(recver_lock);
         recver_start.wait(lck2);
@@ -391,13 +384,13 @@ void NetworkAdapter::run_recver(void) {
 
     void *buf = reinterpret_cast<void *>(free_seg->data);
     int len = kSegSize + kSegHeaderSize;
+    LOG_DEBUG("Receiving...");
     int res = this->recv(buf, len);
     if (res < len) {
       LOG_WARN("Recving failed at %s (%s)", dev_name, strerror(errno));
       sm->free_segment(free_seg);
       break;
     }
-
 
     uint32_t net_seq_no, net_flag_len;
     memcpy(&net_seq_no, buf, sizeof(uint32_t));
@@ -411,6 +404,7 @@ void NetworkAdapter::run_recver(void) {
     free_seg = sm->get_free_segment();
   }
  
+  LOG_VERB("Recver thread ends\n");
 
   //dev_switch(kDevDiscon, NULL);
 }
@@ -440,7 +434,7 @@ int NetworkAdapter::send(const void *buf, size_t len) {
   int ret;
   ret = this->send_impl(buf, len);
   if(ret > 0) {
-    this->mSendDataSize.add(len);
+    this->mSendDataSize.add((int)len);
   }
   return ret;
 }
@@ -449,7 +443,7 @@ int NetworkAdapter::recv(void *buf, size_t len) {
   int ret;
   ret = this->recv_impl(buf, len);
   if(ret > 0) {
-    this->mReceiveDataSize.add(len);
+    this->mReceiveDataSize.add((int)len);
   }
   return ret;
 }

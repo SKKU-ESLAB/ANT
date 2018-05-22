@@ -174,6 +174,26 @@ inline static int wifi_direct_wpa_cli_get_status(char ret[], size_t len) {
   return run_cli(ret, len, params);
 }
 
+extern int wifi_turn_on() {
+  char *const params[] = {"ifconfig",
+    "wlan0",
+    "up",
+    NULL};
+  char buf[256];
+
+  return run_cli(buf, 256, params, 1);
+}
+
+
+extern int wifi_turn_off() {
+  char *const params[] = {"ifconfig",
+    "wlan0",
+    "down",
+    NULL};
+  char buf[256];
+
+  return run_cli(buf, 256, params, 1);
+}
 /* Do not use this API */
 inline static int wifi_direct_ip_setup(void) {
   char *const params[] = {"ifconfig",
@@ -245,10 +265,10 @@ extern int wifi_direct_server_up(char *device_name) {
   char buf[1024];
   int ret;
 
-  if (wpa_cli_intf_name[0] != '\0') {
-    LOG_VERB("WFD is already up-%s", wpa_cli_intf_name);
-    return -1;
-  }
+//  if (wpa_cli_intf_name[0] != '\0') {
+//    LOG_VERB("WFD is already up-%s", wpa_cli_intf_name);
+//    return -1;
+//  }
 
   ret = wifi_set_device_name(device_name, buf, 1024);
   if (ret != 0)
@@ -322,7 +342,7 @@ extern int wifi_direct_server_down(void) {
   while (ptr != NULL) {
     if (strstr(ptr, "OK")) {
       LOG_VERB("Succedded to remove p2p group");
-      wpa_cli_intf_name[0] = '\0';
+      //wpa_cli_intf_name[0] = '\0';
       return ret;
     } else if (strstr(ptr, "FAIL")) {
       LOG_VERB("Failed to remove p2p group");
