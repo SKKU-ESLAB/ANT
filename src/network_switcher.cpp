@@ -26,7 +26,9 @@
 #include <thread>
 #include <unistd.h>
 
-#define SLEEP_USECS 1 * 1000 * 1000
+#define PRINT_DETAILS 0
+
+#define SLEEP_USECS 250 * 1000
 
 namespace cm {
 NetworkSwitcher* NetworkSwitcher::singleton = NULL;
@@ -61,9 +63,9 @@ void NetworkSwitcher::run_switcher(void) {
 
 void NetworkSwitcher::monitor_and_handover(void) {
   /* Monitor metrics */
-  uint64_t send_request_speed;
-  uint32_t send_queue_data_size;
-  uint64_t total_bandwidth_now = 0;
+  int send_request_speed;
+  int send_queue_data_size;
+  int total_bandwidth_now = 0;
 
   SegmentManager *segment_manager = SegmentManager::get_instance();
   send_request_speed = segment_manager->get_send_request_per_sec();
@@ -75,11 +77,13 @@ void NetworkSwitcher::monitor_and_handover(void) {
   for(std::list<NetworkAdapter *>::iterator it = control_adapters.begin();
       it != control_adapters.end(); it++) {
     NetworkAdapter *adapter = *it;
-    uint64_t bandwidth_up = adapter->get_bandwidth_up();
-    uint64_t bandwidth_down = adapter->get_bandwidth_down();
+    int bandwidth_up = adapter->get_bandwidth_up();
+    int bandwidth_down = adapter->get_bandwidth_down();
     total_bandwidth_now += (bandwidth_up + bandwidth_down);
-    LOG_VERB("- A%d (C: %s): Up=%lluB/s Down=%lluB/s",
+#if PRINT_DETAILS == 1
+    LOG_VERB("- A%d (C: %s): Up=%d B/s Down=%d B/s",
         i, adapter->get_dev_name(), bandwidth_up, bandwidth_down);
+#endif
     i++;
   }
 
@@ -87,25 +91,40 @@ void NetworkSwitcher::monitor_and_handover(void) {
   for(std::list<NetworkAdapter *>::iterator it = data_adapters.begin();
       it != data_adapters.end(); it++) {
     NetworkAdapter *adapter = *it;
-    uint64_t bandwidth_up = adapter->get_bandwidth_up();
-    uint64_t bandwidth_down = adapter->get_bandwidth_down();
+    int bandwidth_up = adapter->get_bandwidth_up();
+    int bandwidth_down = adapter->get_bandwidth_down();
     total_bandwidth_now += (bandwidth_up + bandwidth_down);
-    LOG_VERB("- A%d (D: %s): Up=%lluB/s Down=%lluB/s",
+#if PRINT_DETAILS == 1
+    LOG_VERB("- A%d (D: %s): Up=%d B/s Down=%d B/s",
         i, adapter->get_dev_name(), bandwidth_up, bandwidth_down);
+#endif
     i++;
   }
-  LOG_VERB(" => r(t): %llu, |SQ(t)|: %lu, b(t): %llu",
-      send_request_speed, send_queue_data_size, total_bandwidth_now);
 
-//    /* Determine Increasing/Decreasing adapter */
-//    if(this->check_increase_adapter(send_request_speed, send_queue_data_size)) {
+  /* Get average */
+  put_values(send_request_speed, send_queue_data_size, total_bandwidth_now);
+
+  int avg_send_request_speed = get_average_send_request_speed();
+  int avg_send_queue_data_size = get_average_send_queue_data_size();
+  int avg_total_bandwidth_now = get_average_total_bandwidth_now();
+
+#if PRINT_DETAILS == 1
+  LOG_VERB(" => r(t): %d B/s, |SQ(t)|: %d B, b(t): %d B/s",
+      avg_send_request_speed, avg_send_queue_data_size, avg_total_bandwidth_now);
+#else
+  printf("%d %lu %d\n",
+      avg_send_request_speed, avg_send_queue_data_size, avg_total_bandwidth_now);
+#endif
+
+    /* Determine Increasing/Decreasing adapter */
+//    if(this->check_increase_adapter(avg_send_request_speed, avg_send_queue_data_size)) {
 //      /* Maintain bandwidth when increasing */
-//      this->mBandwidthWhenIncreasing = total_bandwidth_now;
+//      this->mBandwidthWhenIncreasing = avg_total_bandwidth_now;
 //
 //      /* Increase Adapter */
 //      this->mStatus = kNSStatusIncreasing;
 //      NetworkManager::get_instance()->increase_adapter();
-//    } else if(this->check_decrease_adapter(total_bandwidth_now, this->mBandwidthWhenIncreasing)) {
+//    } else if(this->check_decrease_adapter(avg_total_bandwidth_now, this->mBandwidthWhenIncreasing)) {
 //      /* Decrease Adapter */
 //      this->mStatus = kNSStatusDecreasing;
 //      NetworkManager::get_instance()->decrease_adapter();
@@ -114,7 +133,7 @@ void NetworkSwitcher::monitor_and_handover(void) {
 
 #define AVERAGE_INCREASE_LATENCY_SEC 8.04f /* 8.04 sec */
 #define MAX_BANDWIDTH 50000 /* 50000B/s */
-bool NetworkSwitcher::check_increase_adapter(uint64_t send_request_speed, uint32_t send_queue_data_size) {
+bool NetworkSwitcher::check_increase_adapter(int send_request_speed, int send_queue_data_size) {
   /*
    * Increase condition: LHS > RHS
    * LHS: (average increase latency) * (r(t): send request speed) + (|SQ(t)|: send queue data size)
@@ -129,7 +148,7 @@ bool NetworkSwitcher::check_increase_adapter(uint64_t send_request_speed, uint32
 }
 
 #define CHECK_DECREASING_OK_COUNT 6
-bool NetworkSwitcher::check_decrease_adapter(uint64_t bandwidth_now, uint64_t bandwidth_when_increasing) {
+bool NetworkSwitcher::check_decrease_adapter(int bandwidth_now, int bandwidth_when_increasing) {
   /*
    * Decrease condition: LHS < RHS (6 times)
    * LHS: (b(t): total bandwidth)
@@ -138,9 +157,9 @@ bool NetworkSwitcher::check_decrease_adapter(uint64_t bandwidth_now, uint64_t ba
   if(bandwidth_when_increasing == 0) return false;
 
   if(bandwidth_now < bandwidth_when_increasing) {
-    this->mCheckDecreasingOk++;
-    if(this->mCheckDecreasingOk >= CHECK_DECREASING_OK_COUNT) {
-      this->mCheckDecreasingOk = 0;
+    this->mDecreasingCheckCount++;
+    if(this->mDecreasingCheckCount >= CHECK_DECREASING_OK_COUNT) {
+      this->mDecreasingCheckCount = 0;
       return true;
     } else {
       return false;

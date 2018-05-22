@@ -439,14 +439,14 @@ void NetworkAdapter::send_ctrl_msg(const void *buf, int len) {
 int NetworkAdapter::send(const void *buf, size_t len) {
   int ret;
   ret = this->send_impl(buf, len);
-  this->mSendDataSize.add(len);
+  this->mSendDataSize.add((int)len);
   return ret;
 }
 
 int NetworkAdapter::recv(void *buf, size_t len) {
   int ret;
   ret = this->recv_impl(buf, len);
-  this->mReceiveDataSize.add(len);
+  this->mReceiveDataSize.add((int)len);
   return ret;
 }
 

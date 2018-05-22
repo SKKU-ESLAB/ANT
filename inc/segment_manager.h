@@ -103,15 +103,15 @@ class SegmentManager {
 
   void notify_queue(void);
 
-  uint32_t get_queue_length(int type) {
+  int get_queue_length(int type) {
     return this->mQueueLength[type].get_size();
   }
 
-  uint32_t get_queue_data_size(int type) {
+  int get_queue_data_size(int type) {
     return this->mQueueLength[type].get_size() * SEGMENT_DATA_SIZE;
   }
 
-  uint64_t get_send_request_per_sec() {
+  int get_send_request_per_sec() {
     return this->mSendRequest.get_speed();
   }
 

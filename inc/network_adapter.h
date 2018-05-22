@@ -66,11 +66,11 @@ class NetworkAdapter {
   virtual void set_control_adapter(void) final;
   bool delete_threads();
 
-  uint64_t get_bandwidth_up(void) {
+  int get_bandwidth_up(void) {
     this->mSendDataSize.get_speed();
   }
 
-  uint64_t get_bandwidth_down(void) {
+  int get_bandwidth_down(void) {
     this->mReceiveDataSize.get_speed();
   }
 
