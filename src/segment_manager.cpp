@@ -287,6 +287,7 @@ void SegmentManager::free_segment_all(void) {
 void SegmentManager::failed_sending(Segment *seg) {
   std::unique_lock<std::mutex> lck(this->mSendFailQueueLock);
   this->mSendFailQueue.push_back(seg);
+  this->mFailedSendingQueueLength.add(1);
 }
 
 Segment *SegmentManager::get_failed_sending(void) {

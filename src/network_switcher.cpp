@@ -92,6 +92,7 @@ void NetworkSwitcher::monitor(int &avg_send_request_speed,
   SegmentManager *segment_manager = SegmentManager::get_instance();
   send_request_speed = segment_manager->get_send_request_per_sec();
   send_queue_data_size = segment_manager->get_queue_data_size(kSegSend);
+  send_queue_data_size += segment_manager->get_failed_sending_queue_data_size();
 
   NetworkManager *network_manager = NetworkManager::get_instance();
   int i = 0;

@@ -61,7 +61,7 @@ void receiving_thread() {
 #endif
 
     if(buf) free(buf);
-    end_lock.notify_one();
+//    end_lock.notify_one();
   }
 }
 
@@ -116,13 +116,13 @@ int main() {
   printf("Step 3. Send Mixed Workload\n");
   while (true) {
     std::unique_lock<std::mutex> lck(lock);
-    if(iter1 < 3 && iter2 == 0) {
-      sleep(4);
+    if(iter1 < 5 && iter2 == 0) {
+      sleep(3);
       sprintf(file_name, "%s", SMALL_FILE_NAME);
     } else {
-      usleep(1000);
+      sleep(5);
       sprintf(file_name, "%s", LARGE_FILE_NAME);
-      if(iter2 == 5){
+      if(iter2 == 3){
         iter1 = 0;
         iter2 = 0;
       } else {
@@ -169,7 +169,7 @@ int main() {
     }
     iter++;
     iter1++;
-    end_lock.wait(lck);
+//    end_lock.wait(lck);
   }
 
   return 0;
