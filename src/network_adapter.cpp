@@ -348,7 +348,7 @@ void NetworkAdapter::run_sender(void) {
     const void *data = to_send->data;
     //LOG_VERB("to_send seq_no: %d", to_send->seq_no);
     bool res = this->send(data, len); 
-    if (!res) {
+    if (res < 0) {
       LOG_WARN("Sending failed at %s (%d; %s)", dev_name, errno, strerror(errno));
       return_sending_failed_packet(to_send);
       break;
@@ -439,14 +439,18 @@ void NetworkAdapter::send_ctrl_msg(const void *buf, int len) {
 int NetworkAdapter::send(const void *buf, size_t len) {
   int ret;
   ret = this->send_impl(buf, len);
-  this->mSendDataSize.add((int)len);
+  if(ret > 0) {
+    this->mSendDataSize.add((int)len);
+  }
   return ret;
 }
 
 int NetworkAdapter::recv(void *buf, size_t len) {
   int ret;
   ret = this->recv_impl(buf, len);
-  this->mReceiveDataSize.add((int)len);
+  if(ret > 0) {
+    this->mReceiveDataSize.add((int)len);
+  }
   return ret;
 }
 
