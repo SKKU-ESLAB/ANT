@@ -179,17 +179,20 @@ bool TCPServerOverWfdAdapter::dev_connected_wait() {
 bool TCPServerOverWfdAdapter::close_connection() {
   close(cli_sock);
   close(serv_sock);
+  LOG_VERB("Socket closed");
   
   cli_sock = 0;
   serv_sock = 0;
 
   int ret = wifi::wifi_direct_server_down();
   if (ret < 0) return false;
+  LOG_DEBUG("Wi-fi direct server down");
 
   sleep(2);
 
   ret = wifi::wifi_turn_off();
   if(ret < 0) return false;
+  LOG_DEBUG("Wi-fi direct turn off");
 
   return true;
 }

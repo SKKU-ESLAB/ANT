@@ -109,6 +109,10 @@ class SegmentManager {
     return this->mQueueLength[type].get_size() * SEGMENT_DATA_SIZE;
   }
 
+  int get_failed_sending_queue_data_size(int type) {
+    return this->mFailedSendingQueueLength.get_size() * SEGMENT_DATA_SIZE;
+  }
+
   int get_send_request_per_sec() {
     return this->mSendRequest.get_speed();
   }
@@ -174,6 +178,7 @@ class SegmentManager {
   /* Statistics */
   Counter mSendRequest;
   Counter mQueueLength[kSegMaxQueueType];
+  Counter mFailedSendingQueueLength;
 
   /* Reserved free segment list */
   std::mutex mFreeSegmentListLock;
