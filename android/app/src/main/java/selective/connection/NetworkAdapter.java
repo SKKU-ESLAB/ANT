@@ -64,7 +64,8 @@ public abstract class NetworkAdapter {
                 if (dev_type == kBluetooth) {
                     while (sm.wfd_state == 1) {
                         try {
-                            LogBroadcastSender.sendLogMessage(tag, "WFD is on. stop bluetooth sender thread");
+                            //LogBroadcastSender.sendLogMessage(tag, "WFD is on. stop bluetooth
+                            // sender thread");
                             sleep(1000);
                         } catch (Exception e) {
                             e.printStackTrace();
@@ -73,7 +74,8 @@ public abstract class NetworkAdapter {
                 }
 
                 if (sender_semaphore == 1) {
-                    LogBroadcastSender.sendLogMessage(tag, "sender semaphore is 1. stop sender thread");
+                    LogBroadcastSender.sendLogMessage(tag, "sender semaphore is 1. stop sender " +
+                            "thread");
                     if (dev_type == kWifiDirect) {
                         sm.wfd_state = 0;
                     }
@@ -115,7 +117,8 @@ public abstract class NetworkAdapter {
 
                     while(sm.wfd_state == 1){
                         try {
-                            LogBroadcastSender.sendLogMessage(tag, "WFD is on. stop bluetooth recver thread");
+                            LogBroadcastSender.sendLogMessage(tag, "WFD is on. stop bluetooth
+                            recver thread");
                             sleep(1000);
                         } catch (Exception e){
                             e.printStackTrace();
@@ -124,12 +127,14 @@ public abstract class NetworkAdapter {
                 }*/
 
                 if (recver_semaphore == 1) {
-                    LogBroadcastSender.sendLogMessage(tag, "recver semaphore is 1. stop the recver thread");
+                    LogBroadcastSender.sendLogMessage(tag, "recver semaphore is 1. stop the " +
+                            "recver thread");
                     break;
                 }
 
                 int len = kSegSize + kSegHeaderSize;
-                //LogBroadcastSender.sendLogMessage(tag, "Recving thread start:"+Integer.toString(dev_id));
+                //LogBroadcastSender.sendLogMessage(tag, "Recving thread start:"+Integer.toString
+                // (dev_id));
                 int res = recv(free_seg.data, len);
                 if (res < len) {
                     LogBroadcastSender.sendLogMessage(tag, "Recving failed");
@@ -145,12 +150,14 @@ public abstract class NetworkAdapter {
                 ByteBuffer buffer = ByteBuffer.allocate(4);
                 buffer.put(free_seg.data, 0, 4);
                 free_seg.seq_no = buffer.getInt(0);
-                //LogBroadcastSender.sendLogMessage(tag, "Recved Seq No : " + Integer.toString(free_seg.seq_no));
+                //LogBroadcastSender.sendLogMessage(tag, "Recved Seq No : " + Integer.toString
+                // (free_seg.seq_no));
 
                 buffer = ByteBuffer.allocate(4);
                 buffer.put(free_seg.data, 4, 4);
                 free_seg.flag_len = buffer.getInt(0);
-                //LogBroadcastSender.sendLogMessage(tag, "Recved flag_len: " + Integer.toString(free_seg.flag_len));
+                //LogBroadcastSender.sendLogMessage(tag, "Recved flag_len: " + Integer.toString
+                // (free_seg.flag_len));
 
                 sm.enqueue(kSegRecv, free_seg);
                 free_seg = sm.get_free_segment();
@@ -252,7 +259,7 @@ public abstract class NetworkAdapter {
             if (res) stat = kDevDiscon;
             else stat = kDevCon;
 
-            mHandler.sendEmptyMessage(stat);
+            if (mHandler != null) mHandler.sendEmptyMessage(stat);
         }
     }
 
@@ -314,7 +321,8 @@ public abstract class NetworkAdapter {
 
     public void connect(Handler handler) {
         if (at == kATuninitialized) {
-            LogBroadcastSender.sendLogMessage(tag, "The adapter has not been installed to communicator");
+            LogBroadcastSender.sendLogMessage(tag, "The adapter has not been installed to " +
+                    "communicator");
             return;
         }
 
@@ -354,7 +362,8 @@ public abstract class NetworkAdapter {
 
     public void send_ctrl_msg(byte[] data, int len) {
         if ((at & kATCtrl) == kATCtrl) {
-            LogBroadcastSender.sendLogMessage(tag, "Cannot transfer private data in control adapter");
+            LogBroadcastSender.sendLogMessage(tag, "Cannot transfer private data in control " +
+                    "adapter");
             return;
         }
 
