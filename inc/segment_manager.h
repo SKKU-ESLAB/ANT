@@ -109,7 +109,7 @@ class SegmentManager {
     return this->mQueueLength[type].get_size() * SEGMENT_DATA_SIZE;
   }
 
-  int get_failed_sending_queue_data_size(int type) {
+  int get_failed_sending_queue_data_size() {
     return this->mFailedSendingQueueLength.get_size() * SEGMENT_DATA_SIZE;
   }
 
