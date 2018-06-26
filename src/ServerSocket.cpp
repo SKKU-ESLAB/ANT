@@ -19,9 +19,16 @@
 
 #include <ServerAdapter.h>
 
+#include <dbug_log.h>
+
 using namespace cm;
 
 bool ServerSocket::open() {
+  if(this->get_state != ServerSocketState::kClosed) {
+    LOG_ERR("It is already opened or opening/closing is in progress.");
+    return false;
+  }
+
   this->set_state(ServerSocketState::kOpening);
 
   bool res = this->open_impl();
@@ -35,6 +42,11 @@ bool ServerSocket::open() {
 }
 
 bool ServerSocket::close() {
+  if(this->get_state != ServerSocketState::kOpened) {
+    LOG_ERR("It is already closed or opening/closing is in progress.");
+    return false;
+  }
+
   this->set_state(ServerSocketState::kClosing);
 
   bool res = this->close_impl();
@@ -56,13 +68,13 @@ int ServerSocket::send(const void *buf, size_t len) {
   return res;
 }
 
-int ServerSocket::recv(void *buf, size_t len) {
+int ServerSocket::receive(void *buf, size_t len) {
   if(this->get_state() != ServerSocketState::kOpened) {
     LOG_ERR("Socket is not opened");
     return -1;
   }
   
-  int res = this->recv_impl(buf, len);
+  int res = this->receive_impl(buf, len);
   if(!res) {
     this->set_state(ServerSocketState::kClosed);
   }

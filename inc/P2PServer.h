@@ -47,9 +47,8 @@ public:
     return this->mState;
   }
 
-  P2PServer(char* name) {
+  P2PServer() {
     this->mState = P2PServerState::kScanDisallowed;
-    snprintf(this->mName, sizeof(this->mName), name);
   }
   ~Device() {
   }
@@ -60,7 +59,6 @@ protected:
   }
 
   P2PServerState mState;
-  char mName[256];
 }; /* class P2PServer */
 
 } /* namespace cm */
