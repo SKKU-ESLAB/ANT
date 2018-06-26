@@ -28,34 +28,11 @@
 
 #include <stdio.h>
 
+#include <ServerSocket.h>
+#include <P2PServer.h>
+#include <Device.h>
+
 namespace cm {
-typedef enum {
-  kClosed  = 0,
-  kOpening = 1,
-  kOpened  = 2,
-  kClosing = 3
-} ServerSocketState;
-
-class ServerSocket {
-}; /* class ServerSocket */
-
-typedef enum {
-  kScanDisallowed = 0,
-  kScanAllowed = 1
-} P2PServerState;
-
-class P2PServer {
-}; /* class P2PServer */
-
-typedef enum {
-  kOff        = 0,
-  kTurningOn  = 1,
-  kOn         = 2,
-  kTurningOff = 3
-} DeviceState;
-
-class Device {
-}; /* class Device */
 
 typedef enum {
   kDisconnected = 0,
@@ -68,6 +45,8 @@ class ServerAdapter {
 public:
   bool connect(void);
   bool disconnect(void);
+  int send(const void *buf, size_t len);
+  int recv(void *buf, size_t len);
 
   int get_bandwidth_up(void) {
     this->mSendDataSize.get_speed();
@@ -113,10 +92,11 @@ public:
 
   ~ServerAdapter();
 
-  int send(const void *buf, size_t len);
-  int recv(void *buf, size_t len);
-
 protected:
+  void set_state(ServerAdapterState new_state) {
+    this->mState = new_state;
+  }
+
   static int sNextId;
 
   ServerAdapterState mState;

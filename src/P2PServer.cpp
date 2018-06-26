@@ -21,40 +21,24 @@
 
 using namespace cm;
 
-int ServerAdapter::sNextId = 0;
+bool P2PServer::allow_scan(void) {
+  bool res = this->allow_scan_impl();
 
-ServerAdapter::~ServerAdapter() {
-  // TODO
+  if(!res) {
+    this->set_state(P2PServerState::kScanDisallowed);
+  } else {
+    this->set_state(P2PServerState::kScanAllowed);
+  }
+  return res;
 }
 
-bool ServerAdapter::connect(void) {
-  // TODO
-}
+bool P2PServer::disallow_scan(void) {
+  bool res = this->disallow_scan_impl();
 
-bool ServerAdapter::disconnect(void) {
-  // TODO
-}
-
-int ServerAdapter::send(const void *buf, size_t len) {
-  // TODO
-}
-
-int ServerAdapter::recv(void *buf, size_t len) {
-  // TODO
-}
-
-void run_sender(void) {
-  // TODO
-}
-
-void run_recver(void) {
-  // TODO
-}
-
-void join_threads() {
-  // TODO
-}
-
-void return_sending_failed_packet(void *segment) {
-  // TODO
+  if(!res) {
+    this->set_state(P2PServerState::kScanAllowed);
+  } else {
+    this->set_state(P2PServerState::kScanDisallowed);
+  }
+  return res;
 }

@@ -14,7 +14,7 @@ LIB=-lbluetooth -lpthread
 $(OBJ_DIR)/%.o: $(SRC_DIR)/%.cpp
 	$(CC) -o $@ -c $< -I$(INC) $(FLAG) $(LIB)
 
-_OBJ=communicator.o protocol_manager.o segment_manager.o network_manager.o network_adapter.o network_switcher.o
+_OBJ=communicator.o protocol_manager.o segment_manager.o network_manager.o network_switcher.o ServerAdapter.o ServerSocket.o P2PServer.o Device.o
 OBJ=$(patsubst %, $(OBJ_DIR)/%, $(_OBJ)) 
 
 $(DEV_OBJ_DIR)/%.o: $(DEV_SRC)/%.cpp
