@@ -17,13 +17,10 @@
  * limitations under the License.
  */
 
-#ifndef _BT_SERVER_ADAPTER_H_
-#define _BT_SERVER_ADAPTER_H_
+#ifndef _BT_P2P_SERVER_H_
+#define _BT_P2P_SERVER_H_
 
-#include <ServerAdapter.h>
-#include <BtDevice.h>
-#include <BtP2pServer.h>
-#include <BtServerSocket.h>
+#include <P2pServer.h>
 
 #include <counter.h>
 
@@ -35,21 +32,20 @@
 
 namespace cm {
 
-class BtServerAdapter : ServerAdapter {
+class BtP2pServer : P2pServer {
 public:
-  BtServerAdapter(char* name) : ServerAdapter(name) { 
-    BtDevice* device = BtDevice::getSingleton();
-    BtP2pServer* p2pServer = new BtP2pServer();
-    BtServerSocket* serverSocket = new BtServerSocket();
-    this->initialize(device, p2pServer, serverSocket);
+  virtual bool allow_scan_impl(void);
+  virtual bool disallow_scan_impl(void);
+
+  BtP2pServer(void) {
   }
 
-  ~BtServerAdapter(void) {
+  ~BtP2pServer(void) {
   }
 
 protected:
-}; /* class BtServerAdapter */
+}; /* class BtP2pServer */
 
 } /* namespace cm */
 
-#endif /* !defined(_BT_SERVER_ADAPTER_H_) */
+#endif /* !defined(_BT_P2P_SERVER_H_) */

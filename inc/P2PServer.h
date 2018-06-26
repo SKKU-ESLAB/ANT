@@ -47,10 +47,10 @@ public:
     return this->mState;
   }
 
-  P2PServer() {
+  P2PServer(void) {
     this->mState = P2PServerState::kScanDisallowed;
   }
-  ~Device() {
+  ~Device(void) {
   }
 
 protected:
