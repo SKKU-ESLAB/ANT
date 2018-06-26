@@ -17,13 +17,10 @@
  * limitations under the License.
  */
 
-#ifndef _BT_SERVER_ADAPTER_H_
-#define _BT_SERVER_ADAPTER_H_
+#ifndef _BT_SERVER_SOCKET_H_
+#define _BT_SERVER_SOCKET_H_
 
-#include <ServerAdapter.h>
-#include <BtDevice.h>
-#include <BtP2pServer.h>
-#include <BtServerSocket.h>
+#include <ServerSocket.h>
 
 #include <counter.h>
 
@@ -35,21 +32,30 @@
 
 namespace cm {
 
-class BtServerAdapter : ServerAdapter {
+class BtServerSocket : ServerSocket {
 public:
-  BtServerAdapter(char* name) : ServerAdapter(name) { 
-    BtDevice* device = BtDevice::getSingleton();
-    BtP2pServer* p2pServer = new BtP2pServer();
-    BtServerSocket* serverSocket = new BtServerSocket();
-    this->initialize(device, p2pServer, serverSocket);
+  virtual bool open_impl(void);
+  virtual bool close_impl(void);
+  virtual int send_impl(const void *buf, size_t len);
+  virtual int receive_impl(void *buf, size_t len);
+
+  uuid_t get_service_uuid(void) {
+    return this->mServiceUUID;
   }
 
-  ~BtServerAdapter(void) {
+  BtServerSocket(const char* service_uuid) {
+    char buffer[100];
+    snprintf(buffer, 100, "%s", svc_uuid);
+    str2uuid(buffer, &(this->svc_uuid));
+  }
+
+  ~BtServerSocket(void) {
   }
 
 protected:
-}; /* class BtServerAdapter */
+  uuid_t mServiceUUID;
+}; /* class BtServerSocket */
 
 } /* namespace cm */
 
-#endif /* !defined(_BT_SERVER_ADAPTER_H_) */
+#endif /* !defined(_BT_SERVER_SOCKET_H_) */

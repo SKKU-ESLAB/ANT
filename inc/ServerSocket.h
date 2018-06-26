@@ -39,13 +39,13 @@ typedef enum {
 
 class ServerSocket {
 public:
-  bool open();
-  bool close();
+  bool open(void);
+  bool close(void);
   int send(const void *buf, size_t len);
   int receive(void *buf, size_t len);
 
-  virtual bool open_impl() = 0;
-  virtual bool close_impl() = 0;
+  virtual bool open_impl(void) = 0;
+  virtual bool close_impl(void) = 0;
   virtual int send_impl(const void *buf, size_t len) = 0;
   virtual int receive_impl(void *buf, size_t len) = 0;
 
@@ -53,11 +53,11 @@ public:
     return this->mState;
   }
 
-  ServerSocket() {
+  ServerSocket(void) {
     this->mState = ServerSocketState::kClosed;
   }
 
-  ~ServerSocket() {
+  ~ServerSocket(void) {
   }
 
 protected:
