@@ -17,8 +17,8 @@
  * limitations under the License.
  */
 
-#ifndef _SERVER_SOCKET_H_
-#define _SERVER_SOCKET_H_
+#ifndef _BT_SERVER_ADAPTER_H_
+#define _BT_SERVER_ADAPTER_H_
 
 #include <counter.h>
 
@@ -29,44 +29,20 @@
 #include <stdio.h>
 
 namespace cm {
+  class BtServerAdapter : ServerAdapter {
+  public:
+    BtServerAdapter(char* name) : ServerAdapter(name) { 
+      BtDevice* device = BtDevice::getSingleton();
+      BtP2pServer* p2pServer = new BtP2pServer();
+      BtServerSocket* serverSocket = new BtServerSocket();
+      this->initialize(device, p2pServer, serverSocket);
+    }
 
-typedef enum {
-  kClosed  = 0,
-  kOpening = 1,
-  kOpened  = 2,
-  kClosing = 3
-} ServerSocketState;
+    ~BtServerAdapter() {
+    }
 
-class ServerSocket {
-public:
-  bool open();
-  bool close();
-  int send(const void *buf, size_t len);
-  int receive(void *buf, size_t len);
-
-  virtual bool open_impl() = 0;
-  virtual bool close_impl() = 0;
-  virtual int send_impl(const void *buf, size_t len) = 0;
-  virtual int receive_impl(void *buf, size_t len) = 0;
-
-  ServerSocketState get_state(void) {
-    return this->mState;
-  }
-
-  ServerSocket() {
-    this->mState = ServerSocketState::kClosed;
-  }
-
-  ~ServerSocket() {
-  }
-
-protected:
-  void set_state(ServerSocketState new_state) {
-    this->mState = new_state;
-  }
-  ServerSocketState mState;
-}; /* class ServerSocket */
-
+  protected:
+  };
 } /* namespace cm */
 
-#endif /* !defined(_SERVER_SOCKET_H_) */
+#endif /* !defined(_BT_SERVER_ADAPTER_H_) */

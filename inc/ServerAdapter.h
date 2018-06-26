@@ -41,12 +41,19 @@ typedef enum {
   kDisconnecting = 3
 } ServerAdapterState;
 
+class ServerAdapterStateListener {
+  virtual void onUpdateServerAdapterState(ServerAdapter* adapter,
+      ServerAdapterState old_state, ServerAdapterState new_state) = 0;
+};
+
 class ServerAdapter {
 public:
   bool connect(void);
   bool disconnect(void);
+  bool allow_scan(void);
+  bool disallow_scan(void);
   int send(const void *buf, size_t len);
-  int recv(void *buf, size_t len);
+  int receive(void *buf, size_t len);
 
   int get_bandwidth_up(void) {
     this->mSendDataSize.get_speed();
@@ -57,6 +64,8 @@ public:
   }
 
   ServerAdapterState get_state(void) {
+    std::unique_lock<std::mutex> lck(this->mStateLock);
+
     return this->mState;
   }
 
@@ -80,45 +89,81 @@ public:
     return this->mServerSocket;
   }
 
-  ServerAdapter(char* name,
-      Device* device, P2PServer* p2pServer, ServerSocket* serverSocket) {
+  void listen_state(ServerAdapterStateListener* listener) {
+    std::unique_lock<std::mutex> lck(this->mStateLock);
+
+    if(listener == NULL) return;
+    this->mStateListeners.push_back(listener);
+  }
+
+  ServerAdapter(char* name) {
     this->mState = ServerAdapterState::kDisconnected;
     snprintf(this->mName, sizeof(this->mName), name);
     this->mId = ServerAdapter::sNextId++;
+  }
+
+  ~ServerAdapter() {
+    if(this->mDevice !== NULL) {
+      delete this->mDevice;
+    }
+    if(this->mP2pServer !== NULL) {
+      delete this->mP2pServer;
+    }
+    if(this->mServerSocket !== NULL) {
+      delete this->mServerSocket;
+    }
+  }
+
+protected:
+  void send_ctrl_msg(const void *buf, int len);
+
+  void initialize(Device* device, P2PServer* p2pServer, ServerSocket* serverSocket) {
     this->mDevice = device;
     this->mP2pServer = p2pServer;
     this->mServerSocket = serverSocket;
   }
 
-  ~ServerAdapter();
-
-protected:
   void set_state(ServerAdapterState new_state) {
+    std::unique_lock<std::mutex> lck(this->mStateLock);
+
+    ServerAdapterState old_state = this->mState;
     this->mState = new_state;
+
+    for(std::vector::iterator it = this->mStateListeners.begin();
+        it != this->mStateListners.end();
+        it++) {
+      ServerAdapterStateListener* listener = (*it);
+      listener->onUpdateServerAdapterState(this, old_state, new_state);
+    }
   }
 
   static int sNextId;
 
   ServerAdapterState mState;
+  std::mutex mStateLock;
   char mName[256];
   int mId;
-  Device* mDevice;
-  P2PServer* mP2pServer;
-  ServerSocket* mServerSocket;
+  Device* mDevice = NULL;
+  P2PServer* mP2pServer = NULL;
+  ServerSocket* mServerSocket = NULL;
 
   /* Statistics */
   Counter mSendDataSize;
   Counter mReceiveDataSize;
 
+  /* State Listeners */
+  std::vector<ServerAdapterStateListener*> mStateListeners;
+
 private:
-  void run_sender(void);
-  void run_recver(void);
-  void join_threads();
+  void connect_thread(void);
+  void disconnect_thread(void);
+  void sender_thread(void);
+  void receiver_thread(void);
 
-  void return_sending_failed_packet(void *segment);
-
-  std::thread *mSenderThread;
-  std::thread *mReceiverThread;
+  std::thread *mSenderThread = NULL;
+  std::thread *mReceiverThread = NULL;
+  bool mSenderThreadOn = false;
+  bool mReceiverThreadOn = false;
 }; /* class ServerAdapter */
 
 } /* namespace cm */
