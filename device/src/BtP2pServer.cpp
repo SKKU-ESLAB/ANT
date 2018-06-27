@@ -16,14 +16,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-#ifndef _BT_SERVER_ADAPTER_H_
-#define _BT_SERVER_ADAPTER_H_
-
-#include <ServerAdapter.h>
-#include <BtDevice.h>
 #include <BtP2pServer.h>
-#include <BtServerSocket.h>
+#include <Util.h>
 
 #include <counter.h>
 
@@ -33,23 +27,18 @@
 
 #include <stdio.h>
 
-namespace cm {
+using namespace cm;
 
-class BtServerAdapter : ServerAdapter {
-public:
-  BtServerAdapter(char* name, const char* service_uuid) : ServerAdapter(name) { 
-    BtDevice* device = BtDevice::getSingleton();
-    BtP2pServer* p2pServer = new BtP2pServer();
-    BtServerSocket* serverSocket = new BtServerSocket(service_uuid);
-    this->initialize(device, p2pServer, serverSocket);
-  }
+bool BtP2pServer::allow_scan_impl(void) {
+  char buf[512];
+  char *const params[] = {"hciconfig", "hci0", "piscan", NULL};
 
-  ~BtServerAdapter(void) {
-  }
+  return Util::run_client(HCICONFIG_PATH, params, buf, 512);
+}
 
-protected:
-}; /* class BtServerAdapter */
+bool BtP2pServer::disallow_scan_impl(void) {
+  char buf[512];
+  char *const params[] = {"hciconfig", "hci0", "noscan", NULL};
 
-} /* namespace cm */
-
-#endif /* !defined(_BT_SERVER_ADAPTER_H_) */
+  return Util::run_client(HCICONFIG_PATH, params, buf, 512);
+}

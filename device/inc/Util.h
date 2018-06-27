@@ -17,39 +17,20 @@
  * limitations under the License.
  */
 
-#ifndef _BT_SERVER_ADAPTER_H_
-#define _BT_SERVER_ADAPTER_H_
-
-#include <ServerAdapter.h>
-#include <BtDevice.h>
-#include <BtP2pServer.h>
-#include <BtServerSocket.h>
-
-#include <counter.h>
-
-#include <thread>
-#include <mutex>
-#include <condition_variable>
+#ifndef _UTIL_H_
+#define _UTIL_H_
 
 #include <stdio.h>
 
 namespace cm {
 
-class BtServerAdapter : ServerAdapter {
+#define HCICONFIG_PATH "/usr/sbin/hciconfig"
+
+class Util {
 public:
-  BtServerAdapter(char* name, const char* service_uuid) : ServerAdapter(name) { 
-    BtDevice* device = BtDevice::getSingleton();
-    BtP2pServer* p2pServer = new BtP2pServer();
-    BtServerSocket* serverSocket = new BtServerSocket(service_uuid);
-    this->initialize(device, p2pServer, serverSocket);
-  }
-
-  ~BtServerAdapter(void) {
-  }
-
-protected:
-}; /* class BtServerAdapter */
+  static int run_client(char *path, char *const params[], char *res_buf, size_t len);
+}; /* class Util */
 
 } /* namespace cm */
 
-#endif /* !defined(_BT_SERVER_ADAPTER_H_) */
+#endif /* !defined(_UTIL_H_) */
