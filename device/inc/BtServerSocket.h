@@ -29,6 +29,11 @@
 #include <condition_variable>
 
 #include <stdio.h>
+#include <sys/socket.h>
+#include <arpa/inet.h>
+#include <errno.h>
+#include <string.h>
+#include <unistd.h>
 
 namespace cm {
 
@@ -45,8 +50,8 @@ public:
 
   BtServerSocket(const char* service_uuid) {
     char buffer[100];
-    snprintf(buffer, 100, "%s", svc_uuid);
-    str2uuid(buffer, &(this->svc_uuid));
+    snprintf(buffer, 100, "%s", service_uuid);
+    this->str2uuid(buffer, &(this->mServiceUUID));
   }
 
   ~BtServerSocket(void) {
@@ -54,6 +59,16 @@ public:
 
 protected:
   uuid_t mServiceUUID;
+  int mPort;
+
+  sdp_session_t* mSdpSession;
+  int mServerSocket;
+  int mClientSocket;
+
+private:
+  int bt_dynamic_bind_rc(void);
+  int bt_register_service(void);
+  int str2uuid(char *str, uuid_t *uuid);
 }; /* class BtServerSocket */
 
 } /* namespace cm */
