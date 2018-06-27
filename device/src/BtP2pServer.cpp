@@ -29,16 +29,10 @@
 
 using namespace cm;
 
-bool BtP2pServer::allow_scan_impl(void) {
-  char buf[512];
-  char *const params[] = {"hciconfig", "hci0", "piscan", NULL};
-
-  return Util::run_client(HCICONFIG_PATH, params, buf, 512);
+bool BtP2pServer::allow_impl(void) {
+  return true;
 }
 
-bool BtP2pServer::disallow_scan_impl(void) {
-  char buf[512];
-  char *const params[] = {"hciconfig", "hci0", "noscan", NULL};
-
-  return Util::run_client(HCICONFIG_PATH, params, buf, 512);
+bool BtP2pServer::disallow_impl(void) {
+  return true;
 }

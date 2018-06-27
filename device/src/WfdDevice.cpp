@@ -16,24 +16,33 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#include <WfdDevice.h>
+#include <Util.h>
 
-#ifndef _UTIL_H_
-#define _UTIL_H_
+#include <counter.h>
+
+#include <thread>
+#include <mutex>
+#include <condition_variable>
 
 #include <stdio.h>
 
-namespace cm {
+using namespace cm;
 
-#define HCICONFIG_PATH "/usr/sbin/hciconfig"
-#define WPA_CLI_PATH "/sbin/wpa_cli"
-#define IFCONFIG_PATH "/sbin/ifconfig"
-#define UDHCPD_PATH "/usr/sbin/udhcpd"
+WfdDevice* WfdDevice::sSingleton = NULL;
 
-class Util {
-public:
-  static int run_client(char *path, char *const params[], char *res_buf, size_t len);
-}; /* class Util */
+bool WfdDevice::turn_on_impl(void) {
+  char buf[512];
+  char *const params[] = {"ifconfig", "wlan0", "up", NULL};
 
-} /* namespace cm */
+  int res = Util::run_client(IFCONFIG_PATH, params, buf, 512);
+  return (res >= 0);
+}
 
-#endif /* !defined(_UTIL_H_) */
+bool WfdDevice::turn_off_impl(void) {
+  char buf[512];
+  char *const params[] = {"ifconfig", "wlan0", "down", NULL};
+
+  int res = Util::run_client(IFCONFIG_PATH, params, buf, 512);
+  return (res >= 0);
+}
