@@ -21,24 +21,24 @@
 
 using namespace cm;
 
-bool P2PServer::allow_scan(void) {
-  bool res = this->allow_scan_impl();
+bool P2PServer::allow(void) {
+  bool res = this->allow_impl();
 
   if(!res) {
-    this->set_state(P2PServerState::kScanDisallowed);
+    this->set_state(P2PServerState::kDisallowed);
   } else {
-    this->set_state(P2PServerState::kScanAllowed);
+    this->set_state(P2PServerState::kAllowed);
   }
   return res;
 }
 
-bool P2PServer::disallow_scan(void) {
-  bool res = this->disallow_scan_impl();
+bool P2PServer::disallow(void) {
+  bool res = this->disallow_impl();
 
   if(!res) {
-    this->set_state(P2PServerState::kScanAllowed);
+    this->set_state(P2PServerState::kAllowed);
   } else {
-    this->set_state(P2PServerState::kScanDisallowed);
+    this->set_state(P2PServerState::kDisallowed);
   }
   return res;
 }

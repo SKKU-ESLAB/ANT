@@ -31,24 +31,24 @@
 namespace cm {
 
 typedef enum {
-  kScanDisallowed = 0,
-  kScanAllowed = 1
+  kDisallowed = 0,
+  kAllowed = 1
 } P2PServerState;
 
 class P2PServer {
 public:
-  bool allow_scan(void);
-  bool disallow_scan(void);
+  bool allow(void);
+  bool disallow(void);
 
-  virtual bool allow_scan_impl(void) = 0;
-  virtual bool disallow_scan_impl(void) = 0;
+  virtual bool allow_impl(void) = 0;
+  virtual bool disallow_impl(void) = 0;
 
   P2PServerState get_state(void) {
     return this->mState;
   }
 
   P2PServer(void) {
-    this->mState = P2PServerState::kScanDisallowed;
+    this->mState = P2PServerState::kDisallowed;
   }
   ~Device(void) {
   }

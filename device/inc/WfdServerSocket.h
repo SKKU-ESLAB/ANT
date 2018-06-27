@@ -17,10 +17,10 @@
  * limitations under the License.
  */
 
-#ifndef _BT_P2P_SERVER_H_
-#define _BT_P2P_SERVER_H_
+#ifndef _WFD_SERVER_SOCKET_H_
+#define _WFD_SERVER_SOCKET_H_
 
-#include <P2pServer.h>
+#include <ServerSocket.h>
 
 #include <counter.h>
 
@@ -29,23 +29,43 @@
 #include <condition_variable>
 
 #include <stdio.h>
+#include <sys/socket.h>
+#include <arpa/inet.h>
+#include <errno.h>
+#include <string.h>
+#include <unistd.h>
 
 namespace cm {
 
-class BtP2pServer : P2pServer {
+class WfdServerSocket : ServerSocket {
 public:
-  virtual bool allow_impl(void);
-  virtual bool disallow_impl(void);
+  virtual bool open_impl(void);
+  virtual bool close_impl(void);
+  virtual int send_impl(const void *buf, size_t len);
+  virtual int receive_impl(void *buf, size_t len);
 
-  BtP2pServer(void) {
+  uuid_t get_service_uuid(void) {
+    return this->mServiceUUID;
   }
 
-  ~BtP2pServer(void) {
+  WfdServerSocket(int port, const char* wfd_device_name) {
+    this->mPort = port;
+    snprintf(this->mWfdDeviceName, 256, "%s", wfd_device_name);
+  }
+
+  ~WfdServerSocket(void) {
   }
 
 protected:
-}; /* class BtP2pServer */
+  int mPort;
+  char mWfdDeviceName[256];
+
+  int mServerSocket;
+  int mClientSocket;
+
+private:
+}; /* class WfdServerSocket */
 
 } /* namespace cm */
 
-#endif /* !defined(_BT_P2P_SERVER_H_) */
+#endif /* !defined(_WFD_SERVER_SOCKET_H_) */

@@ -17,23 +17,39 @@
  * limitations under the License.
  */
 
-#ifndef _UTIL_H_
-#define _UTIL_H_
+#ifndef _WFD_SERVER_ADAPTER_H_
+#define _WFD_SERVER_ADAPTER_H_
+
+#include <ServerAdapter.h>
+#include <WfdDevice.h>
+#include <WfdP2pServer.h>
+#include <WfdServerSocket.h>
+
+#include <counter.h>
+
+#include <thread>
+#include <mutex>
+#include <condition_variable>
 
 #include <stdio.h>
 
 namespace cm {
 
-#define HCICONFIG_PATH "/usr/sbin/hciconfig"
-#define WPA_CLI_PATH "/sbin/wpa_cli"
-#define IFCONFIG_PATH "/sbin/ifconfig"
-#define UDHCPD_PATH "/usr/sbin/udhcpd"
-
-class Util {
+class WfdServerAdapter : ServerAdapter {
 public:
-  static int run_client(char *path, char *const params[], char *res_buf, size_t len);
-}; /* class Util */
+  WfdServerAdapter(char* name, int port, const char* wfd_device_name) : ServerAdapter(name) { 
+    WfdDevice* device = WfdDevice::getSingleton();
+    WfdP2pServer* p2pServer = new WfdP2pServer(wfd_device_name);
+    WfdServerSocket* serverSocket = new WfdServerSocket(port);
+    this->initialize(device, p2pServer, serverSocket);
+  }
+
+  ~WfdServerAdapter(void) {
+  }
+
+protected:
+}; /* class WfdServerAdapter */
 
 } /* namespace cm */
 
-#endif /* !defined(_UTIL_H_) */
+#endif /* !defined(_WFD_SERVER_ADAPTER_H_) */

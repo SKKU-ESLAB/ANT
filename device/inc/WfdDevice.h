@@ -17,23 +17,44 @@
  * limitations under the License.
  */
 
-#ifndef _UTIL_H_
-#define _UTIL_H_
+#ifndef _WFD_DEVICE_H_
+#define _WFD_DEVICE_H_
+
+#include <Device.h>
+
+#include <counter.h>
+
+#include <thread>
+#include <mutex>
+#include <condition_variable>
 
 #include <stdio.h>
 
 namespace cm {
 
-#define HCICONFIG_PATH "/usr/sbin/hciconfig"
-#define WPA_CLI_PATH "/sbin/wpa_cli"
-#define IFCONFIG_PATH "/sbin/ifconfig"
-#define UDHCPD_PATH "/usr/sbin/udhcpd"
-
-class Util {
+class WfdDevice : Device {
 public:
-  static int run_client(char *path, char *const params[], char *res_buf, size_t len);
-}; /* class Util */
+  virtual bool turn_on_impl(void);
+  virtual bool turn_off_impl(void);
+
+  static WfdDevice* getSingleton() {
+    if(WfdDevice::sSingleton == NULL) {
+      WfdDevice::sSingleton = new WfdDevice();
+    }
+    return WfdDevice::sSingleton;
+  }
+
+  static WfdDevice* sSingleton;
+
+  ~WfdDevice(void) {
+  }
+
+protected:
+  WfdDevice(void) : Device("Wi-fi Direct") {
+  }
+
+}; /* class WfdDevice */
 
 } /* namespace cm */
 
-#endif /* !defined(_UTIL_H_) */
+#endif /* !defined(_WFD_DEVICE_H_) */

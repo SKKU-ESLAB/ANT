@@ -17,23 +17,44 @@
  * limitations under the License.
  */
 
-#ifndef _UTIL_H_
-#define _UTIL_H_
+#ifndef _WFD_P2P_SERVER_H_
+#define _WFD_P2P_SERVER_H_
+
+#include <P2pServer.h>
+
+#include <counter.h>
+
+#include <thread>
+#include <mutex>
+#include <condition_variable>
 
 #include <stdio.h>
 
 namespace cm {
 
-#define HCICONFIG_PATH "/usr/sbin/hciconfig"
-#define WPA_CLI_PATH "/sbin/wpa_cli"
-#define IFCONFIG_PATH "/sbin/ifconfig"
-#define UDHCPD_PATH "/usr/sbin/udhcpd"
-
-class Util {
+class WfdP2pServer : P2pServer {
 public:
-  static int run_client(char *path, char *const params[], char *res_buf, size_t len);
-}; /* class Util */
+  virtual bool allow_impl(void);
+  virtual bool disallow_impl(void);
+
+  WfdP2pServer(const char* wfd_device_name) {
+    snprintf(this->mWfdDeviceName, 100, "%s", wfd_device_name);
+  }
+
+  ~WfdP2pServer(void) {
+  }
+
+protected:
+  char mWfdDeviceName[100];
+
+private:
+  int wifi_set_device_name(char *wfd_device_name);
+  int wifi_direct_p2p_group_add(char ret[], size_t len);
+  int wifi_direct_ping(char ret[], size_t len);
+  int wifi_direct_ip_setup(const char* ip_addr);
+  int wifi_dhcp_setup(void);
+}; /* class WfdP2pServer */
 
 } /* namespace cm */
 
-#endif /* !defined(_UTIL_H_) */
+#endif /* !defined(_WFD_P2P_SERVER_H_) */
