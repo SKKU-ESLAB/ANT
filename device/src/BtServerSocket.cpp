@@ -53,13 +53,13 @@ bool BtServerSocket::open_impl(void) {
     return false;
   }
 
-  this->mPort = bt_dynamic_bind_rc();
+  this->mPort = this->bt_dynamic_bind_rc();
   if (this->mPort < 1 || this->mPort > 30) {
     LOG_ERR("Bluetooth socket bind failed(%s)", strerror(errno));
     return false;
   }
 
-  if (bt_register_service() < 0) {
+  if (this->bt_register_service() < 0) {
     LOG_ERR("Bluetooth sdp session creation failed(%s)", strerror(errno));
     return false;
   }
@@ -187,7 +187,7 @@ bool BtServerSocket::close_impl(void) {
   return true;
 }
 
-int BtServerSocket::send_impl(const void *buf, size_t len) {
+int BtServerSocket::send_impl(const void *data_buffer, size_t data_length) {
   int sent_bytes = 0;
 
   if (cli_sock <= 0) {
@@ -195,33 +195,34 @@ int BtServerSocket::send_impl(const void *buf, size_t len) {
     return -1;
   }
 
-  while (sent_bytes < len) {
-    int once_sent_bytes = write(cli_sock, buf, len);
+  while (sent_bytes < data_length) {
+    int once_sent_bytes = write(cli_sock, data_buffer, data_length);
     if (once_sent_bytes <= 0) {
       LOG_WARN("Cli sock closed");
       return -1;
     }
+    LOG_DEBUG("BT %d] send: %d\n", this->mPort, once_sent_bytes);
     sent_bytes += once_sent_bytes;
   }
 
   return sent_bytes;
 }
 
-int BtServerSocket::receive_impl(void *buf, size_t len) {
+int BtServerSocket::receive_impl(void *data_buffer, size_t data_length) {
   int received_bytes = 0;
 
   if (cli_sock <= 0)
     return -1;
 
-  while (received_bytes < len) {
-    int once_received_bytes = read(cli_sock, buf, len);
+  while (received_bytes < data_length) {
+    int once_received_bytes = read(cli_sock, data_buffer, data_length);
     if (once_received_bytes <= 0) {
       LOG_WARN("Cli sock closed");
       return -1;
     }
 
     received_bytes += once_received_bytes;
-    LOG_DEBUG("BT %d] received : %d\n", this->mPort, once_received_bytes);
+    LOG_DEBUG("BT %d] receive : %d\n", this->mPort, once_received_bytes);
   }
 
   return received_bytes;

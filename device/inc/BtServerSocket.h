@@ -41,8 +41,8 @@ class BtServerSocket : ServerSocket {
 public:
   virtual bool open_impl(void);
   virtual bool close_impl(void);
-  virtual int send_impl(const void *buf, size_t len);
-  virtual int receive_impl(void *buf, size_t len);
+  virtual int send_impl(const void *data_buffer, size_t data_length);
+  virtual int receive_impl(void *data_buffer, size_t data_length);
 
   uuid_t get_service_uuid(void) {
     return this->mServiceUUID;

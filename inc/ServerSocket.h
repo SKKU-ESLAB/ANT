@@ -41,13 +41,13 @@ class ServerSocket {
 public:
   bool open(void);
   bool close(void);
-  int send(const void *buf, size_t len);
-  int receive(void *buf, size_t len);
+  int send(const void *data_buffer, size_t data_length);
+  int receive(void *data_buffer, size_t data_length);
 
   virtual bool open_impl(void) = 0;
   virtual bool close_impl(void) = 0;
-  virtual int send_impl(const void *buf, size_t len) = 0;
-  virtual int receive_impl(void *buf, size_t len) = 0;
+  virtual int send_impl(const void *data_buffer, size_t data_length) = 0;
+  virtual int receive_impl(void *data_buffer, size_t data_length) = 0;
 
   ServerSocketState get_state(void) {
     return this->mState;
