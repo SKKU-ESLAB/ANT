@@ -32,10 +32,19 @@
 
 namespace cm {
 
+class WfdIpAddressListener {
+public:
+  virtual void on_change_ip_address(const char* ip_address) = 0;
+};
+
 class WfdP2pServer : P2pServer {
 public:
   virtual bool allow_impl(void);
   virtual bool disallow_impl(void);
+
+  void add_wfd_ip_address_listener(WfdIpAddressListener* listener) {
+    this->mIpAddrListeners.push_back(listener);
+  }
 
   WfdP2pServer(const char* wfd_device_name) {
     snprintf(this->mWfdDeviceName, 100, "%s", wfd_device_name);
@@ -48,11 +57,14 @@ public:
   }
 
 protected:
+  std::vector<WfdIpAddressListener*> mIpAddrListeners;
+
   char mWfdDeviceName[100];
 
   char mWpaDevName[256];
   char mWpaIntfName[256];
 
+  // In order to monitor the termination of child udhcpd process
   static struct sigaction sSigaction, sSigactionOld;
   static bool sDhcpdMonitoring;
   static int sDhcpdPid;

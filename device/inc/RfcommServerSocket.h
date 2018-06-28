@@ -17,8 +17,8 @@
  * limitations under the License.
  */
 
-#ifndef _WFD_SERVER_SOCKET_H_
-#define _WFD_SERVER_SOCKET_H_
+#ifndef _RFCOMM_SERVER_SOCKET_H_
+#define _RFCOMM_SERVER_SOCKET_H_
 
 #include <ServerSocket.h>
 
@@ -37,40 +37,40 @@
 
 namespace cm {
 
-class WfdServerSocket : ServerSocket {
+class RfcommServerSocket : ServerSocket {
 public:
   virtual bool open_impl(void);
   virtual bool close_impl(void);
   virtual int send_impl(const void *data_buffer, size_t data_length);
   virtual int receive_impl(void *data_buffer, size_t data_length);
 
-  void set_ip_address(const char* ip_address) {
-    snprintf(this->mIpAddress, 256, "%s", ip_address);
-  }
-
   uuid_t get_service_uuid(void) {
     return this->mServiceUUID;
   }
 
-  WfdServerSocket(int port, const char* wfd_device_name) {
-    this->mPort = port;
-    snprintf(this->mWfdDeviceName, 256, "%s", wfd_device_name);
+  RfcommServerSocket(const char* service_uuid) {
+    char buffer[100];
+    snprintf(buffer, 100, "%s", service_uuid);
+    this->str2uuid(buffer, &(this->mServiceUUID));
   }
 
-  ~WfdServerSocket(void) {
+  ~RfcommServerSocket(void) {
   }
 
 protected:
+  uuid_t mServiceUUID;
   int mPort;
-  char mIpAddress[256] = { NULL, };
-  char mWfdDeviceName[256] = { NULL, };
 
+  sdp_session_t* mSdpSession;
   int mServerSocket;
   int mClientSocket;
 
 private:
-}; /* class WfdServerSocket */
+  int bt_dynamic_bind_rc(void);
+  int bt_register_service(void);
+  int str2uuid(char *str, uuid_t *uuid);
+}; /* class RfcommServerSocket */
 
 } /* namespace cm */
 
-#endif /* !defined(_WFD_SERVER_SOCKET_H_) */
+#endif /* !defined(_RFCOMM_SERVER_SOCKET_H_) */
