@@ -50,7 +50,7 @@ public:
   }
 
 protected:
-  BtDevice(void) : Device("Bluetooth") {
+  BtDevice(int id) : Device(id, "Bluetooth") {
   }
 
 }; /* class BtDevice */

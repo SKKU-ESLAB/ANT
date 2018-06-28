@@ -19,6 +19,7 @@
 
 #include <network_switcher.h>
 
+#include <ServerAdapter.h>
 #include <network_manager.h>
 #include <segment_manager.h>
 #include <dbug_log.h>
@@ -96,10 +97,10 @@ void NetworkSwitcher::monitor(int &avg_send_request_speed,
 
   NetworkManager *network_manager = NetworkManager::get_instance();
   int i = 0;
-  std::list<NetworkAdapter *> control_adapters = network_manager->get_control_adapter_list();
-  for(std::list<NetworkAdapter *>::iterator it = control_adapters.begin();
+  std::list<ServerAdapter *> control_adapters = network_manager->get_control_adapter_list();
+  for(std::list<ServerAdapter *>::iterator it = control_adapters.begin();
       it != control_adapters.end(); it++) {
-    NetworkAdapter *adapter = *it;
+    ServerAdapter *adapter = *it;
     int bandwidth_up = adapter->get_bandwidth_up();
     int bandwidth_down = adapter->get_bandwidth_down();
     total_bandwidth_now += (bandwidth_up + bandwidth_down);
@@ -110,10 +111,10 @@ void NetworkSwitcher::monitor(int &avg_send_request_speed,
     i++;
   }
 
-  std::list<NetworkAdapter *> data_adapters = network_manager->get_data_adapter_list();
-  for(std::list<NetworkAdapter *>::iterator it = data_adapters.begin();
+  std::list<ServerAdapter *> data_adapters = network_manager->get_data_adapter_list();
+  for(std::list<ServerAdapter *>::iterator it = data_adapters.begin();
       it != data_adapters.end(); it++) {
-    NetworkAdapter *adapter = *it;
+    ServerAdapter *adapter = *it;
     int bandwidth_up = adapter->get_bandwidth_up();
     int bandwidth_down = adapter->get_bandwidth_down();
     total_bandwidth_now += (bandwidth_up + bandwidth_down);

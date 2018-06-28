@@ -18,13 +18,12 @@
  * limitations under the License.
  */
 
-#include <rfcomm_over_bt.h>
-#include <tcp_server_over_eth.h>
-#include <tcp_server_over_wfd.h>
+#include <BtServerAdapter.h>
+#include <WfdServerAdapter.h>
+#include <EthServerAdapter.h>
 #include <network_switcher.h>
 #include <thread>
 #include <communicator.h>
-#include <network_adapter.h>
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
@@ -68,9 +67,9 @@ void receiving_thread() {
 int main() {
   Communicator *cm = Communicator::get_instance();
   NetworkSwitcher::get_instance()->run();
-  TCPServerOverEthAdapter ethAdapter(2345, 2345);
-  RfcommServerOverBtAdapter btAdapter(3333, "150e8400-1234-41d4-a716-446655440000");
-  TCPServerOverWfdAdapter wfdAdapter(3456, 3456, "OPEL");
+  EthServerAdapter ethAdapter(2345, "Eth", 2345);
+  BtServerAdapter btAdapter(3333, "Bt", "150e8400-1234-41d4-a716-446655440000");
+  WfdServerAdapter wfdAdapter(3456, "Wfd", 3456, "OPEL");
 
   printf("Step 1. Initializing Network Adapters\n");
 

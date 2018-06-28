@@ -28,8 +28,6 @@
 
 using namespace cm;
 
-int ServerAdapter::sNextId = 0;
-
 bool ServerAdapter::connect(void) {
   if(this->get_state() != ServerAdapterState::kDisconnected) {
     LOG_ERR("It is already connected or connection/disconnection is in progress.");

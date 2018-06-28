@@ -50,7 +50,7 @@ public:
   }
 
 protected:
-  WfdDevice(void) : Device("Wi-fi Direct") {
+  WfdDevice(int id) : Device(id, "Wi-fi Direct") {
   }
 
 }; /* class WfdDevice */

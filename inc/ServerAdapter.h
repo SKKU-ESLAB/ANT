@@ -96,10 +96,10 @@ public:
     this->mStateListeners.push_back(listener);
   }
 
-  ServerAdapter(char* name) {
+  ServerAdapter(int id, char* name) {
     this->mState = ServerAdapterState::kDisconnected;
     snprintf(this->mName, sizeof(this->mName), name);
-    this->mId = ServerAdapter::sNextId++;
+    this->mId = id; 
   }
 
   ~ServerAdapter() {
@@ -136,8 +136,6 @@ protected:
       listener->onUpdateServerAdapterState(this, old_state, new_state);
     }
   }
-
-  static int sNextId;
 
   ServerAdapterState mState;
   std::mutex mStateLock;
