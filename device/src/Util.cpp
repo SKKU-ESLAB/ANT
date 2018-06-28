@@ -52,7 +52,7 @@ int Util::run_client(char *path, char *const params[], char *res_buf, size_t len
 
     close(fd[0]);
 
-    return 0;
+    return pid;
   } else {
     /* Child process */
     close(fd[0]);

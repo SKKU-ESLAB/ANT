@@ -39,6 +39,9 @@ public:
 
   WfdP2pServer(const char* wfd_device_name) {
     snprintf(this->mWfdDeviceName, 100, "%s", wfd_device_name);
+    this->mWfdDeviceName[0] = NULL;
+    this->mWpaDevName[0] = NULL;
+    this->mWpaIntfName[0] = NULL;
   }
 
   ~WfdP2pServer(void) {
@@ -47,12 +50,21 @@ public:
 protected:
   char mWfdDeviceName[100];
 
+  char mWpaDevName[256];
+  char mWpaIntfName[256];
+
+  static struct sigaction sSigaction, sSigactionOld;
+  static bool sDhcpdMonitoring;
+  static int sDhcpdPid;
+
 private:
-  int wifi_set_device_name(char *wfd_device_name);
-  int wifi_direct_p2p_group_add(char ret[], size_t len);
-  int wifi_direct_ping(char ret[], size_t len);
-  int wifi_direct_ip_setup(const char* ip_addr);
-  int wifi_dhcp_setup(void);
+  int set_wps_device_name(char *wfd_device_name);
+  int wfd_add_p2p_group(char ret[], size_t len);
+  int wfd_remove_p2p_group(char ret[], size_t len);
+  int ping_wpa_cli(char ret[], size_t len);
+  int set_wfd_ip_addr(const char* ip_addr);
+  int set_dhcpd_config(void);
+  static void sighandler_monitor_udhcpd(int signo, siginfo_t *sinfo, void *context);
 }; /* class WfdP2pServer */
 
 } /* namespace cm */

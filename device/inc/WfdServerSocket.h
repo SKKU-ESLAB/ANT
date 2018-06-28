@@ -41,8 +41,12 @@ class WfdServerSocket : ServerSocket {
 public:
   virtual bool open_impl(void);
   virtual bool close_impl(void);
-  virtual int send_impl(const void *buf, size_t len);
-  virtual int receive_impl(void *buf, size_t len);
+  virtual int send_impl(const void *data_buffer, size_t data_length);
+  virtual int receive_impl(void *data_buffer, size_t data_length);
+
+  void set_ip_address(const char* ip_address) {
+    snprintf(this->mIpAddress, 256, "%s", ip_address);
+  }
 
   uuid_t get_service_uuid(void) {
     return this->mServiceUUID;
@@ -58,7 +62,8 @@ public:
 
 protected:
   int mPort;
-  char mWfdDeviceName[256];
+  char mIpAddress[256] = { NULL, };
+  char mWfdDeviceName[256] = { NULL, };
 
   int mServerSocket;
   int mClientSocket;

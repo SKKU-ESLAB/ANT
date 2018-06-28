@@ -18,6 +18,7 @@
  */
 
 #include <ServerAdapter.h>
+#include <network_manager.h>
 
 #include <dbug_log.h>
 
@@ -67,8 +68,26 @@ void ServerAdapter::connect_thread(void) {
     }
   }
 
+  // Allow client's connection
+  if(this->mP2pServer == NULL) {
+    return false;
+  }
+  P2pServerState p2pServerState = this->mP2pServer->get_state();
+  if(p2pServerState != P2pServerState::kAllowed) {
+    bool res = this->mP2pServer->allow();
+
+    p2pServerState = this->mP2pServer->get_state();
+    if(!res || p2pServerState != P2pServerState::kAllowed) {
+      LOG_ERR("Cannot connect the server adapter - allow fail: %s", this->get_name());
+      this->mDevice->turn_off();
+      goto on_fail;
+    }
+  }
+
   // Open server socket
   if(this->mServerSocket == NULL) {
+    this->mP2pServer->disallow();
+    this->mDevice->turn_off();
     goto on_fail;
   }
   ServerSocketState socketState = this->mServerSocket->get_state();
@@ -78,6 +97,8 @@ void ServerAdapter::connect_thread(void) {
     socketState = this->mServerSocketState->get_state();
     if(!res || socketState != SocketState::kOpened) {
       LOG_ERR("Cannot connect the server adapter - socket open fail: %s", this->get_name());
+      this->mP2pServer->disallow();
+      this->mDevice->turn_off();
       goto on_fail;
     }
   }

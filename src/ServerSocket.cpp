@@ -55,26 +55,26 @@ bool ServerSocket::close(void) {
   return res;
 }
 
-int ServerSocket::send(const void *buf, size_t len) {
+int ServerSocket::send(const void *data_buffer, size_t data_length) {
   if(this->get_state() != ServerSocketState::kOpened) {
     LOG_ERR("Socket is not opened");
     return -1;
   }
   
-  int res = this->send_impl(buf, len);
+  int res = this->send_impl(data_buffer, data_length);
   if(!res) {
     this->set_state(ServerSocketState::kClosed);
   }
   return res;
 }
 
-int ServerSocket::receive(void *buf, size_t len) {
+int ServerSocket::receive(void *data_buffer, size_t data_length) {
   if(this->get_state() != ServerSocketState::kOpened) {
     LOG_ERR("Socket is not opened");
     return -1;
   }
   
-  int res = this->receive_impl(buf, len);
+  int res = this->receive_impl(data_buffer, data_length);
   if(!res) {
     this->set_state(ServerSocketState::kClosed);
   }
