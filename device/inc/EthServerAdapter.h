@@ -61,7 +61,7 @@ public:
 
 class EthServerAdapter : ServerAdapter {
 public:
-  EthServerAdapter(char* name, int port) : ServerAdapter(name) { 
+  EthServerAdapter(int id, char* name, int port) : ServerAdapter(id, name) { 
     EthDevice* device = EthDevice::getSingleton();
     EthP2pServer* p2pServer = new EthP2pServer();
     TcpServerSocket* serverSocket = new TcpServerSocket(port);

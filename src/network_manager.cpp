@@ -25,6 +25,7 @@
 #include <dbug_log.h>
 #include <segment_manager.h>
 #include <network_switcher.h>
+#include <ServerAdapter.h>
 
 #include <string.h>
 #include <thread>
@@ -40,27 +41,27 @@ NetworkManager* NetworkManager::singleton = NULL;
 /*  This function is to install the data adapter
  *  This process is simply pushing the adapter to the list
  */
-void NetworkManager::install_data_adapter(NetworkAdapter *na) {
+void NetworkManager::install_data_adapter(ServerAdapter *adapter) {
   std::unique_lock<std::mutex> lck(this->mPortLocks[kNetData]);
-  mAdapterList[kNetData].push_back(na);
+  mAdapterList[kNetData].push_back(adapter);
 }
 
-void NetworkManager::remove_data_adapter(NetworkAdapter *na) {
+void NetworkManager::remove_data_adapter(ServerAdapter *adapter) {
   std::unique_lock<std::mutex> lck(this->mPortLocks[kNetData]);
-  mAdapterList[kNetData].remove(na);
+  mAdapterList[kNetData].remove(adapter);
 }
 
 void NetworkManager::network_closed(void) {
   // Close data adapters here
-  NetworkAdapter *ca = mAdapterList[kNetCtrl].front();
+  ServerAdapter *ca = mAdapterList[kNetCtrl].front();
   ca->stat = kDevDisconnecting;
 
-  std::list<NetworkAdapter *>::iterator it;
+  std::list<ServerAdapter *>::iterator it;
 
   for (it = mAdapterList[kNetData].begin();
        it != mAdapterList[kNetData].end();
        ++it) {
-    NetworkAdapter *walker = *it;
+    ServerAdapter *walker = *it;
     walker->dev_switch(kDevDiscon, NULL);
   }
 
@@ -78,8 +79,8 @@ void NetworkManager::run_control_recver(void) {
   char data[512] = {0, };
   int res = 0;
   
-  NetworkAdapter *na = mAdapterList[kNetCtrl].front();
-  assert(na != NULL);
+  ServerAdapter *adapter = mAdapterList[kNetCtrl].front();
+  assert(adapter != NULL);
   LOG_VERB("Control recver activated");
 
   /* Notify network switcher that control adapter is ready */
@@ -88,7 +89,7 @@ void NetworkManager::run_control_recver(void) {
   
   while (true) {
     // Control data parsing
-    res = na->recv(data, 1);
+    res = adapter->recv(data, 1);
     if (res <= 0) {
       LOG_VERB("Control adapter could be closed");
       sleep(1);
@@ -96,7 +97,7 @@ void NetworkManager::run_control_recver(void) {
     /*  If the control message is 'increase adapter', */
     if (data[0] == kCtrlReqIncr) {
       LOG_DEBUG("DataIncr request arrived");
-      res = na->recv(data, 2);
+      res = adapter->recv(data, 2);
       if (res <= 0) {
         LOG_DEBUG("Control adapter has been closed");
         break;
@@ -110,13 +111,13 @@ void NetworkManager::run_control_recver(void) {
 
       LOG_DEBUG("Data adapter increasing %x", dev_id);
 
-      NetworkAdapter *data_na = NULL;
+      ServerAdapter *data_na = NULL;
 
-      std::list<NetworkAdapter *>::iterator walker;
+      std::list<ServerAdapter *>::iterator walker;
       for (walker = mAdapterList[kNetData].begin();
            walker != mAdapterList[kNetData].end();
            ++walker) {
-        NetworkAdapter *na_walker = *walker;
+        ServerAdapter *na_walker = *walker;
         if (na_walker->get_id() == dev_id) {
           data_na = na_walker;
           break;
@@ -127,7 +128,7 @@ void NetworkManager::run_control_recver(void) {
       this->mPrevState = this->mState;
       this->mState = kNetStatIncr;
 
-      na->dev_switch(kDevCon, increase_adapter_cb_wrapper);
+      adapter->dev_switch(kDevCon, increase_adapter_cb_wrapper);
     } else if (data[0] == kCtrlReqDecr) {
     } else if (data[0] == kCtrlReqPriv) {
       LOG_VERB("Private data arrived");
@@ -137,24 +138,24 @@ void NetworkManager::run_control_recver(void) {
       uint32_t len;
 
       do {
-        res = na->recv(&ndev_id, 2);
+        res = adapter->recv(&ndev_id, 2);
         if (res <= 0) break;
 
-        res = na->recv(&nlen, 4);
+        res = adapter->recv(&nlen, 4);
         if (res <= 0) break;
 
         dev_id = ntohs(ndev_id);
         len = ntohl(nlen);
         assert(len <= 512);
 
-        res = na->recv(data, len);
+        res = adapter->recv(data, len);
         if (res <= 0) break;
 
-        std::list<NetworkAdapter *>::iterator it;
+        std::list<ServerAdapter *>::iterator it;
         for (it = mAdapterList[kNetData].begin();
              it != mAdapterList[kNetData].end();
              ++it) {
-          NetworkAdapter *walker = *it;
+          ServerAdapter *walker = *it;
           if (walker->get_id() == dev_id) {
             walker->on_control_recv(data, len);
             break;
@@ -185,8 +186,8 @@ void NetworkManager::send_control_data(const void *data, size_t len) {
     return;
   }
 
-  NetworkAdapter *na = mAdapterList[kNetCtrl].front();
-  na->send(data, len);
+  ServerAdapter *adapter = mAdapterList[kNetCtrl].front();
+  adapter->send(data, len);
 }
 
 void NetworkManager::install_control_cb_wrapper(DevState st) {
@@ -216,13 +217,13 @@ void NetworkManager::connect_control_adapter() {
     LOG_WARN("Invalid trial:Control adapter is not in disconnected state");
     return;
   }
-  NetworkAdapter *na = mAdapterList[kNetCtrl].front();
+  ServerAdapter *adapter = mAdapterList[kNetCtrl].front();
   this->mState = kNetStatConnecting;
   // Connect the device
-  na->dev_switch(kDevCon, install_control_cb_wrapper);
+  adapter->dev_switch(kDevCon, install_control_cb_wrapper);
 }
 
-void NetworkManager::install_control_adapter(NetworkAdapter *na) {
+void NetworkManager::install_control_adapter(ServerAdapter *adapter) {
   // Keep only one control adapter in connection 
   if (this->mState > kNetStatDiscon || mAdapterList[kNetCtrl].size() > 0) {
     LOG_WARN("Control port already installed");
@@ -235,15 +236,15 @@ void NetworkManager::install_control_adapter(NetworkAdapter *na) {
   }
 
   std::unique_lock<std::mutex> lck(this->mPortLocks[kNetCtrl]);
-  mAdapterList[kNetCtrl].push_back(na);
+  mAdapterList[kNetCtrl].push_back(adapter);
 
   // Make connection of control port
   connect_control_adapter();
 }
 
-void NetworkManager::remove_control_adapter(NetworkAdapter *na) {
+void NetworkManager::remove_control_adapter(ServerAdapter *adapter) {
   std::unique_lock<std::mutex> lck(this->mPortLocks[kNetCtrl]);
-  mAdapterList[kNetCtrl].remove(na);
+  mAdapterList[kNetCtrl].remove(adapter);
 }
 
 void NetworkManager::increase_adapter_cb(DevState stat) {
@@ -285,8 +286,8 @@ void NetworkManager::increase_adapter() {
   this->mState = kNetStatIncr;
 
   /* Select the data adapter available */
-  NetworkAdapter *na = select_adapter();
-  if (na == NULL) {
+  ServerAdapter *adapter = select_adapter();
+  if (adapter == NULL) {
     this->mState = this->mPrevState;
     NetworkSwitcher::get_instance()->done_switch();
     return;
@@ -295,19 +296,19 @@ void NetworkManager::increase_adapter() {
   /* send control message to turn on the new data adapter */
   unsigned char buf[512];
   buf[0] = kCtrlReqIncr;
-  uint16_t ndev_id = htons(na->dev_id);
+  uint16_t ndev_id = htons(adapter->dev_id);
   memcpy(buf+1, &ndev_id, 2);
   send_control_data((const void *)buf, 3);
 
-  this->mConnectingAdapter = na;
-  na->dev_switch(kDevCon, increase_adapter_cb_wrapper);
+  this->mConnectingAdapter = adapter;
+  adapter->dev_switch(kDevCon, increase_adapter_cb_wrapper);
 }
 
 bool NetworkManager::is_data_adapter_on(){
-  std::list<NetworkAdapter *>::iterator it = mAdapterList[kNetData].begin();
+  std::list<ServerAdapter *>::iterator it = mAdapterList[kNetData].begin();
 
   while (it != mAdapterList[kNetData].end()) {
-    NetworkAdapter *walker = *it;
+    ServerAdapter *walker = *it;
     if (walker->stat == kDevCon) {
       return true;
     }
@@ -359,43 +360,43 @@ void NetworkManager::decrease_adapter() {
   this->mState = kNetStatDecr;
 
   /* Select one of the data adapters on */
-  NetworkAdapter *na = select_adapter_on();
-  if(na == NULL){
+  ServerAdapter *adapter = select_adapter_on();
+  if(adapter == NULL){
     LOG_DEBUG("All devices are already down");
     this->mState = this->mPrevState;
     NetworkSwitcher::get_instance()->done_switch();
     return;
   }
-  decreasing_adapter_id = na->dev_id;
+  decreasing_adapter_id = adapter->dev_id;
 
   /* Check the network device, which the adapter is using, is used by other adapter
    * if it's used by other adapters, the device should not be turned off
    */
-  /* na->delete_threads(); */
+  /* adapter->delete_threads(); */
 
   /* Send control message to turn off the working data adapter */
 
   unsigned char buf[512];
   buf[0] = kCtrlReqDecr;
-  uint16_t ndev_id = htons(na->dev_id);
+  uint16_t ndev_id = htons(adapter->dev_id);
   memcpy(buf+1, &ndev_id, 2);
   send_control_data((const void *)buf, 3);
 
-  this->mConnectingAdapter = na;
-  na->dev_switch(kDevDiscon, decrease_adapter_cb_wrapper); 
+  this->mConnectingAdapter = adapter;
+  adapter->dev_switch(kDevDiscon, decrease_adapter_cb_wrapper); 
   __FUNCTION_EXIT__; 
 }
 
 /*  This function selects the adapter off in the list to use additionally.
  *  This selecting algorithm can be optimized for better output.
  */
-NetworkAdapter *NetworkManager::select_adapter() { 
-  std::list<NetworkAdapter *>::iterator it = mAdapterList[kNetData].begin();
+ServerAdapter *NetworkManager::select_adapter() { 
+  std::list<ServerAdapter *>::iterator it = mAdapterList[kNetData].begin();
 
-  NetworkAdapter *res = NULL;
+  ServerAdapter *res = NULL;
 
   while (it != mAdapterList[kNetData].end()) {
-    NetworkAdapter *walker = *it;
+    ServerAdapter *walker = *it;
     if (walker->stat == kDevDiscon) {
       res = walker;
       break;
@@ -408,13 +409,13 @@ NetworkAdapter *NetworkManager::select_adapter() {
 /*  This function selects the adapter on in the list to use additionally.
  *  This selecting algorithm can be optimized for better output.
  */
-NetworkAdapter *NetworkManager::select_adapter_on() {
-  std::list<NetworkAdapter *>::reverse_iterator it = mAdapterList[kNetData].rbegin();
-  NetworkAdapter *res = NULL;
+ServerAdapter *NetworkManager::select_adapter_on() {
+  std::list<ServerAdapter *>::reverse_iterator it = mAdapterList[kNetData].rbegin();
+  ServerAdapter *res = NULL;
   int num_on = 0;
 
   while (it != mAdapterList[kNetData].rend()) {
-    NetworkAdapter *walker = *it;
+    ServerAdapter *walker = *it;
     if (walker->stat == kDevCon) { 
       if(res == NULL){
         res = walker;

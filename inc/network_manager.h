@@ -21,7 +21,7 @@
 
 #ifndef INC_NETWORK_MANAGER_H_
 #define INC_NETWORK_MANAGER_H_
-#include <network_adapter.h>
+#include <ServerAdapter.h>
 #include <segment_manager.h>
 #include <protocol_manager.h>
 
@@ -63,25 +63,25 @@ typedef enum {
   kNetStatData = 5
 } NetStat;
 
-class NetworkAdapter;
+class ServerAdapter;
 class NetworkManager {
   public:
     uint16_t decreasing_adapter_id;
 
-    void install_data_adapter(NetworkAdapter *na);
-    void remove_data_adapter(NetworkAdapter *na);
+    void install_data_adapter(ServerAdapter *adapter);
+    void remove_data_adapter(ServerAdapter *adapter);
 
-    void install_control_adapter(NetworkAdapter *na);
-    void remove_control_adapter(NetworkAdapter *na);
+    void install_control_adapter(ServerAdapter *adapter);
+    void remove_control_adapter(ServerAdapter *adapter);
 
     void increase_adapter(void);
     void decrease_adapter(void);
     void send_control_data(const void *data, size_t len);
 
-    std::list<NetworkAdapter *> get_control_adapter_list() {
+    std::list<ServerAdapter *> get_control_adapter_list() {
       return this->mAdapterList[kNetCtrl];
     }
-    std::list<NetworkAdapter *> get_data_adapter_list() {
+    std::list<ServerAdapter *> get_data_adapter_list() {
       return this->mAdapterList[kNetData];
     }
 
@@ -106,8 +106,8 @@ class NetworkManager {
     NetStat mState;
     NetStat mPrevState;
     std::mutex mPortLocks[kNetMaxPort];
-    std::list<NetworkAdapter *> mAdapterList[kNetMaxPort];
-    NetworkAdapter *mConnectingAdapter;
+    std::list<ServerAdapter *> mAdapterList[kNetMaxPort];
+    ServerAdapter *mConnectingAdapter;
 
     std::thread *mReceiverThread;
 
@@ -118,8 +118,8 @@ class NetworkManager {
     void run_control_recver(void);
     void network_closed(void);
 
-    NetworkAdapter *select_adapter(void);
-    NetworkAdapter *select_adapter_on(void);
+    ServerAdapter *select_adapter(void);
+    ServerAdapter *select_adapter_on(void);
 
     static void increase_adapter_cb_wrapper(DevState stat);
     void increase_adapter_cb(DevState stat);

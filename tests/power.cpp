@@ -18,12 +18,11 @@
  * limitations under the License.
  */
 
-#include <rfcomm_over_bt.h>
-#include <tcp_server_over_eth.h>
-#include <tcp_server_over_wfd.h>
+#include <BtServerAdapter.h>
+#include <WfdServerAdapter.h>
+#include <EthServerAdapter.h>
 #include <thread>
 #include <communicator.h>
-#include <network_adapter.h>
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
@@ -52,16 +51,16 @@ void receiving_thread() {
 
 int main() {
   Communicator *cm = Communicator::get_instance();
-  RfcommServerOverBtAdapter ca(1234, "150e8400-e29b-41d4-a716-446655440000");
-  RfcommServerOverBtAdapter na3(3333, "150e8400-1234-41d4-a716-446655440000");
-  RfcommServerOverBtAdapter na31(3334, "6be60100-3629-11e7-a919-92ebcb67fe33");
-  RfcommServerOverBtAdapter na32(3335, "6be60470-3629-11e7-a919-92ebcb67fe33");
+  BtServerAdapter ca(1234, "Bt1", "150e8400-e29b-41d4-a716-446655440000");
+  BtServerAdapter na3(3333, "Bt2", "150e8400-1234-41d4-a716-446655440000");
+  BtServerAdapter na31(3334, "Bt3", "6be60100-3629-11e7-a919-92ebcb67fe33");
+  BtServerAdapter na32(3335, "Bt4", "6be60470-3629-11e7-a919-92ebcb67fe33");
 
-  TCPServerOverEthAdapter na(2345, 2345);
-  TCPServerOverEthAdapter na4(5555, 5555);
-  TCPServerOverEthAdapter na5(6666, 6666);
+  EthServerAdapter na(2345, "Eth1", 2345);
+  EthServerAdapter na4(5555, "Eth2", 5555);
+  EthServerAdapter na5(6666, "Eth3", 6666);
 
-  TCPServerOverWfdAdapter na2(3456, 3456, "OPEL");
+  WfdServerAdapter na2(3456, "Wfd1", 3456, "OPEL");
 
   //ca.set_control_adapter();
   na.set_control_adapter();
