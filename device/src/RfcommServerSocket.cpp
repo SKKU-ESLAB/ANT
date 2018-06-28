@@ -41,7 +41,7 @@
 
 using namespace cm;
 
-bool BtServerSocket::open_impl(void) {
+bool RfcommServerSocket::open_impl(void) {
   if (this->mServerSocket > 0) {
     close(this->mServerSocket);
     this->mServerSocket = 0;
@@ -83,7 +83,7 @@ bool BtServerSocket::open_impl(void) {
   return true;
 }
 
-int BtServerSocket::bt_dynamic_bind_rc(void) {
+int RfcommServerSocket::bt_dynamic_bind_rc(void) {
   int err;
   int port;
   struct sockaddr_rc sockaddr;
@@ -109,7 +109,7 @@ int BtServerSocket::bt_dynamic_bind_rc(void) {
   return err;
 }
 
-int BtServerSocket::bt_register_service() {
+int RfcommServerSocket::bt_register_service() {
   char service_name[256];
   char service_dsc[256];
   char service_prov[256];
@@ -177,7 +177,7 @@ int BtServerSocket::bt_register_service() {
   return res;
 }
 
-bool BtServerSocket::close_impl(void) {
+bool RfcommServerSocket::close_impl(void) {
   close(this->mClientSocket);
   close(this->mServerSocket);
 
@@ -187,7 +187,7 @@ bool BtServerSocket::close_impl(void) {
   return true;
 }
 
-int BtServerSocket::send_impl(const void *data_buffer, size_t data_length) {
+int RfcommServerSocket::send_impl(const void *data_buffer, size_t data_length) {
   int sent_bytes = 0;
 
   if (cli_sock <= 0) {
@@ -208,7 +208,7 @@ int BtServerSocket::send_impl(const void *data_buffer, size_t data_length) {
   return sent_bytes;
 }
 
-int BtServerSocket::receive_impl(void *data_buffer, size_t data_length) {
+int RfcommServerSocket::receive_impl(void *data_buffer, size_t data_length) {
   int received_bytes = 0;
 
   if (cli_sock <= 0)
@@ -228,7 +228,7 @@ int BtServerSocket::receive_impl(void *data_buffer, size_t data_length) {
   return received_bytes;
 }
 
-int BtServerSocket::str2uuid(char *str, uuid_t *uuid) {
+int RfcommServerSocket::str2uuid(char *str, uuid_t *uuid) {
   if (strlen(str) != 36)
     return -1;
   

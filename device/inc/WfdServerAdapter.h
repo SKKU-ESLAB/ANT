@@ -23,7 +23,7 @@
 #include <ServerAdapter.h>
 #include <WfdDevice.h>
 #include <WfdP2pServer.h>
-#include <WfdServerSocket.h>
+#include <TcpServerSocket.h>
 
 #include <counter.h>
 
@@ -40,7 +40,8 @@ public:
   WfdServerAdapter(char* name, int port, const char* wfd_device_name) : ServerAdapter(name) { 
     WfdDevice* device = WfdDevice::getSingleton();
     WfdP2pServer* p2pServer = new WfdP2pServer(wfd_device_name);
-    WfdServerSocket* serverSocket = new WfdServerSocket(port);
+    TcpServerSocket* serverSocket = new TcpServerSocket(port);
+    p2pServer->add_wfd_ip_address_listener(p2pServer);
     this->initialize(device, p2pServer, serverSocket);
   }
 

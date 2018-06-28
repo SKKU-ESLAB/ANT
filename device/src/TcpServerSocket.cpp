@@ -17,10 +17,10 @@
  * limitations under the License.
  */
 
-#include <WfdServerSocket.h>
+#include <TcpServerSocket.h>
 
-bool WfdServerSocket::open_impl(void) {
-  if(this->mIpAddress[0] == NULL) {
+bool TcpServerSocket::open_impl(void) {
+  if(this->mIpAddressRaw == 0) {
     LOG_ERR("IP Address is not set yet");
     return false;
   }
@@ -30,7 +30,7 @@ bool WfdServerSocket::open_impl(void) {
   struct sockaddr_in server_address;
   memset(&server_address, 0, sizeof(server_address));
   server_address.sin_family = AF_INET;
-  server_address.sin_addr.s_addr = inet_addr(this->mIpAddress);
+  server_address.sin_addr.s_addr = this->mIpAddressRaw;
   server_address.sin_port = htons((uint16_t)this->mPort);
   int reuse = 1;
 
@@ -66,7 +66,7 @@ bool WfdServerSocket::open_impl(void) {
   return true;
 }
 
-bool WfdServerSocket::close_impl(void) {
+bool TcpServerSocket::close_impl(void) {
   close(this->mClientSocket);
   close(this->mServerSocket);
   this->mClientSocket = 0;
@@ -75,7 +75,7 @@ bool WfdServerSocket::close_impl(void) {
   LOG_VERB("Socket closed");
 }
 
-int WfdServerSocket::send_impl(const void *data_buffer, size_t data_length) {
+int TcpServerSocket::send_impl(const void *data_buffer, size_t data_length) {
   int sent_bytes = 0;
 
   if (this->mClientSocket <= 0)
@@ -94,7 +94,7 @@ int WfdServerSocket::send_impl(const void *data_buffer, size_t data_length) {
   return sent_bytes;
 }
 
-int WfdServerSocket::receive_impl(void *data_buffer, size_t data_length) {
+int TcpServerSocket::receive_impl(void *data_buffer, size_t data_length) {
   int received_bytes = 0;
 
   if (this->mClientSocket <= 0) return -1;
@@ -111,4 +111,8 @@ int WfdServerSocket::receive_impl(void *data_buffer, size_t data_length) {
   }
 
   return received_bytes;
+}
+
+void TcpServerSocket::on_change_ip_address(const char* ip_address) {
+  this->set_ip_address_raw(inet_addr(buf));
 }

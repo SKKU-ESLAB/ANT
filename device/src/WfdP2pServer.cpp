@@ -118,7 +118,7 @@ bool WfdP2pServer::allow_impl(void) {
     return false;
   }
 
-  // Get server's IP address and send IP addr
+  // Get server's IP address and send the IP address
   LOG_VERB("Get server's IP\n"); 
   int ip_wait_it;
   for (ip_wait_it = 0; ip_wait_it < 30; ip_wait_it++) {
@@ -134,7 +134,17 @@ bool WfdP2pServer::allow_impl(void) {
     LOG_ERR("IP is not set");
     return false;
   }
-  this->send_ctrl_msg(buf, strlen(buf));
+
+  char* ip_address = buf;
+  this->send_ctrl_msg(ip_address, strlen(ip_address));
+
+  // Notify IP address to the listeners
+  for(std::vector<WfdIpAddressListener*>::iterator it = this->mIpAddrListeners.begin();
+      it != this->mIpAddrListeners.end();
+      it++) {
+    WfdIpAddressListener* listener = (*it);
+    listener->on_change_ip_address(ip_address);
+  }
 
   return true;
 }

@@ -17,15 +17,17 @@
  * limitations under the License.
  */
 
-#ifndef _BT_SERVER_ADAPTER_H_
-#define _BT_SERVER_ADAPTER_H_
+#ifndef _ETH_SERVER_ADAPTER_H_
+#define _ETH_SERVER_ADAPTER_H_
 
 #include <ServerAdapter.h>
-#include <BtDevice.h>
-#include <BtP2pServer.h>
-#include <RfcommServerSocket.h>
+#include <TcpServerSocket.h>
 
 #include <counter.h>
+#include <unistd.h>
+#include <string.h>
+#include <sys/socket.h>
+#include <arpa/inet.h>
 
 #include <thread>
 #include <mutex>
@@ -35,21 +37,44 @@
 
 namespace cm {
 
-class BtServerAdapter : ServerAdapter {
+class EthDevice : Device {
 public:
-  BtServerAdapter(char* name, const char* service_uuid) : ServerAdapter(name) { 
-    BtDevice* device = BtDevice::getSingleton();
-    BtP2pServer* p2pServer = new BtP2pServer();
-    RfcommServerSocket* serverSocket = new RfcommServerSocket(service_uuid);
+  virtual bool turn_on_impl(void) {
+    return true;
+  }
+  virtual bool turn_off_impl(void) {
+    return true;
+  }
+  EthDevice() : Device("Ethernet") {
+  }
+};
+
+class EthP2pServer : P2pServer {
+public:
+  virtual bool allow_impl(void) {
+    return true;
+  }
+  virtual bool disallow_impl(void) {
+    return true;
+  }
+};
+
+class EthServerAdapter : ServerAdapter {
+public:
+  EthServerAdapter(char* name, int port) : ServerAdapter(name) { 
+    EthDevice* device = EthDevice::getSingleton();
+    EthP2pServer* p2pServer = new EthP2pServer();
+    TcpServerSocket* serverSocket = new TcpServerSocket(port);
+    serverSocket->set_ip_address_raw(htonl(INADDR_ANY));
     this->initialize(device, p2pServer, serverSocket);
   }
 
-  ~BtServerAdapter(void) {
+  ~EthServerAdapter(void) {
   }
 
 protected:
-}; /* class BtServerAdapter */
+}; /* class EthServerAdapter */
 
 } /* namespace cm */
 
-#endif /* !defined(_BT_SERVER_ADAPTER_H_) */
+#endif /* !defined(_ETH_SERVER_ADAPTER_H_) */
