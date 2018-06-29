@@ -46,12 +46,13 @@ class ServerAdapterStateListener {
       ServerAdapterState old_state, ServerAdapterState new_state) = 0;
 };
 
+typedef void (*ConnectCallback)(bool is_success);
+typedef void (*DisconnectCallback)(bool is_success);
+
 class ServerAdapter {
 public:
-  bool connect(void);
-  bool disconnect(void);
-  bool allow_scan(void);
-  bool disallow_scan(void);
+  bool connect(ConnectCallback callback);
+  bool disconnect(DisconnectCallback callback);
   int send(const void *buf, size_t len);
   int receive(void *buf, size_t len);
 
@@ -151,6 +152,10 @@ protected:
 
   /* State Listeners */
   std::vector<ServerAdapterStateListener*> mStateListeners;
+
+  /* Callback */
+  ConnectCallback mConnectCallback = NULL;
+  DisconnectCallback mDisconnectCallback = NULL;
 
 private:
   void connect_thread(void);

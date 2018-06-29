@@ -24,19 +24,10 @@ DEV_OBJ=$(patsubst %, $(DEV_OBJ_DIR)/%, $(_DEV_OBJ))
 
 all : file_test_low trace_runner
 
-test: tests/communicator_test.cpp $(OBJ) $(DEV_OBJ)
-	$(CC) -o $(BIN_DIR)/$@ $^ -I$(INC) $(FLAG) $(LIB) -I$(DEV_INC) 
-
 trace_runner: tests/trace_runner.cpp $(OBJ) $(DEV_OBJ)
 	$(CC) -o $(BIN_DIR)/$@ $^ -I$(INC) $(FLAG) $(LIB) -I$(DEV_INC)
 
-file_test_low: tests/file_test_low.cpp $(OBJ) $(DEV_OBJ)
-	$(CC) -o $(BIN_DIR)/$@ $^ -I$(INC) $(FLAG) $(LIB) -I$(DEV_INC)
-
-power_exp: tests/power.cpp $(OBJ) $(DEV_OBJ)
-	$(CC) -o $(BIN_DIR)/$@ $^ -I$(INC) $(FLAG) $(LIB) -I$(DEV_INC)
-
-wfd_test: tests/wfd_test.cpp device/src/wifi_control.cpp
+file_based_test: tests/file_based_test.cpp $(OBJ) $(DEV_OBJ)
 	$(CC) -o $(BIN_DIR)/$@ $^ -I$(INC) $(FLAG) $(LIB) -I$(DEV_INC)
 
 clean:
