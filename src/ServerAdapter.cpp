@@ -28,20 +28,24 @@
 
 using namespace cm;
 
-bool ServerAdapter::connect(void) {
+bool ServerAdapter::connect(ConnectCallback callback) {
   if(this->get_state() != ServerAdapterState::kDisconnected) {
     LOG_ERR("It is already connected or connection/disconnection is in progress.");
     return false;
   }
+
+  this->mConnectCallback = callback;
   std::thread(std::bind(&ServerAdapter::connect_thread, this)).detach();
   return true;
 }
 
-bool ServerAdapter::disconnect(void) {
+bool ServerAdapter::disconnect(DisconnectCallback callback) {
   if(this->get_state() != ServerAdapterState::kDisconnected) {
     LOG_ERR("It is already disconnected or connection/disconnection is in progress.");
     return false;
   }
+
+  this->mDisconnectCallback = callback;
   std::thread(std::bind(&ServerAdapter::disconnect_thread, this)).detach();
 }
 
@@ -113,10 +117,14 @@ void ServerAdapter::connect_thread(void) {
   // TODO: Control Adapter
 
   this->set_state(ServerAdapterState::kConnected);
+  this->mConnectCallback(true);
+  this->mConnectCallback = NULL;
   return;
 
 on_fail:
   this->set_state(ServerAdapterState::kDisconnected);
+  this->mConnectCallback(false);
+  this->mConnectCallback = NULL;
   return;
 }
 
@@ -174,25 +182,15 @@ void ServerAdapter::disconnect_thread(void) {
   nm->send_control_data((const void *)buf, 3);
 
   this->set_state(ServerAdapterState::kDisconnected);
+  this->mDisconnectCallback(true);
+  this->mDisconnectCallback = NULL;
   return;
 
 on_fail:
   this->set_state(ServerAdapterState::kConnected);
+  this->mDisconnectCallback(false);
+  this->mDisconnectCallback = NULL;
   return;
-}
-
-bool ServerAdapter::allow_scan(void) {
-  if(this->mP2pServer == NULL) {
-    return false;
-  }
-  this->mP2pServer->allow_scan();
-}
-
-bool ServerAdapter::disallow_scan(void) {
-  if(this->mP2pServer == NULL) {
-    return false;
-  }
-  this->mP2pServer->disallow_scan();
 }
 
 int ServerAdapter::send(const void *buf, size_t len) {

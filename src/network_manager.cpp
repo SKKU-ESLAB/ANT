@@ -53,19 +53,21 @@ void NetworkManager::remove_data_adapter(ServerAdapter *adapter) {
 
 void NetworkManager::network_closed(void) {
   // Close data adapters here
-  ServerAdapter *ca = mAdapterList[kNetCtrl].front();
-  ca->stat = kDevDisconnecting;
+  ServerAdapter *control_adapter = mAdapterList[kNetCtrl].front();
+  control_adapter->stat = kDevDisconnecting;
 
   std::list<ServerAdapter *>::iterator it;
 
+  // Disconnect all the data adapters
   for (it = mAdapterList[kNetData].begin();
        it != mAdapterList[kNetData].end();
        ++it) {
-    ServerAdapter *walker = *it;
-    walker->dev_switch(kDevDiscon, NULL);
+    ServerAdapter *data_adapter = *it;
+    data_adapter->disconnect();
   }
 
-  ca->_close();
+  // Disconnect control adpater
+  control_adapter->disconnect();
 
   SegmentManager::get_instance()->reset();
 

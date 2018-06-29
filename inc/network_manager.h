@@ -105,8 +105,8 @@ class NetworkManager {
 
     NetStat mState;
     NetStat mPrevState;
-    std::mutex mPortLocks[kNetMaxPort];
-    std::list<ServerAdapter *> mAdapterList[kNetMaxPort];
+    std::mutex mPortLocks[kNetMaxPort]; //
+    std::list<ServerAdapter *> mAdapterList[kNetMaxPort]; //
     ServerAdapter *mConnectingAdapter;
 
     std::thread *mReceiverThread;
