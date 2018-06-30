@@ -106,24 +106,27 @@ void ServerAdapter::connect_thread(void) {
   }
 
   // Run sender & receiver threads
-  if(this->mSenderThread == NULL) {
+  if(this->mSenderThreadEnabled && this->mSenderThread == NULL) {
     this->mSenderThreadOn = true;
     this->mSenderThread = new std::thread(std::bind(&ServerAdapter::sender_thread, this));
   }
-  if(this->mReceiverThread == NULL) {
+  if(this->mReceiverThreadEnabled && this->mReceiverThread == NULL) {
     this->mReceiverThreadOn = true;
     this->mReceiverThread = new std::thread(std::bind(&ServerAdapter::receiver_thread, this));
   }
-  // TODO: Control Adapter
 
   this->set_state(ServerAdapterState::kConnected);
-  this->mConnectCallback(true);
+  if(this->mConnectCallback != NULL) {
+    this->mConnectCallback(true);
+  }
   this->mConnectCallback = NULL;
   return;
 
 on_fail:
   this->set_state(ServerAdapterState::kDisconnected);
-  this->mConnectCallback(false);
+  if(this->mConnectCallback != NULL) {
+    this->mConnectCallback(false);
+  }
   this->mConnectCallback = NULL;
   return;
 }
@@ -174,21 +177,25 @@ void ServerAdapter::disconnect_thread(void) {
 
   // TODO: control message format is odd. not flexible.
   // Send control message to turn off the working data adapter
-  NetworkManager *nm = NetworkManager::get_instance();
+  Communicator *communicator = Communicator::get_instance();
   unsigned char buf[512];
   buf[0] = kCtrlReqDecr;
-  uint16_t ndev_id = htons(nm->decreasing_adapter_id);
+  uint16_t ndev_id = htons(communicator->decreasing_adapter_id);
   memcpy(buf+1, &ndev_id, 2);
-  nm->send_control_data((const void *)buf, 3);
+  communicator->send_control_data((const void *)buf, 3);
 
   this->set_state(ServerAdapterState::kDisconnected);
-  this->mDisconnectCallback(true);
+  if(this->mDisconnectCallback != NULL) {
+    this->mDisconnectCallback(true);
+  }
   this->mDisconnectCallback = NULL;
   return;
 
 on_fail:
   this->set_state(ServerAdapterState::kConnected);
-  this->mDisconnectCallback(false);
+  if(this->mDisconnectCallback != NULL) {
+    this->mDisconnectCallback(false);
+  }
   this->mDisconnectCallback = NULL;
   return;
 }
@@ -263,43 +270,49 @@ void ServerAdapter::sender_thread(void) {
 }
 
 void ServerAdapter::receiver_thread(void) {
+  if(this->mReceiveLoop == NULL) {
+    LOG_ERR("No receive loop specified!");
+    return;
+  }
+
   LOG_DEBUG("%s's Receiver thread spawned(tid: %d)",
       this->get_name(), (unsigned int)syscall(224));
 
-  SegmentManager *sm = SegmentManager::get_instance();
-  Segment *segment_to_receive = sm->get_free_segment();
-  
-  while(this->mReceiverThreadOn) {
-    SegmentManager *sm = SegmentManager::get_instance();
+  this->mReceiveLoop(this);
 
+  LOG_DEBUG("%s's Receiver thread ends(tid: %d)",
+      this->get_name(), (unsigned int)syscall(224));
+}
+
+void ServerAdapter::receive_data_loop(ServerAdapter* adapter) {
+  while(self->mReceiverThreadOn) {
     void *buf = reinterpret_cast<void *>(segment_to_receive->data);
     int len = kSegSize + kSegHeaderSize;
 
-    LOG_DEBUG("%s: Receiving...", this->get_name());
-    int res = this->receive(buf, len);
+    LOG_DEBUG("%s: Receiving...", self->get_name());
+    int res = self->receive(buf, len);
     if (res < len) {
       LOG_WARN("Recving failed at %s (%s)",
-          this->get_name(), strerror(errno));
-      sm->free_segment(segment_to_receive);
+          self->get_name(), strerror(errno));
       break;
     }
 
-    // TODO: offload to Segment class
+    SegmentManager *sm = SegmentManager::get_instance();
+    Segment *segment_to_receive = sm->get_free_segment();
+
     uint32_t net_seq_no, net_flag_len;
     memcpy(&net_seq_no, buf, sizeof(uint32_t));
     memcpy(&net_flag_len,
-           (reinterpret_cast<uint8_t *>(buf)+4), sizeof(uint32_t));
+        (reinterpret_cast<uint8_t *>(buf)+4), sizeof(uint32_t));
     segment_to_receive->seq_no = ntohl(net_seq_no);
     segment_to_receive->flag_len = ntohl(net_flag_len);
 
-    LOG_DEBUG("%s: Received: %d/%d (%d)",
-        this->get_name(), segment_to_receive->seq_no, segment_to_receive->flag_len, res);
     sm->enqueue(kSegRecv, segment_to_receive);
     segment_to_receive = sm->get_free_segment();
+
+    LOG_DEBUG("%s: Received: %d",
+        self->get_name(), res);
   }
-  
-  LOG_DEBUG("%s's Receiver thread ends(tid: %d)",
-      this->get_name(), (unsigned int)syscall(224));
 }
 
 // TODO: clarify this funciton's role
@@ -313,9 +326,9 @@ void ServerAdapter::send_ctrl_msg(const void *buf, int len) {
     return;
   }
 
-  NetworkManager *nm = NetworkManager::get_instance();
-  nm->send_control_data(&req, 1);
-  nm->send_control_data(&net_dev_id, 2);
-  nm->send_control_data(&net_len, 4);
-  nm->send_control_data(buf, len);
+  Communicator *communicator = Communicator::get_instance();
+  communicator->send_control_data(&req, 1);
+  communicator->send_control_data(&net_dev_id, 2);
+  communicator->send_control_data(&net_len, 4);
+  communicator->send_control_data(buf, len);
 }

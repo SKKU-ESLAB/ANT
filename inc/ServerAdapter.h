@@ -49,12 +49,29 @@ class ServerAdapterStateListener {
 typedef void (*ConnectCallback)(bool is_success);
 typedef void (*DisconnectCallback)(bool is_success);
 
+typedef void (*ReceiveLoop)(ServerAdapter* adapter);
+
 class ServerAdapter {
 public:
   bool connect(ConnectCallback callback);
   bool disconnect(DisconnectCallback callback);
   int send(const void *buf, size_t len);
   int receive(void *buf, size_t len);
+
+  bool enable_sender_thread() {
+    this->mSenderThreadEnabled = true;
+    return true;
+  }
+
+  bool enable_receiver_thread(ReceiveLoop receive_loop) {
+    this->mReceiverThreadEnabled = true;
+    if(receive_loop == NULL) {
+      this->mReceiveLoop = ServerAdapter::receive_data_loop;
+    } else {
+      this->mReceiveLoop = receive_loop;
+    }
+    return true;
+  }
 
   int get_bandwidth_up(void) {
     this->mSendDataSize.get_speed();
@@ -162,11 +179,16 @@ private:
   void disconnect_thread(void);
   void sender_thread(void);
   void receiver_thread(void);
+  static void receive_data_loop(ServerAdapter* adapter);
 
   std::thread *mSenderThread = NULL;
   std::thread *mReceiverThread = NULL;
   bool mSenderThreadOn = false;
   bool mReceiverThreadOn = false;
+
+  bool mSenderThreadEnabled = false;
+  bool mReceiverThreadEnabled = false;
+  ReceiveLoop mReceiveLoop = NULL;
 }; /* class ServerAdapter */
 
 } /* namespace cm */
