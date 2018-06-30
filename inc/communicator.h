@@ -24,6 +24,7 @@
 
 #include <segment_manager.h>
 #include <network_manager.h>
+#include <ServerAdapter.h>
 
 #include <stdint.h>
 #include <vector>
@@ -36,8 +37,24 @@ enum CommErr {
   kProtErr = -1,
 };
 
+/*
+ * Control Request Code
+ * It is used to classify "control request message" that is transferred to the peer.
+ *  - Commands: "Connect", "Disconnect"
+ *  - Acks: "Ok", "Fail"
+ *  - Private Data: "Priv"
+ */
+typedef enum {
+  kCtrlReqOk = 0,
+  kCtrlReqFail = 1,
+  kCtrlReqConnect = 2,
+  kCtrlReqDisconnect = 3,
+  kCtrlReqPriv = 4 
+} CtrlReq;
+
 class SwitchAdapterTransaction {
-  /* Switch Adapter Transaction: Order
+  /*
+   * Switch Adapter Transaction: Order
    * 1. Communicator.switch_adapters()
    * 2. SwitchAdapterTransaction.start()
    * 3. next_adapter.connect()
@@ -51,17 +68,33 @@ public:
   void connect_callback(bool is_success);
   void disconnect_callback(bool is_success);
 
-  SwitchTransaction() {
-    this->mIsOngoing = false;
+  SwitchAdapterTransaction() {
   }
 
 protected:
-  Communicator* caller;
-  bool mIsOngoing;
-  int mPrevIndex;
-  int mNextIndex;
+  static bool sIsOngoing;
+  static int sPrevIndex;
+  static int sNextIndex;
 };
 
+class ConnectTransaction {
+public:
+  bool start(Communicator* caller, int adapter_id);
+  void connect_callback(bool is_success);
+};
+
+class DisonnectTransaction {
+public:
+  bool start(Communicator* caller, int adapter_id);
+  void disconnect_callback(bool is_success);
+};
+
+class ControlMessageListener {
+public:
+  virtual void on_receive_control_message(int adapter_id, void* data, size_t len);
+};
+
+class ServerAdapter;
 class Communicator {
 public:
   /**
@@ -99,6 +132,11 @@ public:
     SegmentManager::get_instance()->free_segment_all();
   }
 
+  void add_control_message_listener(ControlMessageListener* listener) {
+    this->mControlMessageListeners.push_back(listener);
+  }
+  static void receive_control_message_loop(ServerAdapter* adapter);
+
   /* Singleton */
   static Communicator* get_instance(void) {
     if (singleton == NULL) {
@@ -117,18 +155,27 @@ private:
     NetworkManager *nm = NetworkManager::get_instance();
   }
   
-  /* Active Data Adapter Index means the index value indicating
+  /*
+   * Active Data Adapter Index means the index value indicating
    * 'conencted' or 'connecting' data adapter currently.
    * Only "the current data adapter" is 'connected' or 'connecting',
    * but the others are 'connected(but to-be-disconnected)', 'disconnected' or 'disconnecting'.
    * This index is changed right before increasing or decreasing starts.
    */
   int mActiveDataAdapterIndex = 0;
+
+  /*
+   * Adapter List
+   *  - N Data Adapters (+ access lock)
+   *  - 1 Control Adapter (+ access lock)
+   */
   std::vector<ServerAdapter*> mDataAdapters;
   ServerAdapter* mControlAdapter = NULL;
   std::mutex mDataAdaptersLock;
   std::mutex mControlAdapterLock;
-  SwitchAdapterTransaction mSwitchAdapterTransaction;
+
+  /* Control Message Listeners */
+  std::vector<ControlMessageListener*> mControlMessageListeners;
 };
 
 } /* namespace cm */

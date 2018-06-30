@@ -105,6 +105,7 @@ void NetworkManager::run_control_recver(void) {
         break;
       }
 
+      // convert dev_id to ndev_id
       uint16_t ndev_id;
       uint16_t dev_id;
 
