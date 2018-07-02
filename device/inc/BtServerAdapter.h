@@ -22,10 +22,10 @@
 
 #include <ServerAdapter.h>
 #include <BtDevice.h>
-#include <BtP2pServer.h>
+#include <BtP2PServer.h>
 #include <RfcommServerSocket.h>
 
-#include <counter.h>
+#include <Counter.h>
 
 #include <thread>
 #include <mutex>
@@ -39,7 +39,7 @@ class BtServerAdapter : ServerAdapter {
 public:
   BtServerAdapter(char* name, const char* service_uuid) : ServerAdapter(name) { 
     BtDevice* device = BtDevice::getSingleton();
-    BtP2pServer* p2pServer = new BtP2pServer();
+    BtP2PServer* p2pServer = new BtP2PServer();
     RfcommServerSocket* serverSocket = new RfcommServerSocket(service_uuid);
     this->initialize(device, p2pServer, serverSocket);
   }

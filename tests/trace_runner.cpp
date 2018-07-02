@@ -18,12 +18,12 @@
  * limitations under the License.
  */
 
+#include <Communicator.h>
+
 #include <BtServerAdapter.h>
 #include <WfdServerAdapter.h>
 #include <EthServerAdapter.h>
-
-#include <network_switcher.h>
-#include <communicator.h>
+#include <NetworkSwitcher.h>
 
 #include "csv.h"
 

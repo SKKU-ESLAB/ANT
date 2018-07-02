@@ -19,7 +19,7 @@
 #include <WfdDevice.h>
 #include <Util.h>
 
-#include <counter.h>
+#include <Counter.h>
 
 #include <thread>
 #include <mutex>

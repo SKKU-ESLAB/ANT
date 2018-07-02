@@ -19,7 +19,7 @@
 
 #include <ServerAdapter.h>
 
-#include <dbug_log.h>
+#include <DebugLog.h>
 
 using namespace cm;
 

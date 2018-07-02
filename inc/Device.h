@@ -20,7 +20,7 @@
 #ifndef _DEVICE_H_
 #define _DEVICE_H_
 
-#include <counter.h>
+#include <Counter.h>
 
 #include <thread>
 #include <mutex>

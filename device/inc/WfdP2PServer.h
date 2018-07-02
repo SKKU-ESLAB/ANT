@@ -20,9 +20,9 @@
 #ifndef _WFD_P2P_SERVER_H_
 #define _WFD_P2P_SERVER_H_
 
-#include <P2pServer.h>
+#include <P2PServer.h>
 
-#include <counter.h>
+#include <Counter.h>
 
 #include <thread>
 #include <mutex>
@@ -37,7 +37,7 @@ public:
   virtual void on_change_ip_address(const char* ip_address) = 0;
 };
 
-class WfdP2pServer : P2pServer {
+class WfdP2PServer : P2PServer {
 public:
   virtual bool allow_impl(void);
   virtual bool disallow_impl(void);
@@ -46,14 +46,14 @@ public:
     this->mIpAddrListeners.push_back(listener);
   }
 
-  WfdP2pServer(const char* wfd_device_name) {
+  WfdP2PServer(const char* wfd_device_name) {
     snprintf(this->mWfdDeviceName, 100, "%s", wfd_device_name);
     this->mWfdDeviceName[0] = NULL;
     this->mWpaDevName[0] = NULL;
     this->mWpaIntfName[0] = NULL;
   }
 
-  ~WfdP2pServer(void) {
+  ~WfdP2PServer(void) {
   }
 
 protected:
@@ -77,7 +77,7 @@ private:
   int set_wfd_ip_addr(const char* ip_addr);
   int set_dhcpd_config(void);
   static void sighandler_monitor_udhcpd(int signo, siginfo_t *sinfo, void *context);
-}; /* class WfdP2pServer */
+}; /* class WfdP2PServer */
 
 } /* namespace cm */
 

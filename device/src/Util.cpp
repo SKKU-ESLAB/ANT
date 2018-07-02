@@ -18,7 +18,7 @@
  */
 #include <Util.h>
 
-#include <dbug_log.h>
+#include <DebugLog.h>
 
 int Util::run_client(char *path, char *const params[], char *res_buf, size_t len) {
   int fd[2];

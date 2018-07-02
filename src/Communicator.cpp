@@ -19,14 +19,15 @@
  * limitations under the License.
  */
 
+#include <Communicator.h>
+
+#include <DebugLog.h>
+#include <ProtocolManager.h>
+#include <SegmentManager.h>
+
 #include <string.h>
 #include <errno.h>
 #include <stdio.h>
-#include <dbug_log.h>
-#include <communicator.h>
-#include <protocol_manager.h>
-#include <segment_manager.h>
-#include <network_manager.h>
 
 /**
  * < When to Free Buffer >

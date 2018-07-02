@@ -14,12 +14,12 @@ LIB=-lbluetooth -lpthread
 $(OBJ_DIR)/%.o: $(SRC_DIR)/%.cpp
 	$(CC) -o $@ -c $< -I$(INC) $(FLAG) $(LIB)
 
-_OBJ=communicator.o protocol_manager.o segment_manager.o network_manager.o network_switcher.o ServerAdapter.o ServerSocket.o P2PServer.o Device.o
+_OBJ=Communicator.o Device.o NetworkSwitcher.o P2PServer.o ProtocolManager.o SegmentManager.o ServerAdapter.o ServerSocket.o
 OBJ=$(patsubst %, $(OBJ_DIR)/%, $(_OBJ)) 
 
 $(DEV_OBJ_DIR)/%.o: $(DEV_SRC)/%.cpp
 	$(CC) -o $@ -c $< -I$(INC) -I$(DEV_INC) $(FLAG) $(LIB) 
-_DEV_OBJ=wifi_control.o tcp_server_over_eth.o tcp_server_over_wfd.o wifi_control.o rfcomm_over_bt.o
+_DEV_OBJ=BtDevice.o BtP2PServer.o RfcommServerSocket.o TcpServerSocket.o Util.o WfdDevice.o WfdP2PServer.o
 DEV_OBJ=$(patsubst %, $(DEV_OBJ_DIR)/%, $(_DEV_OBJ)) 
 
 all : file_test_low trace_runner

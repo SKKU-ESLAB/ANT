@@ -22,8 +22,8 @@
 #ifndef INC_COMMUNICATOR_H_
 #define INC_COMMUNICATOR_H_
 
-#include <segment_manager.h>
-#include <network_manager.h>
+#include <SegmentManager.h>
+#include <NetworkManager.h>
 #include <ServerAdapter.h>
 
 #include <stdint.h>

@@ -17,7 +17,7 @@
  * limitations under the License.
  */
 
-#include <ServerAdapter.h>
+#include <P2PServer.h>
 
 using namespace cm;
 

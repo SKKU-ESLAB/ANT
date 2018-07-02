@@ -22,10 +22,10 @@
 
 #include <ServerAdapter.h>
 #include <WfdDevice.h>
-#include <WfdP2pServer.h>
+#include <WfdP2PServer.h>
 #include <TcpServerSocket.h>
 
-#include <counter.h>
+#include <Counter.h>
 
 #include <thread>
 #include <mutex>
@@ -39,7 +39,7 @@ class WfdServerAdapter : ServerAdapter {
 public:
   WfdServerAdapter(char* name, int port, const char* wfd_device_name) : ServerAdapter(name) { 
     WfdDevice* device = WfdDevice::getSingleton();
-    WfdP2pServer* p2pServer = new WfdP2pServer(wfd_device_name);
+    WfdP2PServer* p2pServer = new WfdP2PServer(wfd_device_name);
     TcpServerSocket* serverSocket = new TcpServerSocket(port);
     p2pServer->add_wfd_ip_address_listener(p2pServer);
     this->initialize(device, p2pServer, serverSocket);
