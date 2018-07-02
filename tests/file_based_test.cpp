@@ -18,12 +18,10 @@
  * limitations under the License.
  */
 
-#include <Communicator.h>
-
+#include <API.h>
 #include <BtServerAdapter.h>
 #include <WfdServerAdapter.h>
 #include <EthServerAdapter.h>
-#include <NetworkSwitcher.h>
 
 #include <thread>
 #include <stdio.h>
@@ -33,8 +31,6 @@
 #include <fcntl.h>
 
 #include <sys/time.h>
-
-using namespace cm;
 
 #define DEBUG_SHOW_DATA 1
 #define DEBUG_SHOW_TIME 0
@@ -52,7 +48,7 @@ void receiving_thread() {
   printf("[INFO] Receiving thread created! tid: %d\n", (unsigned int)syscall(224));
 
   while (true) {
-    int ret = Communicator::get_instance()->recv_data(&buf);
+    int ret = cm::receive(&buf);
 #if DEBUG_SHOW_DATA == 1
     printf("Recv %d> %s\n\n", ret, reinterpret_cast<char *>(buf));
 #endif
@@ -67,20 +63,19 @@ void receiving_thread() {
 }
 
 int main() {
-  Communicator *cm = Communicator::get_instance();
-  NetworkSwitcher::get_instance()->run();
-  EthServerAdapter ethAdapter(2345, "Eth", 2345);
-  BtServerAdapter btAdapter(3333, "Bt", "150e8400-1234-41d4-a716-446655440000");
-  WfdServerAdapter wfdAdapter(3456, "Wfd", 3456, "OPEL");
+  cm::start_communication();
+  cm::EthServerAdapter ethAdapter(2345, "Eth", 2345);
+  cm::BtServerAdapter btAdapter(3333, "Bt", "150e8400-1234-41d4-a716-446655440000");
+  cm::WfdServerAdapter wfdAdapter(3456, "Wfd", 3456, "OPEL");
 
   printf("Step 1. Initializing Network Adapters\n");
 
   printf("  a) Control Adapter: TCP over Ethernet\n");
-  ethAdapter.set_control_adapter();
+  cm::register_control_adapter(&ethAdapter);
   printf("  b) Data Adapter: RFCOMM over Bluetooth\n");
-  btAdapter.set_data_adapter();
+  cm::register_data_adapter(&btAdapter);
   printf("  c) Data Adapter: TCP over Wi-fi Direct\n");
-  wfdAdapter.set_data_adapter();
+  cm::register_data_adapter(&wfdAdapter);
 
   int iter = 0;
   int iter1 = 0;
@@ -102,7 +97,7 @@ int main() {
   for(i=0; i<1; i++) {
     sleep(2);
     temp_buf = (char*)calloc(TEST_DATA_SIZE, sizeof(char));
-    cm->send_data(temp_buf, TEST_DATA_SIZE);
+    cm::send(temp_buf, TEST_DATA_SIZE);
     sleep(10);
     free(temp_buf);
   }
@@ -145,7 +140,7 @@ int main() {
     if(fd < 0) {
       fprintf(stderr, "[Error] Cannot find the file: %s\n", file_dir);
     } else {
-      buffer = (char*) calloc (BUFFER_SIZE, sizeof(char));
+      buffer = (char*) calloc(BUFFER_SIZE, sizeof(char));
       if(buffer == NULL){
         fprintf(stderr, "[Error] Buffer allocation failed: size=%d\n", BUFFER_SIZE);
         exit(1);
@@ -159,7 +154,7 @@ int main() {
         gettimeofday(&start, NULL);
 #endif
         // Send Data
-        ret = cm->send_data(buffer, count); 
+        ret = cm::send(buffer, count); 
 #if DEBUG_SHOW_DATA == 1
         printf("  - Send data: size=%d\n", count);
 #endif
@@ -170,8 +165,9 @@ int main() {
     }
     iter++;
     iter1++;
-//    end_lock.wait(lck);
   }
+
+  cm::stop_communication();
 
   return 0;
 }

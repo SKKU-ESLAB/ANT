@@ -35,7 +35,7 @@
 
 namespace cm {
 
-class WfdServerAdapter : ServerAdapter {
+class WfdServerAdapter : ServerAdapter, ControlMessageListener {
 public:
   WfdServerAdapter(char* name, int port, const char* wfd_device_name) : ServerAdapter(name) { 
     WfdDevice* device = WfdDevice::getSingleton();
@@ -43,6 +43,13 @@ public:
     TcpServerSocket* serverSocket = new TcpServerSocket(port);
     p2pServer->add_wfd_ip_address_listener(p2pServer);
     this->initialize(device, p2pServer, serverSocket);
+  }
+
+  virtual void on_receive_control_message(int adapter_id, void* data, size_t len) {
+    if(adapter_id == this->get_id()) {
+      WfdP2PServer* p2pServer = (WfdP2PServer*)this->mP2pServer;
+      p2pServer->on_receive_control_message(data, len);
+    }
   }
 
   ~WfdServerAdapter(void) {

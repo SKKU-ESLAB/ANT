@@ -19,6 +19,7 @@
 
 #include <NetworkSwitcher.h>
 
+#include <Communicator.h>
 #include <ServerAdapter.h>
 #include <SegmentManager.h>
 #include <DebugLog.h>
@@ -45,7 +46,7 @@ void NetworkSwitcher::run_switcher(void) {
     int avg_total_bandwidth_now;
     this->monitor(avg_send_request_speed, avg_send_queue_data_size, avg_total_bandwidth_now);
 
-    switch(this->mStatus) {
+    switch(this->get_state()) {
       case kNSStatusNeedControlAdapter:
         printf("%s %d %lu %d\n",
             "Need-CA",
@@ -56,8 +57,11 @@ void NetworkSwitcher::run_switcher(void) {
         printf("%s %d %lu %d\n",
             "Need-DA",
             avg_send_request_speed, avg_send_queue_data_size, avg_total_bandwidth_now);
-        this->mStatus = kNSStatusIncreasing;
-        NetworkManager::get_instance()->increase_adapter(); 
+        {
+          std::unique_lock<std::mutex> lck(this->mStateLock);
+          this->mState = kNSStatusIncreasing;
+        }
+        Communicator::get_instance()->increase_adapter(); 
         break;
       case kNSStatusReady:
         printf("%s %d %lu %d\n",
@@ -94,9 +98,9 @@ void NetworkSwitcher::monitor(int &avg_send_request_speed,
   send_queue_data_size = segment_manager->get_queue_data_size(kSegSend);
   send_queue_data_size += segment_manager->get_failed_sending_queue_data_size();
 
-  NetworkManager *network_manager = NetworkManager::get_instance();
+  Communicator *communicator = Communicator::get_instance();
   int i = 0;
-  std::list<ServerAdapter *> control_adapters = network_manager->get_control_adapter_list();
+  std::list<ServerAdapter *> control_adapters = communicator->get_control_adapter_list();
   for(std::list<ServerAdapter *>::iterator it = control_adapters.begin();
       it != control_adapters.end(); it++) {
     ServerAdapter *adapter = *it;
@@ -110,7 +114,7 @@ void NetworkSwitcher::monitor(int &avg_send_request_speed,
     i++;
   }
 
-  std::list<ServerAdapter *> data_adapters = network_manager->get_data_adapter_list();
+  std::list<ServerAdapter *> data_adapters = communicator->get_data_adapter_list();
   for(std::list<ServerAdapter *>::iterator it = data_adapters.begin();
       it != data_adapters.end(); it++) {
     ServerAdapter *adapter = *it;
@@ -140,12 +144,18 @@ void NetworkSwitcher::check_and_handover(int avg_send_request_speed,
       this->mBandwidthWhenIncreasing = avg_total_bandwidth_now;
 
       /* Increase Adapter */
-      this->mStatus = kNSStatusIncreasing;
-      NetworkManager::get_instance()->increase_adapter();
+      {
+        std::unique_lock<std::mutex> lck(this->mStateLock);
+        this->mState = kNSStatusIncreasing;
+      }
+      Communicator::get_instance()->increase_adapter();
     } else if(this->check_decrease_adapter(avg_total_bandwidth_now, this->mBandwidthWhenIncreasing)) {
       /* Decrease Adapter */
-      this->mStatus = kNSStatusDecreasing;
-      NetworkManager::get_instance()->decrease_adapter();
+      {
+        std::unique_lock<std::mutex> lck(this->mStateLock);
+        this->mState = kNSStatusDecreasing;
+      }
+      Communicator::get_instance()->decrease_adapter();
     }
 }
 

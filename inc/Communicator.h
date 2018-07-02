@@ -23,7 +23,6 @@
 #define INC_COMMUNICATOR_H_
 
 #include <SegmentManager.h>
-#include <NetworkManager.h>
 #include <ServerAdapter.h>
 
 #include <stdint.h>
@@ -106,30 +105,20 @@ protected:
 
 class ControlMessageListener {
 public:
-  virtual void on_receive_control_message(int adapter_id, void* data, size_t len);
+  virtual void on_receive_control_message(int adapter_id, void* data, size_t len) = 0;
 };
 
 class ServerAdapter;
 class Communicator {
 public:
-  /**
-   * If data size is big, it is recommanded to use following
-   * libraries in a thread
-   */
-  int send(const void *buf, uint32_t len);
-
-  /**
-   * @param len: IN buffer length
-   * @param buf: OUT buffer read
-   * @return: Received bytes(<0 if error)
-   */
-  int receive(void **buf);
+  void start(void);
+  void stop(void);
 
   void register_control_adapter(ServerAdapter* adapter);
   void register_data_adapter(ServerAdapter* adapter);
 
-  void start(void);
-  void stop(void);
+  int send(const void *buf, uint32_t len);
+  int receive(void **buf);
 
   bool increase_adapter(void);
   bool decrease_adapter(void);
@@ -157,10 +146,6 @@ public:
   void send_control_message(const void *data, size_t len);
   void send_private_control_data(uint8_t request_code, uint16_t adapter_id, uint32_t private_data_len);
 
-  void finalize(void) {
-    SegmentManager::get_instance()->free_segment_all();
-  }
-
   void add_control_message_listener(ControlMessageListener* listener) {
     this->mControlMessageListeners.push_back(listener);
   }
@@ -174,6 +159,10 @@ public:
     return singleton;
   }
 
+  ~Communicator() {
+    SegmentManager::get_instance()->free_segment_all();
+  }
+
 private:
   bool switch_adapters(int prev_index, int next_index);
 
@@ -181,7 +170,6 @@ private:
   static Communicator* singleton;
   Communicator(void) {
     SegmentManager *sm = SegmentManager::get_instance();
-    NetworkManager *nm = NetworkManager::get_instance();
   }
   
   /*

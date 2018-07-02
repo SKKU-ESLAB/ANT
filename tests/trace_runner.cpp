@@ -18,12 +18,10 @@
  * limitations under the License.
  */
 
-#include <Communicator.h>
-
+#include <API.h>
 #include <BtServerAdapter.h>
 #include <WfdServerAdapter.h>
 #include <EthServerAdapter.h>
-#include <NetworkSwitcher.h>
 
 #include "csv.h"
 
@@ -53,7 +51,7 @@ void receiving_thread() {
   printf("[INFO] Receiving thread created! tid: %d\n", (unsigned int)syscall(224));
 
   while (true) {
-    int ret = Communicator::get_instance()->recv_data(&buf);
+    int ret = cm::receive(&buf);
 #if DEBUG_SHOW_DATA == 1
     printf("Recv %d> %s\n\n", ret, reinterpret_cast<char *>(buf));
 #endif
@@ -92,8 +90,7 @@ int main(int argc, char** argv) {
   snprintf(trace_file_name, 512, "%s", argv[1]);
   printf("Trace File: %s\n", trace_file_name);
 
-  Communicator *cm = Communicator::get_instance();
-  NetworkSwitcher::get_instance()->run();
+  cm::start_communication();
   EthServerAdapter ethAdapter(2345, "Eth", 2345);
   BtServerAdapter btAdapter(3333, "Bt", "150e8400-1234-41d4-a716-446655440000");
   WfdServerAdapter wfdAdapter(3456, "Wfd", 3456, "OPEL");
@@ -101,11 +98,11 @@ int main(int argc, char** argv) {
   printf("Step 1. Initializing Network Adapters\n");
 
   printf("  a) Control Adapter: TCP over Ethernet\n");
-  ethAdapter.set_control_adapter();
+  cm::register_control_adapter(&ethAdapter);
   printf("  b) Data Adapter: RFCOMM over Bluetooth\n");
-  btAdapter.set_data_adapter();
+  cm::register_data_adapter(&btAdapter);
   printf("  c) Data Adapter: TCP over Wi-fi Direct\n");
-  wfdAdapter.set_data_adapter();
+  cm::register_data_adapter(&wfdAdapter);
 
   int iter = 0;
   char sending_buf[8192];
@@ -124,7 +121,7 @@ int main(int argc, char** argv) {
   for(i=0; i<1; i++) {
     sleep(2);
     temp_buf = (char*)calloc(TEST_DATA_SIZE, sizeof(char));
-    cm->send_data(temp_buf, TEST_DATA_SIZE);
+    cm::send(temp_buf, TEST_DATA_SIZE);
     sleep(10);
     free(temp_buf);
   }
@@ -195,7 +192,7 @@ int main(int argc, char** argv) {
       rand_string(buffer, payload_length);
 
       /* Send Data */
-      ret = cm->send_data(buffer, payload_length); 
+      ret = cm::send(buffer, payload_length); 
 
       free(buffer);
       

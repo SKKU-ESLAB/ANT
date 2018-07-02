@@ -121,69 +121,71 @@ void Communicator::receive_control_message_loop(ServerAdapter* adapter) {
     if (res <= 0) {
       LOG_VERB("Control adapter could be closed");
       sleep(1);
-    } else {
-      /*  If the control message is 'connect adapter', */
-      if (data[0] == kCtrlReqConnect || data[0] == kCtrlReqDisconnect) {
-        // Receive 2Byte: Adapter ID 
-        res = adapter->receive(data, 2);
-        if (res <= 0) {
-          LOG_DEBUG("Control adapter has been closed");
-          break;
+      continue;
+    }
+
+    /*  If the control message is 'connect adapter', */
+    if (data[0] == kCtrlReqConnect || data[0] == kCtrlReqDisconnect) {
+      // Receive 2Byte: Adapter ID 
+      res = adapter->receive(data, 2);
+      if (res <= 0) {
+        LOG_DEBUG("Control adapter has been closed");
+        break;
+      }
+
+      // convert adapter_id to n_adapter_id
+      uint16_t n_adapter_id;
+      uint16_t adapter_id;
+
+      memcpy(&n_adapter_id, data, 2);
+      adapter_id = ntohs(n_adapter_id);
+
+      if(data[0] == kCtrlReqConnect) {
+        LOG_DEBUG("Data Adapter Connect request arrived");
+        ConnectRequestTransaction::start(this, adapter_id);
+      } else if (data[0] == kCtrlReqDisconnect) {
+        LOG_DEBUG("Data Adapter Disconnect request arrived");
+        DisconnectRequestTransaction::start(this, adapter_id);
+      }
+    } else if (data[0] == kCtrlReqPriv) {
+      LOG_VERB("Private data arrived");
+      uint16_t n_adapter_id;
+      uint16_t adapter_id;
+      uint32_t nlen;
+      uint32_t len;
+
+      // Receive 2Byte: Adapter ID 
+      res = adapter->receive(&n_adapter_id, 2);
+      if (res <= 0) break;
+      adapter_id = ntohs(n_adapter_id);
+
+      // Receive 4Byte: Private Data Length
+      res = adapter->receive(&nlen, 4);
+      if (res <= 0) break;
+      len = ntohl(nlen);
+      assert(len <= 512);
+
+      // Receive nByte: Private Data
+      res = adapter->receive(data, len);
+      if (res > 0) {
+        for(it = this->mControlMessageListeners.begin();
+            it != this->mControlMessageListeners.end();
+            it++) {
+          ControlMessageListener* listener = *it;
+          listener->on_receive_control_message(adapter_id, data, len);
         }
-
-        // convert adapter_id to n_adapter_id
-        uint16_t n_adapter_id;
-        uint16_t adapter_id;
-
-        memcpy(&n_adapter_id, data, 2);
-        adapter_id = ntohs(n_adapter_id);
-
-        if(data[0] == kCtrlReqConnect) {
-          LOG_DEBUG("Data Adapter Connect request arrived");
-          ConnectRequestTransaction::start(this, adapter_id);
-        } else if (data[0] == kCtrlReqDisconnect) {
-          LOG_DEBUG("Data Adapter Disconnect request arrived");
-          DisconnectRequestTransaction::start(this, adapter_id);
-        }
-      } else if (data[0] == kCtrlReqPriv) {
-        LOG_VERB("Private data arrived");
-        uint16_t n_adapter_id;
-        uint16_t adapter_id;
-        uint32_t nlen;
-        uint32_t len;
-
-        // Receive 2Byte: Adapter ID 
-        res = adapter->receive(&n_adapter_id, 2);
-        if (res <= 0) break;
-        adapter_id = ntohs(n_adapter_id);
-
-        // Receive 4Byte: Private Data Length
-        res = adapter->receive(&nlen, 4);
-        if (res <= 0) break;
-        len = ntohl(nlen);
-        assert(len <= 512);
-
-        // Receive nByte: Private Data
-        res = adapter->receive(data, len);
-        if (res > 0) {
-          for(it = this->mControlMessageListeners.begin();
-              it != this->mControlMessageListeners.end();
-              it++) {
-            ControlMessageListener* listener = *it;
-            // TODO: implement listener
-            listener->on_receive_control_message(adapter_id, data, len);
-          }
-        } else {
-          LOG_DEBUG("Control adapter closed");
-          break;
-        }
+      } else {
+        LOG_DEBUG("Control adapter closed");
+        break;
       }
     }
   } // End while
 
+  // If control message loop is crashed, reconnect control adapter.
   ReconnectControlAdapterTransaction::start(this);
 }
 
+// Connect Request
 bool ConnectRequestTransaction::start(Communicator* caller, int adapter_id) {
   if(ConnectRequestTransaction::sIsOngoing) {
     LOG_ERR("Only one transaction can run at the same time.");
@@ -216,6 +218,7 @@ void ConnectRequestTransaction::connect_callback(bool is_success) {
   LOG_ERR("Connecting requested data adapter is done");
 }
 
+// Disconnect Request
 bool DisconnectRequestTransaction::start(Communicator* caller, int adapter_id) {
   if(DisconnectRequestTransaction::sIsOngoing) {
     LOG_ERR("Only one transaction can run at the same time.");
@@ -248,6 +251,7 @@ void DisconnectRequestTransaction::disconnect_callback(bool is_success) {
   LOG_ERR("Disconnecting requested data adapter is done");
 }
 
+// Reconnect Control Adapter
 bool ReconnectControlAdapterTransaction::start(Communicator* caller) {
   if(ReconnectControlAdapterTransaction::sIsOngoing) {
     LOG_ERR("Only one transaction can run at the same time.");
@@ -336,6 +340,7 @@ void Communicator::start(void) {
     }
   }
 }
+
 void Communicator::stop(void) {
   if(this->mControlAdapter == NULL) {
     LOG_ERR("No control adapter is registered!");

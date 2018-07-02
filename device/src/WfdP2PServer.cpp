@@ -18,6 +18,7 @@
  */
 #include <WfdP2PServer.h>
 
+#include <Communicator.h>
 #include <Util.h>
 #include <Counter.h>
 
