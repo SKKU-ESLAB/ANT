@@ -117,17 +117,6 @@ class SegmentManager {
     return this->mSendRequest.get_speed();
   }
 
-  void set_is_wfd_on(int wfd_on) {
-    std::unique_lock<std::mutex> lck(this->mIsWfdOnLock);
-    this->mIsWfdOn = wfd_on;
-  }
-
-  int get_is_wfd_on() {
-    std::unique_lock<std::mutex> lck(this->mIsWfdOnLock);
-    int ret = this->mIsWfdOn;
-    return ret;
-  }
-
   /* Singleton */
   static SegmentManager* get_instance(void) {
     if (singleton == NULL)
@@ -146,15 +135,7 @@ class SegmentManager {
 
     is_start = 0;
     is_finish = 0;
-    this->mIsWfdOn = 0;
   }
-
-  /*
-   * TODO: To be deprecated
-   * Used for Disabling bluetooth receiver/sender during Wi-fi direct is turned on
-   */
-  int mIsWfdOn;
-  std::mutex mIsWfdOnLock;
 
   std::mutex mNextGlobalSeqNoLock;
   uint32_t mNextGlobalSeqNo;
