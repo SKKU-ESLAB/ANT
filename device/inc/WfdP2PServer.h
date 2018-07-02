@@ -37,7 +37,7 @@ public:
   virtual void on_change_ip_address(const char* ip_address) = 0;
 };
 
-class WfdP2PServer : P2PServer {
+class WfdP2PServer : P2PServer, ControlMessageListener {
 public:
   virtual bool allow_impl(void);
   virtual bool disallow_impl(void);
@@ -55,6 +55,8 @@ public:
 
   ~WfdP2PServer(void) {
   }
+
+  void on_receive_control_message(void* data, size_t len);
 
 protected:
   std::vector<WfdIpAddressListener*> mIpAddrListeners;

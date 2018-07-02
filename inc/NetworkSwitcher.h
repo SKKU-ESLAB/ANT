@@ -21,22 +21,28 @@
 #define INC_NETWORK_SWITCHER_H_
 
 #include <thread>
+#include <mutex>
 
 #define kSegThreshold 512
 #define kSegQueueThreshold 50*(kSegThreshold / 512)
 
 namespace cm {
 typedef enum {
-  kNSStatusNeedControlAdapter = 0,
-  kNSStatusNeedDataAdapter = 1,
-  kNSStatusReady = 2,
-  kNSStatusIncreasing = 3,
-  kNSStatusDecreasing = 4
-} NSStatus;
+  kNSStateIdle = 0,
+  kNSStateNeedControlAdapter = 1,
+  kNSStateNeedDataAdapter = 2,
+  kNSStateReady = 3,
+  kNSStateIncreasing = 4,
+  kNSStateDecreasing = 5
+} NSState;
 
 class NetworkSwitcher {
   public:
     void run(void);
+    NSState get_state(void) {
+      std::unique_lock<std::mutex> lck(this->mStateLock);
+      return this->mState;
+    }
 
     void run_switcher(void);
     void monitor(int &avg_send_request_speed,
@@ -48,27 +54,29 @@ class NetworkSwitcher {
     bool check_decrease_adapter(int bandwidth_now, int bandwidth_when_increasing);
 
     void control_adapter_ready(void) {
-      switch(this->mStatus) {
-        case kNSStatusNeedControlAdapter:
-          this->mStatus = kNSStatusNeedDataAdapter;
+      std::unique_lock<std::mutex> lck(this->mStateLock);
+      switch(this->mState) {
+        case kNSStateNeedControlAdapter:
+          this->mState = kNSStateNeedDataAdapter;
           break;
-        case kNSStatusNeedDataAdapter:
-        case kNSStatusReady:
-        case kNSStatusIncreasing:
-        case kNSStatusDecreasing:
+        case kNSStateNeedDataAdapter:
+        case kNSStateReady:
+        case kNSStateIncreasing:
+        case kNSStateDecreasing:
           break;
       }
     }
 
     void done_switch(void) {
-      switch(this->mStatus) {
-        case kNSStatusIncreasing:
-        case kNSStatusDecreasing:
-          this->mStatus = kNSStatusReady;
+      std::unique_lock<std::mutex> lck(this->mStateLock);
+      switch(this->mState) {
+        case kNSStateIncreasing:
+        case kNSStateDecreasing:
+          this->mState = kNSStateReady;
           break;
-        case kNSStatusNeedControlAdapter:
-        case kNSStatusNeedDataAdapter:
-        case kNSStatusReady:
+        case kNSStateNeedControlAdapter:
+        case kNSStateNeedDataAdapter:
+        case kNSStateReady:
           break;
       }
     }
@@ -88,7 +96,7 @@ class NetworkSwitcher {
     static NetworkSwitcher* singleton;
     NetworkSwitcher(void) {
       this->mThread = NULL;
-      this->mStatus = kNSStatusNeedControlAdapter;
+      this->mState = kNSStateIdle;
       this->mBandwidthWhenIncreasing = 0;
       this->mDecreasingCheckCount = 0;
 
@@ -137,7 +145,8 @@ class NetworkSwitcher {
 
     std::thread *mThread;
 
-    NSStatus mStatus;
+    NSState mState;
+    std::mutex mStateLock;
     int mBandwidthWhenIncreasing;
     int mDecreasingCheckCount;
 
