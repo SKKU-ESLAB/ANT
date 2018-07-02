@@ -18,9 +18,9 @@
  */
 
 #include <ServerAdapter.h>
-#include <network_manager.h>
 
-#include <dbug_log.h>
+#include <Communicator.h>
+#include <DebugLog.h>
 
 #include <thread>
 #include <mutex>

@@ -16,10 +16,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include <BtP2pServer.h>
-#include <Util.h>
+#include <BtP2PServer.h>
 
-#include <counter.h>
+#include <Util.h>
+#include <Counter.h>
 
 #include <thread>
 #include <mutex>
@@ -29,10 +29,10 @@
 
 using namespace cm;
 
-bool BtP2pServer::allow_impl(void) {
+bool BtP2PServer::allow_impl(void) {
   return true;
 }
 
-bool BtP2pServer::disallow_impl(void) {
+bool BtP2PServer::disallow_impl(void) {
   return true;
 }

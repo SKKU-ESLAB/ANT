@@ -16,10 +16,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include <WfdP2pServer.h>
-#include <Util.h>
+#include <WfdP2PServer.h>
 
-#include <counter.h>
+#include <Util.h>
+#include <Counter.h>
 
 #include <thread>
 #include <mutex>
@@ -32,10 +32,10 @@
 
 using namespace cm;
 
-bool WfdP2pServer::sDhcpdMonitoring = 0;
-int WfdP2pServer::sDhcpdPid = 0;
+bool WfdP2PServer::sDhcpdMonitoring = 0;
+int WfdP2PServer::sDhcpdPid = 0;
 
-bool WfdP2pServer::allow_impl(void) {
+bool WfdP2PServer::allow_impl(void) {
   char buf[1024];
   int ret;
 
@@ -95,7 +95,7 @@ bool WfdP2pServer::allow_impl(void) {
   this->set_wfd_ip_addr(DEFAULT_WFD_IP_ADDRESS);
   
   // Set DHCPD config
-  WfdP2pServer::sDhcpdPid = this->set_dhcpd_config();
+  WfdP2PServer::sDhcpdPid = this->set_dhcpd_config();
 
   // Send WFD Device Address
   ret = this->get_wfd_p2p_device_addr(buf, 256);
@@ -149,26 +149,26 @@ bool WfdP2pServer::allow_impl(void) {
   return true;
 }
 
-int WfdP2pServer::set_wps_device_name(char *wfd_device_name) {
+int WfdP2PServer::set_wps_device_name(char *wfd_device_name) {
   char *const params[] = {"wpa_cli", "set", "device_name", wfd_device_name, NULL};
 
   return Util::run_client(WPA_CLI_PATH, params, ret, len);
   return 0;
 }
 
-int WfdP2pServer::wfd_add_p2p_group(char ret[], size_t len) {
+int WfdP2PServer::wfd_add_p2p_group(char ret[], size_t len) {
   char *const params[] = {"wpa_cli", "p2p_group_add", NULL};
 
   return Util::run_client(WPA_CLI_PATH, params, ret, len);
 }
 
-int WfdP2pServer::ping_wpa_cli(char ret[], size_t len) {
+int WfdP2PServer::ping_wpa_cli(char ret[], size_t len) {
   char *const params[] = {"wpa_cli", "ping", NULL};
 
   return Util::run_client(WPA_CLI_PATH, params, ret, len);
 }
 
-int WfdP2pServer::set_wfd_ip_addr(const char* ip_addr) {
+int WfdP2PServer::set_wfd_ip_addr(const char* ip_addr) {
   char *const params[] = {"ifconfig",
     this->mWpaIntfName,
     ip_addr,
@@ -180,14 +180,14 @@ int WfdP2pServer::set_wfd_ip_addr(const char* ip_addr) {
   return Util::run_client(IFCONFIG_PATH, params, buf, 256);
 }
 
-int WfdP2pServer::set_dhcpd_config(void) {
-  if (!WfdP2pServer::sDhcpdMonitoring) {
-    WfdP2pServer::sSigaction.sa_flags = SA_SIGINFO;
-    WfdP2pServer::sSigaction.sa_sigaction = udhcp_sighandler;
+int WfdP2PServer::set_dhcpd_config(void) {
+  if (!WfdP2PServer::sDhcpdMonitoring) {
+    WfdP2PServer::sSigaction.sa_flags = SA_SIGINFO;
+    WfdP2PServer::sSigaction.sa_sigaction = udhcp_sighandler;
     sigaction(SIGCHLD,
-        &WfdP2pServer::sSigaction, &WfdP2pServer::sSigactionOld);
+        &WfdP2PServer::sSigaction, &WfdP2PServer::sSigactionOld);
     
-    WfdP2pServer::sDhcpdMonitoring = true; 
+    WfdP2PServer::sDhcpdMonitoring = true; 
   }
 
   char *const params[] = {"udhcpd", UDHCPD_CONFIG_PATH, "-f", NULL};
@@ -214,7 +214,7 @@ int WfdP2pServer::set_dhcpd_config(void) {
   return Util::run_client(UDHCPD_PATH, params, buf, 256);
 }
 
-int WfdP2pServer::get_wfd_p2p_device_addr(char *dev_addr, size_t len) {
+int WfdP2PServer::get_wfd_p2p_device_addr(char *dev_addr, size_t len) {
   char buf[1024];
   int ret;
   if (wpa_cli_intf_name[0] == '\0') {
@@ -243,7 +243,7 @@ int WfdP2pServer::get_wfd_p2p_device_addr(char *dev_addr, size_t len) {
   return 0;
 }
 
-int WfdP2pServer::get_wfd_status(char ret[], size_t len) {
+int WfdP2PServer::get_wfd_status(char ret[], size_t len) {
   char *const params[] = {"wpa_cli", "status", NULL};
 
   assert(wpa_cli_intf_name[0] != '\0');
@@ -251,7 +251,7 @@ int WfdP2pServer::get_wfd_status(char ret[], size_t len) {
   return Util::run_client(WPA_CLI_PATH, params, ret, len);
 }
 
-int WfdP2pServer::reset_wfd_server(char *pin, size_t len) {
+int WfdP2PServer::reset_wfd_server(char *pin, size_t len) {
   char buf[1024] = {0, };
   int ret;
   if (wpa_cli_intf_name[0] == '\0') {
@@ -274,15 +274,15 @@ int WfdP2pServer::reset_wfd_server(char *pin, size_t len) {
   snprintf(pin, len, "%s", ptr);
   LOG_VERB("Pin:%s", ptr);
 
-  if (WfdP2pServer::sDhcpdPid == 0) {
+  if (WfdP2PServer::sDhcpdPid == 0) {
     LOG_VERB("UDHCP is off > turn it up");
-    WfdP2pServer::sDhcpdPid = this->set_dhcpd_config();
+    WfdP2PServer::sDhcpdPid = this->set_dhcpd_config();
   }
 
   return 0;
 }
 
-int WfdP2pServer::reset_wps_pin(char ret[], size_t len) {
+int WfdP2PServer::reset_wps_pin(char ret[], size_t len) {
   char *const params[] = {"wpa_cli", "wps_pin", "any", "12345670", NULL};
 
   assert(wpa_cli_intf_name[0] != '\0');
@@ -290,7 +290,7 @@ int WfdP2pServer::reset_wps_pin(char ret[], size_t len) {
   return Util::run_client(ret, len, params);
 }
 
-int WfdP2pServer::get_wfd_ip_address(char *buf, size_t len) {
+int WfdP2PServer::get_wfd_ip_address(char *buf, size_t len) {
   int ret = wifi_direct_wpa_cli_get_status(buf, 1024);
   if (ret < 0)
     return ret;
@@ -311,20 +311,20 @@ int WfdP2pServer::get_wfd_ip_address(char *buf, size_t len) {
   return -1;
 }
 
-void WfdP2pServer::sighandler_monitor_udhcpd(int signo, siginfo_t *sinfo, void *context) {
+void WfdP2PServer::sighandler_monitor_udhcpd(int signo, siginfo_t *sinfo, void *context) {
   do {
-    if (signo != SIGCHLD || WfdP2pServer::sDhcpdPid == 0) break;
+    if (signo != SIGCHLD || WfdP2PServer::sDhcpdPid == 0) break;
     
-    if (sinfo->si_pid == WfdP2pServer::sDhcpdPid) {
+    if (sinfo->si_pid == WfdP2PServer::sDhcpdPid) {
       int status;
-      int res = waitpid(WfdP2pServer::sDhcpdPid, &status, WNOHANG);
+      int res = waitpid(WfdP2PServer::sDhcpdPid, &status, WNOHANG);
       if (res == 0)
-        WfdP2pServer::sDhcpdPid = 0;
+        WfdP2PServer::sDhcpdPid = 0;
     }    
   } while (0);
 }
 
-bool WfdP2pServer::disallow_impl(void) {
+bool WfdP2PServer::disallow_impl(void) {
   char buf[1024];
   int ret;
 
@@ -355,7 +355,7 @@ bool WfdP2pServer::disallow_impl(void) {
   return false;
 }
 
-int WfdP2pServer::wfd_remove_p2p_group(char ret[], size_t len) {
+int WfdP2PServer::wfd_remove_p2p_group(char ret[], size_t len) {
   char *const params[] = {"wpa_cli",
     "-i",
     this->mWpaDevName,
@@ -368,16 +368,16 @@ int WfdP2pServer::wfd_remove_p2p_group(char ret[], size_t len) {
   return Util::run_client(WPA_CLI_PATH, params, ret, len);
 }
 
-int WfdP2pServer::kill_dhcpd(void) {
+int WfdP2PServer::kill_dhcpd(void) {
   if (unlink(UDHCPD_CONFIG_PATH) != 0)
     LOG_WARN("%s", strerror(errno));
 
-  if (WfdP2pServer::sDhcpdPid == 0) {
+  if (WfdP2PServer::sDhcpdPid == 0) {
     LOG_WARN("udhcpd is not alive");
     return 0;
   }
 
-  kill(WfdP2pServer::sDhcpdPid, SIGKILL);
+  kill(WfdP2PServer::sDhcpdPid, SIGKILL);
 
   return 0;
 }

@@ -17,12 +17,11 @@
  * limitations under the License.
  */
 
-#include <network_switcher.h>
+#include <NetworkSwitcher.h>
 
 #include <ServerAdapter.h>
-#include <network_manager.h>
-#include <segment_manager.h>
-#include <dbug_log.h>
+#include <SegmentManager.h>
+#include <DebugLog.h>
 
 #include <thread>
 #include <unistd.h>

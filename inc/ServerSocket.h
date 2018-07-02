@@ -20,7 +20,7 @@
 #ifndef _SERVER_SOCKET_H_
 #define _SERVER_SOCKET_H_
 
-#include <counter.h>
+#include <Counter.h>
 
 #include <thread>
 #include <mutex>

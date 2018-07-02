@@ -17,9 +17,9 @@
  * limitations under the License.
  */
 #include <BtDevice.h>
-#include <Util.h>
 
-#include <counter.h>
+#include <Util.h>
+#include <Counter.h>
 
 #include <thread>
 #include <mutex>

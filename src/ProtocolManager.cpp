@@ -19,9 +19,10 @@
  * limitations under the License.
  */
 
-#include <protocol_manager.h>
-#include <segment_manager.h>
-#include <dbug_log.h>
+#include <ProtocolManager.h>
+
+#include <SegmentManager.h>
+#include <DebugLog.h>
 
 #include <stdlib.h>
 #include <string.h>

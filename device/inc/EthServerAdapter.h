@@ -23,7 +23,8 @@
 #include <ServerAdapter.h>
 #include <TcpServerSocket.h>
 
-#include <counter.h>
+#include <Counter.h>
+
 #include <unistd.h>
 #include <string.h>
 #include <sys/socket.h>

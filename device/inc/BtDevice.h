@@ -22,7 +22,7 @@
 
 #include <Device.h>
 
-#include <counter.h>
+#include <Counter.h>
 
 #include <thread>
 #include <mutex>

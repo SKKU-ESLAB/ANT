@@ -22,7 +22,7 @@
 #ifndef INC_SEGMENT_MANAGER_H_
 #define INC_SEGMENT_MANAGER_H_
 
-#include <counter.h>
+#include <Counter.h>
 
 #include <stdint.h>
 #include <list>

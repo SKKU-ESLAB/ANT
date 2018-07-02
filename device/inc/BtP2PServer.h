@@ -20,9 +20,9 @@
 #ifndef _BT_P2P_SERVER_H_
 #define _BT_P2P_SERVER_H_
 
-#include <P2pServer.h>
+#include <P2PServer.h>
 
-#include <counter.h>
+#include <Counter.h>
 
 #include <thread>
 #include <mutex>
@@ -32,19 +32,19 @@
 
 namespace cm {
 
-class BtP2pServer : P2pServer {
+class BtP2PServer : P2PServer {
 public:
   virtual bool allow_impl(void);
   virtual bool disallow_impl(void);
 
-  BtP2pServer(void) {
+  BtP2PServer(void) {
   }
 
-  ~BtP2pServer(void) {
+  ~BtP2PServer(void) {
   }
 
 protected:
-}; /* class BtP2pServer */
+}; /* class BtP2PServer */
 
 } /* namespace cm */
 
