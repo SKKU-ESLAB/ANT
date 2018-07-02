@@ -51,6 +51,44 @@ typedef enum {
   kCtrlReqPriv = 4 
 } CtrlReq;
 
+/*
+ * Communicator State
+ */
+typedef enum {
+  kCMStateIdle = 0,
+  kCMStateStarting = 1,
+  kCMStateReady = 2,
+  kCMStateConnecting = 3,
+  kCMStateDisconnecting = 4,
+  kCMStateStopping = 5
+} CMState;
+
+/*
+ * Transactions
+ * Series of asynchronous callbacks, especially used for connection/disconnection callbacks.
+ */
+class StartCommunicatorTransaction {
+public:
+  static bool start(Communicator* caller);
+  static void connect_control_adapter_callback(bool is_success);
+  static void connect_first_data_adapter_callback(bool is_success);
+protected:
+  static bool sIsOngoing;
+  static bool sCaller;
+};
+
+class StopCommunicatorTransaction {
+public:
+  static bool start(Communicator* caller);
+  static void disconnect_control_adapter_callback(bool is_success);
+  static void disconnect_data_adapter_callback(bool is_success);
+protected:
+  static bool sIsOngoing;
+  static bool sCaller;
+  static int sDataAdaptersCount;
+  static std::mutex sDataAdaptersCountLock;
+};
+
 class SwitchAdapterTransaction {
   /*
    * Switch Adapter Transaction: Order
@@ -66,9 +104,6 @@ public:
   static bool start(Communicator* caller, int prev_index, int next_index);
   static void connect_callback(bool is_success);
   static void disconnect_callback(bool is_success);
-
-  SwitchAdapterTransaction() {
-  }
 
 protected:
   static bool sIsOngoing;
@@ -109,10 +144,22 @@ public:
 };
 
 class ServerAdapter;
+
+/*
+ * Communicator
+ */
 class Communicator {
 public:
-  void start(void);
-  void stop(void);
+  /*
+   * APIs
+   * These functions are mapped to ones in API.h
+   */
+  friend StartCommunicatorTransaction;
+  friend StopCommunicatorTransaction;
+  bool start(void);
+  void done_start(bool is_success);
+  bool stop(void);
+  void done_stop(bool is_success);
 
   void register_control_adapter(ServerAdapter* adapter);
   void register_data_adapter(ServerAdapter* adapter);
@@ -122,7 +169,13 @@ public:
 
   bool increase_adapter(void);
   bool decrease_adapter(void);
+
+  CMState get_state(void) {
+    std::unique_lock<std::mutex> lck(this->mStateLock);
+    return this->mState;
+  }
   
+  /* Handling adapters */
   ServerAdapter* get_data_adapter(int index) {
     std::unique_lock<std::mutex> lck(this->mDataAdapterLock);
     return this->mDataAdapters.at(index);
@@ -142,10 +195,19 @@ public:
   ServerAdapter* get_control_adapter() {
     return this->mControlAdapter;
   }
+  int get_data_adapter_count(void) {
+    int count = 0;
+    for(std::vector<ServerAdapter*>::iterator it = this->mDataAdapter.begin();
+        it != this->mDataAdapter.end();
+        it++) {
+       count++;
+    }
+    return count;
+  }
 
+  /* Control message handling */
   void send_control_message(const void *data, size_t len);
   void send_private_control_data(uint8_t request_code, uint16_t adapter_id, uint32_t private_data_len);
-
   void add_control_message_listener(ControlMessageListener* listener) {
     this->mControlMessageListeners.push_back(listener);
   }
@@ -164,13 +226,23 @@ public:
   }
 
 private:
+  /* Main function to switch adapters */
   bool switch_adapters(int prev_index, int next_index);
+
+  void set_state(CMState new_state) {
+    std::unique_lock<std::mutex> lck(this->mStateLock);
+    this->mState = new_state;
+  }
 
   /* Singleton */
   static Communicator* singleton;
   Communicator(void) {
     SegmentManager *sm = SegmentManager::get_instance();
+    this->mState = kCMStateIdle;
   }
+
+  CMState mState;
+  std::mutex mStateLock;
   
   /*
    * Active Data Adapter Index means the index value indicating

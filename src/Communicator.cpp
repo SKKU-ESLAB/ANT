@@ -50,7 +50,107 @@ bool ConnectRequestTransaction::sIsOngoing = false;
 bool DisconnectRequestTransaction::sIsOngoing = false;
 bool ReconnectControlAdapterTransaction::sIsOngoing = false;
 
+// Start communicator: connect initial adapters
+bool Communicator::start(void) {
+  if(this->get_state() != CMState::Idle) {
+    LOG_ERR("Communicator has already started.");
+    return false;
+  } else if(this->mControlAdapter == NULL) {
+    LOG_ERR("No control adapter is registered!");
+    return false;
+  } else if (this->mDataAdapters.empty()) {
+    LOG_ERR("No data adapter is registered!");
+    return false;
+  }
+
+  // Connect control adapter & first data adapter
+  this->set_state(CMState::kCMStateStarting);
+  StartCommunicator::start(this);
+  return true;
+}
+
+void Communicator::done_start(bool is_success) {
+  if(!is_success) {
+    LOG_ERR("Failed to start communicator!");
+    this->set_state(CMState::kCMStateIdle);
+    return;
+  }
+
+  LOG_VERB("Succeed to start communicator!");
+  this->set_state(CMState::kCMStateReady);
+}
+
+// Stop communicator: disconnect all the adapters
+bool Communicator::stop(void) {
+  CMState state = this->get_state()
+  if(state == CMState::Connecting ||
+      state == CMState::Disconnecting) {
+    LOG_ERR("Cannot stop communicator during connecting/disconnecting!");
+    return false;
+  } else if(state == CMState::Starting ||
+      state == CMState::Stopping) {
+    LOG_ERR("Cannot stop communicator during starting/stopping!");
+    return false;
+  } else if(state == CMState::Idle) {
+    LOG_ERR("communicator is already idle state!");
+    return false;
+  } else if(this->mControlAdapter == NULL) {
+    LOG_ERR("No control adapter is registered!");
+    return false;
+  } else if (this->mDataAdapters.empty()) {
+    LOG_ERR("No data adapter is registered!");
+    return false;
+  }
+
+  // Disconnect all the adapters
+  this->set_state(CMState::kCMStateStopping);
+  StopCommunicatorTransaction::start(this);
+  return true;
+}
+
+void Communicator::done_stop(bool is_success) {
+  if(!is_success) {
+    LOG_ERR("Failed to stop communicator!");
+    this->set_state(CMState::kCMStateReady);
+  }
+
+  LOG_VERB("Succeed to stop communicator!");
+  this->set_state(CMState::kCMStateIdle);
+}
+
+// Register control adpater
+void Communicator::register_control_adapter(ServerAdapter* control_adapter) {
+  if(this->get_state() != kCMStateIdle) {
+    LOG_ERR("You can register control adapter on only idle state!");
+    return;
+  }
+  std::unique_lock<std::mutex> lck(this->mControlAdapterLock);
+  if(this->mControlAdapter != NULL) {
+    LOG_ERR("Another control adapter has already been registered!");
+    return;
+  }
+  control_adapter->enable_receiver_thread(Communicator::receive_control_message_loop);
+  this->mControlAdapter = control_adapter;
+}
+
+// Register data adpater
+void Communicator::register_data_adapter(ServerAdapter* data_adapter) {
+  if(this->get_state() != kCMStateIdle) {
+    LOG_ERR("You can register data adapter on only idle state!");
+    return;
+  }
+  std::unique_lock<std::mutex> lck(this->mDataAdaptersLock);
+  data_adapter->enable_receiver_thread(NULL);
+  data_adapter->enable_sender_thread();
+  this->mDataAdapters.push_back(data_adapter);
+}
+
 int Communicator::send(const void *buf, uint32_t len) {
+  CMState state = this->get_state();
+  if(state != kCMStateReady && state != kCMStateConnecting && state != lCMStateDisconnecting) {
+    LOG_ERR("Communicator is not started yet, so you cannot send the data");
+    return -1;
+  }
   uint32_t curr_offset = 0;
   int sent_bytes;
   ProtocolData pd;
@@ -79,6 +179,11 @@ int Communicator::send(const void *buf, uint32_t len) {
 }
 
 int Communicator::receive(void **buf) {
+  CMState state = this->get_state();
+  if(state != kCMStateReady && state != kCMStateConnecting && state != lCMStateDisconnecting) {
+    LOG_ERR("Communicator is not started yet, so you cannot receive data");
+    return -1;
+  }
   int ret;
   uint32_t packet_size;
   uint8_t *packet;
@@ -89,20 +194,101 @@ int Communicator::receive(void **buf) {
   return packet_size;
 }
 
-void Communicator::register_control_adapter(ServerAdapter* control_adapter) {
-  std::unique_lock<std::mutex> lck(this->mControlAdapterLock);
-  if(this->mControlAdapter != NULL) {
-    LOG_ERR("Another control adapter has already been registered!");
+bool Communicator::increase_adapter(void) {
+  CMState state = this->get_state();
+  if(state != kCMStateReady) {
+    if(state == kCMStateConnecting || state == kCMStateDisconnecting) {
+      LOG_ERR("It's already connecting or disconnecting an adapter!");
+      return;
+    } else {
+      LOG_ERR("Communicator is not started.");
+      return;
+    }
+  } else if(this->mDataAdapters.empty()) {
+    LOG_ERR("No data adapter is registered!");
+    return;
+  } else if(this->mDataAdapters.size() == 1) {
+    LOG_ERR("More than one data adapters are required!");
+    return;
+  } else if(this->mActiveDataAdapterIndex == this->mDataAdapter.size() - 1) {
+    LOG_WARN("Cannot increase adapter!");
+    return;
   }
-  control_adapter->enable_receiver_thread(Communicator::receive_control_message_loop);
-  this->mControlAdapter = control_adapter;
+
+  int prev_index = this->mActiveDataAdapterIndex;
+  int next_index = this->mActiveDataAdapterIndex + 1;
+
+  return this->switch_adapters(prev_index, next_index);
 }
 
-void Communicator::register_data_adapter(ServerAdapter* data_adapter) {
-  std::unique_lock<std::mutex> lck(this->mDataAdaptersLock);
-  data_adapter->enable_receiver_thread(NULL);
-  data_adapter->enable_sender_thread();
-  this->mDataAdapters.push_back(data_adapter);
+bool Communicator::decrease_adapter(void) {
+  if(state != kCMStateReady) {
+    if(state == kCMStateConnecting || state == kCMStateDisconnecting) {
+      LOG_ERR("It's already connecting or disconnecting an adapter!");
+      return;
+    } else {
+      LOG_ERR("Communicator is not started.");
+      return;
+    }
+  } else if(this->mDataAdapters.empty()) {
+    LOG_ERR("No data adapter is registered!");
+    return;
+  } else if(this->mDataAdapters.size() == 1) {
+    LOG_ERR("More than one data adapters are required!");
+    return;
+  } else if(this->mActiveDataAdapterIndex == 0) {
+    LOG_WARN("Cannot deccrease adapter!");
+    return;
+  }
+
+  int prev_index = this->mActiveDataAdapterIndex;
+  int next_index = this->mActiveDataAdapterIndex - 1;
+
+  return this->switch_adapters(prev_index, next_index);
+}
+
+bool Communicator::switch_adapters(int prev_index, int next_index) {
+  if(state != kCMStateReady) {
+    if(state == kCMStateConnecting || state == kCMStateDisconnecting) {
+      LOG_ERR("It's already connecting or disconnecting an adapter!");
+      return false;
+    } else {
+      LOG_ERR("Communicator is not started.");
+      return false;
+    }
+  }
+  // Switch Step 1/4
+  // Increase/decrease active data adapter index
+  this->mActiveDataAdapterIndex = next_index;
+
+  return SwitchAdapterTransaction::start(this, prev_index, next_index);
+}
+
+void Communicator::send_control_message(const void *data, size_t len) {
+  CMState state = this->get_state();
+  if(state != kCMStateReady && state != kCMStateConnecting && state != lCMStateDisconnecting) {
+    LOG_ERR("Communicator is not started yet, so you cannot send the data");
+    return -1;
+  }
+  ServerAdapter *control_adapter = this->get_control_adapter();
+  control_adapter->send(data, len);
+}
+
+void Communicator::send_private_control_data(uint8_t request_code,
+    uint16_t adapter_id, uint32_t private_data_len) {
+  CMState state = this->get_state();
+  if(state != kCMStateReady && state != kCMStateConnecting && state != lCMStateDisconnecting) {
+    LOG_ERR("Communicator is not started yet, so you cannot send the data");
+    return -1;
+  }
+  uint8_t req = kCtrlReqPriv;
+  uint16_t net_adapter_id = htons(adapter_id);
+  uint32_t net_private_datalen = htonl(private_data_len);
+
+  this->send_control_message(&request_code, 1);
+  this->send_control_message(&net_adapter_id, 2);
+  this->send_control_message(&net_private_data_len, 4);
+  this->send_control_message(buf, len);
 }
 
 void Communicator::receive_control_message_loop(ServerAdapter* adapter) {
@@ -183,6 +369,143 @@ void Communicator::receive_control_message_loop(ServerAdapter* adapter) {
 
   // If control message loop is crashed, reconnect control adapter.
   ReconnectControlAdapterTransaction::start(this);
+}
+
+// Transactions ----------------------------------------------------------------------------------
+
+// Start Communicator
+bool StartCommunicatorTransaction::start(Communicator* caller) {
+  if(StartCommunicatorTransaction::sIsOngoing) {
+    LOG_ERR("Only one transaction can run at the same time.");
+    StartCommunicatorTransaction::sCaller->done_start(false);
+    return;
+  }
+  StartCommunicatorTransaction::sIsOngoing = true;
+
+  // Connect control adpater
+  {
+    Communicator* sCaller = StopCommunicatorTransaction::sCaller;
+    std::unique_lock<std::mutex> lck(sCaller->mControlAdapterLock);
+    bool res = sCaller->mControlAdapter->connect(StartCommunicatorTransaction::connect_control_adapter_callback);
+    if(!res) {
+      LOG_ERR("Connecting control adapter is failed");
+      StartCommunicatorTransaction::sIsOngoing = false;
+      StartCommunicatorTransaction::sCaller->done_start(false);
+      return;
+    }
+  }
+}
+
+void StartCommunicatorTransaction::connect_control_adapter_callback(bool is_success) {
+  if(!is_success) {
+    LOG_ERR("Connecting control adapter is failed 2");
+    StartCommunicatorTransaction::sIsOngoing = false;
+    StartCommunicatorTransaction::sCaller->done_start(false);
+    return;
+  }
+
+  // Connect first data adapter
+  {
+    Communicator* sCaller = StopCommunicatorTransaction::sCaller;
+    std::unique_lock<std::mutex> lck(sCaller->mDataAdaptersLock);
+    sCaller->mCurrentDataAdapter = 0;
+    bool res = sCaller->mDataAdapters.front()->connect(StartCommunicatorTransaction::connect_first_data_adapter_callback);
+    if(!res) {
+      LOG_ERR("Connecting first data adapter is failed");
+      StartCommunicatorTransaction::sIsOngoing = false;
+      StartCommunicatorTransaction::sCaller->done_start(false);
+      return;
+    }
+  }
+}
+
+void StartCommunicatorTransaction::connect_first_data_adapter_callback(bool is_success) {
+  if(!is_success) {
+    LOG_ERR("Connecting first data adapter is failed 2");
+    StartCommunicatorTransaction::sIsOngoing = false;
+    StartCommunicatorTransaction::sCaller->done_start(false);
+    return;
+  }
+
+  // Done transaction
+  StartCommunicatorTransaction::sIsOngoing = false;
+  StartCommunicatorTransaction::sCaller->done_start(true);
+}
+
+// Stop Communicator
+bool StopCommunicatorTransaction::start(Communicator* caller) {
+  if(StopCommunicatorTransaction::sIsOngoing) {
+    LOG_ERR("Only one transaction can run at the same time.");
+    StopCommunicatorTransaction::sCaller->done_stop(false);
+    return;
+  }
+  StopCommunicatorTransaction::sIsOngoing = true;
+  {
+    std::unique_lock<std::mutex> lck(StopCommunicatorTransaction::sDataAdaptersCountLock);
+    StopCommunicatorTransaction::sDataAdaptersCount
+      = StopCommunicatorTransaction::caller->get_data_adapter_count;
+  }
+
+  // Disconnect control adpater
+  {
+    Communicator* sCaller = StopCommunicatorTransaction::sCaller;
+    std::unique_lock<std::mutex> lck(sCaller->mControlAdapterLock);
+    bool res = sCaller->mControlAdapter->disconnect(StopCommunicatorTransaction::disconnect_control_adapter_callback);
+    if(!res) {
+      LOG_ERR("Connecting control adapter is failed");
+      StopCommunicatorTransaction::sIsOngoing = false;
+      StopCommunicatorTransaction::sCaller->done_stop(false);
+      return;
+    }
+  }
+}
+
+void StopCommunicatorTransaction::disconnect_control_adapter_callback(bool is_success) {
+  if(!is_success) {
+    LOG_ERR("Connecting control adapter is failed 2");
+    StopCommunicatorTransaction::sIsOngoing = false;
+    StopCommunicatorTransaction::sCaller->done_stop(false);
+    return;
+  }
+
+  // Disconnect all data adapters
+  {
+    Communicator* sCaller = StopCommunicatorTransaction::sCaller;
+    std::unique_lock<std::mutex> lck(sCaller->mDataAdaptersLock);
+    for(std::vector<ServerAdapter*>::iterator it = sCaller->mDataAdapter.begin();
+        it != sCaller->mDataAdapter.end();
+        it++) {
+      ServerAdapter* data_adapter = *it;
+      bool res = data_adapter->disconnect(StopCommunicatorTransaction::disconnect_data_adapter_callback);
+      if(!res) {
+        LOG_ERR("Disconnecting data adapter is failed");
+      }
+    }
+  }
+}
+
+void StopCommunicatorTransaction::disconnect_data_adapter_callback(bool is_success) {
+  if(!is_success) {
+    LOG_ERR("Connecting first data adapter is failed 2");
+    StopCommunicatorTransaction::sIsOngoing = false;
+    StopCommunicatorTransaction::sCaller->done_stop(false);
+    return;
+  }
+
+  bool done_disconnect_all = false;
+  {
+    std::unique_lock<std::mutex> lck(StopCommunicatorTransaction::sDataAdaptersCountLock);
+    StopCommunicatorTransaction::sDataAdaptersCount--;
+    if(StopCommunicatorTransaction::sDataAdaptersCount == 0) {
+      done_disconnect_all = true;
+    }
+  }
+
+  // Done transaction
+  if(done_disonnect_all) {
+    StopCommunicatorTransaction::sIsOngoing = false;
+    StopCommunicatorTransaction::sCaller->done_stop(true);
+  }
 }
 
 // Connect Request
@@ -310,114 +633,6 @@ void ReconnectControlAdapterTransaction::connect_callback(bool is_success) {
   LOG_ERR("Reconnecting control adapter is done");
 }
 
-void Communicator::start(void) {
-  if(this->mControlAdapter == NULL) {
-    LOG_ERR("No control adapter is registered!");
-    return;
-  } else if (this->mDataAdapters.empty()) {
-    LOG_ERR("No data adapter is registered!");
-    return;
-  }
-
-  // Connect control adpater
-  {
-    std::unique_lock<std::mutex> lck(this->mControlAdapterLock);
-    bool res = this->mControlAdapter->connect(NULL);
-    if(!res) {
-      LOG_ERR("Connecting control adapter is failed");
-      return;
-    }
-  }
-
-  // Connect first data adapter
-  {
-    std::unique_lock<std::mutex> lck(this->mDataAdaptersLock);
-    this->mCurrentDataAdapter = 0;
-    bool res = this->mDataAdapters.front()->connect(NULL);
-    if(!res) {
-      LOG_ERR("Connecting data adapter is failed");
-      return;
-    }
-  }
-}
-
-void Communicator::stop(void) {
-  if(this->mControlAdapter == NULL) {
-    LOG_ERR("No control adapter is registered!");
-    return;
-  } else if (this->mDataAdapters.empty()) {
-    LOG_ERR("No data adapter is registered!");
-    return;
-  }
-
-  // Disconnect control adapter
-  {
-    std::unique_lock<std::mutex> lck(this->mControlAdapterLock);
-    bool res = this->mControlAdapter->disconnect(NULL);
-    if(!res) {
-      LOG_ERR("Disconnecting control adapter is failed");
-    }
-  }
-
-  // Disconnect all data adapters
-  {
-    std::unique_lock<std::mutex> lck(this->mDataAdaptersLock);
-    for(std::vector<ServerAdapter*>::iterator it = this->mDataAdapter.begin();
-        it != this->mDataAdapter.end();
-        it++) {
-      ServerAdapter* data_adapter = *it;
-      bool res = data_adapter->disconnect(NULL);
-      if(!res) {
-        LOG_ERR("Disconnecting data adapter is failed");
-      }
-    }
-  }
-}
-
-bool Communicator::increase_adapter(void) {
-  // Increase active data adapter index
-  if(this->mDataAdapters.empty()) {
-    LOG_ERR("No data adapter is registered!");
-    return;
-  } else if(this->mDataAdapters.size() == 1) {
-    LOG_ERR("More than one data adapters are required!");
-    return;
-  } else if(this->mActiveDataAdapterIndex == this->mDataAdapter.size() - 1) {
-    LOG_WARN("Cannot increase adapter!");
-    return;
-  }
-  int prev_index = this->mActiveDataAdapterIndex;
-  int next_index = this->mActiveDataAdapterIndex + 1;
-
-  return this->switch_adapters(prev_index, next_index);
-}
-
-bool Communicator::decrease_adapter(void) {
-  // Increase active data adapter index
-  if(this->mDataAdapters.empty()) {
-    LOG_ERR("No data adapter is registered!");
-    return;
-  } else if(this->mDataAdapters.size() == 1) {
-    LOG_ERR("More than one data adapters are required!");
-    return;
-  } else if(this->mActiveDataAdapterIndex == 0) {
-    LOG_WARN("Cannot deccrease adapter!");
-    return;
-  }
-  int prev_index = this->mActiveDataAdapterIndex;
-  int next_index = this->mActiveDataAdapterIndex - 1;
-
-  return this->switch_adapters(prev_index, next_index);
-}
-
-bool Communicator::switch_adapters(int prev_index, int next_index) {
-  // Switch Step 1/4
-  // Increase/decrease active data adapter index
-  this->mActiveDataAdapterIndex = next_index;
-
-  return SwitchAdapterTransaction::start(this, prev_index, next_index);
-}
-
 void SwitchAdapterTransaction::start(Communicator* caller, int prev_index, int next_index) {
   // Switch Step 2/4
   if(SwitchAdapterTransaction::sIsOngoing) {
@@ -486,23 +701,6 @@ void SwitchAdapterTransaction::disconnect_callback(bool is_success) {
   this->mActiveDataAdapterIndex = SwitchAdapterTransaction::sNextIndex;
   SwitchAdapterTransaction::sIsOngoing = false;
   return;
-}
-
-void Communicator::send_control_message(const void *data, size_t len) {
-  ServerAdapter *control_adapter = this->get_control_adapter();
-  control_adapter->send(data, len);
-}
-
-void Communicator::send_private_control_data(uint8_t request_code,
-    uint16_t adapter_id, uint32_t private_data_len) {
-  uint8_t req = kCtrlReqPriv;
-  uint16_t net_adapter_id = htons(adapter_id);
-  uint32_t net_private_datalen = htonl(private_data_len);
-
-  this->send_control_message(&request_code, 1);
-  this->send_control_message(&net_adapter_id, 2);
-  this->send_control_message(&net_private_data_len, 4);
-  this->send_control_message(buf, len);
 }
 
 } /* namespace cm */
