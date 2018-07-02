@@ -175,7 +175,6 @@ void ServerAdapter::disconnect_thread(void) {
     }
   }
 
-  // TODO: control message format is odd. not flexible.
   // Send control message to turn off the working data adapter
   Communicator *communicator = Communicator::get_instance();
   unsigned char buf[512];
@@ -313,22 +312,4 @@ void ServerAdapter::receive_data_loop(ServerAdapter* adapter) {
     LOG_DEBUG("%s: Received: %d",
         self->get_name(), res);
   }
-}
-
-// TODO: clarify this funciton's role
-void ServerAdapter::send_ctrl_msg(const void *buf, int len) {
-  uint8_t req = kCtrlReqPriv;
-  uint16_t net_dev_id = htons(this->dev_id);
-  uint32_t net_len = htonl(len);
-
-  if ((at & kATCtrl) == kATCtrl) {
-    LOG_WARN("Cannot transfer private data in control adapter");
-    return;
-  }
-
-  Communicator *communicator = Communicator::get_instance();
-  communicator->send_control_data(&req, 1);
-  communicator->send_control_data(&net_dev_id, 2);
-  communicator->send_control_data(&net_len, 4);
-  communicator->send_control_data(buf, len);
 }
