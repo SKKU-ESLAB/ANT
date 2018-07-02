@@ -103,7 +103,7 @@ bool WfdP2pServer::allow_impl(void) {
     return false;
   }
   LOG_VERB("WFD Server added : %s", buf);
-  this->send_ctrl_msg(buf, strlen(buf));
+  Communicator::get_instance()->send_private_control_data(buf, strlen(buf));
 
   // Set & Send WFD PIN
   ret = this->reset_wfd_server(buf, 256);
@@ -111,7 +111,7 @@ bool WfdP2pServer::allow_impl(void) {
     return false;
   }
   LOG_VERB("WFD Server PIN: %s", buf);
-  this->send_ctrl_msg(buf, strlen(buf));
+  Communicator::get_instance()->send_private_control_data(buf, strlen(buf));
 
   // Wait for the P2P Client
   if (dev_connected_wait() == false) {
@@ -136,7 +136,7 @@ bool WfdP2pServer::allow_impl(void) {
   }
 
   char* ip_address = buf;
-  this->send_ctrl_msg(ip_address, strlen(ip_address));
+  Communicator::get_instance()->send_private_control_data(ip_address, strlen(ip_address));
 
   // Notify IP address to the listeners
   for(std::vector<WfdIpAddressListener*>::iterator it = this->mIpAddrListeners.begin();

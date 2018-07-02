@@ -64,9 +64,9 @@ class SwitchAdapterTransaction {
    * 7. NetworkSwitcher.done_switch()
    */
 public:
-  bool start(Communicator* caller, int prev_index, int next_index);
-  void connect_callback(bool is_success);
-  void disconnect_callback(bool is_success);
+  static bool start(Communicator* caller, int prev_index, int next_index);
+  static void connect_callback(bool is_success);
+  static void disconnect_callback(bool is_success);
 
   SwitchAdapterTransaction() {
   }
@@ -77,17 +77,32 @@ protected:
   static int sNextIndex;
 };
 
-class ConnectTransaction {
+class ConnectRequestTransaction {
 public:
-  bool start(Communicator* caller, int adapter_id);
-  void connect_callback(bool is_success);
+  static bool start(Communicator* caller, int adapter_id);
+  static void connect_callback(bool is_success);
+protected:
+  static bool sIsOngoing;
+  static int sAdapterId;
 };
 
-class DisonnectTransaction {
+class DisonnectRequestTransaction {
 public:
-  bool start(Communicator* caller, int adapter_id);
-  void disconnect_callback(bool is_success);
+  static bool start(Communicator* caller, int adapter_id);
+  static void disconnect_callback(bool is_success);
+protected:
+  static bool sIsOngoing;
 };
+
+class ReconnectControlAdapterTransaction {
+public:
+  static bool start(Communicator* caller);
+  static void disconnect_callback(bool is_success);
+  static void connect_callback(bool is_success);
+protected:
+  static bool sIsOngoing;
+  static bool sCaller;
+}
 
 class ControlMessageListener {
 public:
@@ -120,13 +135,27 @@ public:
   bool decrease_adapter(void);
   
   ServerAdapter* get_data_adapter(int index) {
+    std::unique_lock<std::mutex> lck(this->mDataAdapterLock);
     return this->mDataAdapters.at(index);
+  }
+  ServerAdapter* find_data_adapter_by_id(int adapter_id) {
+    std::unique_lock<std::mutex> lck(this->mDataAdapterLock);
+    for(std::vector<ServerAdapter*>::iterator it = this->mDataAdapter.begin();
+        it != this->mDataAdapter.end();
+        it++) {
+      ServerAdapter* adapter = *it;
+      if(adapter->get_id() == adapter_id) {
+        return adapter;
+      }
+    }
+    return NULL;
   }
   ServerAdapter* get_control_adapter() {
     return this->mControlAdapter;
   }
 
-  void send_control_data(const void *data, size_t len);
+  void send_control_message(const void *data, size_t len);
+  void send_private_control_data(uint8_t request_code, uint16_t adapter_id, uint32_t private_data_len);
 
   void finalize(void) {
     SegmentManager::get_instance()->free_segment_all();

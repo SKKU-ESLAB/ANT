@@ -45,6 +45,9 @@ Communicator* Communicator::singleton = NULL;
 bool SwitchAdapterTransaction::sIsOngoing = false;
 int SwitchAdapterTransaction::sPrevIndex = 0;
 int SwitchAdapterTransaction::sNextIndex = 0;
+bool ConnectRequestTransaction::sIsOngoing = false;
+bool DisconnectRequestTransaction::sIsOngoing = false;
+bool ReconnectControlAdapterTransaction::sIsOngoing = false;
 
 int Communicator::send(const void *buf, uint32_t len) {
   uint32_t curr_offset = 0;
@@ -136,10 +139,10 @@ void Communicator::receive_control_message_loop(ServerAdapter* adapter) {
 
         if(data[0] == kCtrlReqConnect) {
           LOG_DEBUG("Data Adapter Connect request arrived");
-          ConnectTransaction::start(this, adapter_id);
+          ConnectRequestTransaction::start(this, adapter_id);
         } else if (data[0] == kCtrlReqDisconnect) {
           LOG_DEBUG("Data Adapter Disconnect request arrived");
-          DisconnectTransaction::start(this, adapter_id);
+          DisconnectRequestTransaction::start(this, adapter_id);
         }
       } else if (data[0] == kCtrlReqPriv) {
         LOG_VERB("Private data arrived");
@@ -177,26 +180,129 @@ void Communicator::receive_control_message_loop(ServerAdapter* adapter) {
     }
   } // End while
 
-  // Disconnect control adapter
-  {
-    std::unique_lock<std::mutex> lck(this->mControlAdapterLock);
-    // TODO: callback
-    bool res = this->mControlAdapter->disconnect(NULL);
-    if(!res) {
-      LOG_ERR("Disconnecting control adapter is failed");
-    }
-  }
+  ReconnectControlAdapterTransaction::start(this);
+}
 
-  // Connect control adpater
-  // TODO: make in callback
-  {
-    std::unique_lock<std::mutex> lck(this->mControlAdapterLock);
-    bool res = this->mControlAdapter->connect(NULL);
-    if(!res) {
-      LOG_ERR("Connecting control adapter is failed");
-      return;
-    }
+bool ConnectRequestTransaction::start(Communicator* caller, int adapter_id) {
+  if(ConnectRequestTransaction::sIsOngoing) {
+    LOG_ERR("Only one transaction can run at the same time.");
+    return;
   }
+  ConnectRequestTransaction::sIsOngoing = true;
+  ConnectRequestTransaction::sAdapterId = adapter_id;
+
+  // Connect requested adapter
+  ServerAdapter* adapter = caller->find_data_adapter_by_id(ConnectRequestTransaction::sAdapterId);
+  if(adapter == NULL) {
+    LOG_ERR("Connecting requested data adapter is failed 1");
+    ConnectRequestTransaction::sIsOngoing = false;
+    return;
+  }
+  bool res = adapter->connect(ConnectRequestTransaction::connect_callback);
+  if(!res) {
+    LOG_ERR("Connecting requested data adapter is failed 2");
+    ConnectRequestTransaction::sIsOngoing = false;
+    return;
+  }
+}
+
+void ConnectRequestTransaction::connect_callback(bool is_success) {
+  if(!is_success) {
+    LOG_ERR("Connecting requested data adapter is failed 3");
+    ConnectRequestTransaction::sIsOngoing = false;
+    return;
+  }
+  LOG_ERR("Connecting requested data adapter is done");
+}
+
+bool DisconnectRequestTransaction::start(Communicator* caller, int adapter_id) {
+  if(DisconnectRequestTransaction::sIsOngoing) {
+    LOG_ERR("Only one transaction can run at the same time.");
+    return;
+  }
+  DisconnectRequestTransaction::sIsOngoing = true;
+  DisconnectRequestTransaction::sAdapterId = adapter_id;
+
+  // Connect requested adapter
+  ServerAdapter* adapter = caller->find_data_adapter_by_id(DisconnectRequestTransaction::sAdapterId);
+  if(adapter == NULL) {
+    LOG_ERR("Disconnecting requested data adapter is failed 1");
+    DisconnectRequestTransaction::sIsOngoing = false;
+    return;
+  }
+  bool res = adapter->disconnect(DisconnectRequestTransaction::disconnect_callback);
+  if(!res) {
+    LOG_ERR("Disconnecting requested data adapter is failed 2");
+    DisconnectRequestTransaction::sIsOngoing = false;
+    return;
+  }
+}
+
+void DisconnectRequestTransaction::disconnect_callback(bool is_success) {
+  if(!is_success) {
+    LOG_ERR("Disconnecting requested data adapter is failed 3");
+    DisconnectRequestTransaction::sIsOngoing = false;
+    return;
+  }
+  LOG_ERR("Disconnecting requested data adapter is done");
+}
+
+bool ReconnectControlAdapterTransaction::start(Communicator* caller) {
+  if(ReconnectControlAdapterTransaction::sIsOngoing) {
+    LOG_ERR("Only one transaction can run at the same time.");
+    return;
+  }
+  ReconnectControlAdapterTransaction::sIsOngoing = true;
+
+  // disconnect control adapter
+  ServerAdapter* control_adapter = caller->get_control_adapter();
+  if(control_adapter == NULL) {
+    LOG_ERR("Reconnecting control adapter is failed 1: retry");
+    ReconnectControlAdapterTransaction::sIsOngoing = false;
+    ReconnectControlAdapterTransaction::start(ReconnectControlAdapterTransaction::sCaller);
+    return;
+  }
+  bool res = adapter->disconnect(ReconnectControlAdapterTransaction::disconnect_callback);
+  if(!res) {
+    LOG_ERR("Reconnecting control adapter is failed 2: retry");
+    ReconnectControlAdapterTransaction::sIsOngoing = false;
+    ReconnectControlAdapterTransaction::start(ReconnectControlAdapterTransaction::sCaller);
+    return;
+  }
+}
+
+void ReconnectControlAdapterTransaction::disconnect_callback(bool is_success) {
+  if(!is_success) {
+    LOG_ERR("Reconnecting control adapter is failed 3: retry");
+    ReconnectControlAdapterTransaction::sIsOngoing = false;
+    ReconnectControlAdapterTransaction::start(ReconnectControlAdapterTransaction::sCaller);
+    return;
+  }
+  // connect control adapter
+  ServerAdapter* control_adapter = caller->get_control_adapter();
+  if(control_adapter == NULL) {
+    LOG_ERR("Reconnecting control adapter is failed 4: retry");
+    ReconnectControlAdapterTransaction::sIsOngoing = false;
+    ReconnectControlAdapterTransaction::start(ReconnectControlAdapterTransaction::sCaller);
+    return;
+  }
+  bool res = adapter->connect(ReconnectControlAdapterTransaction::disconnect_callback);
+  if(!res) {
+    LOG_ERR("Disconnecting control adapter is failed 5: retry");
+    ReconnectControlAdapterTransaction::sIsOngoing = false;
+    ReconnectControlAdapterTransaction::start(ReconnectControlAdapterTransaction::sCaller);
+    return;
+  }
+}
+
+void ReconnectControlAdapterTransaction::connect_callback(bool is_success) {
+  if(!is_success) {
+    LOG_ERR("Reconnecting control adapter is failed 6: retry");
+    ReconnectControlAdapterTransaction::sIsOngoing = false;
+    ReconnectControlAdapterTransaction::start(ReconnectControlAdapterTransaction::sCaller);
+    return;
+  }
+  LOG_ERR("Reconnecting control adapter is done");
 }
 
 void Communicator::start(void) {
@@ -211,7 +317,6 @@ void Communicator::start(void) {
   // Connect control adpater
   {
     std::unique_lock<std::mutex> lck(this->mControlAdapterLock);
-    // TODO: callback
     bool res = this->mControlAdapter->connect(NULL);
     if(!res) {
       LOG_ERR("Connecting control adapter is failed");
@@ -223,7 +328,6 @@ void Communicator::start(void) {
   {
     std::unique_lock<std::mutex> lck(this->mDataAdaptersLock);
     this->mCurrentDataAdapter = 0;
-    // TODO: callback
     bool res = this->mDataAdapters.front()->connect(NULL);
     if(!res) {
       LOG_ERR("Connecting data adapter is failed");
@@ -243,7 +347,6 @@ void Communicator::stop(void) {
   // Disconnect control adapter
   {
     std::unique_lock<std::mutex> lck(this->mControlAdapterLock);
-    // TODO: callback
     bool res = this->mControlAdapter->disconnect(NULL);
     if(!res) {
       LOG_ERR("Disconnecting control adapter is failed");
@@ -257,7 +360,6 @@ void Communicator::stop(void) {
         it != this->mDataAdapter.end();
         it++) {
       ServerAdapter* data_adapter = *it;
-      // TODO: callback
       bool res = data_adapter->disconnect(NULL);
       if(!res) {
         LOG_ERR("Disconnecting data adapter is failed");
@@ -274,9 +376,12 @@ bool Communicator::increase_adapter(void) {
   } else if(this->mDataAdapters.size() == 1) {
     LOG_ERR("More than one data adapters are required!");
     return;
+  } else if(this->mActiveDataAdapterIndex == this->mDataAdapter.size() - 1) {
+    LOG_WARN("Cannot increase adapter!");
+    return;
   }
   int prev_index = this->mActiveDataAdapterIndex;
-  int next_index = (this->mActiveDataAdapterIndex + 1) % this->mDataAdapters.size();
+  int next_index = this->mActiveDataAdapterIndex + 1;
 
   return this->switch_adapters(prev_index, next_index);
 }
@@ -289,9 +394,12 @@ bool Communicator::decrease_adapter(void) {
   } else if(this->mDataAdapters.size() == 1) {
     LOG_ERR("More than one data adapters are required!");
     return;
+  } else if(this->mActiveDataAdapterIndex == 0) {
+    LOG_WARN("Cannot deccrease adapter!");
+    return;
   }
   int prev_index = this->mActiveDataAdapterIndex;
-  int next_index = (this->mActiveDataAdapterIndex - 1) % this->mDataAdapters.size();
+  int next_index = this->mActiveDataAdapterIndex - 1;
 
   return this->switch_adapters(prev_index, next_index);
 }
@@ -369,13 +477,26 @@ void SwitchAdapterTransaction::disconnect_callback(bool is_success) {
   LOG_DEBUG("Switch from %d to %d done.",
       SwitchAdapterTransaction::sPrevIndex, SwitchAdapterTransaction::sNextIndex);
   NetworkSwitcher::get_instance()->done_switch();
+  this->mActiveDataAdapterIndex = SwitchAdapterTransaction::sNextIndex;
   SwitchAdapterTransaction::sIsOngoing = false;
   return;
 }
 
-void Communicator::send_control_data(const void *data, size_t len) {
-  // NetworkManager::send_control_data()
-  // TODO:
+void Communicator::send_control_message(const void *data, size_t len) {
+  ServerAdapter *control_adapter = this->get_control_adapter();
+  control_adapter->send(data, len);
+}
+
+void Communicator::send_private_control_data(uint8_t request_code,
+    uint16_t adapter_id, uint32_t private_data_len) {
+  uint8_t req = kCtrlReqPriv;
+  uint16_t net_adapter_id = htons(adapter_id);
+  uint32_t net_private_datalen = htonl(private_data_len);
+
+  this->send_control_message(&request_code, 1);
+  this->send_control_message(&net_adapter_id, 2);
+  this->send_control_message(&net_private_data_len, 4);
+  this->send_control_message(buf, len);
 }
 
 } /* namespace cm */
