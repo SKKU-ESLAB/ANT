@@ -114,8 +114,8 @@ bool WfdP2PServer::allow_impl(void) {
   LOG_VERB("WFD Server PIN: %s", buf);
   Communicator::get_instance()->send_private_control_data(buf, strlen(buf));
 
-  // Wait for the P2P Client
-  if (dev_connected_wait() == false) {
+  // TODO: Wait for the P2P Client
+  if (this->dev_connected_wait() == false) {
     return false;
   }
 
