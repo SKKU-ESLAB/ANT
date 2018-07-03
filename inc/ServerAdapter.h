@@ -56,7 +56,7 @@ typedef void (*ReceiveLoop)(ServerAdapter* adapter);
 
 class ServerAdapter {
 public:
-  bool connect(ConnectCallback callback);
+  bool connect(ConnectCallback callback, bool is_send_connect_message);
   bool disconnect(DisconnectCallback callback);
   int send(const void *buf, size_t len);
   int receive(void *buf, size_t len);
