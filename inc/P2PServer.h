@@ -20,8 +20,6 @@
 #ifndef _P2P_SERVER_H_
 #define _P2P_SERVER_H_
 
-#include <counter.h>
-
 #include <thread>
 #include <mutex>
 #include <condition_variable>
@@ -50,7 +48,7 @@ public:
   P2PServer(void) {
     this->mState = P2PServerState::kDisallowed;
   }
-  ~Device(void) {
+  ~P2PServer(void) {
   }
 
 protected:

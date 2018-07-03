@@ -22,22 +22,19 @@
 
 #include <P2PServer.h>
 
-#include <Counter.h>
+#include <WfdIpAddressListener.h>
 
+#include <vector>
 #include <thread>
 #include <mutex>
 #include <condition_variable>
 
 #include <stdio.h>
+#include <signal.h>
 
 namespace cm {
 
-class WfdIpAddressListener {
-public:
-  virtual void on_change_ip_address(const char* ip_address) = 0;
-};
-
-class WfdP2PServer : P2PServer, ControlMessageListener {
+class WfdP2PServer : public P2PServer {
 public:
   virtual bool allow_impl(void);
   virtual bool disallow_impl(void);
@@ -46,17 +43,17 @@ public:
     this->mIpAddrListeners.push_back(listener);
   }
 
-  WfdP2PServer(const char* wfd_device_name) {
+  WfdP2PServer(const char* wfd_device_name, void* owner) {
     snprintf(this->mWfdDeviceName, 100, "%s", wfd_device_name);
-    this->mWfdDeviceName[0] = NULL;
-    this->mWpaDevName[0] = NULL;
-    this->mWpaIntfName[0] = NULL;
+    this->mWfdDeviceName[0] = '\0';
+    this->mWpaDevName[0] = '\0';
+    this->mWpaIntfName[0] = '\0';
+
+    this->mOwner = owner;
   }
 
   ~WfdP2PServer(void) {
   }
-
-  void on_receive_control_message(void* data, size_t len);
 
 protected:
   std::vector<WfdIpAddressListener*> mIpAddrListeners;
@@ -71,14 +68,22 @@ protected:
   static bool sDhcpdMonitoring;
   static int sDhcpdPid;
 
+  void* mOwner;
+
 private:
-  int set_wps_device_name(char *wfd_device_name);
+  int set_wps_device_name(char *wfd_device_name, char ret[], size_t len);
   int wfd_add_p2p_group(char ret[], size_t len);
   int wfd_remove_p2p_group(char ret[], size_t len);
   int ping_wpa_cli(char ret[], size_t len);
-  int set_wfd_ip_addr(const char* ip_addr);
+  int set_wfd_ip_addr(char* ip_addr);
   int set_dhcpd_config(void);
+  int get_wfd_p2p_device_addr(char *dev_addr, size_t len);
+  int get_wfd_status(char ret[], size_t len);
+  int reset_wfd_server(char *pin, size_t len);
+  int reset_wps_pin(char ret[], size_t len);
+  int get_wfd_ip_address(char *buf, size_t len);
   static void sighandler_monitor_udhcpd(int signo, siginfo_t *sinfo, void *context);
+  int kill_dhcpd(void);
 }; /* class WfdP2PServer */
 
 } /* namespace cm */

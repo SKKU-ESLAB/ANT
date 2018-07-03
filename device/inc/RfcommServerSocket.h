@@ -22,8 +22,6 @@
 
 #include <ServerSocket.h>
 
-#include <Counter.h>
-
 #include <thread>
 #include <mutex>
 #include <condition_variable>
@@ -35,9 +33,16 @@
 #include <string.h>
 #include <unistd.h>
 
+#include <bluetooth/sdp.h>
+#include <bluetooth/sdp_lib.h>
+#include <bluetooth/hci.h>
+#include <bluetooth/hci_lib.h>
+#include <bluetooth/bluetooth.h>
+#include <bluetooth/rfcomm.h>
+
 namespace cm {
 
-class RfcommServerSocket : ServerSocket {
+class RfcommServerSocket : public ServerSocket {
 public:
   virtual bool open_impl(void);
   virtual bool close_impl(void);

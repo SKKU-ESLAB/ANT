@@ -22,8 +22,6 @@
 
 #include <Device.h>
 
-#include <Counter.h>
-
 #include <thread>
 #include <mutex>
 #include <condition_variable>
@@ -32,7 +30,7 @@
 
 namespace cm {
 
-class BtDevice : Device {
+class BtDevice : public Device {
 public:
   virtual bool turn_on_impl(void);
   virtual bool turn_off_impl(void);
@@ -50,7 +48,7 @@ public:
   }
 
 protected:
-  BtDevice(int id) : Device(id, "Bluetooth") {
+  BtDevice() : Device("Bluetooth") {
   }
 
 }; /* class BtDevice */

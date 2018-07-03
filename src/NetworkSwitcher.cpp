@@ -34,56 +34,55 @@
 namespace cm {
 NetworkSwitcher* NetworkSwitcher::singleton = NULL;
 
-void NetworkSwitcher::run(void) {
-  this->mThread = new std::thread(std::bind(&NetworkSwitcher::run_switcher, this));
+void NetworkSwitcher::start(void) {
+  this->mSwitcherThreadOn = true;
+  this->mThread = new std::thread(std::bind(&NetworkSwitcher::switcher_thread, this));
   this->mThread->detach();
 }
 
-void NetworkSwitcher::run_switcher(void) {
-  while(1) {
+void NetworkSwitcher::stop(void) {
+  this->mSwitcherThreadOn = false;
+}
+
+void NetworkSwitcher::switcher_thread(void) {
+  this->set_state(NSState::kNSStateRunning);
+
+  while(this->mSwitcherThreadOn) {
     int avg_send_request_speed;
     int avg_send_queue_data_size;
     int avg_total_bandwidth_now;
     this->monitor(avg_send_request_speed, avg_send_queue_data_size, avg_total_bandwidth_now);
 
     switch(this->get_state()) {
-      case kNSStatusNeedControlAdapter:
-        printf("%s %d %lu %d\n",
-            "Need-CA",
+      case NSState::kNSStateInitialized:
+        LOG_VERB("%s %d %lu %d\n",
+            "Initialized",
             avg_send_request_speed, avg_send_queue_data_size, avg_total_bandwidth_now);
         break;
-      case kNSStatusNeedDataAdapter:
-        /* After connecting control adapter, at least one increase is required */
-        printf("%s %d %lu %d\n",
-            "Need-DA",
-            avg_send_request_speed, avg_send_queue_data_size, avg_total_bandwidth_now);
-        {
-          std::unique_lock<std::mutex> lck(this->mStateLock);
-          this->mState = kNSStatusIncreasing;
-        }
-        Communicator::get_instance()->increase_adapter(); 
-        break;
-      case kNSStatusReady:
-        printf("%s %d %lu %d\n",
+      case NSState::kNSStateRunning:
+        LOG_VERB("%s %d %lu %d\n",
             "Ready",
             avg_send_request_speed, avg_send_queue_data_size, avg_total_bandwidth_now);
         this->check_and_handover(avg_send_request_speed, avg_send_queue_data_size, avg_total_bandwidth_now);
         break;
-      case kNSStatusIncreasing:
-        printf("%s %d %lu %d\n",
+      case NSState::kNSStateIncreasing:
+        LOG_VERB("%s %d %lu %d\n",
             "Increasing",
             avg_send_request_speed, avg_send_queue_data_size, avg_total_bandwidth_now);
+        /* Network switcher do not work during increasing or decreasing adapter */
         break;
-      case kNSStatusDecreasing:
-        printf("%s %d %lu %d\n",
+      case NSState::kNSStateDecreasing:
+        LOG_VERB("%s %d %lu %d\n",
             "Decreasing",
             avg_send_request_speed, avg_send_queue_data_size, avg_total_bandwidth_now);
-        /* Handover do not work during increasing or decreasing adapter */
+        /* Network switcher do not work during increasing or decreasing adapter */
         break;
     }
 
     usleep(SLEEP_USECS);
   }
+
+  this->set_state(NSState::kNSStateInitialized);
 }
 
 void NetworkSwitcher::monitor(int &avg_send_request_speed,
@@ -100,29 +99,27 @@ void NetworkSwitcher::monitor(int &avg_send_request_speed,
 
   Communicator *communicator = Communicator::get_instance();
   int i = 0;
-  std::list<ServerAdapter *> control_adapters = communicator->get_control_adapter_list();
-  for(std::list<ServerAdapter *>::iterator it = control_adapters.begin();
-      it != control_adapters.end(); it++) {
-    ServerAdapter *adapter = *it;
+  {
+    ServerAdapter* adapter = communicator->get_control_adapter();
     int bandwidth_up = adapter->get_bandwidth_up();
     int bandwidth_down = adapter->get_bandwidth_down();
     total_bandwidth_now += (bandwidth_up + bandwidth_down);
 #if PRINT_DETAILS == 1
-    LOG_VERB("- A%d (C: %s): Up=%d B/s Down=%d B/s",
+    LOG_VERB("- A%d (Ctrl: %s): Up=%d B/s Down=%d B/s",
         i, adapter->get_dev_name(), bandwidth_up, bandwidth_down);
 #endif
     i++;
   }
 
-  std::list<ServerAdapter *> data_adapters = communicator->get_data_adapter_list();
-  for(std::list<ServerAdapter *>::iterator it = data_adapters.begin();
-      it != data_adapters.end(); it++) {
-    ServerAdapter *adapter = *it;
+  int data_adapter_count = communicator->get_data_adapter_count();
+  for(int i = 0; i < data_adapter_count; i++) {
+    ServerAdapter *adapter = communicator->get_data_adapter(i);
+    if(adapter == NULL) continue;
     int bandwidth_up = adapter->get_bandwidth_up();
     int bandwidth_down = adapter->get_bandwidth_down();
     total_bandwidth_now += (bandwidth_up + bandwidth_down);
 #if PRINT_DETAILS == 1
-    LOG_VERB("- A%d (D: %s): Up=%d B/s Down=%d B/s",
+    LOG_VERB("- A%d (Data: %s): Up=%d B/s Down=%d B/s",
         i, adapter->get_dev_name(), bandwidth_up, bandwidth_down);
 #endif
     i++;
@@ -144,18 +141,18 @@ void NetworkSwitcher::check_and_handover(int avg_send_request_speed,
       this->mBandwidthWhenIncreasing = avg_total_bandwidth_now;
 
       /* Increase Adapter */
-      {
-        std::unique_lock<std::mutex> lck(this->mStateLock);
-        this->mState = kNSStatusIncreasing;
+      this->set_state(NSState::kNSStateIncreasing);
+      bool res = Communicator::get_instance()->increase_adapter();
+      if(!res) {
+        this->done_switch();
       }
-      Communicator::get_instance()->increase_adapter();
     } else if(this->check_decrease_adapter(avg_total_bandwidth_now, this->mBandwidthWhenIncreasing)) {
       /* Decrease Adapter */
-      {
-        std::unique_lock<std::mutex> lck(this->mStateLock);
-        this->mState = kNSStatusDecreasing;
+      this->set_state(NSState::kNSStateDecreasing);
+      bool res = Communicator::get_instance()->decrease_adapter();
+      if(!res) {
+        this->done_switch();
       }
-      Communicator::get_instance()->decrease_adapter();
     }
 }
 
@@ -167,7 +164,11 @@ bool NetworkSwitcher::check_increase_adapter(int send_request_speed, int send_qu
    * LHS: (average increase latency) * (r(t): send request speed) + (|SQ(t)|: send queue data size)
    * RHS: (average increase latency) * (maximum bluetooth bandwidth)
    */
-  if(((float)AVERAGE_INCREASE_LATENCY_SEC * send_request_speed + send_queue_data_size) >
+  if(!Communicator::get_instance()->is_increaseable()) {
+    return false;
+  } else if(Communicator::get_instance()->get_state() != kCMStateReady) {
+    return false;
+  } else if(((float)AVERAGE_INCREASE_LATENCY_SEC * send_request_speed + send_queue_data_size) >
       ((float)AVERAGE_INCREASE_LATENCY_SEC * MAX_BANDWIDTH)) {
     return true;
   } else {
@@ -182,9 +183,13 @@ bool NetworkSwitcher::check_decrease_adapter(int bandwidth_now, int bandwidth_wh
    * LHS: (b(t): total bandwidth)
    * RHS: (b(t_wfdon): total bandwidth when increasing)
    */
-  if(bandwidth_when_increasing == 0) return false;
-
-  if(bandwidth_now < bandwidth_when_increasing) {
+  if(!Communicator::get_instance()->is_decreaseable()) {
+    return false;
+  } else if(Communicator::get_instance()->get_state() != kCMStateReady) {
+    return false;
+  } else if(bandwidth_when_increasing == 0) {
+    return false;
+  } else if(bandwidth_now < bandwidth_when_increasing) {
     this->mDecreasingCheckCount++;
     if(this->mDecreasingCheckCount >= CHECK_DECREASING_OK_COUNT) {
       this->mDecreasingCheckCount = 0;
@@ -196,4 +201,4 @@ bool NetworkSwitcher::check_decrease_adapter(int bandwidth_now, int bandwidth_wh
     return false;
   }
 }
-}
+} /* namespace cm */

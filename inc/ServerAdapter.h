@@ -22,6 +22,7 @@
 
 #include <Counter.h>
 
+#include <vector>
 #include <thread>
 #include <mutex>
 #include <condition_variable>
@@ -41,7 +42,9 @@ typedef enum {
   kDisconnecting = 3
 } ServerAdapterState;
 
+class ServerAdapter;
 class ServerAdapterStateListener {
+public:
   virtual void onUpdateServerAdapterState(ServerAdapter* adapter,
       ServerAdapterState old_state, ServerAdapterState new_state) = 0;
 };
@@ -99,8 +102,8 @@ public:
     return this->mDevice;
   }
 
-  Device* get_p2p_server(void) {
-    return this->mP2pServer;
+  P2PServer* get_p2p_server(void) {
+    return this->mP2PServer;
   }
 
   ServerSocket* get_server_socket(void) {
@@ -121,13 +124,13 @@ public:
   }
 
   ~ServerAdapter() {
-    if(this->mDevice !== NULL) {
+    if(this->mDevice != NULL) {
       delete this->mDevice;
     }
-    if(this->mP2pServer !== NULL) {
-      delete this->mP2pServer;
+    if(this->mP2PServer != NULL) {
+      delete this->mP2PServer;
     }
-    if(this->mServerSocket !== NULL) {
+    if(this->mServerSocket != NULL) {
       delete this->mServerSocket;
     }
   }
@@ -137,7 +140,7 @@ protected:
 
   void initialize(Device* device, P2PServer* p2pServer, ServerSocket* serverSocket) {
     this->mDevice = device;
-    this->mP2pServer = p2pServer;
+    this->mP2PServer = p2pServer;
     this->mServerSocket = serverSocket;
   }
 
@@ -147,8 +150,8 @@ protected:
     ServerAdapterState old_state = this->mState;
     this->mState = new_state;
 
-    for(std::vector::iterator it = this->mStateListeners.begin();
-        it != this->mStateListners.end();
+    for(std::vector<ServerAdapterStateListener*>::iterator it = this->mStateListeners.begin();
+        it != this->mStateListeners.end();
         it++) {
       ServerAdapterStateListener* listener = (*it);
       listener->onUpdateServerAdapterState(this, old_state, new_state);
@@ -160,7 +163,7 @@ protected:
   char mName[256];
   int mId;
   Device* mDevice = NULL;
-  P2PServer* mP2pServer = NULL;
+  P2PServer* mP2PServer = NULL;
   ServerSocket* mServerSocket = NULL;
 
   /* Statistics */
@@ -176,7 +179,9 @@ protected:
 
 private:
   void connect_thread(void);
+  void on_fail_connect_thread(void);
   void disconnect_thread(void);
+  void on_fail_disconnect_thread(void);
   void sender_thread(void);
   void receiver_thread(void);
   static void receive_data_loop(ServerAdapter* adapter);

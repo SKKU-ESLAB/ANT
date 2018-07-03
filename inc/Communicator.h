@@ -67,6 +67,7 @@ typedef enum {
  * Transactions
  * Series of asynchronous callbacks, especially used for connection/disconnection callbacks.
  */
+class Communicator;
 class StartCommunicatorTransaction {
 public:
   static bool start(Communicator* caller);
@@ -74,7 +75,7 @@ public:
   static void connect_first_data_adapter_callback(bool is_success);
 protected:
   static bool sIsOngoing;
-  static bool sCaller;
+  static Communicator* sCaller;
 };
 
 class StopCommunicatorTransaction {
@@ -84,7 +85,7 @@ public:
   static void disconnect_data_adapter_callback(bool is_success);
 protected:
   static bool sIsOngoing;
-  static bool sCaller;
+  static Communicator* sCaller;
   static int sDataAdaptersCount;
   static std::mutex sDataAdaptersCountLock;
 };
@@ -106,6 +107,7 @@ public:
   static void disconnect_callback(bool is_success);
 
 protected:
+  static Communicator* sCaller;
   static bool sIsOngoing;
   static int sPrevIndex;
   static int sNextIndex;
@@ -116,16 +118,19 @@ public:
   static bool start(Communicator* caller, int adapter_id);
   static void connect_callback(bool is_success);
 protected:
+  static Communicator* sCaller;
   static bool sIsOngoing;
   static int sAdapterId;
 };
 
-class DisonnectRequestTransaction {
+class DisconnectRequestTransaction {
 public:
   static bool start(Communicator* caller, int adapter_id);
   static void disconnect_callback(bool is_success);
 protected:
+  static Communicator* sCaller;
   static bool sIsOngoing;
+  static int sAdapterId;
 };
 
 class ReconnectControlAdapterTransaction {
@@ -134,9 +139,9 @@ public:
   static void disconnect_callback(bool is_success);
   static void connect_callback(bool is_success);
 protected:
+  static Communicator* sCaller;
   static bool sIsOngoing;
-  static bool sCaller;
-}
+};
 
 class ControlMessageListener {
 public:
@@ -170,6 +175,17 @@ public:
   bool increase_adapter(void);
   bool decrease_adapter(void);
 
+  bool is_increaseable(void) {
+    std::unique_lock<std::mutex> lck(this->mDataAdaptersLock);
+    return ((this->mDataAdapterCount > 1)
+        && (this->mActiveDataAdapterIndex < (this->mDataAdapterCount - 1)));
+  }
+  bool is_decreaseable(void) {
+    std::unique_lock<std::mutex> lck(this->mDataAdaptersLock);
+    return ((this->mDataAdapterCount > 1)
+        && (this->mActiveDataAdapterIndex > 0));
+  }
+
   CMState get_state(void) {
     std::unique_lock<std::mutex> lck(this->mStateLock);
     return this->mState;
@@ -177,13 +193,13 @@ public:
   
   /* Handling adapters */
   ServerAdapter* get_data_adapter(int index) {
-    std::unique_lock<std::mutex> lck(this->mDataAdapterLock);
+    std::unique_lock<std::mutex> lck(this->mDataAdaptersLock);
     return this->mDataAdapters.at(index);
   }
   ServerAdapter* find_data_adapter_by_id(int adapter_id) {
-    std::unique_lock<std::mutex> lck(this->mDataAdapterLock);
-    for(std::vector<ServerAdapter*>::iterator it = this->mDataAdapter.begin();
-        it != this->mDataAdapter.end();
+    std::unique_lock<std::mutex> lck(this->mDataAdaptersLock);
+    for(std::vector<ServerAdapter*>::iterator it = this->mDataAdapters.begin();
+        it != this->mDataAdapters.end();
         it++) {
       ServerAdapter* adapter = *it;
       if(adapter->get_id() == adapter_id) {
@@ -196,18 +212,12 @@ public:
     return this->mControlAdapter;
   }
   int get_data_adapter_count(void) {
-    int count = 0;
-    for(std::vector<ServerAdapter*>::iterator it = this->mDataAdapter.begin();
-        it != this->mDataAdapter.end();
-        it++) {
-       count++;
-    }
-    return count;
+    return this->mDataAdapterCount;
   }
 
   /* Control message handling */
   void send_control_message(const void *data, size_t len);
-  void send_private_control_data(uint8_t request_code, uint16_t adapter_id, uint32_t private_data_len);
+  void send_private_control_data(uint16_t adapter_id, char* private_data_buf, uint32_t private_data_len);
   void add_control_message_listener(ControlMessageListener* listener) {
     this->mControlMessageListeners.push_back(listener);
   }
@@ -227,6 +237,7 @@ public:
 
 private:
   /* Main function to switch adapters */
+  friend SwitchAdapterTransaction;
   bool switch_adapters(int prev_index, int next_index);
 
   void set_state(CMState new_state) {
@@ -262,6 +273,7 @@ private:
   ServerAdapter* mControlAdapter = NULL;
   std::mutex mDataAdaptersLock;
   std::mutex mControlAdapterLock;
+  int mDataAdapterCount = 0;
 
   /* Control Message Listeners */
   std::vector<ControlMessageListener*> mControlMessageListeners;

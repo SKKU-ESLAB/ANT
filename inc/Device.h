@@ -20,8 +20,6 @@
 #ifndef _DEVICE_H_
 #define _DEVICE_H_
 
-#include <Counter.h>
-
 #include <thread>
 #include <mutex>
 #include <condition_variable>
@@ -49,7 +47,7 @@ public:
     return this->mState;
   }
 
-  Device(char* name) {
+  Device(const char* name) {
     this->mState = DeviceState::kOff;
     snprintf(this->mName, sizeof(this->mName), name);
   }

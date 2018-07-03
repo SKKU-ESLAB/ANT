@@ -25,8 +25,6 @@
 #include <BtP2PServer.h>
 #include <RfcommServerSocket.h>
 
-#include <Counter.h>
-
 #include <thread>
 #include <mutex>
 #include <condition_variable>
@@ -35,9 +33,9 @@
 
 namespace cm {
 
-class BtServerAdapter : ServerAdapter {
+class BtServerAdapter : public ServerAdapter {
 public:
-  BtServerAdapter(char* name, const char* service_uuid) : ServerAdapter(name) { 
+  BtServerAdapter(int id, char* name, const char* service_uuid) : ServerAdapter(id, name) { 
     BtDevice* device = BtDevice::getSingleton();
     BtP2PServer* p2pServer = new BtP2PServer();
     RfcommServerSocket* serverSocket = new RfcommServerSocket(service_uuid);

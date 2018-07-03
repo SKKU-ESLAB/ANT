@@ -35,7 +35,7 @@ WfdDevice* WfdDevice::sSingleton = NULL;
 
 bool WfdDevice::turn_on_impl(void) {
   char buf[512];
-  char *const params[] = {"ifconfig", DEFAULT_WFD_DEVICE_NAME, "up", NULL};
+  char* const params[] = {"ifconfig", DEFAULT_WFD_DEVICE_NAME, "up", NULL};
 
   int res = Util::run_client(IFCONFIG_PATH, params, buf, 512);
   return (res >= 0);
@@ -43,7 +43,7 @@ bool WfdDevice::turn_on_impl(void) {
 
 bool WfdDevice::turn_off_impl(void) {
   char buf[512];
-  char *const params[] = {"ifconfig", DEFAULT_WFD_DEVICE_NAME, "down", NULL};
+  char* const params[] = {"ifconfig", DEFAULT_WFD_DEVICE_NAME, "down", NULL};
 
   int res = Util::run_client(IFCONFIG_PATH, params, buf, 512);
   return (res >= 0);

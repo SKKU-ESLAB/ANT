@@ -16,10 +16,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include <BtP2pServer.h>
+#include <RfcommServerSocket.h>
 
-#include <Util.h>
-#include <Counter.h>
+#include <DebugLog.h>
 
 #include <thread>
 #include <mutex>
@@ -27,27 +26,20 @@
 
 #include <stdio.h>
 #include <string.h>
-#include <unistd.h>
 #include <errno.h>
 #include <sys/socket.h>
 #include <arpa/inet.h>
-
-#include <bluetooth/sdp.h>
-#include <bluetooth/sdp_lib.h>
-#include <bluetooth/hci.h>
-#include <bluetooth/hci_lib.h>
-#include <bluetooth/bluetooth.h>
-#include <bluetooth/rfcomm.h>
+#include <unistd.h>
 
 using namespace cm;
 
 bool RfcommServerSocket::open_impl(void) {
   if (this->mServerSocket > 0) {
-    close(this->mServerSocket);
+    ::close(this->mServerSocket);
     this->mServerSocket = 0;
   }
 
-  this->mServerSocket = socket(AF_BLUETOOTH, SOCK_STREAM, BTPROTO_RFCOMM);
+  this->mServerSocket = ::socket(AF_BLUETOOTH, SOCK_STREAM, BTPROTO_RFCOMM);
   if (this->mServerSocket < 0) {
     LOG_ERR("Bluetooth socket open failed(%s)", strerror(errno));
     return false;
@@ -64,7 +56,7 @@ bool RfcommServerSocket::open_impl(void) {
     return false;
   }
 
-  if (listen(this->mServerSocket, 1) < 0) {
+  if (::listen(this->mServerSocket, 1) < 0) {
     LOG_ERR("Listening failed(%s)", strerror(errno));
     return false;
   }
@@ -74,7 +66,7 @@ bool RfcommServerSocket::open_impl(void) {
   struct sockaddr_rc client_addr = {0, };
   socklen_t opt = sizeof(client_addr);
   LOG_VERB("Bluetooth accept...");
-  this->mClientSocket = accept(this->mServerSocket, (struct sockaddr *)&client_addr, &opt);
+  this->mClientSocket = ::accept(this->mServerSocket, (struct sockaddr *)&client_addr, &opt);
   if (this->mClientSocket < 0) {
     LOG_ERR("Bluetooth accept failed(%s)", strerror(errno));
     return false;
@@ -95,7 +87,7 @@ int RfcommServerSocket::bt_dynamic_bind_rc(void) {
 
   for (port = 1; port < 31; port++) {
     sockaddr.rc_channel = port;
-    err = bind(this->mServerSocket, (struct sockaddr *)&sockaddr, sizeof(struct sockaddr_rc));
+    err = ::bind(this->mServerSocket, (struct sockaddr *)&sockaddr, sizeof(struct sockaddr_rc));
     if (!err) {
       LOG_VERB("BT port binded : %d", port);
       return port;
@@ -178,8 +170,8 @@ int RfcommServerSocket::bt_register_service() {
 }
 
 bool RfcommServerSocket::close_impl(void) {
-  close(this->mClientSocket);
-  close(this->mServerSocket);
+  ::close(this->mClientSocket);
+  ::close(this->mServerSocket);
 
   this->mClientSocket = 0;
   this->mServerSocket = 0;
@@ -190,13 +182,13 @@ bool RfcommServerSocket::close_impl(void) {
 int RfcommServerSocket::send_impl(const void *data_buffer, size_t data_length) {
   int sent_bytes = 0;
 
-  if (cli_sock <= 0) {
+  if (this->mClientSocket <= 0) {
     LOG_WARN("Socket closed\n");
     return -1;
   }
 
   while (sent_bytes < data_length) {
-    int once_sent_bytes = write(cli_sock, data_buffer, data_length);
+    int once_sent_bytes = ::write(this->mClientSocket, data_buffer, data_length);
     if (once_sent_bytes <= 0) {
       LOG_WARN("Cli sock closed");
       return -1;
@@ -211,11 +203,11 @@ int RfcommServerSocket::send_impl(const void *data_buffer, size_t data_length) {
 int RfcommServerSocket::receive_impl(void *data_buffer, size_t data_length) {
   int received_bytes = 0;
 
-  if (cli_sock <= 0)
+  if (this->mClientSocket <= 0)
     return -1;
 
   while (received_bytes < data_length) {
-    int once_received_bytes = read(cli_sock, data_buffer, data_length);
+    int once_received_bytes = ::read(this->mClientSocket, data_buffer, data_length);
     if (once_received_bytes <= 0) {
       LOG_WARN("Cli sock closed");
       return -1;

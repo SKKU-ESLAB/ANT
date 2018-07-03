@@ -19,22 +19,22 @@
  * limitations under the License.
  */
 
-#ifndef INC_COMMUNICATOR_H_
-#define INC_COMMUNICATOR_H_
+#ifndef INC_API_H_
+#define INC_API_H_
 
 #include <Communicator.h>
 #include <ServerAdapter.h>
-
-class Communicator;
-class ServerAdapter;
+#include <NetworkSwitcher.h>
 
 namespace cm {
+
 inline void start_communication(void) {
-  NetworkSwitcher::get_instance()->run();
+  NetworkSwitcher::get_instance()->start();
   Communicator::get_instance()->start();
 }
 
 inline void stop_communication(void) {
+  NetworkSwitcher::get_instance()->stop();
   Communicator::get_instance()->stop();
 }
 
@@ -64,4 +64,4 @@ inline int receive(void **buf) {
 }
 
 } /* namespace cm */
-#endif  /* INC_COMMUNICATOR_H_ */
+#endif  /* INC_API_H_ */

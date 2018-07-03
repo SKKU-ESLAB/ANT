@@ -25,8 +25,6 @@
 #include <WfdP2PServer.h>
 #include <TcpServerSocket.h>
 
-#include <Counter.h>
-
 #include <thread>
 #include <mutex>
 #include <condition_variable>
@@ -35,21 +33,14 @@
 
 namespace cm {
 
-class WfdServerAdapter : ServerAdapter, ControlMessageListener {
+class WfdServerAdapter : public ServerAdapter {
 public:
-  WfdServerAdapter(char* name, int port, const char* wfd_device_name) : ServerAdapter(name) { 
+  WfdServerAdapter(int id, char* name, int port, const char* wfd_device_name) : ServerAdapter(id, name) { 
     WfdDevice* device = WfdDevice::getSingleton();
-    WfdP2PServer* p2pServer = new WfdP2PServer(wfd_device_name);
+    WfdP2PServer* p2pServer = new WfdP2PServer(wfd_device_name, (void*)this);
     TcpServerSocket* serverSocket = new TcpServerSocket(port);
-    p2pServer->add_wfd_ip_address_listener(p2pServer);
+    p2pServer->add_wfd_ip_address_listener(serverSocket);
     this->initialize(device, p2pServer, serverSocket);
-  }
-
-  virtual void on_receive_control_message(int adapter_id, void* data, size_t len) {
-    if(adapter_id == this->get_id()) {
-      WfdP2PServer* p2pServer = (WfdP2PServer*)this->mP2pServer;
-      p2pServer->on_receive_control_message(data, len);
-    }
   }
 
   ~WfdServerAdapter(void) {

@@ -22,8 +22,6 @@
 
 #include <Device.h>
 
-#include <Counter.h>
-
 #include <thread>
 #include <mutex>
 #include <condition_variable>
@@ -32,7 +30,7 @@
 
 namespace cm {
 
-class WfdDevice : Device {
+class WfdDevice : public Device {
 public:
   virtual bool turn_on_impl(void);
   virtual bool turn_off_impl(void);
@@ -50,7 +48,7 @@ public:
   }
 
 protected:
-  WfdDevice(int id) : Device(id, "Wi-fi Direct") {
+  WfdDevice() : Device("Wi-fi Direct") {
   }
 
 }; /* class WfdDevice */
