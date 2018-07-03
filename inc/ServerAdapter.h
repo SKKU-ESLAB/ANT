@@ -136,8 +136,6 @@ public:
   }
 
 protected:
-  void send_ctrl_msg(const void *buf, int len);
-
   void initialize(Device* device, P2PServer* p2pServer, ServerSocket* serverSocket) {
     this->mDevice = device;
     this->mP2PServer = p2pServer;

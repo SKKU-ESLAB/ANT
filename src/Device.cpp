@@ -21,28 +21,40 @@
 
 using namespace cm;
 
-bool Device::turn_on(void) {
-  this->set_state(DeviceState::kTurningOn);
+bool Device::hold_and_turn_on(void) {
+  if(this->mRefCount.increase() == 1) {
+    this->set_state(DeviceState::kTurningOn);
 
-  bool res = this->turn_on_impl();
+    bool res = this->turn_on_impl();
 
-  if(!res) {
-    this->set_state(DeviceState::kOff);
+    if(!res) {
+      this->mRefCount.decrease();
+      this->set_state(DeviceState::kOff);
+    } else {
+      this->set_state(DeviceState::kOn);
+    }
+    return res;
   } else {
-    this->set_state(DeviceState::kOn);
+    // Already turn on
+    return true;
   }
-  return res;
 }
 
-bool Device::turn_off(void) {
-  this->set_state(DeviceState::kTurningOff);
+bool Device::release_and_turn_off(void) {
+  if(this->mRefCount.decrease() == 0) {
+    this->set_state(DeviceState::kTurningOff);
 
-  bool res = this->turn_off_impl();
+    bool res = this->turn_off_impl();
 
-  if(!res) {
-    this->set_state(DeviceState::kOn);
+    if(!res) {
+      this->mRefCount.increase();
+      this->set_state(DeviceState::kOn);
+    } else {
+      this->set_state(DeviceState::kOff);
+    }
+    return res;
   } else {
-    this->set_state(DeviceState::kOff);
+    // Not yet turn off
+    return true;
   }
-  return res;
 }

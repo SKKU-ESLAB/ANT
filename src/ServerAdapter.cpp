@@ -72,7 +72,7 @@ void ServerAdapter::connect_thread(void) {
   }
   DeviceState deviceState = this->mDevice->get_state();
   if(deviceState != DeviceState::kOn) {
-    bool res = this->mDevice->turn_on();
+    bool res = this->mDevice->hold_and_turn_on();
 
     deviceState = this->mDevice->get_state();
     if(!res || deviceState != DeviceState::kOn) {
@@ -94,7 +94,7 @@ void ServerAdapter::connect_thread(void) {
     p2pServerState = this->mP2PServer->get_state();
     if(!res || p2pServerState != P2PServerState::kAllowed) {
       LOG_ERR("Cannot connect the server adapter - allow fail: %s", this->get_name());
-      this->mDevice->turn_off();
+      this->mDevice->release_and_turn_off();
 
       this->on_fail_connect_thread();
       return;
@@ -104,7 +104,7 @@ void ServerAdapter::connect_thread(void) {
   // Open server socket
   if(this->mServerSocket == NULL) {
     this->mP2PServer->disallow();
-    this->mDevice->turn_off();
+    this->mDevice->release_and_turn_off();
 
     this->on_fail_connect_thread();
     return;
@@ -117,7 +117,7 @@ void ServerAdapter::connect_thread(void) {
     if(!res || socketState != ServerSocketState::kOpened) {
       LOG_ERR("Cannot connect the server adapter - socket open fail: %s", this->get_name());
       this->mP2PServer->disallow();
-      this->mDevice->turn_off();
+      this->mDevice->release_and_turn_off();
 
       this->on_fail_connect_thread();
       return;
@@ -190,7 +190,7 @@ void ServerAdapter::disconnect_thread(void) {
   }
   DeviceState deviceState = this->mDevice->get_state();
   if(deviceState != DeviceState::kOff) {
-    bool res = this->mDevice->turn_off();
+    bool res = this->mDevice->release_and_turn_off();
 
     deviceState = this->mDevice->get_state();
     if(!res || deviceState != DeviceState::kOff) {

@@ -20,6 +20,8 @@
 #ifndef _DEVICE_H_
 #define _DEVICE_H_
 
+#include <RefCount.h>
+
 #include <thread>
 #include <mutex>
 #include <condition_variable>
@@ -37,8 +39,8 @@ typedef enum {
 
 class Device {
 public:
-  bool turn_on(void);
-  bool turn_off(void);
+  bool hold_and_turn_on(void);
+  bool release_and_turn_off(void);
 
   virtual bool turn_on_impl(void) = 0;
   virtual bool turn_off_impl(void) = 0;
@@ -62,6 +64,9 @@ protected:
 
   DeviceState mState;
   char mName[256];
+
+  /* Reference Count */
+  RefCount mRefCount;
 }; /* class Device */
 
 } /* namespace cm */
