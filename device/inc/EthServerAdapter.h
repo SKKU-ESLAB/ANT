@@ -23,8 +23,6 @@
 #include <ServerAdapter.h>
 #include <TcpServerSocket.h>
 
-#include <Counter.h>
-
 #include <unistd.h>
 #include <string.h>
 #include <sys/socket.h>
@@ -38,7 +36,7 @@
 
 namespace cm {
 
-class EthDevice : Device {
+class EthDevice : public Device {
 public:
   virtual bool turn_on_impl(void) {
     return true;
@@ -46,11 +44,21 @@ public:
   virtual bool turn_off_impl(void) {
     return true;
   }
+
+  static EthDevice* getSingleton(void) {
+    if(EthDevice::sSingleton == NULL) {
+      EthDevice::sSingleton = new EthDevice();
+    }
+    return EthDevice::sSingleton;
+  }
+
+protected:
+  static EthDevice* sSingleton;
   EthDevice() : Device("Ethernet") {
   }
 };
 
-class EthP2pServer : P2pServer {
+class EthP2PServer : public P2PServer {
 public:
   virtual bool allow_impl(void) {
     return true;
@@ -60,11 +68,11 @@ public:
   }
 };
 
-class EthServerAdapter : ServerAdapter {
+class EthServerAdapter : public ServerAdapter {
 public:
   EthServerAdapter(int id, char* name, int port) : ServerAdapter(id, name) { 
     EthDevice* device = EthDevice::getSingleton();
-    EthP2pServer* p2pServer = new EthP2pServer();
+    EthP2PServer* p2pServer = new EthP2PServer();
     TcpServerSocket* serverSocket = new TcpServerSocket(port);
     serverSocket->set_ip_address_raw(htonl(INADDR_ANY));
     this->initialize(device, p2pServer, serverSocket);

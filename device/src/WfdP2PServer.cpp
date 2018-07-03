@@ -18,21 +18,31 @@
  */
 #include <WfdP2PServer.h>
 
+#include <WfdServerAdapter.h>
 #include <Communicator.h>
 #include <Util.h>
 #include <Counter.h>
+#include <DebugLog.h>
 
 #include <thread>
 #include <mutex>
 #include <condition_variable>
 
+#include <assert.h>
 #include <stdio.h>
+#include <string.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <sys/wait.h>
+#include <fcntl.h>
 
 #define DEFAULT_WFD_IP_ADDRESS "192.168.49.1"
 #define UDHCPD_CONFIG_PATH "dhcpd.conf"
 
 using namespace cm;
 
+struct sigaction WfdP2PServer::sSigaction;
+struct sigaction WfdP2PServer::sSigactionOld;
 bool WfdP2PServer::sDhcpdMonitoring = 0;
 int WfdP2PServer::sDhcpdPid = 0;
 
@@ -104,7 +114,8 @@ bool WfdP2PServer::allow_impl(void) {
     return false;
   }
   LOG_VERB("WFD Server added : %s", buf);
-  Communicator::get_instance()->send_private_control_data(buf, strlen(buf));
+  int adapter_id = ((WfdServerAdapter*)this->mOwner)->get_id();
+  Communicator::get_instance()->send_private_control_data(adapter_id, buf, strlen(buf));
 
   // Set & Send WFD PIN
   ret = this->reset_wfd_server(buf, 256);
@@ -112,12 +123,7 @@ bool WfdP2PServer::allow_impl(void) {
     return false;
   }
   LOG_VERB("WFD Server PIN: %s", buf);
-  Communicator::get_instance()->send_private_control_data(buf, strlen(buf));
-
-  // TODO: Wait for the P2P Client
-  if (this->dev_connected_wait() == false) {
-    return false;
-  }
+  Communicator::get_instance()->send_private_control_data(adapter_id, buf, strlen(buf));
 
   // Get server's IP address and send the IP address
   LOG_VERB("Get server's IP\n"); 
@@ -137,7 +143,7 @@ bool WfdP2PServer::allow_impl(void) {
   }
 
   char* ip_address = buf;
-  Communicator::get_instance()->send_private_control_data(ip_address, strlen(ip_address));
+  Communicator::get_instance()->send_private_control_data(adapter_id, ip_address, strlen(ip_address));
 
   // Notify IP address to the listeners
   for(std::vector<WfdIpAddressListener*>::iterator it = this->mIpAddrListeners.begin();
@@ -150,11 +156,10 @@ bool WfdP2PServer::allow_impl(void) {
   return true;
 }
 
-int WfdP2PServer::set_wps_device_name(char *wfd_device_name) {
+int WfdP2PServer::set_wps_device_name(char *wfd_device_name, char ret[], size_t len) {
   char *const params[] = {"wpa_cli", "set", "device_name", wfd_device_name, NULL};
 
   return Util::run_client(WPA_CLI_PATH, params, ret, len);
-  return 0;
 }
 
 int WfdP2PServer::wfd_add_p2p_group(char ret[], size_t len) {
@@ -169,7 +174,7 @@ int WfdP2PServer::ping_wpa_cli(char ret[], size_t len) {
   return Util::run_client(WPA_CLI_PATH, params, ret, len);
 }
 
-int WfdP2PServer::set_wfd_ip_addr(const char* ip_addr) {
+int WfdP2PServer::set_wfd_ip_addr(char* ip_addr) {
   char *const params[] = {"ifconfig",
     this->mWpaIntfName,
     ip_addr,
@@ -184,7 +189,7 @@ int WfdP2PServer::set_wfd_ip_addr(const char* ip_addr) {
 int WfdP2PServer::set_dhcpd_config(void) {
   if (!WfdP2PServer::sDhcpdMonitoring) {
     WfdP2PServer::sSigaction.sa_flags = SA_SIGINFO;
-    WfdP2PServer::sSigaction.sa_sigaction = udhcp_sighandler;
+    WfdP2PServer::sSigaction.sa_sigaction = WfdP2PServer::sighandler_monitor_udhcpd;
     sigaction(SIGCHLD,
         &WfdP2PServer::sSigaction, &WfdP2PServer::sSigactionOld);
     
@@ -218,7 +223,7 @@ int WfdP2PServer::set_dhcpd_config(void) {
 int WfdP2PServer::get_wfd_p2p_device_addr(char *dev_addr, size_t len) {
   char buf[1024];
   int ret;
-  if (wpa_cli_intf_name[0] == '\0') {
+  if (this->mWpaIntfName[0] == '\0') {
     LOG_VERB("WFD is not up");
     return -1;
   }
@@ -247,7 +252,7 @@ int WfdP2PServer::get_wfd_p2p_device_addr(char *dev_addr, size_t len) {
 int WfdP2PServer::get_wfd_status(char ret[], size_t len) {
   char *const params[] = {"wpa_cli", "status", NULL};
 
-  assert(wpa_cli_intf_name[0] != '\0');
+  assert(this->mWpaIntfName[0] != '\0');
 
   return Util::run_client(WPA_CLI_PATH, params, ret, len);
 }
@@ -255,7 +260,7 @@ int WfdP2PServer::get_wfd_status(char ret[], size_t len) {
 int WfdP2PServer::reset_wfd_server(char *pin, size_t len) {
   char buf[1024] = {0, };
   int ret;
-  if (wpa_cli_intf_name[0] == '\0') {
+  if (this->mWpaIntfName[0] == '\0') {
     LOG_VERB("WFD is not up");
     return -1;
   }
@@ -286,13 +291,13 @@ int WfdP2PServer::reset_wfd_server(char *pin, size_t len) {
 int WfdP2PServer::reset_wps_pin(char ret[], size_t len) {
   char *const params[] = {"wpa_cli", "wps_pin", "any", "12345670", NULL};
 
-  assert(wpa_cli_intf_name[0] != '\0');
+  assert(this->mWpaIntfName[0] != '\0');
 
-  return Util::run_client(ret, len, params);
+  return Util::run_client(WPA_CLI_PATH, params, ret, len);
 }
 
 int WfdP2PServer::get_wfd_ip_address(char *buf, size_t len) {
-  int ret = wifi_direct_wpa_cli_get_status(buf, 1024);
+  int ret = get_wfd_status(buf, 1024);
   if (ret < 0)
     return ret;
 

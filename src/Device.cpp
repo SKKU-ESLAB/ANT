@@ -27,9 +27,9 @@ bool Device::turn_on(void) {
   bool res = this->turn_on_impl();
 
   if(!res) {
-    this->set_state(ServerSocketState::kOff);
+    this->set_state(DeviceState::kOff);
   } else {
-    this->set_state(ServerSocketState::kOn);
+    this->set_state(DeviceState::kOn);
   }
   return res;
 }
@@ -40,9 +40,9 @@ bool Device::turn_off(void) {
   bool res = this->turn_off_impl();
 
   if(!res) {
-    this->set_state(ServerSocketState::kOn);
+    this->set_state(DeviceState::kOn);
   } else {
-    this->set_state(ServerSocketState::kOff);
+    this->set_state(DeviceState::kOff);
   }
   return res;
 }

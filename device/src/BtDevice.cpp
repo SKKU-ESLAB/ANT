@@ -33,7 +33,7 @@ BtDevice* BtDevice::sSingleton = NULL;
 
 bool BtDevice::turn_on_impl(void) {
   char buf[512];
-  char *const params[] = {"hciconfig", "hci0", "up", "piscan", NULL};
+  char* const params[] = {"hciconfig", "hci0", "up", "piscan", NULL};
 
   int res = Util::run_client(HCICONFIG_PATH, params, buf, 512);
   return (res >= 0);
@@ -41,7 +41,7 @@ bool BtDevice::turn_on_impl(void) {
 
 bool BtDevice::turn_off_impl(void) {
   char buf[512];
-  char *const params[] = {"hciconfig", "hci0", "down", NULL};
+  char* const params[] = {"hciconfig", "hci0", "down", NULL};
 
   int res = Util::run_client(HCICONFIG_PATH, params, buf, 512);
   return (res >= 0);

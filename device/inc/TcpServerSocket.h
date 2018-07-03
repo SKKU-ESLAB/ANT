@@ -22,7 +22,7 @@
 
 #include <ServerSocket.h>
 
-#include <Counter.h>
+#include <WfdIpAddressListener.h>
 
 #include <thread>
 #include <mutex>
@@ -37,7 +37,9 @@
 
 namespace cm {
 
-class TcpServerSocket : ServerSocket, WfdIpAddressListener {
+class ServerSocket;
+class WfdIpAddressListener;
+class TcpServerSocket : public ServerSocket, public WfdIpAddressListener {
 public:
   virtual bool open_impl(void);
   virtual bool close_impl(void);
@@ -47,18 +49,12 @@ public:
   virtual void on_change_ip_address(const char* ip_address);
 
   void set_ip_address_raw(unsigned long ip_address_raw) {
-    this->mIpAddressRaw = ip_address_raw
+    this->mIpAddressRaw = ip_address_raw;
   }
 
-  uuid_t get_service_uuid(void) {
-    return this->mServiceUUID;
-  }
-
-  TcpServerSocket(int port, const char* wfd_device_name) {
+  TcpServerSocket(int port) {
     this->mPort = port;
-    snprintf(this->mWfdDeviceName, 256, "%s", wfd_device_name);
     this->mIpAddressRaw = 0;
-    this->mWfdDeviceName[0] = NULL;
   }
 
   ~TcpServerSocket(void) {
@@ -67,7 +63,6 @@ public:
 protected:
   int mPort;
   int mIpAddressRaw;
-  char mWfdDeviceName[256];
 
   int mServerSocket;
   int mClientSocket;

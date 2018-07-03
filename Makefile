@@ -19,10 +19,10 @@ OBJ=$(patsubst %, $(OBJ_DIR)/%, $(_OBJ))
 
 $(DEV_OBJ_DIR)/%.o: $(DEV_SRC)/%.cpp
 	$(CC) -o $@ -c $< -I$(INC) -I$(DEV_INC) $(FLAG) $(LIB) 
-_DEV_OBJ=BtDevice.o BtP2PServer.o RfcommServerSocket.o TcpServerSocket.o Util.o WfdDevice.o WfdP2PServer.o
+_DEV_OBJ=BtDevice.o BtP2PServer.o RfcommServerSocket.o TcpServerSocket.o Util.o WfdDevice.o WfdP2PServer.o EthServerAdapter.o
 DEV_OBJ=$(patsubst %, $(DEV_OBJ_DIR)/%, $(_DEV_OBJ)) 
 
-all : file_test_low trace_runner
+all : file_based_test trace_runner
 
 trace_runner: tests/trace_runner.cpp $(OBJ) $(DEV_OBJ)
 	$(CC) -o $(BIN_DIR)/$@ $^ -I$(INC) $(FLAG) $(LIB) -I$(DEV_INC)

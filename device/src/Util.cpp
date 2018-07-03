@@ -20,7 +20,13 @@
 
 #include <DebugLog.h>
 
-int Util::run_client(char *path, char *const params[], char *res_buf, size_t len) {
+#include <unistd.h>
+#include <errno.h>
+#include <string.h>
+
+using namespace cm;
+
+int Util::run_client(const char *path, char * const params[], char *res_buf, size_t len) {
   int fd[2];
   int pid;
   int bk;
@@ -43,7 +49,7 @@ int Util::run_client(char *path, char *const params[], char *res_buf, size_t len
     int read_bytes = read(fd[0], buf, 1024);
 
     if (read_bytes < 0) {
-      LOG_ERR("%d/%d read error", pid, udhcpd_pid);
+      LOG_ERR("%d read error", pid);
       return errno;
     }
 

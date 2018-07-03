@@ -24,7 +24,7 @@
 using namespace cm;
 
 bool ServerSocket::open(void) {
-  if(this->get_state != ServerSocketState::kClosed) {
+  if(this->get_state() != ServerSocketState::kClosed) {
     LOG_ERR("It is already opened or opening/closing is in progress.");
     return false;
   }
@@ -42,7 +42,7 @@ bool ServerSocket::open(void) {
 }
 
 bool ServerSocket::close(void) {
-  if(this->get_state != ServerSocketState::kOpened) {
+  if(this->get_state() != ServerSocketState::kOpened) {
     LOG_ERR("It is already closed or opening/closing is in progress.");
     return false;
   }

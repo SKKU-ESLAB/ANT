@@ -17,33 +17,8 @@
  * limitations under the License.
  */
 
-#ifndef _BT_P2P_SERVER_H_
-#define _BT_P2P_SERVER_H_
+#include <EthServerAdapter.h>
 
-#include <P2PServer.h>
+using namespace cm;
 
-#include <thread>
-#include <mutex>
-#include <condition_variable>
-
-#include <stdio.h>
-
-namespace cm {
-
-class BtP2PServer : public P2PServer {
-public:
-  virtual bool allow_impl(void);
-  virtual bool disallow_impl(void);
-
-  BtP2PServer(void) {
-  }
-
-  ~BtP2PServer(void) {
-  }
-
-protected:
-}; /* class BtP2PServer */
-
-} /* namespace cm */
-
-#endif /* !defined(_BT_P2P_SERVER_H_) */
+EthDevice* EthDevice::sSingleton = NULL;

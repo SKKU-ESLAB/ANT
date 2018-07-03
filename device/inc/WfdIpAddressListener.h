@@ -17,33 +17,16 @@
  * limitations under the License.
  */
 
-#ifndef _BT_P2P_SERVER_H_
-#define _BT_P2P_SERVER_H_
-
-#include <P2PServer.h>
-
-#include <thread>
-#include <mutex>
-#include <condition_variable>
-
-#include <stdio.h>
+#ifndef _WFD_WFD_IP_ADDRESS_LISTENER_H_
+#define _WFD_WFD_IP_ADDRESS_LISTENER_H_
 
 namespace cm {
 
-class BtP2PServer : public P2PServer {
+class WfdIpAddressListener {
 public:
-  virtual bool allow_impl(void);
-  virtual bool disallow_impl(void);
-
-  BtP2PServer(void) {
-  }
-
-  ~BtP2PServer(void) {
-  }
-
-protected:
-}; /* class BtP2PServer */
+  virtual void on_change_ip_address(const char* ip_address) = 0;
+};
 
 } /* namespace cm */
 
-#endif /* !defined(_BT_P2P_SERVER_H_) */
+#endif /* !defined(_WFD_WFD_IP_ADDRESS_LISTENER_H_) */

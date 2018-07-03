@@ -19,13 +19,24 @@
 
 #include <TcpServerSocket.h>
 
+#include <DebugLog.h>
+
+#include <stdio.h>
+#include <string.h>
+#include <errno.h>
+#include <sys/socket.h>
+#include <arpa/inet.h>
+#include <unistd.h>
+
+using namespace cm;
+
 bool TcpServerSocket::open_impl(void) {
   if(this->mIpAddressRaw == 0) {
     LOG_ERR("IP Address is not set yet");
     return false;
   }
 
-  this->mServerSocket = socket(AF_INET, SOCK_STREAM, 0);
+  this->mServerSocket = ::socket(AF_INET, SOCK_STREAM, 0);
 
   struct sockaddr_in server_address;
   memset(&server_address, 0, sizeof(server_address));
@@ -40,13 +51,13 @@ bool TcpServerSocket::open_impl(void) {
     return false;
   }
   
-  int err = bind(this->mServerSocket, (struct sockaddr *)&server_address, sizeof(server_address));
+  int err = ::bind(this->mServerSocket, (struct sockaddr *)&server_address, sizeof(server_address));
   if (err < 0) {
     LOG_ERR("Socket bind failed");
     return false;
   }
 
-  err = listen(this->mServerSocket, 5);
+  err = ::listen(this->mServerSocket, 5);
   if (err < 0) {
     LOG_ERR("Socket listen failed");
     return false;
@@ -56,7 +67,7 @@ bool TcpServerSocket::open_impl(void) {
   memset(&client_address, 0, sizeof(client_address));
   int client_address_len = sizeof(client_address);
   LOG_VERB("Accepting client...");
-  this->mClientSocket = accept(this->mServerSocket,
+  this->mClientSocket = ::accept(this->mServerSocket,
       (struct sockaddr *)&client_address, (socklen_t *)&client_address_len);
   if (this->mClientSocket < 0) {
     LOG_ERR("Accept failed %s", strerror(errno));
@@ -67,8 +78,8 @@ bool TcpServerSocket::open_impl(void) {
 }
 
 bool TcpServerSocket::close_impl(void) {
-  close(this->mClientSocket);
-  close(this->mServerSocket);
+  ::close(this->mClientSocket);
+  ::close(this->mServerSocket);
   this->mClientSocket = 0;
   this->mServerSocket = 0;
 
@@ -82,7 +93,7 @@ int TcpServerSocket::send_impl(const void *data_buffer, size_t data_length) {
     return -1;
 
   while (sent_bytes < data_length) {
-    int once_sent_bytes = write(this->mClientSocket, data_buffer, data_length);
+    int once_sent_bytes = ::write(this->mClientSocket, data_buffer, data_length);
     if (once_sent_bytes <= 0) {
       LOG_WARN("Cli sock closed");
       return -1;
@@ -100,7 +111,7 @@ int TcpServerSocket::receive_impl(void *data_buffer, size_t data_length) {
   if (this->mClientSocket <= 0) return -1;
 
   while (received_bytes < data_length) {
-    int once_received_bytes = read(this->mClientSocket, data_buffer, data_length);
+    int once_received_bytes = ::read(this->mClientSocket, data_buffer, data_length);
     if (once_received_bytes <= 0) {
       LOG_WARN("Cli sock closed");
       return -1;
@@ -114,5 +125,5 @@ int TcpServerSocket::receive_impl(void *data_buffer, size_t data_length) {
 }
 
 void TcpServerSocket::on_change_ip_address(const char* ip_address) {
-  this->set_ip_address_raw(inet_addr(buf));
+  this->set_ip_address_raw(inet_addr(ip_address));
 }
