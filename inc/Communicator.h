@@ -44,10 +44,7 @@ enum CommErr {
  *  - Private Data: "Priv"
  */
 typedef enum {
-  kCtrlReqOk = 0,
-  kCtrlReqFail = 1,
   kCtrlReqConnect = 2,
-  kCtrlReqDisconnect = 3,
   kCtrlReqPriv = 4 
 } CtrlReq;
 
@@ -217,6 +214,7 @@ public:
 
   /* Control message handling */
   void send_control_message(const void *data, size_t len);
+  void send_connect_control_data(uint16_t adapter_id);
   void send_private_control_data(uint16_t adapter_id, char* private_data_buf, uint32_t private_data_len);
   void add_control_message_listener(ControlMessageListener* listener) {
     this->mControlMessageListeners.push_back(listener);

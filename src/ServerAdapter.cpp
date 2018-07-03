@@ -30,10 +30,14 @@
 
 using namespace cm;
 
-bool ServerAdapter::connect(ConnectCallback callback) {
+bool ServerAdapter::connect(ConnectCallback callback, bool is_send_connect_message) {
   if(this->get_state() != ServerAdapterState::kDisconnected) {
     LOG_ERR("It is already connected or connection/disconnection is in progress.");
     return false;
+  }
+
+  if(is_send_connect_message) {
+    Communicator::get_instance()->send_control_message(this->get_id());
   }
 
   this->mConnectCallback = callback;
@@ -282,6 +286,8 @@ void ServerAdapter::sender_thread(void) {
     sm->free_segment(segment_to_send);
   }
 
+  this->disconnect(NULL);
+
   LOG_DEBUG("%s's Sender thread ends(tid: %d)",
       this->get_name(), (unsigned int)syscall(224));
 }
@@ -311,7 +317,7 @@ void ServerAdapter::receive_data_loop(ServerAdapter* adapter) {
     LOG_DEBUG("%s: Receiving...", adapter->get_name());
     int res = adapter->receive(buf, len);
     if (res < len) {
-      LOG_WARN("Recving failed at %s (%s)",
+      LOG_WARN("Receiving failed at %s (%s)",
           adapter->get_name(), strerror(errno));
       break;
     }
@@ -329,4 +335,9 @@ void ServerAdapter::receive_data_loop(ServerAdapter* adapter) {
     LOG_DEBUG("%s: Received: %d",
         adapter->get_name(), res);
   }
+
+  this->disconnect(NULL);
+
+  LOG_DEBUG("%s's Receiver thread ends(tid: %d)",
+      this->get_name(), (unsigned int)syscall(224));
 }

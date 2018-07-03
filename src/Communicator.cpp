@@ -293,6 +293,22 @@ void Communicator::send_control_message(const void *data, size_t len) {
   control_adapter->send(data, len);
 }
 
+void Communicator::send_connect_control_data(uint16_t adapter_id) {
+  CMState state = this->get_state();
+  if(state != CMState::kCMStateReady
+      && state != CMState::kCMStateConnecting
+      && state != CMState::kCMStateDisconnecting) {
+    LOG_ERR("Communicator is not started yet, so you cannot send the data");
+    return;
+  }
+
+  uint8_t request_code = kCtrlReqConnect;
+  uint16_t net_adapter_id = htons(adapter_id);
+
+  this->send_control_message(&request_code, 1);
+  this->send_control_message(&net_adapter_id, 2);
+}
+
 void Communicator::send_private_control_data(uint16_t adapter_id,
     char* private_data_buf, uint32_t private_data_len) {
   CMState state = this->get_state();
@@ -330,7 +346,7 @@ void Communicator::receive_control_message_loop(ServerAdapter* adapter) {
     }
 
     /*  If the control message is 'connect adapter', */
-    if (data[0] == kCtrlReqConnect || data[0] == kCtrlReqDisconnect) {
+    if (data[0] == CtrlReq::kCtrlReqConnect) {
       // Receive 2Byte: Adapter ID 
       res = adapter->receive(data, 2);
       if (res <= 0) {
@@ -345,14 +361,9 @@ void Communicator::receive_control_message_loop(ServerAdapter* adapter) {
       memcpy(&n_adapter_id, data, 2);
       adapter_id = ntohs(n_adapter_id);
 
-      if(data[0] == kCtrlReqConnect) {
-        LOG_DEBUG("Data Adapter Connect request arrived");
-        ConnectRequestTransaction::start(cm, adapter_id);
-      } else if (data[0] == kCtrlReqDisconnect) {
-        LOG_DEBUG("Data Adapter Disconnect request arrived");
-        DisconnectRequestTransaction::start(cm, adapter_id);
-      }
-    } else if (data[0] == kCtrlReqPriv) {
+      LOG_DEBUG("Data Adapter Connect request arrived");
+      ConnectRequestTransaction::start(cm, adapter_id);
+    } else if (data[0] == CtrlReq::kCtrlReqPriv) {
       LOG_VERB("Private data arrived");
       uint16_t n_adapter_id;
       uint16_t adapter_id;
@@ -405,7 +416,7 @@ bool StartCommunicatorTransaction::start(Communicator* caller) {
   // Connect control adpater
   {
     std::unique_lock<std::mutex> lck(caller->mControlAdapterLock);
-    bool res = caller->mControlAdapter->connect(StartCommunicatorTransaction::connect_control_adapter_callback);
+    bool res = caller->mControlAdapter->connect(StartCommunicatorTransaction::connect_control_adapter_callback, false);
     if(!res) {
       LOG_ERR("Connecting control adapter is failed");
       StartCommunicatorTransaction::sIsOngoing = false;
@@ -429,7 +440,7 @@ void StartCommunicatorTransaction::connect_control_adapter_callback(bool is_succ
   {
     std::unique_lock<std::mutex> lck(caller->mDataAdaptersLock);
     caller->mActiveDataAdapterIndex = 0;
-    bool res = caller->mDataAdapters.front()->connect(StartCommunicatorTransaction::connect_first_data_adapter_callback);
+    bool res = caller->mDataAdapters.front()->connect(StartCommunicatorTransaction::connect_first_data_adapter_callback, true);
     if(!res) {
       LOG_ERR("Connecting first data adapter is failed");
       StartCommunicatorTransaction::sIsOngoing = false;
@@ -547,7 +558,7 @@ bool ConnectRequestTransaction::start(Communicator* caller, int adapter_id) {
     ConnectRequestTransaction::sIsOngoing = false;
     return false;
   }
-  bool res = adapter->connect(ConnectRequestTransaction::connect_callback);
+  bool res = adapter->connect(ConnectRequestTransaction::connect_callback, false);
   if(!res) {
     LOG_ERR("Connecting requested data adapter is failed 2");
     ConnectRequestTransaction::sIsOngoing = false;
@@ -642,7 +653,7 @@ void ReconnectControlAdapterTransaction::disconnect_callback(bool is_success) {
     ReconnectControlAdapterTransaction::start(caller);
     return;
   }
-  bool res = control_adapter->connect(ReconnectControlAdapterTransaction::disconnect_callback);
+  bool res = control_adapter->connect(ReconnectControlAdapterTransaction::disconnect_callback, false);
   if(!res) {
     LOG_ERR("Disconnecting control adapter is failed 5: retry");
     ReconnectControlAdapterTransaction::sIsOngoing = false;
@@ -682,7 +693,7 @@ bool SwitchAdapterTransaction::start(Communicator* caller, int prev_index, int n
     SwitchAdapterTransaction::sIsOngoing = false;
     return false;
   }
-  bool res = next_adapter->connect(SwitchAdapterTransaction::connect_callback);
+  bool res = next_adapter->connect(SwitchAdapterTransaction::connect_callback, true);
   if(!res) {
     LOG_ERR("Connecting next data adapter is failed 2");
     NetworkSwitcher::get_instance()->done_switch();
