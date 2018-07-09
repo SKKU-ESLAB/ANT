@@ -44,8 +44,8 @@ enum CommErr {
  *  - Private Data: "Priv"
  */
 typedef enum {
-  kCtrlReqConnect = 2,
-  kCtrlReqPriv = 4 
+  kCtrlReqConnect = 1,
+  kCtrlReqPriv = 2 
 } CtrlReq;
 
 /*
