@@ -37,7 +37,7 @@ bool ServerAdapter::connect(ConnectCallback callback, bool is_send_connect_messa
   }
 
   if(is_send_connect_message) {
-    Communicator::get_instance()->send_control_message(this->get_id());
+    Communicator::get_instance()->send_connect_control_data(this->get_id());
   }
 
   this->mConnectCallback = callback;
