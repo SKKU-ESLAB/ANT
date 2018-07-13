@@ -322,7 +322,7 @@ public abstract class NetworkAdapter {
     public void connect(Handler handler) {
         if (at == kATuninitialized) {
             LogBroadcastSender.sendLogMessage(tag, "The adapter has not been installed to " +
-                    "communicator");
+                    "core");
             return;
         }
 

@@ -17,16 +17,16 @@ import static selective.connection.NetworkAdapter.kDevDisconnecting;
  * Created by eslab on 2017-02-08.
  */
 
-public class Communicator {
-    static private Communicator instance = null;
+public class Core {
+    static private Core instance = null;
     static String tag = "Comm";
-    private Communicator() {
+    private Core() {
         SegmentManager sm = SegmentManager.get_instance();
         NetworkManager nm = NetworkManager.get_instance();
     }
-    static public Communicator get_instance() {
+    static public Core get_instance() {
         if (instance == null)
-            instance = new Communicator();
+            instance = new Core();
         return instance;
     }
 
@@ -448,7 +448,7 @@ class NetworkManager {
         na.connect(new Handler() {
             public void handleMessage(Message msg) {
                 if (msg.what == NetworkAdapter.kDevCon) {
-                    LogBroadcastSender.sendLogMessage(tag, "Communicator successfully connected");
+                    LogBroadcastSender.sendLogMessage(tag, "Core successfully connected");
                     NetworkManager.get_instance().state = kNetStatControl;
                     NetworkManager.get_instance().recv_thread = new CtrlRecvThread(mCtrlHandler);
                     NetworkManager.get_instance().recv_thread.start();
@@ -468,7 +468,7 @@ class NetworkManager {
 
     public void send_control_data(byte[] data, int len) {
         if (state < kNetStatControl) {
-            LogBroadcastSender.sendLogMessage(tag, "Communicator disconnected");
+            LogBroadcastSender.sendLogMessage(tag, "Core disconnected");
             return;
         }
 

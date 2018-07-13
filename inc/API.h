@@ -22,7 +22,7 @@
 #ifndef INC_API_H_
 #define INC_API_H_
 
-#include <Communicator.h>
+#include <Core.h>
 #include <ServerAdapter.h>
 #include <NetworkSwitcher.h>
 
@@ -30,20 +30,20 @@ namespace cm {
 
 inline void start_communication(void) {
   NetworkSwitcher::get_instance()->start();
-  Communicator::get_instance()->start();
+  Core::get_instance()->start();
 }
 
 inline void stop_communication(void) {
   NetworkSwitcher::get_instance()->stop();
-  Communicator::get_instance()->stop();
+  Core::get_instance()->stop();
 }
 
 inline void register_control_adapter(ServerAdapter* adapter) {
-  Communicator::get_instance()->register_control_adapter(adapter);
+  Core::get_instance()->register_control_adapter(adapter);
 }
 
 inline void register_data_adapter(ServerAdapter* adapter) {
-  Communicator::get_instance()->register_data_adapter(adapter);
+  Core::get_instance()->register_data_adapter(adapter);
 }
 
 /**
@@ -51,7 +51,7 @@ inline void register_data_adapter(ServerAdapter* adapter) {
  * libraries in a thread
  */
 inline int send(const void *buf, uint32_t len) {
-  Communicator::get_instance()->send(buf, len);
+  Core::get_instance()->send(buf, len);
 }
 
 /**
@@ -60,7 +60,7 @@ inline int send(const void *buf, uint32_t len) {
  * @return: Received bytes(<0 if error)
  */
 inline int receive(void **buf) {
-  Communicator::get_instance()->receive(buf);
+  Core::get_instance()->receive(buf);
 }
 
 } /* namespace cm */
