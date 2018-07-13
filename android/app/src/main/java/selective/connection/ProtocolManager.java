@@ -94,13 +94,13 @@ class ProtocolManager {
         buffer.put(serialized, vec_offset, 2);
         ret_pd.id = buffer.getShort(0);
         vec_offset += 2;
-        //LogBroadcastSender.sendLogMessage(tag, "ret_pd.id is " + ret_pd.id);
+        //Logger.print(tag, "ret_pd.id is " + ret_pd.id);
 
         buffer = ByteBuffer.allocate(4);
         buffer.put(serialized, vec_offset, 4);
         ret_pd.len = buffer.getInt(0);
         vec_offset += 4;
-        //LogBroadcastSender.sendLogMessage(tag, "ret_pd.len is " + ret_pd.len);
+        //Logger.print(tag, "ret_pd.len is " + ret_pd.len);
 
         return vec_offset;
     }

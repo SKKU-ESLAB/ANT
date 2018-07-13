@@ -17,13 +17,33 @@ package selective.connection;
  * limitations under the License.
  */
 
-class Device {
+import java.util.ArrayList;
+
+import kr.ac.skku.nyx.selectiveconnection.Logger;
+
+abstract class Device {
+    // Main Functions
+    boolean holdAndTurnOn() {
+        // TODO
+        return false;
+    }
+
+    boolean releaseAndTurnOff() {
+        // TODO
+        return false;
+    }
+
+    // Implemented by child classes
+    protected abstract boolean turnOnImpl();
+
+    protected abstract boolean turnOffImpl();
+
     // State
     class State {
-        public static final int kDisconnected = 0;
-        public static final int kConnecting = 1;
-        public static final int kConnected = 2;
-        public static final int kDisconnecting = 3;
+        public static final int kOff = 0;
+        public static final int kTurningOn = 1;
+        public static final int kOn = 2;
+        public static final int kTurningOff = 3;
     }
 
     protected int getState() {
@@ -46,7 +66,23 @@ class Device {
     protected Integer mState;
 }
 
-class P2PClient {
+abstract class P2PClient {
+    // Main Functions
+    public boolean discoverAndConnect() {
+        // TODO
+        return false;
+    }
+
+    public boolean disconnect() {
+        // TODO
+        return false;
+    }
+
+    // Implemented by child classes
+    protected abstract boolean discoverAndConnectImpl();
+
+    protected abstract boolean disconnectImpl();
+
     // State
     class State {
         public static final int kDisconnected = 0;
@@ -76,13 +112,43 @@ class P2PClient {
     protected Integer mState;
 }
 
-class ClientSocket {
+abstract class ClientSocket {
+    // Main Functions
+    public boolean open() {
+        // TODO
+        return false;
+    }
+
+    public boolean close() {
+        // TODO
+        return false;
+    }
+
+    public int send(byte[] dataBuffer, int dataLength) {
+        // TODO
+        return -1;
+    }
+
+    public int receive(byte[] dataBuffer, int dataLength) {
+        // TODO
+        return -1;
+    }
+
+    // Implemented by child classes
+    protected abstract boolean openImpl();
+
+    protected abstract boolean closeImpl();
+
+    protected abstract int sendImpl(byte[] dataBuffer, int dataLength);
+
+    protected abstract int receiveImpl();
+
     // State
     class State {
-        public static final int kOff = 0;
-        public static final int kTurningOff = 1;
-        public static final int kOn = 2;
-        public static final int k
+        public static final int kClosed = 0;
+        public static final int kOpening = 1;
+        public static final int kOpened = 2;
+        public static final int kClosing = 3;
     }
 
     protected int getState() {
@@ -106,35 +172,319 @@ class ClientSocket {
 }
 
 public class ClientAdapter {
+    private final String TAG = "ClientAdapter";
+    private final ClientAdapter self = this;
+
     // Main Functions: connect, disconnect, send, receive
-    public boolean connect() {
-        return false;
+    public boolean connect(ConnectResultListener listener, boolean isSendConnectMessage) {
+        if (this.getState() != State.kDisconnected) {
+            Logger.print(TAG, "It's already connected or connection/disconnection is in progress");
+            return false;
+        }
+
+        if (isSendConnectMessage) {
+            // TODO: Core.sendConnectControlData()
+        }
+
+        ConnectThread thread = new ConnectThread(listener);
+        thread.start();
+        return true;
     }
 
-    public boolean disconnect() {
-        return false;
+    public boolean disconnect(DisconnectResultListener listener) {
+        if (this.getState() != State.kConnected) {
+            Logger.print(TAG, "It's already disconnected or connection/disconnection is in " +
+                    "progress");
+            return false;
+        }
+
+        DisconnectThread thread = new DisconnectThread(listener);
+        thread.start();
+        return true;
     }
 
-    int send(byte[] buf, int len) {
-        return -1;
+    int send(byte[] dataBuffer, int dataLength) {
+        if (this.getState() != State.kConnected) {
+            Logger.print(TAG, "It's already disconnected or connection/disconnection is in " +
+                    "progress");
+            return -1;
+        }
+
+        if (this.mClientSocket == null) {
+            return -2;
+        }
+
+        int ret = this.mClientSocket.send(dataBuffer, dataLength);
+        // Omit Implementing Statistics: SendDataSize
+        return ret;
     }
 
-    int receive(byte[] buf, int len) {
-        return -1;
+    int receive(byte[] dataBuffer, int dataLength) {
+        if (this.getState() != State.kConnected) {
+            Logger.print(TAG, "It's already disconnected or connection/disconnection is in " +
+                    "progress");
+            return -1;
+        }
+
+        if (this.mClientSocket == null) {
+            return -2;
+        }
+
+        int ret = this.mClientSocket.receive(dataBuffer, dataLength);
+        // Omit Implementing Statistics: ReceiveDataSize
+        return ret;
+    }
+
+    // Connect/Disconnect Threads & Callbacks
+    class ConnectThread extends Thread {
+        @Override
+        public void run() {
+            Logger.print(TAG, self.getName() + "'s Connect Thread Spawned! (id:" + this.getId() +
+                    ")");
+            setState(ClientAdapter.State.kConnecting);
+
+            // Turn on device
+            if (self.mDevice == null) {
+                this.onFail();
+                return;
+            }
+            int deviceState = self.mDevice.getState();
+            if (deviceState != Device.State.kOn) {
+                boolean res = self.mDevice.holdAndTurnOn();
+
+                deviceState = self.mDevice.getState();
+                if (!res || deviceState != Device.State.kOn) {
+                    Logger.print("Cannot connect the server adapter - turn-on fail: " + self
+                            .getName());
+                }
+                this.onFail();
+                return;
+            }
+
+            // Discover and connect to server
+            if (self.mP2PClient == null) {
+                self.mDevice.releaseAndTurnOff();
+
+                this.onFail();
+                return;
+            }
+            int p2pClientState = self.mP2PClient.getState();
+            if (p2pClientState != P2PClient.State.kDisconnected) {
+                boolean res = self.mP2PClient.discoverAndConnect();
+
+                p2pClientState = self.mP2PClient.getState();
+                if (!res || p2pClientState != P2PClient.State.kConnected) {
+                    Logger.print("Cannot connect the server adapter - allow fail:" + self.getName
+                            ());
+                    self.mDevice.releaseAndTurnOff();
+                    this.onFail();
+                    return;
+                }
+            }
+
+            // Open client socket
+            if (self.mClientSocket == null) {
+                self.mP2PClient.disconnect();
+                self.mDevice.releaseAndTurnOff();
+
+                this.onFail();
+                return;
+            }
+            int socketState = self.mClientSocket.getState();
+            if (socketState != ClientSocket.State.kOpened) {
+                boolean res = self.mClientSocket.open();
+
+                socketState = self.mClientSocket.getState();
+                if (!res || socketState != ClientSocket.State.kOpened) {
+                    Logger.print(TAG, "Cannot connect the server adapter - socket open fail: " +
+                            self.getName());
+                    self.mP2PClient.disconnect();
+                    self.mDevice.releaseAndTurnOff();
+                    this.onFail();
+                    return;
+                }
+            }
+
+            // Run sender & receiver threads
+            if (self.mSenderThread != null && !self.mSenderThread.isOn()) {
+                self.mSenderThread.start();
+            }
+
+            if (self.mReceiverThread != null && !self.mReceiverThread.isOn()) {
+                self.mReceiverThread.start();
+            }
+
+            // Report result success
+            self.setState(ClientAdapter.State.kConnected);
+            if (this.mResultListener != null) {
+                this.mResultListener.onConnectResult(true);
+                this.mResultListener = null;
+            }
+        }
+
+        private void onFail() {
+            self.setState(ClientAdapter.State.kDisconnected);
+
+            // Report result fail
+            if (this.mResultListener != null) {
+                this.mResultListener.onConnectResult(false);
+                this.mResultListener = null;
+            }
+        }
+
+        private ConnectResultListener mResultListener;
+
+        public ConnectThread(ConnectResultListener resultListener) {
+            this.mResultListener = resultListener;
+        }
+    }
+
+    class DisconnectThread extends Thread {
+        @Override
+        public void run() {
+            Logger.print(TAG, self.getName() + "'s Disconnect Thread Spawned! (id:" + this.getId
+                    () + ")");
+            setState(ClientAdapter.State.kDisconnecting);
+
+            // Finish sender & receiver threads
+            if (self.mSenderThread != null) {
+                self.mSenderThread.finish();
+            }
+            if (self.mReceiverThread != null) {
+                self.mReceiverThread.finish();
+            }
+
+            // Close client socket
+            if(self.mClientSocket == null) {
+                this.onFail();
+                return;
+            }
+            int socketState = self.mClientSocket.getState();
+            if(socketState != ClientSocket.State.kClosed) {
+                boolean res = self.mClientSocket.close();
+
+                socketState = self.mClientSocket.getState();
+                if(!res || socketState != ClientSocket.State.kClosed) {
+                    Logger.print(TAG, "Cannot disconnect the server adapter - socket close fail: " + self.getName());
+                    this.onFail();
+                }
+            }
+
+            // TODO: Disconnect
+
+            // TODO: Turn off device
+
+            // Report result success
+            self.setState(ClientAdapter.State.kConnected);
+            if (this.mResultListener != null) {
+                this.mResultListener.onDisconnectResult(true);
+                this.mResultListener = null;
+            }
+        }
+
+        private void onFail() {
+            self.setState(ClientAdapter.State.kConnected);
+
+            // Report result fail
+            if (this.mResultListener != null) {
+                this.mResultListener.onDisconnectResult(false);
+                this.mResultListener = null;
+            }
+        }
+
+        private DisconnectResultListener mResultListener;
+
+        public DisconnectThread(DisconnectResultListener resultListener) {
+            this.mResultListener = resultListener;
+        }
+    }
+
+    interface ConnectResultListener {
+        void onConnectResult(boolean isSuccess);
+    }
+
+    interface DisconnectResultListener {
+        void onDisconnectResult(boolean isSuccess);
     }
 
     // Thread Control Functions: enableSenderThread, enableReceiverThread
     boolean enableSenderThread() {
+        this.mSenderThread = new SenderThread();
         return false;
     }
 
     boolean enableReceiverThread() {
+        this.mReceiverThread = new ReceiverThread();
         return false;
     }
 
+    // Receiver Loop Interface
+    interface ReceiveLoop {
+        void receiveLoop(ClientAdapter adapter);
+    }
+
+    // Sender/Receiver Thraeds
+    class SenderThread extends Thread {
+        @Override
+        public void run() {
+            synchronized (this.mIsOn) {
+                this.mIsOn = true;
+            }
+        }
+
+        public void finish() {
+            synchronized (this.mIsOn) {
+                this.mIsOn = false;
+            }
+        }
+
+        public SenderThread() {
+            synchronized (this.mIsOn) {
+                this.mIsOn = false;
+            }
+        }
+
+        public boolean isOn() {
+            return this.mIsOn;
+        }
+
+        private Boolean mIsOn;
+    }
+
+    class ReceiverThread extends Thread {
+        @Override
+        public void run() {
+            synchronized (this.mIsOn) {
+                this.mIsOn = true;
+            }
+        }
+
+        public void finish() {
+            synchronized (this.mIsOn) {
+                this.mIsOn = false;
+            }
+        }
+
+        public ReceiverThread() {
+            synchronized (this.mIsOn) {
+                this.mIsOn = false;
+            }
+        }
+
+        public boolean isOn() {
+            return this.mIsOn;
+        }
+
+        private Boolean mIsOn;
+    }
+
+    private SenderThread mSenderThread;
+    private ReceiverThread mReceiverThread;
+
     // Initialize
     public ClientAdapter(int id, String name) {
-
+        this.mId = id;
+        this.mName = name;
     }
 
     protected void initialize(Device device, P2PClient p2pClient, ClientSocket clientSocket) {
@@ -169,8 +519,25 @@ public class ClientAdapter {
     }
 
     protected void setState(int newState) {
+        int oldState;
         synchronized (this.mState) {
+            oldState = this.mState;
             this.mState = newState;
+        }
+
+        for (StateListener listener : this.mListeners) {
+            listener.onUpdateClientAdapterState(this, oldState, newState);
+        }
+    }
+
+    // State Listener
+    interface StateListener {
+        void onUpdateClientAdapterState(ClientAdapter adapter, int oldState, int newState);
+    }
+
+    public void listen_state(StateListener listener) {
+        synchronized (this.mListeners) {
+            this.mListeners.add(listener);
         }
     }
 
@@ -180,6 +547,9 @@ public class ClientAdapter {
 
     // State
     protected Integer mState;
+
+    // State Listener
+    protected ArrayList<StateListener> mListeners;
 
     // Main Components : Device, P2PClient, ClientSocket
     protected Device mDevice;
