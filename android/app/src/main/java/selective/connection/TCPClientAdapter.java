@@ -6,7 +6,7 @@ import java.io.IOException;
 import java.net.Socket;
 import java.util.Arrays;
 
-import kr.ac.skku.nyx.selectiveconnection.LogBroadcastSender;
+import kr.ac.skku.nyx.selectiveconnection.Logger;
 
 /**
  * Created by eslab on 2017-02-13.
@@ -58,7 +58,7 @@ public class TCPClientAdapter extends NetworkAdapter {
 
             res = true;
         } catch (Exception e) {
-            LogBroadcastSender.sendLogMessage(tag, "Failed to connect to server");
+            Logger.print(tag, "Failed to connect to server");
 
             writer = null;
             reader = null;
@@ -103,7 +103,7 @@ public class TCPClientAdapter extends NetworkAdapter {
     @Override
     public int recv(byte[] buf, int len) {
         if (reader == null) {
-            LogBroadcastSender.sendLogMessage(tag, "reader is null");
+            Logger.print(tag, "reader is null");
             return -1;
         }
 
@@ -130,6 +130,6 @@ public class TCPClientAdapter extends NetworkAdapter {
 
     @Override
     public void on_control_recv(byte[] buf, int len) {
-        LogBroadcastSender.sendLogMessage(tag, new String(Arrays.copyOfRange(buf, 0, len)));
+        Logger.print(tag, new String(Arrays.copyOfRange(buf, 0, len)));
     }
 }

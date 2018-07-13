@@ -10,7 +10,7 @@ import java.io.IOException;
 import java.util.Set;
 import java.util.UUID;
 
-import kr.ac.skku.nyx.selectiveconnection.LogBroadcastSender;
+import kr.ac.skku.nyx.selectiveconnection.Logger;
 
 /**
  * Created by eslab on 2017-02-20.
@@ -55,7 +55,7 @@ public class BTClientAdapter extends NetworkAdapter {
                     writer = new BufferedOutputStream(btSocket.getOutputStream());
                     reader = new BufferedInputStream(btSocket.getInputStream());
                 } catch (IOException e) {
-                    LogBroadcastSender.sendLogMessage(tag, "Failed to create RFCOMM Socket corresponding to " + uuid.toString());
+                    Logger.print(tag, "Failed to create RFCOMM Socket corresponding to " + uuid.toString());
                     btSocket = null;
                 }
                 break;
@@ -68,10 +68,10 @@ public class BTClientAdapter extends NetworkAdapter {
                 btSocket.getInputStream();
                 break;
             } catch (IOException e) {
-                LogBroadcastSender.sendLogMessage(tag, "Failed to connect");
+                Logger.print(tag, "Failed to connect");
             }
             try {
-                LogBroadcastSender.sendLogMessage(tag, "Once more try to connect BT Client");
+                Logger.print(tag, "Once more try to connect BT Client");
                 Thread.sleep(500);
             } catch (InterruptedException e) {
                 e.printStackTrace();
@@ -118,7 +118,7 @@ public class BTClientAdapter extends NetworkAdapter {
     @Override
     public int recv(byte[] buf, int len) {
         if (reader == null) {
-            LogBroadcastSender.sendLogMessage(tag, "reader is null");
+            Logger.print(tag, "reader is null");
             return -1;
         }
 

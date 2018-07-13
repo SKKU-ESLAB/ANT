@@ -11,27 +11,27 @@ import android.util.Log;
 import android.widget.TextView;
 
 import selective.connection.BTClientAdapter;
-import selective.connection.Core;
+import selective.connection.API;
 import selective.connection.TCPClientAdapter;
 import selective.connection.WFDClientAdapter;
 
 
-public class MainActivity extends AppCompatActivity implements LogBroadcastReceiver.Callback {
+public class MainActivity extends AppCompatActivity implements LogReceiver.Callback {
     private MainActivity self = this;
-    private Core mCore;
+    private API mAPI;
 
     private ReceivingThread mReceivingThread;
-    private LogBroadcastReceiver mBroadcastReceiver;
+    private LogReceiver mBroadcastReceiver;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        LogBroadcastSender.setDefaultContext(this);
+        Logger.setDefaultContext(this);
 
-        this.mBroadcastReceiver = new LogBroadcastReceiver(this);
+        this.mBroadcastReceiver = new LogReceiver(this);
         IntentFilter broadcastIntentFilter = new IntentFilter();
-        broadcastIntentFilter.addAction(LogBroadcastReceiver.kAction);
+        broadcastIntentFilter.addAction(LogReceiver.kAction);
         this.registerReceiver(this.mBroadcastReceiver, broadcastIntentFilter);
 
         this.requestPermissions();
@@ -39,7 +39,7 @@ public class MainActivity extends AppCompatActivity implements LogBroadcastRecei
     }
 
     private void initializeCommunication() {
-        mCore = Core.get_instance();
+        mAPI = API.get_instance();
         TCPClientAdapter tcpClientAdapter = new TCPClientAdapter((short) 2345, "192.168.0.35",
                 2345);
         BTClientAdapter btClientAdapter = new BTClientAdapter((short) 3333, "B8:27:EB:77:C3:4A",
@@ -81,11 +81,11 @@ public class MainActivity extends AppCompatActivity implements LogBroadcastRecei
             String sending_buf = "ACK"; /* Ack Message */
 
             while (true) {
-                int receivedLength = mCore.recv_data(buf, 100 * 1024 * 1024);
-                LogBroadcastSender.sendLogMessage(self, "Received: Size=" + receivedLength);
-                int sentLength = mCore.send_data(sending_buf.getBytes(), sending_buf
+                int receivedLength = mAPI.recv_data(buf, 100 * 1024 * 1024);
+                Logger.print(self, "Received: Size=" + receivedLength);
+                int sentLength = mAPI.send_data(sending_buf.getBytes(), sending_buf
                         .length());
-                LogBroadcastSender.sendLogMessage(self, "Sent: Size=" + sentLength);
+                Logger.print(self, "Sent: Size=" + sentLength);
             }
 
         }

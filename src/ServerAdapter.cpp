@@ -46,7 +46,7 @@ bool ServerAdapter::connect(ConnectCallback callback, bool is_send_connect_messa
 }
 
 bool ServerAdapter::disconnect(DisconnectCallback callback) {
-  if(this->get_state() != ServerAdapterState::kDisconnected) {
+  if(this->get_state() != ServerAdapterState::kConnected) {
     LOG_ERR("It is already disconnected or connection/disconnection is in progress.");
     return false;
   }
@@ -59,8 +59,8 @@ void ServerAdapter::on_fail_connect_thread(void) {
   this->set_state(ServerAdapterState::kDisconnected);
   if(this->mConnectCallback != NULL) {
     this->mConnectCallback(false);
+    this->mConnectCallback = NULL;
   }
-  this->mConnectCallback = NULL;
 }
 
 void ServerAdapter::connect_thread(void) {
@@ -89,6 +89,9 @@ void ServerAdapter::connect_thread(void) {
 
   // Allow client's connection
   if(this->mP2PServer == NULL) {
+    this->mDevice->release_and_turn_off();
+
+    this->on_fail_connect_thread();
     return;
   }
   P2PServerState p2pServerState = this->mP2PServer->get_state();
@@ -129,20 +132,20 @@ void ServerAdapter::connect_thread(void) {
   }
 
   // Run sender & receiver threads
-  if(this->mSenderThreadEnabled && this->mSenderThread == NULL) {
+  if(this->mSenderThread != NULL && !this->mSenderThreadOn) {
     this->mSenderThreadOn = true;
-    this->mSenderThread = new std::thread(std::bind(&ServerAdapter::sender_thread, this));
+    this->mSenderThread->detach();
   }
-  if(this->mReceiverThreadEnabled && this->mReceiverThread == NULL) {
+  if(this->mReceiverThread != NULL && !this->mReceiverThreadOn) {
     this->mReceiverThreadOn = true;
-    this->mReceiverThread = new std::thread(std::bind(&ServerAdapter::receiver_thread, this));
+    this->mReceiverThread->detach();
   }
 
   this->set_state(ServerAdapterState::kConnected);
   if(this->mConnectCallback != NULL) {
     this->mConnectCallback(true);
+    this->mConnectCallback = NULL;
   }
-  this->mConnectCallback = NULL;
   return;
 }
 
@@ -150,8 +153,8 @@ void ServerAdapter::on_fail_disconnect_thread(void) {
   this->set_state(ServerAdapterState::kConnected);
   if(this->mDisconnectCallback != NULL) {
     this->mDisconnectCallback(false);
+    this->mDisconnectCallback = NULL;
   }
-  this->mDisconnectCallback = NULL;
   return;
 }
 
@@ -205,30 +208,22 @@ void ServerAdapter::disconnect_thread(void) {
     }
   }
 
-  // Send control message to turn off the working data adapter
-//  Core *core = Core::get_instance();
-//  unsigned char buf[512];
-//  buf[0] = kCtrlReqDecr;
-//  uint16_t ndev_id = htons(core->decreasing_adapter_id);
-//  memcpy(buf+1, &ndev_id, 2);
-//  core->send_control_data((const void *)buf, 3);
-
   this->set_state(ServerAdapterState::kDisconnected);
   if(this->mDisconnectCallback != NULL) {
     this->mDisconnectCallback(true);
+    this->mDisconnectCallback = NULL;
   }
-  this->mDisconnectCallback = NULL;
   return;
 }
 
 int ServerAdapter::send(const void *buf, size_t len) {
-  if(this->get_state() != ServerAdapterState::kDisconnected) {
+  if(this->get_state() != ServerAdapterState::kConnected) {
     LOG_ERR("It is already disconnected or connection/disconnection is in progress.");
-    return false;
+    return -1;
   }
 
   if(this->mServerSocket == NULL) {
-    return false;
+    return -2;
   }
 
   int ret = this->mServerSocket->send(buf, len);
@@ -239,7 +234,7 @@ int ServerAdapter::send(const void *buf, size_t len) {
 }
 
 int ServerAdapter::receive(void *buf, size_t len) {
-  if(this->get_state() != ServerAdapterState::kDisconnected) {
+  if(this->get_state() != ServerAdapterState::kConnected) {
     LOG_ERR("It is already disconnected or connection/disconnection is in progress.");
     return false;
   }

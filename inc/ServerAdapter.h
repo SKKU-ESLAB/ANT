@@ -62,17 +62,17 @@ public:
   int receive(void *buf, size_t len);
 
   bool enable_sender_thread() {
-    this->mSenderThreadEnabled = true;
+    this->mSenderThread = new std::thread(std::bind(&ServerAdapter::sender_thread, this));
     return true;
   }
 
   bool enable_receiver_thread(ReceiveLoop receive_loop) {
-    this->mReceiverThreadEnabled = true;
     if(receive_loop == NULL) {
       this->mReceiveLoop = ServerAdapter::receive_data_loop;
     } else {
       this->mReceiveLoop = receive_loop;
     }
+    this->mReceiverThread = new std::thread(std::bind(&ServerAdapter::receiver_thread, this));
     return true;
   }
 
@@ -143,10 +143,13 @@ protected:
   }
 
   void set_state(ServerAdapterState new_state) {
-    std::unique_lock<std::mutex> lck(this->mStateLock);
+    ServerAdapterState old_state;
 
-    ServerAdapterState old_state = this->mState;
-    this->mState = new_state;
+    {
+      std::unique_lock<std::mutex> lck(this->mStateLock);
+      old_state = this->mState;
+      this->mState = new_state;
+    }
 
     for(std::vector<ServerAdapterStateListener*>::iterator it = this->mStateListeners.begin();
         it != this->mStateListeners.end();
@@ -189,8 +192,6 @@ private:
   bool mSenderThreadOn = false;
   bool mReceiverThreadOn = false;
 
-  bool mSenderThreadEnabled = false;
-  bool mReceiverThreadEnabled = false;
   ReceiveLoop mReceiveLoop = NULL;
 }; /* class ServerAdapter */
 
