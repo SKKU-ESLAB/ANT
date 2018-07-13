@@ -19,7 +19,7 @@
 
 #include <ServerAdapter.h>
 
-#include <Communicator.h>
+#include <Core.h>
 #include <DebugLog.h>
 
 #include <string.h>
@@ -37,7 +37,7 @@ bool ServerAdapter::connect(ConnectCallback callback, bool is_send_connect_messa
   }
 
   if(is_send_connect_message) {
-    Communicator::get_instance()->send_connect_control_data(this->get_id());
+    Core::get_instance()->send_connect_control_data(this->get_id());
   }
 
   this->mConnectCallback = callback;
@@ -206,12 +206,12 @@ void ServerAdapter::disconnect_thread(void) {
   }
 
   // Send control message to turn off the working data adapter
-//  Communicator *communicator = Communicator::get_instance();
+//  Core *core = Core::get_instance();
 //  unsigned char buf[512];
 //  buf[0] = kCtrlReqDecr;
-//  uint16_t ndev_id = htons(communicator->decreasing_adapter_id);
+//  uint16_t ndev_id = htons(core->decreasing_adapter_id);
 //  memcpy(buf+1, &ndev_id, 2);
-//  communicator->send_control_data((const void *)buf, 3);
+//  core->send_control_data((const void *)buf, 3);
 
   this->set_state(ServerAdapterState::kDisconnected);
   if(this->mDisconnectCallback != NULL) {

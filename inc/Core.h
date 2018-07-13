@@ -49,7 +49,7 @@ typedef enum {
 } CtrlReq;
 
 /*
- * Communicator State
+ * Core State
  */
 typedef enum {
   kCMStateIdle = 0,
@@ -64,25 +64,25 @@ typedef enum {
  * Transactions
  * Series of asynchronous callbacks, especially used for connection/disconnection callbacks.
  */
-class Communicator;
-class StartCommunicatorTransaction {
+class Core;
+class StartCoreTransaction {
 public:
-  static bool start(Communicator* caller);
+  static bool start(Core* caller);
   static void connect_control_adapter_callback(bool is_success);
   static void connect_first_data_adapter_callback(bool is_success);
 protected:
   static bool sIsOngoing;
-  static Communicator* sCaller;
+  static Core* sCaller;
 };
 
-class StopCommunicatorTransaction {
+class StopCoreTransaction {
 public:
-  static bool start(Communicator* caller);
+  static bool start(Core* caller);
   static void disconnect_control_adapter_callback(bool is_success);
   static void disconnect_data_adapter_callback(bool is_success);
 protected:
   static bool sIsOngoing;
-  static Communicator* sCaller;
+  static Core* sCaller;
   static int sDataAdaptersCount;
   static std::mutex sDataAdaptersCountLock;
 };
@@ -90,7 +90,7 @@ protected:
 class SwitchAdapterTransaction {
   /*
    * Switch Adapter Transaction: Order
-   * 1. Communicator.switch_adapters()
+   * 1. Core.switch_adapters()
    * 2. SwitchAdapterTransaction.start()
    * 3. next_adapter.connect()
    * 4. SwitchAdapterTransaction.connect_callback()
@@ -99,12 +99,12 @@ class SwitchAdapterTransaction {
    * 7. NetworkSwitcher.done_switch()
    */
 public:
-  static bool start(Communicator* caller, int prev_index, int next_index);
+  static bool start(Core* caller, int prev_index, int next_index);
   static void connect_callback(bool is_success);
   static void disconnect_callback(bool is_success);
 
 protected:
-  static Communicator* sCaller;
+  static Core* sCaller;
   static bool sIsOngoing;
   static int sPrevIndex;
   static int sNextIndex;
@@ -112,31 +112,31 @@ protected:
 
 class ConnectRequestTransaction {
 public:
-  static bool start(Communicator* caller, int adapter_id);
+  static bool start(Core* caller, int adapter_id);
   static void connect_callback(bool is_success);
 protected:
-  static Communicator* sCaller;
+  static Core* sCaller;
   static bool sIsOngoing;
   static int sAdapterId;
 };
 
 class DisconnectRequestTransaction {
 public:
-  static bool start(Communicator* caller, int adapter_id);
+  static bool start(Core* caller, int adapter_id);
   static void disconnect_callback(bool is_success);
 protected:
-  static Communicator* sCaller;
+  static Core* sCaller;
   static bool sIsOngoing;
   static int sAdapterId;
 };
 
 class ReconnectControlAdapterTransaction {
 public:
-  static bool start(Communicator* caller);
+  static bool start(Core* caller);
   static void disconnect_callback(bool is_success);
   static void connect_callback(bool is_success);
 protected:
-  static Communicator* sCaller;
+  static Core* sCaller;
   static bool sIsOngoing;
 };
 
@@ -148,16 +148,16 @@ public:
 class ServerAdapter;
 
 /*
- * Communicator
+ * Core
  */
-class Communicator {
+class Core {
 public:
   /*
    * APIs
    * These functions are mapped to ones in API.h
    */
-  friend StartCommunicatorTransaction;
-  friend StopCommunicatorTransaction;
+  friend StartCoreTransaction;
+  friend StopCoreTransaction;
   bool start(void);
   void done_start(bool is_success);
   bool stop(void);
@@ -222,14 +222,14 @@ public:
   static void receive_control_message_loop(ServerAdapter* adapter);
 
   /* Singleton */
-  static Communicator* get_instance(void) {
+  static Core* get_instance(void) {
     if (singleton == NULL) {
-      singleton = new Communicator();
+      singleton = new Core();
     }
     return singleton;
   }
 
-  ~Communicator() {
+  ~Core() {
     SegmentManager::get_instance()->free_segment_all();
   }
 
@@ -244,8 +244,8 @@ private:
   }
 
   /* Singleton */
-  static Communicator* singleton;
-  Communicator(void) {
+  static Core* singleton;
+  Core(void) {
     SegmentManager *sm = SegmentManager::get_instance();
     this->mState = kCMStateIdle;
   }

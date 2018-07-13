@@ -11,14 +11,14 @@ import android.util.Log;
 import android.widget.TextView;
 
 import selective.connection.BTClientAdapter;
-import selective.connection.Communicator;
+import selective.connection.Core;
 import selective.connection.TCPClientAdapter;
 import selective.connection.WFDClientAdapter;
 
 
 public class MainActivity extends AppCompatActivity implements LogBroadcastReceiver.Callback {
     private MainActivity self = this;
-    private Communicator mCommunicator;
+    private Core mCore;
 
     private ReceivingThread mReceivingThread;
     private LogBroadcastReceiver mBroadcastReceiver;
@@ -39,7 +39,7 @@ public class MainActivity extends AppCompatActivity implements LogBroadcastRecei
     }
 
     private void initializeCommunication() {
-        mCommunicator = Communicator.get_instance();
+        mCore = Core.get_instance();
         TCPClientAdapter tcpClientAdapter = new TCPClientAdapter((short) 2345, "192.168.0.35",
                 2345);
         BTClientAdapter btClientAdapter = new BTClientAdapter((short) 3333, "B8:27:EB:77:C3:4A",
@@ -81,9 +81,9 @@ public class MainActivity extends AppCompatActivity implements LogBroadcastRecei
             String sending_buf = "ACK"; /* Ack Message */
 
             while (true) {
-                int receivedLength = mCommunicator.recv_data(buf, 100 * 1024 * 1024);
+                int receivedLength = mCore.recv_data(buf, 100 * 1024 * 1024);
                 LogBroadcastSender.sendLogMessage(self, "Received: Size=" + receivedLength);
-                int sentLength = mCommunicator.send_data(sending_buf.getBytes(), sending_buf
+                int sentLength = mCore.send_data(sending_buf.getBytes(), sending_buf
                         .length());
                 LogBroadcastSender.sendLogMessage(self, "Sent: Size=" + sentLength);
             }

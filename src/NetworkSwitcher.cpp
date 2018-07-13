@@ -19,7 +19,7 @@
 
 #include <NetworkSwitcher.h>
 
-#include <Communicator.h>
+#include <Core.h>
 #include <ServerAdapter.h>
 #include <SegmentManager.h>
 #include <DebugLog.h>
@@ -97,10 +97,10 @@ void NetworkSwitcher::monitor(int &avg_send_request_speed,
   send_queue_data_size = segment_manager->get_queue_data_size(kSegSend);
   send_queue_data_size += segment_manager->get_failed_sending_queue_data_size();
 
-  Communicator *communicator = Communicator::get_instance();
+  Core *core = Core::get_instance();
   int i = 0;
   {
-    ServerAdapter* adapter = communicator->get_control_adapter();
+    ServerAdapter* adapter = core->get_control_adapter();
     int bandwidth_up = adapter->get_bandwidth_up();
     int bandwidth_down = adapter->get_bandwidth_down();
     total_bandwidth_now += (bandwidth_up + bandwidth_down);
@@ -111,9 +111,9 @@ void NetworkSwitcher::monitor(int &avg_send_request_speed,
     i++;
   }
 
-  int data_adapter_count = communicator->get_data_adapter_count();
+  int data_adapter_count = core->get_data_adapter_count();
   for(int i = 0; i < data_adapter_count; i++) {
-    ServerAdapter *adapter = communicator->get_data_adapter(i);
+    ServerAdapter *adapter = core->get_data_adapter(i);
     if(adapter == NULL) continue;
     int bandwidth_up = adapter->get_bandwidth_up();
     int bandwidth_down = adapter->get_bandwidth_down();
@@ -142,14 +142,14 @@ void NetworkSwitcher::check_and_handover(int avg_send_request_speed,
 
       /* Increase Adapter */
       this->set_state(NSState::kNSStateIncreasing);
-      bool res = Communicator::get_instance()->increase_adapter();
+      bool res = Core::get_instance()->increase_adapter();
       if(!res) {
         this->done_switch();
       }
     } else if(this->check_decrease_adapter(avg_total_bandwidth_now, this->mBandwidthWhenIncreasing)) {
       /* Decrease Adapter */
       this->set_state(NSState::kNSStateDecreasing);
-      bool res = Communicator::get_instance()->decrease_adapter();
+      bool res = Core::get_instance()->decrease_adapter();
       if(!res) {
         this->done_switch();
       }
@@ -164,9 +164,9 @@ bool NetworkSwitcher::check_increase_adapter(int send_request_speed, int send_qu
    * LHS: (average increase latency) * (r(t): send request speed) + (|SQ(t)|: send queue data size)
    * RHS: (average increase latency) * (maximum bluetooth bandwidth)
    */
-  if(!Communicator::get_instance()->is_increaseable()) {
+  if(!Core::get_instance()->is_increaseable()) {
     return false;
-  } else if(Communicator::get_instance()->get_state() != kCMStateReady) {
+  } else if(Core::get_instance()->get_state() != kCMStateReady) {
     return false;
   } else if(((float)AVERAGE_INCREASE_LATENCY_SEC * send_request_speed + send_queue_data_size) >
       ((float)AVERAGE_INCREASE_LATENCY_SEC * MAX_BANDWIDTH)) {
@@ -183,9 +183,9 @@ bool NetworkSwitcher::check_decrease_adapter(int bandwidth_now, int bandwidth_wh
    * LHS: (b(t): total bandwidth)
    * RHS: (b(t_wfdon): total bandwidth when increasing)
    */
-  if(!Communicator::get_instance()->is_decreaseable()) {
+  if(!Core::get_instance()->is_decreaseable()) {
     return false;
-  } else if(Communicator::get_instance()->get_state() != kCMStateReady) {
+  } else if(Core::get_instance()->get_state() != kCMStateReady) {
     return false;
   } else if(bandwidth_when_increasing == 0) {
     return false;
