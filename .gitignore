@@ -20,6 +20,8 @@ SelectiveConnection.PS
 android/local.properties
 android/.idea/workspace.xml
 android/.idea/libraries
+android/.idea/misc.xml
+android/.idea/modules.xml
 .DS_Store
 android/build
 android/captures
