@@ -87,29 +87,6 @@ protected:
   static std::mutex sDataAdaptersCountLock;
 };
 
-class SwitchAdapterTransaction {
-  /*
-   * Switch Adapter Transaction: Order
-   * 1. Core.switch_adapters()
-   * 2. SwitchAdapterTransaction.start()
-   * 3. next_adapter.connect()
-   * 4. SwitchAdapterTransaction.connect_callback()
-   * 5. prev_adapter.disconnect()
-   * 6. SwitchAdapterTransaction.disconnect_callback()
-   * 7. NetworkSwitcher.done_switch()
-   */
-public:
-  static bool start(Core* caller, int prev_index, int next_index);
-  static void connect_callback(bool is_success);
-  static void disconnect_callback(bool is_success);
-
-protected:
-  static Core* sCaller;
-  static bool sIsOngoing;
-  static int sPrevIndex;
-  static int sNextIndex;
-};
-
 class ConnectRequestTransaction {
 public:
   static bool start(Core* caller, int adapter_id);
@@ -166,22 +143,8 @@ public:
   void register_control_adapter(ServerAdapter* adapter);
   void register_data_adapter(ServerAdapter* adapter);
 
-  int send(const void *buf, uint32_t len);
-  int receive(void **buf);
-
-  bool increase_adapter(void);
-  bool decrease_adapter(void);
-
-  bool is_increaseable(void) {
-    std::unique_lock<std::mutex> lck(this->mDataAdaptersLock);
-    return ((this->mDataAdapterCount > 1)
-        && (this->mActiveDataAdapterIndex < (this->mDataAdapterCount - 1)));
-  }
-  bool is_decreaseable(void) {
-    std::unique_lock<std::mutex> lck(this->mDataAdaptersLock);
-    return ((this->mDataAdapterCount > 1)
-        && (this->mActiveDataAdapterIndex > 0));
-  }
+  int send(const void *dataBuffer, uint32_t dataLength);
+  int receive(void **pDataBuffer);
 
   CMState get_state(void) {
     std::unique_lock<std::mutex> lck(this->mStateLock);
@@ -213,9 +176,11 @@ public:
   }
 
   /* Control message handling */
+private:
   void send_control_message(const void *data, size_t len);
-  void send_connect_control_data(uint16_t adapter_id);
-  void send_private_control_data(uint16_t adapter_id, char* private_data_buf, uint32_t private_data_len);
+public:
+  void send_request_connect(uint16_t adapter_id);
+  void send_noti_private_data(uint16_t adapter_id, char* private_data_buf, uint32_t private_data_len);
   void add_control_message_listener(ControlMessageListener* listener) {
     this->mControlMessageListeners.push_back(listener);
   }
@@ -236,7 +201,6 @@ public:
 private:
   /* Main function to switch adapters */
   friend SwitchAdapterTransaction;
-  bool switch_adapters(int prev_index, int next_index);
 
   void set_state(CMState new_state) {
     std::unique_lock<std::mutex> lck(this->mStateLock);
@@ -252,15 +216,6 @@ private:
 
   CMState mState;
   std::mutex mStateLock;
-  
-  /*
-   * Active Data Adapter Index means the index value indicating
-   * 'conencted' or 'connecting' data adapter currently.
-   * Only "the current data adapter" is 'connected' or 'connecting',
-   * but the others are 'connected(but to-be-disconnected)', 'disconnected' or 'disconnecting'.
-   * This index is changed right before increasing or decreasing starts.
-   */
-  int mActiveDataAdapterIndex = 0;
 
   /*
    * Adapter List

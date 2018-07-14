@@ -34,6 +34,11 @@
 namespace cm {
 NetworkSwitcher* NetworkSwitcher::singleton = NULL;
 
+Core* SwitchAdapterTransaction::sCaller = NULL;
+bool SwitchAdapterTransaction::sIsOngoing = false;
+int SwitchAdapterTransaction::sPrevIndex = 0;
+int SwitchAdapterTransaction::sNextIndex = 0;
+
 void NetworkSwitcher::start(void) {
   this->mSwitcherThreadOn = true;
   this->mThread = new std::thread(std::bind(&NetworkSwitcher::switcher_thread, this));
@@ -65,15 +70,15 @@ void NetworkSwitcher::switcher_thread(void) {
             avg_send_request_speed, avg_send_queue_data_size, avg_total_bandwidth_now);
         this->check_and_handover(avg_send_request_speed, avg_send_queue_data_size, avg_total_bandwidth_now);
         break;
-      case NSState::kNSStateIncreasing:
+      case NSState::kNSStateConnecting:
         LOG_VERB("%s %d %lu %d\n",
-            "Increasing",
+            "Connecting",
             avg_send_request_speed, avg_send_queue_data_size, avg_total_bandwidth_now);
         /* Network switcher do not work during increasing or decreasing adapter */
         break;
-      case NSState::kNSStateDecreasing:
+      case NSState::kNSStateDisconnecting:
         LOG_VERB("%s %d %lu %d\n",
-            "Decreasing",
+            "Disconnecting",
             avg_send_request_speed, avg_send_queue_data_size, avg_total_bandwidth_now);
         /* Network switcher do not work during increasing or decreasing adapter */
         break;
@@ -141,15 +146,15 @@ void NetworkSwitcher::check_and_handover(int avg_send_request_speed,
       this->mBandwidthWhenIncreasing = avg_total_bandwidth_now;
 
       /* Increase Adapter */
-      this->set_state(NSState::kNSStateIncreasing);
-      bool res = Core::get_instance()->increase_adapter();
+      this->set_state(NSState::kNSStateConnecting);
+      bool res = this->increase_adapter();
       if(!res) {
         this->done_switch();
       }
     } else if(this->check_decrease_adapter(avg_total_bandwidth_now, this->mBandwidthWhenIncreasing)) {
       /* Decrease Adapter */
-      this->set_state(NSState::kNSStateDecreasing);
-      bool res = Core::get_instance()->decrease_adapter();
+      this->set_state(NSState::kNSStateDisconnecting);
+      bool res = this->decrease_adapter();
       if(!res) {
         this->done_switch();
       }
@@ -201,4 +206,156 @@ bool NetworkSwitcher::check_decrease_adapter(int bandwidth_now, int bandwidth_wh
     return false;
   }
 }
+
+bool NetworkSwitcher::increase_adapter(void) {
+  NSState state = this->get_state();
+  if(state != NSState::kNSStateRunning) {
+    if(state == NSState::kNSStateConnecting || state == kNSStateDisconnecting) {
+      LOG_ERR("It's already connecting or disconnecting an adapter!");
+      return false;
+    } else {
+      LOG_ERR("Core is not started.");
+      return false;
+    }
+  } else if(this->mDataAdapters.empty()) {
+    LOG_ERR("No data adapter is registered!");
+    return false;
+  } else if(!this->is_increaseable()) {
+    LOG_WARN("Cannot increase adapter!");
+    return false;
+  }
+
+  int prev_index = this->mActiveDataAdapterIndex;
+  int next_index = this->mActiveDataAdapterIndex + 1;
+
+  return this->switch_adapters(prev_index, next_index);
+}
+
+bool NetworkSwitcher::decrease_adapter(void) {
+  CMState state = this->get_state();
+  if(state != kCMStateReady) {
+    if(state == kCMStateConnecting || state == kCMStateDisconnecting) {
+      LOG_ERR("It's already connecting or disconnecting an adapter!");
+      return false;
+    } else {
+      LOG_ERR("Core is not started.");
+      return false;
+    }
+  } else if(this->mDataAdapters.empty()) {
+    LOG_ERR("No data adapter is registered!");
+    return false;
+  } else if(!this->is_decreaseable()) {
+    LOG_WARN("Cannot deccrease adapter!");
+    return false;
+  }
+
+  int prev_index = this->mActiveDataAdapterIndex;
+  int next_index = this->mActiveDataAdapterIndex - 1;
+
+  return this->switch_adapters(prev_index, next_index);
+}
+
+bool Core::switch_adapters(int prev_index, int next_index) {
+  CMState state = this->get_state();
+  if(state != kCMStateReady) {
+    if(state == kCMStateConnecting || state == kCMStateDisconnecting) {
+      LOG_ERR("It's already connecting or disconnecting an adapter!");
+      return false;
+    } else {
+      LOG_ERR("Core is not started.");
+      return false;
+    }
+  }
+  // Switch Step 1/4
+  // Increase/decrease active data adapter index
+  this->mActiveDataAdapterIndex = next_index;
+
+  return SwitchAdapterTransaction::start(this, prev_index, next_index);
+}
+
+bool SwitchAdapterTransaction::start(Core* caller, int prev_index, int next_index) {
+  // Switch Step 2/4
+  if(SwitchAdapterTransaction::sIsOngoing) {
+    LOG_ERR("Only one transaction can run at the same time.");
+    NetworkSwitcher::get_instance()->done_switch();
+    return false;
+  }
+  SwitchAdapterTransaction::sIsOngoing = true;
+  SwitchAdapterTransaction::sPrevIndex = prev_index;
+  SwitchAdapterTransaction::sNextIndex = next_index;
+  SwitchAdapterTransaction::sCaller = caller;
+
+  // Connect next active adapter
+  ServerAdapter* next_adapter = caller->get_data_adapter(SwitchAdapterTransaction::sNextIndex);
+  if(next_adapter == NULL) {
+    LOG_ERR("Connecting next data adapter is failed 1");
+    NetworkSwitcher::get_instance()->done_switch();
+    SwitchAdapterTransaction::sIsOngoing = false;
+    return false;
+  }
+  bool res = next_adapter->connect(SwitchAdapterTransaction::connect_callback, true);
+  if(!res) {
+    LOG_ERR("Connecting next data adapter is failed 2");
+    NetworkSwitcher::get_instance()->done_switch();
+    SwitchAdapterTransaction::sIsOngoing = false;
+    return false;
+  }
+  return true;
+}
+
+void SwitchAdapterTransaction::connect_callback(bool is_success) {
+  // Switch Step 3/4
+  Core* caller = SwitchAdapterTransaction::sCaller;
+  if(!is_success) {
+    LOG_ERR("Connecting next data adapter is failed 3");
+    NetworkSwitcher::get_instance()->done_switch();
+    SwitchAdapterTransaction::sIsOngoing = false;
+    return;
+  }
+  // Disconnect previous active adapter
+  ServerAdapter* prev_adapter = caller->get_data_adapter(SwitchAdapterTransaction::sPrevIndex);
+  if(prev_adapter == NULL) {
+    LOG_ERR("Disconnecting previous data adapter is failed 1");
+    NetworkSwitcher::get_instance()->done_switch();
+    SwitchAdapterTransaction::sIsOngoing = false;
+    return;
+  }
+  bool res = prev_adapter->disconnect(SwitchAdapterTransaction::disconnect_callback);
+  if(!res) {
+    LOG_ERR("Disconnecting previous data adapter is failed 2");
+    NetworkSwitcher::get_instance()->done_switch();
+    SwitchAdapterTransaction::sIsOngoing = false;
+    return;
+  }
+}
+
+void SwitchAdapterTransaction::disconnect_callback(bool is_success) {
+  // Switch Step 4/4
+  Core* caller = SwitchAdapterTransaction::sCaller;
+  if(!is_success) {
+    LOG_ERR("Disconnecting previous data adapter is failed 3");
+    NetworkSwitcher::get_instance()->done_switch();
+    SwitchAdapterTransaction::sIsOngoing = false;
+    return;
+  }
+
+  LOG_DEBUG("Switch from %d to %d done.",
+      SwitchAdapterTransaction::sPrevIndex, SwitchAdapterTransaction::sNextIndex);
+  NetworkSwitcher::get_instance()->done_switch();
+  caller->mActiveDataAdapterIndex = SwitchAdapterTransaction::sNextIndex;
+  SwitchAdapterTransaction::sIsOngoing = false;
+  return;
+}
+
+bool SwitchAdapterTransaction::is_increaseable(void) {
+//      std::unique_lock<std::mutex> lck(this->mDataAdaptersLock);
+//      return ((this->mDataAdapterCount > 1)
+//          && (this->mActiveDataAdapterIndex < (this->mDataAdapterCount - 1)));
+}
+bool SwitchAdapterTransaction::is_decreaseable(void) {
+//      std::unique_lock<std::mutex> lck(this->mDataAdaptersLock);
+//      return ((this->mDataAdapterCount > 1)
+//          && (this->mActiveDataAdapterIndex > 0));
+}
+
 } /* namespace cm */
