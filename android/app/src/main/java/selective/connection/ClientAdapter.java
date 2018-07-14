@@ -355,27 +355,53 @@ public class ClientAdapter {
             }
 
             // Close client socket
-            if(self.mClientSocket == null) {
+            if (self.mClientSocket == null) {
                 this.onFail();
                 return;
             }
             int socketState = self.mClientSocket.getState();
-            if(socketState != ClientSocket.State.kClosed) {
+            if (socketState != ClientSocket.State.kClosed) {
                 boolean res = self.mClientSocket.close();
 
                 socketState = self.mClientSocket.getState();
-                if(!res || socketState != ClientSocket.State.kClosed) {
-                    Logger.print(TAG, "Cannot disconnect the server adapter - socket close fail: " + self.getName());
+                if (!res || socketState != ClientSocket.State.kClosed) {
+                    Logger.print(TAG, "Cannot disconnect the server adapter - socket close fail: " +
+                            "" + "" + self.getName());
                     this.onFail();
+                    return;
                 }
             }
 
-            // TODO: Disconnect
+            // Disconnect
+            int p2pClientState = self.mClientSocket.getState();
+            if (socketState != P2PClient.State.kDisconnected) {
+                boolean res = self.mP2PClient.disconnect();
+
+                p2pClientState = self.mP2PClient.getState();
+                if (!res || p2pClientState != P2PClient.State.kDisconnected) {
+                    Logger.print(TAG, "Cannot disconnect the server adapter - disconnect P2P " +
+                            "client fail: " + self.getName());
+                    this.onFail();
+                    return;
+                }
+            }
 
             // TODO: Turn off device
+            int deviceState = self.mDevice.getState();
+            if (deviceState != Device.State.kOff) {
+                boolean res = self.mDevice.releaseAndTurnOff();
+
+                deviceState = self.mDevice.getState();
+                if (!res || deviceState != Device.State.kOff) {
+                    Logger.print(TAG, "Cannot disconnect the server adapter - turn-off fail: " +
+                            self.getName());
+                    this.onFail();
+                    return;
+                }
+            }
 
             // Report result success
-            self.setState(ClientAdapter.State.kConnected);
+            self.setState(ClientAdapter.State.kDisconnected);
             if (this.mResultListener != null) {
                 this.mResultListener.onDisconnectResult(true);
                 this.mResultListener = null;

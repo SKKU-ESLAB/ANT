@@ -53,10 +53,6 @@ bool StopCoreTransaction::sIsOngoing = false;
 Core* StopCoreTransaction::sCaller = NULL;
 int StopCoreTransaction::sDataAdaptersCount = 0;
 std::mutex StopCoreTransaction::sDataAdaptersCountLock;
-Core* SwitchAdapterTransaction::sCaller = NULL;
-bool SwitchAdapterTransaction::sIsOngoing = false;
-int SwitchAdapterTransaction::sPrevIndex = 0;
-int SwitchAdapterTransaction::sNextIndex = 0;
 Core* ConnectRequestTransaction::sCaller = NULL;
 bool ConnectRequestTransaction::sIsOngoing = false;
 int ConnectRequestTransaction::sAdapterId = 0;
@@ -99,11 +95,7 @@ void Core::done_start(bool is_success) {
 // Stop core: disconnect all the adapters
 bool Core::stop(void) {
   CMState state = this->get_state();
-  if(state == CMState::kCMStateConnecting ||
-      state == CMState::kCMStateDisconnecting) {
-    LOG_ERR("Cannot stop core during connecting/disconnecting!");
-    return false;
-  } else if(state == CMState::kCMStateStarting ||
+  if(state == CMState::kCMStateStarting ||
       state == CMState::kCMStateStopping) {
     LOG_ERR("Cannot stop core during starting/stopping!");
     return false;
@@ -162,11 +154,9 @@ void Core::register_data_adapter(ServerAdapter* data_adapter) {
   this->mDataAdapterCount++;
 }
 
-int Core::send(const void *buf, uint32_t len) {
+int Core::send(const void *dataBuffer, uint32_t dataLength) {
   CMState state = this->get_state();
-  if(state != CMState::kCMStateReady
-      && state != CMState::kCMStateConnecting
-      && state != CMState::kCMStateDisconnecting) {
+  if(state != CMState::kCMStateReady) {
     LOG_ERR("Core is not started yet, so you cannot send the data");
     return -1;
   }
@@ -177,12 +167,12 @@ int Core::send(const void *buf, uint32_t len) {
   uint32_t packet_size;
 
   // Attach the protocol header to the payload
-  ProtocolManager::data_to_protocol_data((const uint8_t *) buf, len, &pd);
+  ProtocolManager::data_to_protocol_data((const uint8_t *) dataBuffer, dataLength, &pd);
   // The serialized_vector buffer is allocated in here
   packet_size = ProtocolManager::serialize(&pd,
-                                           (const uint8_t *)buf,
+                                           (const uint8_t *)dataBuffer,
                                            curr_offset,
-                                           len,
+                                           dataLength,
                                            &serialized_vector);
   assert(serialized_vector != NULL && packet_size > 0);
 
@@ -191,17 +181,15 @@ int Core::send(const void *buf, uint32_t len) {
   if (unlikely(sent_bytes < 0)) {
     LOG_ERR("Sending stopped(%u/%u) by %d",
                  curr_offset,
-                 len,
+                 dataLength,
                  sent_bytes);
   } 
   return sent_bytes;
 }
 
-int Core::receive(void **buf) {
+int Core::receive(void **pDataBuffer) {
   CMState state = this->get_state();
-  if(state != CMState::kCMStateReady
-      && state != CMState::kCMStateConnecting
-      && state != CMState::kCMStateDisconnecting) {
+  if(state != CMState::kCMStateReady) {
     LOG_ERR("Core is not started yet, so you cannot receive data");
     return -1;
   }
@@ -210,82 +198,14 @@ int Core::receive(void **buf) {
   uint8_t *packet;
 
   packet_size = ProtocolManager::recv_packet(&packet);
-  *buf = packet;
+  *pDataBuffer = packet;
 
   return packet_size;
 }
 
-bool Core::increase_adapter(void) {
-  CMState state = this->get_state();
-  if(state != CMState::kCMStateReady) {
-    if(state == kCMStateConnecting || state == kCMStateDisconnecting) {
-      LOG_ERR("It's already connecting or disconnecting an adapter!");
-      return false;
-    } else {
-      LOG_ERR("Core is not started.");
-      return false;
-    }
-  } else if(this->mDataAdapters.empty()) {
-    LOG_ERR("No data adapter is registered!");
-    return false;
-  } else if(!this->is_increaseable()) {
-    LOG_WARN("Cannot increase adapter!");
-    return false;
-  }
-
-  int prev_index = this->mActiveDataAdapterIndex;
-  int next_index = this->mActiveDataAdapterIndex + 1;
-
-  return this->switch_adapters(prev_index, next_index);
-}
-
-bool Core::decrease_adapter(void) {
-  CMState state = this->get_state();
-  if(state != kCMStateReady) {
-    if(state == kCMStateConnecting || state == kCMStateDisconnecting) {
-      LOG_ERR("It's already connecting or disconnecting an adapter!");
-      return false;
-    } else {
-      LOG_ERR("Core is not started.");
-      return false;
-    }
-  } else if(this->mDataAdapters.empty()) {
-    LOG_ERR("No data adapter is registered!");
-    return false;
-  } else if(!this->is_decreaseable()) {
-    LOG_WARN("Cannot deccrease adapter!");
-    return false;
-  }
-
-  int prev_index = this->mActiveDataAdapterIndex;
-  int next_index = this->mActiveDataAdapterIndex - 1;
-
-  return this->switch_adapters(prev_index, next_index);
-}
-
-bool Core::switch_adapters(int prev_index, int next_index) {
-  CMState state = this->get_state();
-  if(state != kCMStateReady) {
-    if(state == kCMStateConnecting || state == kCMStateDisconnecting) {
-      LOG_ERR("It's already connecting or disconnecting an adapter!");
-      return false;
-    } else {
-      LOG_ERR("Core is not started.");
-      return false;
-    }
-  }
-  // Switch Step 1/4
-  // Increase/decrease active data adapter index
-  this->mActiveDataAdapterIndex = next_index;
-
-  return SwitchAdapterTransaction::start(this, prev_index, next_index);
-}
-
 void Core::send_control_message(const void *data, size_t len) {
   CMState state = this->get_state();
-  if(state != CMState::kCMStateReady
-      && state != CMState::kCMStateConnecting
-      && state != CMState::kCMStateDisconnecting) {
+  if(state != CMState::kCMStateReady) {
     LOG_ERR("Core is not started yet, so you cannot send the data");
     return;
   }
@@ -293,11 +213,9 @@ void Core::send_control_message(const void *data, size_t len) {
   control_adapter->send(data, len);
 }
 
-void Core::send_connect_control_data(uint16_t adapter_id) {
+void Core::send_request_connect(uint16_t adapter_id) {
   CMState state = this->get_state();
-  if(state != CMState::kCMStateReady
-      && state != CMState::kCMStateConnecting
-      && state != CMState::kCMStateDisconnecting) {
+  if(state != CMState::kCMStateReady) {
     LOG_ERR("Core is not started yet, so you cannot send the data");
     return;
   }
@@ -309,12 +227,10 @@ void Core::send_connect_control_data(uint16_t adapter_id) {
   this->send_control_message(&net_adapter_id, 2);
 }
 
-void Core::send_private_control_data(uint16_t adapter_id,
+void Core::send_noti_private_data(uint16_t adapter_id,
     char* private_data_buf, uint32_t private_data_len) {
   CMState state = this->get_state();
-  if(state != CMState::kCMStateReady
-      && state != CMState::kCMStateConnecting
-      && state != CMState::kCMStateDisconnecting) {
+  if(state != CMState::kCMStateReady) {
     LOG_ERR("Core is not started yet, so you cannot send the data");
     return;
   }
@@ -671,80 +587,6 @@ void ReconnectControlAdapterTransaction::connect_callback(bool is_success) {
     return;
   }
   LOG_ERR("Reconnecting control adapter is done");
-}
-
-bool SwitchAdapterTransaction::start(Core* caller, int prev_index, int next_index) {
-  // Switch Step 2/4
-  if(SwitchAdapterTransaction::sIsOngoing) {
-    LOG_ERR("Only one transaction can run at the same time.");
-    NetworkSwitcher::get_instance()->done_switch();
-    return false;
-  }
-  SwitchAdapterTransaction::sIsOngoing = true;
-  SwitchAdapterTransaction::sPrevIndex = prev_index;
-  SwitchAdapterTransaction::sNextIndex = next_index;
-  SwitchAdapterTransaction::sCaller = caller;
-
-  // Connect next active adapter
-  ServerAdapter* next_adapter = caller->get_data_adapter(SwitchAdapterTransaction::sNextIndex);
-  if(next_adapter == NULL) {
-    LOG_ERR("Connecting next data adapter is failed 1");
-    NetworkSwitcher::get_instance()->done_switch();
-    SwitchAdapterTransaction::sIsOngoing = false;
-    return false;
-  }
-  bool res = next_adapter->connect(SwitchAdapterTransaction::connect_callback, true);
-  if(!res) {
-    LOG_ERR("Connecting next data adapter is failed 2");
-    NetworkSwitcher::get_instance()->done_switch();
-    SwitchAdapterTransaction::sIsOngoing = false;
-    return false;
-  }
-  return true;
-}
-
-void SwitchAdapterTransaction::connect_callback(bool is_success) {
-  // Switch Step 3/4
-  Core* caller = SwitchAdapterTransaction::sCaller;
-  if(!is_success) {
-    LOG_ERR("Connecting next data adapter is failed 3");
-    NetworkSwitcher::get_instance()->done_switch();
-    SwitchAdapterTransaction::sIsOngoing = false;
-    return;
-  }
-  // Disconnect previous active adapter
-  ServerAdapter* prev_adapter = caller->get_data_adapter(SwitchAdapterTransaction::sPrevIndex);
-  if(prev_adapter == NULL) {
-    LOG_ERR("Disconnecting previous data adapter is failed 1");
-    NetworkSwitcher::get_instance()->done_switch();
-    SwitchAdapterTransaction::sIsOngoing = false;
-    return;
-  }
-  bool res = prev_adapter->disconnect(SwitchAdapterTransaction::disconnect_callback);
-  if(!res) {
-    LOG_ERR("Disconnecting previous data adapter is failed 2");
-    NetworkSwitcher::get_instance()->done_switch();
-    SwitchAdapterTransaction::sIsOngoing = false;
-    return;
-  }
-}
-
-void SwitchAdapterTransaction::disconnect_callback(bool is_success) {
-  // Switch Step 4/4
-  Core* caller = SwitchAdapterTransaction::sCaller;
-  if(!is_success) {
-    LOG_ERR("Disconnecting previous data adapter is failed 3");
-    NetworkSwitcher::get_instance()->done_switch();
-    SwitchAdapterTransaction::sIsOngoing = false;
-    return;
-  }
-
-  LOG_DEBUG("Switch from %d to %d done.",
-      SwitchAdapterTransaction::sPrevIndex, SwitchAdapterTransaction::sNextIndex);
-  NetworkSwitcher::get_instance()->done_switch();
-  caller->mActiveDataAdapterIndex = SwitchAdapterTransaction::sNextIndex;
-  SwitchAdapterTransaction::sIsOngoing = false;
-  return;
 }
 
 } /* namespace cm */

@@ -20,6 +20,8 @@
 #ifndef INC_NETWORK_SWITCHER_H_
 #define INC_NETWORK_SWITCHER_H_
 
+#include <Core.h>
+
 #include <thread>
 #include <mutex>
 
@@ -30,9 +32,31 @@ namespace cm {
 typedef enum {
   kNSStateInitialized = 0,
   kNSStateRunning = 1,
-  kNSStateIncreasing = 2,
-  kNSStateDecreasing = 3 
+  kNSStateSwitching = 2,
 } NSState;
+
+class SwitchAdapterTransaction {
+  /*
+   * Switch Adapter Transaction: Order
+   * 1. NetworkSwitcher.switch_adapters()
+   * 2. SwitchAdapterTransaction.start()
+   * 3. next_adapter.connect()
+   * 4. SwitchAdapterTransaction.connect_callback()
+   * 5. prev_adapter.disconnect()
+   * 6. SwitchAdapterTransaction.disconnect_callback()
+   * 7. NetworkSwitcher.done_switch()
+   */
+public:
+  static bool start(Core* caller, int prev_index, int next_index);
+  static void connect_callback(bool is_success);
+  static void disconnect_callback(bool is_success);
+
+protected:
+  static Core* sCaller;
+  static bool sIsOngoing;
+  static int sPrevIndex;
+  static int sNextIndex;
+};
 
 class NetworkSwitcher {
   public:
@@ -56,8 +80,7 @@ class NetworkSwitcher {
     void done_switch(void) {
       NSState state = this->get_state();
       switch(state) {
-        case NSState::kNSStateIncreasing:
-        case NSState::kNSStateDecreasing:
+        case NSState::kNSStateSwitching:
           this->set_state(NSState::kNSStateRunning);
           break;
         case NSState::kNSStateInitialized:
@@ -94,6 +117,23 @@ class NetworkSwitcher {
       this->mValuesCursor = 0;
     }
 
+    /* Switch adapters */
+    bool increase_adapter(void);
+    bool decrease_adapter(void);
+    bool switch_adapters(int prev_index, int next_index);
+    bool is_increaseable(void);
+    bool is_decreaseable(void);
+
+    /*
+     * Active Data Adapter Index means the index value indicating
+     * 'conencted' or 'connecting' data adapter currently.
+     * Only "the current data adapter" is 'connected' or 'connecting',
+     * but the others are 'connected(but to-be-disconnected)', 'disconnected' or 'disconnecting'.
+     * This index is changed right before increasing or decreasing starts.
+     */
+    int mActiveDataAdapterIndex = 0;
+
+    /* Values */
     void put_values(int send_request_speed, int send_queue_data_size,
         int total_bandwidth_now) {
       this->mSendRequestSpeedValues[this->mValuesCursor] = send_request_speed;

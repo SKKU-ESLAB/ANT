@@ -37,7 +37,7 @@ bool ServerAdapter::connect(ConnectCallback callback, bool is_send_connect_messa
   }
 
   if(is_send_connect_message) {
-    Core::get_instance()->send_connect_control_data(this->get_id());
+    Core::get_instance()->send_request_connect(this->get_id());
   }
 
   this->mConnectCallback = callback;

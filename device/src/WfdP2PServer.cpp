@@ -115,7 +115,7 @@ bool WfdP2PServer::allow_impl(void) {
   }
   LOG_VERB("WFD Server added : %s", buf);
   int adapter_id = ((WfdServerAdapter*)this->mOwner)->get_id();
-  Core::get_instance()->send_private_control_data(adapter_id, buf, strlen(buf));
+  Core::get_instance()->send_noti_private_data(adapter_id, buf, strlen(buf));
 
   // Set & Send WFD PIN
   ret = this->reset_wfd_server(buf, 256);
@@ -123,7 +123,7 @@ bool WfdP2PServer::allow_impl(void) {
     return false;
   }
   LOG_VERB("WFD Server PIN: %s", buf);
-  Core::get_instance()->send_private_control_data(adapter_id, buf, strlen(buf));
+  Core::get_instance()->send_noti_private_data(adapter_id, buf, strlen(buf));
 
   // Get server's IP address and send the IP address
   LOG_VERB("Get server's IP\n"); 
@@ -143,7 +143,7 @@ bool WfdP2PServer::allow_impl(void) {
   }
 
   char* ip_address = buf;
-  Core::get_instance()->send_private_control_data(adapter_id, ip_address, strlen(ip_address));
+  Core::get_instance()->send_noti_private_data(adapter_id, ip_address, strlen(ip_address));
 
   // Notify IP address to the listeners
   for(std::vector<WfdIpAddressListener*>::iterator it = this->mIpAddrListeners.begin();
