@@ -66,5 +66,5 @@ public class Core {
         return false;
     }
 
-    
+
 }
