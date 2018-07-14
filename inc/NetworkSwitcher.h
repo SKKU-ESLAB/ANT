@@ -47,19 +47,42 @@ class SwitchAdapterTransaction {
    * 7. NetworkSwitcher.done_switch()
    */
 public:
-  static bool start(Core* caller, int prev_index, int next_index);
+  static bool start(int prev_index, int next_index);
   static void connect_callback(bool is_success);
   static void disconnect_callback(bool is_success);
 
 protected:
-  static Core* sCaller;
   static bool sIsOngoing;
   static int sPrevIndex;
   static int sNextIndex;
 };
 
+class ConnectRequestTransaction {
+public:
+  static bool start(int adapter_id);
+  static void connect_callback(bool is_success);
+protected:
+  static void on_fail(void);
+
+  static bool sIsOngoing;
+  static int sAdapterId;
+};
+
+class ReconnectControlAdapterTransaction {
+public:
+  static bool start();
+  static void disconnect_callback(bool is_success);
+  static void connect_callback(bool is_success);
+protected:
+  static void on_fail(bool is_restart);
+
+  static bool sIsOngoing;
+};
+
+class Core;
 class NetworkSwitcher {
   public:
+    /* Control netwowrk switcher thread */
     void start(void);
     void stop(void);
 
@@ -69,14 +92,15 @@ class NetworkSwitcher {
     }
 
     void switcher_thread(void);
-    void monitor(int &avg_send_request_speed,
-        int& avg_send_queue_data_size, int& avg_total_bandwidth_now);
-    void check_and_handover(int avg_send_request_speed,
-        int avg_send_queue_data_size, int avg_total_bandwidth_now);
 
-    bool check_increase_adapter(int send_request_speed, int send_queue_data_size);
-    bool check_decrease_adapter(int bandwidth_now, int bandwidth_when_increasing);
+    /*
+     * Connect adapter command.
+     * It is called by peer.
+     */
+    void connect_adapter(int adapter_id);
+    void reconnect_control_adapter(void);
 
+    /* Notification of switch done event */
     void done_switch(void) {
       NSState state = this->get_state();
       switch(state) {
@@ -108,6 +132,7 @@ class NetworkSwitcher {
       this->set_state(NSState::kNSStateInitialized);
       this->mBandwidthWhenIncreasing = 0;
       this->mDecreasingCheckCount = 0;
+      this->mActiveDataAdapterIndex = 0;
 
       for(int i=0; i<METRIC_WINDOW_LENGTH; i++) {
         this->mSendRequestSpeedValues[i] = 0;
@@ -117,6 +142,15 @@ class NetworkSwitcher {
       this->mValuesCursor = 0;
     }
 
+    /* Monitoring */
+    void monitor(int &avg_send_request_speed,
+        int& avg_send_queue_data_size, int& avg_total_bandwidth_now);
+    void check_and_handover(int avg_send_request_speed,
+        int avg_send_queue_data_size, int avg_total_bandwidth_now);
+
+    bool check_increase_adapter(int send_request_speed, int send_queue_data_size);
+    bool check_decrease_adapter(int bandwidth_now, int bandwidth_when_increasing);
+
     /* Switch adapters */
     bool increase_adapter(void);
     bool decrease_adapter(void);
@@ -124,6 +158,7 @@ class NetworkSwitcher {
     bool is_increaseable(void);
     bool is_decreaseable(void);
 
+  private:
     /*
      * Active Data Adapter Index means the index value indicating
      * 'conencted' or 'connecting' data adapter currently.
@@ -131,8 +166,17 @@ class NetworkSwitcher {
      * but the others are 'connected(but to-be-disconnected)', 'disconnected' or 'disconnecting'.
      * This index is changed right before increasing or decreasing starts.
      */
-    int mActiveDataAdapterIndex = 0;
+    int mActiveDataAdapterIndex;
+  public:
+    int get_active_data_adapter_index(void) {
+      return this->mActiveDataAdapterIndex;
+    }
 
+    void set_active_data_adapter_index(int active_data_adapter_index) {
+      this->mActiveDataAdapterIndex = active_data_adapter_index;
+    }
+
+  private:
     /* Values */
     void put_values(int send_request_speed, int send_queue_data_size,
         int total_bandwidth_now) {
