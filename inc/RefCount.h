@@ -47,6 +47,6 @@ public:
 protected:
   int mCount;
   std::mutex mLock;
-}
+};
 } /* namespace cm */
 #endif /* !defined(_REF_COUNT_H_) */

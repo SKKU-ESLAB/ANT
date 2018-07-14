@@ -53,14 +53,6 @@ bool StopCoreTransaction::sIsOngoing = false;
 Core* StopCoreTransaction::sCaller = NULL;
 int StopCoreTransaction::sDataAdaptersCount = 0;
 std::mutex StopCoreTransaction::sDataAdaptersCountLock;
-Core* ConnectRequestTransaction::sCaller = NULL;
-bool ConnectRequestTransaction::sIsOngoing = false;
-int ConnectRequestTransaction::sAdapterId = 0;
-Core* DisconnectRequestTransaction::sCaller = NULL;
-bool DisconnectRequestTransaction::sIsOngoing = false;
-int DisconnectRequestTransaction::sAdapterId = 0;
-Core* ReconnectControlAdapterTransaction::sCaller = NULL;
-bool ReconnectControlAdapterTransaction::sIsOngoing = false;
 
 // Start core: connect initial adapters
 bool Core::start(void) {
@@ -251,7 +243,7 @@ void Core::receive_control_message_loop(ServerAdapter* adapter) {
   char data[512] = {0, };
   int res = 0;
 
-  Core* cm = Core::get_instance();
+  Core* core = Core::get_instance();
   while (true) {
     // Receive 1Byte: Control Request Code
     res = adapter->receive(data, 1);
@@ -278,7 +270,7 @@ void Core::receive_control_message_loop(ServerAdapter* adapter) {
       adapter_id = ntohs(n_adapter_id);
 
       LOG_DEBUG("Data Adapter Connect request arrived");
-      ConnectRequestTransaction::start(cm, adapter_id);
+      NetworkSwitcher::get_instance()->connect_adapter(adapter_id);
     } else if (data[0] == CtrlReq::kCtrlReqPriv) {
       LOG_VERB("Private data arrived");
       uint16_t n_adapter_id;
@@ -300,8 +292,8 @@ void Core::receive_control_message_loop(ServerAdapter* adapter) {
       // Receive nByte: Private Data
       res = adapter->receive(data, len);
       if (res > 0) {
-        for(std::vector<ControlMessageListener*>::iterator it = cm->mControlMessageListeners.begin();
-            it != cm->mControlMessageListeners.end();
+        for(std::vector<ControlMessageListener*>::iterator it = core->mControlMessageListeners.begin();
+            it != core->mControlMessageListeners.end();
             it++) {
           ControlMessageListener* listener = *it;
           listener->on_receive_control_message(adapter_id, data, len);
@@ -314,7 +306,7 @@ void Core::receive_control_message_loop(ServerAdapter* adapter) {
   } // End while
 
   // If control message loop is crashed, reconnect control adapter.
-  ReconnectControlAdapterTransaction::start(cm);
+  NetworkSwitcher::get_instance()->reconnect_control_adapter();
 }
 
 // Transactions ----------------------------------------------------------------------------------
@@ -355,7 +347,6 @@ void StartCoreTransaction::connect_control_adapter_callback(bool is_success) {
   // Connect first data adapter
   {
     std::unique_lock<std::mutex> lck(caller->mDataAdaptersLock);
-    caller->mActiveDataAdapterIndex = 0;
     bool res = caller->mDataAdapters.front()->connect(StartCoreTransaction::connect_first_data_adapter_callback, true);
     if(!res) {
       LOG_ERR("Connecting first data adapter is failed");
@@ -456,137 +447,6 @@ void StopCoreTransaction::disconnect_data_adapter_callback(bool is_success) {
     StopCoreTransaction::sIsOngoing = false;
     caller->done_stop(true);
   }
-}
-
-// Connect Request
-bool ConnectRequestTransaction::start(Core* caller, int adapter_id) {
-  if(ConnectRequestTransaction::sIsOngoing) {
-    LOG_ERR("Only one transaction can run at the same time.");
-    return false;
-  }
-  ConnectRequestTransaction::sIsOngoing = true;
-  ConnectRequestTransaction::sAdapterId = adapter_id;
-
-  // Connect requested adapter
-  ServerAdapter* adapter = caller->find_data_adapter_by_id(ConnectRequestTransaction::sAdapterId);
-  if(adapter == NULL) {
-    LOG_ERR("Connecting requested data adapter is failed 1");
-    ConnectRequestTransaction::sIsOngoing = false;
-    return false;
-  }
-  bool res = adapter->connect(ConnectRequestTransaction::connect_callback, false);
-  if(!res) {
-    LOG_ERR("Connecting requested data adapter is failed 2");
-    ConnectRequestTransaction::sIsOngoing = false;
-    return false;
-  }
-  return true;
-}
-
-void ConnectRequestTransaction::connect_callback(bool is_success) {
-  if(!is_success) {
-    LOG_ERR("Connecting requested data adapter is failed 3");
-    ConnectRequestTransaction::sIsOngoing = false;
-    return;
-  }
-  LOG_ERR("Connecting requested data adapter is done");
-}
-
-// Disconnect Request
-bool DisconnectRequestTransaction::start(Core* caller, int adapter_id) {
-  if(DisconnectRequestTransaction::sIsOngoing) {
-    LOG_ERR("Only one transaction can run at the same time.");
-    return false;
-  }
-  DisconnectRequestTransaction::sIsOngoing = true;
-  DisconnectRequestTransaction::sAdapterId = adapter_id;
-
-  // Connect requested adapter
-  ServerAdapter* adapter = caller->find_data_adapter_by_id(adapter_id);
-  if(adapter == NULL) {
-    LOG_ERR("Disconnecting requested data adapter is failed 1");
-    DisconnectRequestTransaction::sIsOngoing = false;
-    return false;
-  }
-  bool res = adapter->disconnect(DisconnectRequestTransaction::disconnect_callback);
-  if(!res) {
-    LOG_ERR("Disconnecting requested data adapter is failed 2");
-    DisconnectRequestTransaction::sIsOngoing = false;
-    return false;
-  }
-  return true;
-}
-
-void DisconnectRequestTransaction::disconnect_callback(bool is_success) {
-  if(!is_success) {
-    LOG_ERR("Disconnecting requested data adapter is failed 3");
-    DisconnectRequestTransaction::sIsOngoing = false;
-    return;
-  }
-  LOG_ERR("Disconnecting requested data adapter is done");
-}
-
-// Reconnect Control Adapter
-bool ReconnectControlAdapterTransaction::start(Core* caller) {
-  if(ReconnectControlAdapterTransaction::sIsOngoing) {
-    LOG_ERR("Only one transaction can run at the same time.");
-    return false;
-  }
-  ReconnectControlAdapterTransaction::sIsOngoing = true;
-  ReconnectControlAdapterTransaction::sCaller = caller;
-
-  // disconnect control adapter
-  ServerAdapter* control_adapter = caller->get_control_adapter();
-  if(control_adapter == NULL) {
-    LOG_ERR("Reconnecting control adapter is failed 1: retry");
-    ReconnectControlAdapterTransaction::sIsOngoing = false;
-    ReconnectControlAdapterTransaction::start(caller);
-    return false;
-  }
-  bool res = control_adapter->disconnect(ReconnectControlAdapterTransaction::disconnect_callback);
-  if(!res) {
-    LOG_ERR("Reconnecting control adapter is failed 2: retry");
-    ReconnectControlAdapterTransaction::sIsOngoing = false;
-    ReconnectControlAdapterTransaction::start(caller);
-    return false;
-  }
-  return true;
-}
-
-void ReconnectControlAdapterTransaction::disconnect_callback(bool is_success) {
-  Core* caller = ReconnectControlAdapterTransaction::sCaller;
-  if(!is_success) {
-    LOG_ERR("Reconnecting control adapter is failed 3: retry");
-    ReconnectControlAdapterTransaction::sIsOngoing = false;
-    ReconnectControlAdapterTransaction::start(caller);
-    return;
-  }
-  // connect control adapter
-  ServerAdapter* control_adapter = caller->get_control_adapter();
-  if(control_adapter == NULL) {
-    LOG_ERR("Reconnecting control adapter is failed 4: retry");
-    ReconnectControlAdapterTransaction::sIsOngoing = false;
-    ReconnectControlAdapterTransaction::start(caller);
-    return;
-  }
-  bool res = control_adapter->connect(ReconnectControlAdapterTransaction::disconnect_callback, false);
-  if(!res) {
-    LOG_ERR("Disconnecting control adapter is failed 5: retry");
-    ReconnectControlAdapterTransaction::sIsOngoing = false;
-    ReconnectControlAdapterTransaction::start(caller);
-    return;
-  }
-}
-
-void ReconnectControlAdapterTransaction::connect_callback(bool is_success) {
-  Core* caller = ReconnectControlAdapterTransaction::sCaller;
-  if(!is_success) {
-    LOG_ERR("Reconnecting control adapter is failed 6: retry");
-    ReconnectControlAdapterTransaction::sIsOngoing = false;
-    ReconnectControlAdapterTransaction::start(caller);
-    return;
-  }
-  LOG_ERR("Reconnecting control adapter is done");
 }
 
 } /* namespace cm */

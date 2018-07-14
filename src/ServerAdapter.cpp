@@ -331,8 +331,8 @@ void ServerAdapter::receive_data_loop(ServerAdapter* adapter) {
         adapter->get_name(), res);
   }
 
-  this->disconnect(NULL);
+  adapter->disconnect(NULL);
 
   LOG_DEBUG("%s's Receiver thread ends(tid: %d)",
-      this->get_name(), (unsigned int)syscall(224));
+      adapter->get_name(), (unsigned int)syscall(224));
 }

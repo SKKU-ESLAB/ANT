@@ -87,36 +87,6 @@ protected:
   static std::mutex sDataAdaptersCountLock;
 };
 
-class ConnectRequestTransaction {
-public:
-  static bool start(Core* caller, int adapter_id);
-  static void connect_callback(bool is_success);
-protected:
-  static Core* sCaller;
-  static bool sIsOngoing;
-  static int sAdapterId;
-};
-
-class DisconnectRequestTransaction {
-public:
-  static bool start(Core* caller, int adapter_id);
-  static void disconnect_callback(bool is_success);
-protected:
-  static Core* sCaller;
-  static bool sIsOngoing;
-  static int sAdapterId;
-};
-
-class ReconnectControlAdapterTransaction {
-public:
-  static bool start(Core* caller);
-  static void disconnect_callback(bool is_success);
-  static void connect_callback(bool is_success);
-protected:
-  static Core* sCaller;
-  static bool sIsOngoing;
-};
-
 class ControlMessageListener {
 public:
   virtual void on_receive_control_message(int adapter_id, void* data, size_t len) = 0;
@@ -200,8 +170,6 @@ public:
 
 private:
   /* Main function to switch adapters */
-  friend SwitchAdapterTransaction;
-
   void set_state(CMState new_state) {
     std::unique_lock<std::mutex> lck(this->mStateLock);
     this->mState = new_state;
