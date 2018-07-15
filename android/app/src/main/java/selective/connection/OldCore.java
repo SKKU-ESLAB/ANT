@@ -1,8 +1,9 @@
 package selective.connection;
 
-/* Copyright (c) 2018, contributors. All rights reserved.
- *
- * Contributor: 
+/* Copyright (c) 2017-2018. All rights reserved.
+ *  Gyeonghwan Hong (redcarrottt@gmail.com)
+ *  Eunsoo Park (esevan.park@gmail.com)
+ *  Injung Hwang (sinban04@gmail.com)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -57,6 +58,7 @@ class OldCore {
         public CtrlRecvThread(Handler handler) {
             mHandler = handler;
         }
+
         public void run() {
             byte[] data = new byte[SegmentManager.kSegSize];
             ByteBuffer buffer;
@@ -193,7 +195,7 @@ class OldCore {
         connecting_adapter = null;
         adapter_list = new LinkedList[kNetMaxPort];
 
-        for (int i=0; i<kNetMaxPort; i++) {
+        for (int i = 0; i < kNetMaxPort; i++) {
             adapter_list[i] = new LinkedList<NetworkAdapter>();
         }
 
@@ -220,10 +222,10 @@ class OldCore {
             public void handleMessage(Message msg) {
                 OldCore nm = OldCore.get_instance();
 
-                if(nm.state != kNetStatDecr) throw new AssertionError();
+                if (nm.state != kNetStatDecr) throw new AssertionError();
 
-                if(msg.what == kDevDiscon) {
-                    if(is_data_adapter_on()){
+                if (msg.what == kDevDiscon) {
+                    if (is_data_adapter_on()) {
                         nm.state = kNetStatData;
                     } else {
                         nm.state = kNetStatControl;
@@ -371,7 +373,7 @@ class OldCore {
                 if (nm.state != kNetStatDecr) throw new AssertionError();
 
                 if (msg.what == kDevDiscon) {
-                    if(is_data_adapter_on()){
+                    if (is_data_adapter_on()) {
                         nm.state = kNetStatData;
                     } else {
                         nm.state = kNetStatControl;
@@ -387,7 +389,7 @@ class OldCore {
     }
 
     private boolean is_data_adapter_on() {
-        ListIterator<NetworkAdapter> iterator  = adapter_list[kNetData].listIterator();
+        ListIterator<NetworkAdapter> iterator = adapter_list[kNetData].listIterator();
         while (iterator.hasNext()) {
             NetworkAdapter walker = iterator.next();
             if (walker.get_stat() == kDevCon) {
@@ -463,7 +465,7 @@ class OldCore {
 
     private NetworkAdapter select_device() {
         NetworkAdapter res = null;
-        ListIterator<NetworkAdapter> iterator  = adapter_list[kNetData].listIterator();
+        ListIterator<NetworkAdapter> iterator = adapter_list[kNetData].listIterator();
         while (iterator.hasNext()) {
             NetworkAdapter walker = iterator.next();
 
@@ -477,7 +479,7 @@ class OldCore {
 
     private NetworkAdapter select_device_on() {
         NetworkAdapter res = null;
-        ListIterator<NetworkAdapter> iterator  = adapter_list[kNetData].listIterator();
+        ListIterator<NetworkAdapter> iterator = adapter_list[kNetData].listIterator();
         while (iterator.hasNext()) {
             NetworkAdapter walker = iterator.next();
 

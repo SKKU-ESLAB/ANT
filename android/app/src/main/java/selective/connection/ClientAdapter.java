@@ -1,8 +1,7 @@
 package selective.connection;
 
-/* Copyright (c) 2018, contributors. All rights reserved.
- *
- * Contributor: 
+/* Copyright (c) 2017-2018. All rights reserved.
+ *  Gyeonghwan Hong (redcarrottt@gmail.com)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,156 +20,6 @@ import java.util.ArrayList;
 
 import kr.ac.skku.nyx.selectiveconnection.Logger;
 
-abstract class Device {
-    // Main Functions
-    boolean holdAndTurnOn() {
-        // TODO
-        return false;
-    }
-
-    boolean releaseAndTurnOff() {
-        // TODO
-        return false;
-    }
-
-    // Implemented by child classes
-    protected abstract boolean turnOnImpl();
-
-    protected abstract boolean turnOffImpl();
-
-    // State
-    class State {
-        public static final int kOff = 0;
-        public static final int kTurningOn = 1;
-        public static final int kOn = 2;
-        public static final int kTurningOff = 3;
-    }
-
-    protected int getState() {
-        int state;
-        synchronized (this.mState) {
-            state = this.mState;
-        }
-        return state;
-    }
-
-    protected void setState(int newState) {
-        synchronized (this.mState) {
-            this.mState = newState;
-        }
-    }
-
-    // Attributes
-
-    // State
-    protected Integer mState;
-}
-
-abstract class P2PClient {
-    // Main Functions
-    public boolean discoverAndConnect() {
-        // TODO
-        return false;
-    }
-
-    public boolean disconnect() {
-        // TODO
-        return false;
-    }
-
-    // Implemented by child classes
-    protected abstract boolean discoverAndConnectImpl();
-
-    protected abstract boolean disconnectImpl();
-
-    // State
-    class State {
-        public static final int kDisconnected = 0;
-        public static final int kDiscovering = 1;
-        public static final int kConnecting = 2;
-        public static final int kConnected = 3;
-        public static final int kDisconnecting = 4;
-    }
-
-    protected int getState() {
-        int state;
-        synchronized (this.mState) {
-            state = this.mState;
-        }
-        return state;
-    }
-
-    protected void setState(int newState) {
-        synchronized (this.mState) {
-            this.mState = newState;
-        }
-    }
-
-    // Attributes
-
-    // State
-    protected Integer mState;
-}
-
-abstract class ClientSocket {
-    // Main Functions
-    public boolean open() {
-        // TODO
-        return false;
-    }
-
-    public boolean close() {
-        // TODO
-        return false;
-    }
-
-    public int send(byte[] dataBuffer, int dataLength) {
-        // TODO
-        return -1;
-    }
-
-    public int receive(byte[] dataBuffer, int dataLength) {
-        // TODO
-        return -1;
-    }
-
-    // Implemented by child classes
-    protected abstract boolean openImpl();
-
-    protected abstract boolean closeImpl();
-
-    protected abstract int sendImpl(byte[] dataBuffer, int dataLength);
-
-    protected abstract int receiveImpl();
-
-    // State
-    class State {
-        public static final int kClosed = 0;
-        public static final int kOpening = 1;
-        public static final int kOpened = 2;
-        public static final int kClosing = 3;
-    }
-
-    protected int getState() {
-        int state;
-        synchronized (this.mState) {
-            state = this.mState;
-        }
-        return state;
-    }
-
-    protected void setState(int newState) {
-        synchronized (this.mState) {
-            this.mState = newState;
-        }
-    }
-
-    // Attributes
-
-    // State
-    protected Integer mState;
-}
-
 public class ClientAdapter {
     private final String TAG = "ClientAdapter";
     private final ClientAdapter self = this;
@@ -183,7 +32,7 @@ public class ClientAdapter {
         }
 
         if (isSendConnectMessage) {
-            // TODO: Core.sendConnectControlData()
+            Core.getInstance().sendRequestConnect((short) this.getId());
         }
 
         ConnectThread thread = new ConnectThread(listener);
@@ -374,7 +223,7 @@ public class ClientAdapter {
 
             // Disconnect
             int p2pClientState = self.mClientSocket.getState();
-            if (socketState != P2PClient.State.kDisconnected) {
+            if (p2pClientState != P2PClient.State.kDisconnected) {
                 boolean res = self.mP2PClient.disconnect();
 
                 p2pClientState = self.mP2PClient.getState();
@@ -386,7 +235,7 @@ public class ClientAdapter {
                 }
             }
 
-            // TODO: Turn off device
+            // Turn off device
             int deviceState = self.mDevice.getState();
             if (deviceState != Device.State.kOff) {
                 boolean res = self.mDevice.releaseAndTurnOff();
@@ -511,6 +360,7 @@ public class ClientAdapter {
     public ClientAdapter(int id, String name) {
         this.mId = id;
         this.mName = name;
+        this.mState = State.kDisconnected;
     }
 
     protected void initialize(Device device, P2PClient p2pClient, ClientSocket clientSocket) {
@@ -561,7 +411,7 @@ public class ClientAdapter {
         void onUpdateClientAdapterState(ClientAdapter adapter, int oldState, int newState);
     }
 
-    public void listen_state(StateListener listener) {
+    public void listenState(StateListener listener) {
         synchronized (this.mListeners) {
             this.mListeners.add(listener);
         }

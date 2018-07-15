@@ -142,12 +142,12 @@ public:
     return this->mControlAdapter;
   }
   int get_data_adapter_count(void) {
-    return this->mDataAdapterCount;
+    return this->mDataAdapters.size();
   }
 
   /* Control message handling */
 private:
-  void send_control_message(const void *data, size_t len);
+  void send_control_message(const void *dataBuffer, size_t dataLength);
 public:
   void send_request_connect(uint16_t adapter_id);
   void send_noti_private_data(uint16_t adapter_id, char* private_data_buf, uint32_t private_data_len);
@@ -194,7 +194,6 @@ private:
   ServerAdapter* mControlAdapter = NULL;
   std::mutex mDataAdaptersLock;
   std::mutex mControlAdapterLock;
-  int mDataAdapterCount = 0;
 
   /* Control Message Listeners */
   std::vector<ControlMessageListener*> mControlMessageListeners;

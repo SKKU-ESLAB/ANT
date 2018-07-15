@@ -22,6 +22,8 @@ android/.idea/workspace.xml
 android/.idea/libraries
 android/.idea/misc.xml
 android/.idea/modules.xml
+android/.idea/vcs.xml
+android/.idea/caches
 .DS_Store
 android/build
 android/captures

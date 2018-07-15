@@ -143,7 +143,6 @@ void Core::register_data_adapter(ServerAdapter* data_adapter) {
   data_adapter->enable_receiver_thread(NULL);
   data_adapter->enable_sender_thread();
   this->mDataAdapters.push_back(data_adapter);
-  this->mDataAdapterCount++;
 }
 
 int Core::send(const void *dataBuffer, uint32_t dataLength) {
@@ -195,14 +194,14 @@ int Core::receive(void **pDataBuffer) {
   return packet_size;
 }
 
-void Core::send_control_message(const void *data, size_t len) {
+void Core::send_control_message(const void *dataBuffer, size_t dataLength) {
   CMState state = this->get_state();
   if(state != CMState::kCMStateReady) {
     LOG_ERR("Core is not started yet, so you cannot send the data");
     return;
   }
   ServerAdapter *control_adapter = this->get_control_adapter();
-  control_adapter->send(data, len);
+  control_adapter->send(dataBuffer, dataLength);
 }
 
 void Core::send_request_connect(uint16_t adapter_id) {
