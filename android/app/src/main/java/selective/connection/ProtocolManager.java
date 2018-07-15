@@ -1,8 +1,9 @@
 package selective.connection;
 
-/* Copyright (c) 2018, contributors. All rights reserved.
- *
- * Contributor: 
+/* Copyright (c) 2017-2018. All rights reserved.
+ *  Gyeonghwan Hong (redcarrottt@gmail.com)
+ *  Eunsoo Park (esevan.park@gmail.com)
+ *  Injung Hwang (sinban04@gmail.com)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.

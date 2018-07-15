@@ -1,8 +1,7 @@
 package selective.connection;
 
-/* Copyright (c) 2018, contributors. All rights reserved.
- *
- * Contributor: 
+/* Copyright (c) 2017-2018. All rights reserved.
+ *  Gyeonghwan Hong (redcarrottt@gmail.com)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,54 +16,101 @@ package selective.connection;
  * limitations under the License.
  */
 
+import java.util.ArrayList;
+
 public class Core {
     // APIs: These functions are mapped to ones in API.
     boolean start() {
         // TODO
         return false;
     }
+
     boolean stop() {
         // TODO
         return false;
     }
 
-    void register_control_adapter(ClientAdapter adapter) {
+    public void registerControlAdapter(ClientAdapter adapter) {
         // TODO
     }
 
-    void register_data_adapter(ClientAdapter adapter) {
+    public void registerDataAdapter(ClientAdapter adapter) {
         // TODO
     }
 
-    int send(byte[] dataBuffer, int dataLength) {
-        // TODO
-        return -1;
-    }
-
-    int receive(byte[] dataBuffer, int dataLength) {
+    public int send(byte[] dataBuffer, int dataLength) {
         // TODO
         return -1;
     }
 
-    boolean increase_adapter() {
+    public int receive(byte[] dataBuffer, int dataLength) {
         // TODO
-        return false;
+        return -1;
     }
 
-    boolean decrease_adapter() {
+    // Control Message Handling
+    protected void sendControlMessage(byte[] dataBuffer, int dataLength) {
         // TODO
-        return false;
     }
 
-    boolean is_increasable() {
+    public void sendRequestConnect(short adapterId) {
         // TODO
-        return false;
     }
 
-    boolean is_decreasable() {
-        // TODO
-        return false;
+    class ReceiveControlMessageLoop implements ClientAdapter.ReceiveLoop {
+        @Override
+        public void receiveLoop(ClientAdapter adapter) {
+            // TODO
+        }
     }
 
+    // State
+    class State {
+        public static final int kIdle = 0;
+        public static final int kStarting = 1;
+        public static final int kReady = 2;
+        public static final int kConnecting = 3;
+        public static final int kDisconnecting = 4;
+        public static final int kStopping = 5;
+    }
 
+    protected int getState() {
+        int state;
+        synchronized (this.mState) {
+            state = this.mState;
+        }
+        return state;
+    }
+
+    protected void setState(int newState) {
+        synchronized (this.mState) {
+            this.mState = newState;
+        }
+    }
+
+    // Control Message Listener
+    interface ControlMessageListener {
+        void onReceiveControlMessage(int adapterId, byte[] dataBuffer, int dataLength);
+    }
+
+    public void addControlMessageListener(ControlMessageListener listener) {
+        this.mControlMessageListeners.add(listener);
+    }
+
+    // Attributes
+    ArrayList<ClientAdapter> mDataAdapters;
+    ClientAdapter mControlAdapter;
+    ArrayList<ControlMessageListener> mControlMessageListeners;
+
+    // State
+    protected Integer mState;
+
+    // Singleton
+    private static Core sSingleton;
+    public static Core getInstance() {
+        if(sSingleton == null) {
+            sSingleton = new Core();
+        }
+        return sSingleton;
+    }
 }
