@@ -1,7 +1,6 @@
 tags
 cscope
 cscope.out
-log*
 *.o
 bin/*
 dhcpd.conf
