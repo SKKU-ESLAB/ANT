@@ -1,4 +1,4 @@
-package kr.ac.skku.nyx.selectiveconnection;
+package com.redcarrottt.testapp;
 
 /* Copyright (c) 2017-2018. All rights reserved.
  *  Gyeonghwan Hong (redcarrottt@gmail.com)
@@ -28,10 +28,10 @@ import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.widget.TextView;
 
-import selective.connection.BTClientAdapter;
-import selective.connection.API;
-import selective.connection.TCPClientAdapter;
-import selective.connection.WFDClientAdapter;
+import com.redcarrottt.sc.API;
+import com.redcarrottt.sc.BTClientAdapter;
+import com.redcarrottt.sc.TCPClientAdapter;
+import com.redcarrottt.sc.WFDClientAdapter;
 
 public class MainActivity extends AppCompatActivity implements LogReceiver.Callback {
     private MainActivity self = this;
@@ -56,7 +56,7 @@ public class MainActivity extends AppCompatActivity implements LogReceiver.Callb
     }
 
     private void initializeCommunication() {
-        mAPI = API.get_instance();
+        mAPI = API.getInstance();
         TCPClientAdapter tcpClientAdapter = new TCPClientAdapter((short) 2345, "192.168.0.35",
                 2345);
         BTClientAdapter btClientAdapter = new BTClientAdapter((short) 3333, "B8:27:EB:77:C3:4A",
@@ -100,8 +100,7 @@ public class MainActivity extends AppCompatActivity implements LogReceiver.Callb
             while (true) {
                 int receivedLength = mAPI.recv_data(buf, 100 * 1024 * 1024);
                 Logger.print(self, "Received: Size=" + receivedLength);
-                int sentLength = mAPI.send_data(sending_buf.getBytes(), sending_buf
-                        .length());
+                int sentLength = mAPI.send_data(sending_buf.getBytes(), sending_buf.length());
                 Logger.print(self, "Sent: Size=" + sentLength);
             }
 

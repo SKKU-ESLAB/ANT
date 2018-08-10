@@ -1,4 +1,4 @@
-package selective.connection;
+package com.redcarrottt.sc;
 
 /* Copyright (c) 2017-2018. All rights reserved.
  *  Gyeonghwan Hong (redcarrottt@gmail.com)
@@ -16,9 +16,9 @@ package selective.connection;
  * limitations under the License.
  */
 
-import java.util.ArrayList;
+import com.redcarrottt.testapp.Logger;
 
-import kr.ac.skku.nyx.selectiveconnection.Logger;
+import java.util.ArrayList;
 
 public class ClientAdapter {
     private final String TAG = "ClientAdapter";

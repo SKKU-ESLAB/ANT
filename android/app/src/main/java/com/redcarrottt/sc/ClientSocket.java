@@ -1,4 +1,4 @@
-package selective.connection;
+package com.redcarrottt.sc;
 
 /* Copyright (c) 2017-2018. All rights reserved.
  *  Gyeonghwan Hong (redcarrottt@gmail.com)
@@ -15,6 +15,8 @@ package selective.connection;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
+import com.redcarrottt.testapp.Logger;
 
 public abstract class ClientSocket {
     private final String TAG = "ClientSocket";

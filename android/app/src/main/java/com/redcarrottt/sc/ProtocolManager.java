@@ -1,4 +1,4 @@
-package selective.connection;
+package com.redcarrottt.sc;
 
 /* Copyright (c) 2017-2018. All rights reserved.
  *  Gyeonghwan Hong (redcarrottt@gmail.com)
@@ -107,7 +107,7 @@ class ProtocolManager {
     }
 
     static public int send_packet(int packet_size) {
-        SegmentManager sm = SegmentManager.get_instance();
+        SegmentManager sm = SegmentManager.getInstance();
 
         return sm.send_to_segment_manager(serialized_vector, packet_size);
     }
@@ -116,7 +116,7 @@ class ProtocolManager {
         if (buf == null) throw new AssertionError();
 
         ProtocolData pd = new ProtocolData();
-        SegmentManager sm = SegmentManager.get_instance();
+        SegmentManager sm = SegmentManager.getInstance();
 
         byte[] data = sm.recv_from_segment_manager(pd);
 

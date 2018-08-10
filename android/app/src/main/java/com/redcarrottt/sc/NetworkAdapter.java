@@ -1,4 +1,4 @@
-package selective.connection;
+package com.redcarrottt.sc;
 
 /* Copyright (c) 2017-2018. All rights reserved.
  *  Gyeonghwan Hong (redcarrottt@gmail.com)
@@ -20,14 +20,14 @@ package selective.connection;
 
 import android.os.Handler;
 
+import com.redcarrottt.testapp.Logger;
+
 import java.nio.ByteBuffer;
 
-import kr.ac.skku.nyx.selectiveconnection.Logger;
-
-import static selective.connection.SegmentManager.kSegHeaderSize;
-import static selective.connection.SegmentManager.kSegRecv;
-import static selective.connection.SegmentManager.kSegSend;
-import static selective.connection.SegmentManager.kSegSize;
+import static com.redcarrottt.sc.SegmentManager.kSegHeaderSize;
+import static com.redcarrottt.sc.SegmentManager.kSegRecv;
+import static com.redcarrottt.sc.SegmentManager.kSegSend;
+import static com.redcarrottt.sc.SegmentManager.kSegSize;
 
 public abstract class NetworkAdapter {
     static public final int kDevOff = 0;
@@ -67,7 +67,7 @@ public abstract class NetworkAdapter {
 
     private class SenderThread extends Thread {
         public void run() {
-            SegmentManager sm = SegmentManager.get_instance();
+            SegmentManager sm = SegmentManager.getInstance();
             if (dev_type == kWifiDirect) {
                 sm.wfd_state = 1;
             }
@@ -120,7 +120,7 @@ public abstract class NetworkAdapter {
 
     private class RecverThread extends Thread {
         public void run() {
-            SegmentManager sm = SegmentManager.get_instance();
+            SegmentManager sm = SegmentManager.getInstance();
             Segment free_seg = sm.get_free_segment();
 
             if (dev_type == kBluetooth) {
@@ -318,7 +318,7 @@ public abstract class NetworkAdapter {
             return;
         }
 
-        Core.get_instance().install_data_adapter(this);
+        Core.getInstance().install_data_adapter(this);
         at |= kATInitialized;
     }
 
@@ -334,7 +334,7 @@ public abstract class NetworkAdapter {
         }
         at |= kATCtrl | kATInitialized;
 
-        Core.get_instance().install_control_adapter(this);
+        Core.getInstance().install_control_adapter(this);
     }
 
     public void connect(Handler handler) {
@@ -385,20 +385,21 @@ public abstract class NetworkAdapter {
             return;
         }
 
-        Core nm = Core.get_instance();
+        Core core = Core.getInstance();
         ByteBuffer buffer = ByteBuffer.allocate(1);
-        buffer.put((byte) Core.kCtrlReqPriv);
+        final int kCtrlReqPriv = 2;
+        buffer.put((byte) kCtrlReqPriv);
 
-        nm.send_control_data(buffer.array(), 1);
+        core.sendControlMessage(buffer.array(), 1);
 
         buffer = ByteBuffer.allocate(2);
         buffer.putShort(dev_id);
-        nm.send_control_data(buffer.array(), 2);
+        core.sendControlMessage(buffer.array(), 2);
 
         buffer = ByteBuffer.allocate(4);
         buffer.putInt(len);
-        nm.send_control_data(buffer.array(), 4);
+        core.sendControlMessage(buffer.array(), 4);
 
-        nm.send_control_data(data, len);
+        core.sendControlMessage(data, len);
     }
 }

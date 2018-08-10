@@ -21,13 +21,14 @@ package selective.connection;
 import android.os.Handler;
 import android.os.Message;
 
+import com.redcarrottt.sc.NetworkAdapter;
+import com.redcarrottt.testapp.Logger;
+
 import java.nio.ByteBuffer;
 import java.util.LinkedList;
 import java.util.ListIterator;
 
-import kr.ac.skku.nyx.selectiveconnection.Logger;
-
-import static selective.connection.NetworkAdapter.kDevDiscon;
+import static com.redcarrottt.sc.NetworkAdapter.kDevDiscon;
 
 class OldCore {
     static private OldCore instance = null;
@@ -101,8 +102,8 @@ class OldCore {
                     }
                     if (data_na == null) throw new AssertionError();
 
-                    OldCore.get_instance().prev_state = OldCore.get_instance().state;
-                    OldCore.get_instance().state = kNetStatIncr;
+                    OldCore.getInstance().prev_state = OldCore.getInstance().state;
+                    OldCore.getInstance().state = kNetStatIncr;
                     data_na.connect(mDataConnectingHandler);
                 } else if (ctrl_req == kCtrlReqDecr) {
                     Logger.print(tag, "DataDecr request arrived");
@@ -129,8 +130,8 @@ class OldCore {
                     }
                     if (data_na == null) throw new AssertionError();
 
-                    OldCore.get_instance().prev_state = OldCore.get_instance().state;
-                    OldCore.get_instance().state = kNetStatDecr;
+                    OldCore.getInstance().prev_state = OldCore.getInstance().state;
+                    OldCore.getInstance().state = kNetStatDecr;
                     data_na.close(mDataDisconnectingHandler);
 
                 } else if (ctrl_req == kCtrlReqPriv) {
@@ -204,14 +205,14 @@ class OldCore {
 
         mDataConnectingHandler = new Handler() {
             public void handleMessage(Message msg) {
-                OldCore nm = OldCore.get_instance();
+                OldCore nm = OldCore.getInstance();
 
                 if (nm.state != kNetStatIncr) throw new AssertionError();
 
                 if (msg.what == kDevCon) {
                     nm.state = kNetStatData;
                     connecting_adapter = null;
-                    SegmentManager.get_instance().queue_threshold += SegmentManager.kSegThreshold;
+                    SegmentManager.getInstance().queue_threshold += SegmentManager.kSegThreshold;
                 } else {
                     nm.state = nm.prev_state;
                 }
@@ -220,7 +221,7 @@ class OldCore {
 
         mDataDisconnectingHandler = new Handler() {
             public void handleMessage(Message msg) {
-                OldCore nm = OldCore.get_instance();
+                OldCore nm = OldCore.getInstance();
 
                 if (nm.state != kNetStatDecr) throw new AssertionError();
 
@@ -231,7 +232,7 @@ class OldCore {
                         nm.state = kNetStatControl;
                     }
                     connecting_adapter = null;
-                    SegmentManager.get_instance().queue_threshold -= SegmentManager.kSegThreshold;
+                    SegmentManager.getInstance().queue_threshold -= SegmentManager.kSegThreshold;
                 } else {
                     nm.state = nm.prev_state;
                 }
@@ -241,13 +242,13 @@ class OldCore {
         mCtrlHandler = new Handler() {
             public void handleMessage(Message msg) {
                 if (msg.what == kNetStatDiscon) {
-                    OldCore.get_instance().connect_control_adapter();
+                    OldCore.getInstance().connect_control_adapter();
                 }
             }
         };
     }
 
-    static public OldCore get_instance() {
+    static public OldCore getInstance() {
         if (instance == null)
             instance = new OldCore();
 
@@ -320,14 +321,14 @@ class OldCore {
         connecting_adapter = na;
         na.connect(new Handler() {
             public void handleMessage(Message msg) {
-                OldCore nm = OldCore.get_instance();
+                OldCore nm = OldCore.getInstance();
 
                 if (nm.state != kNetStatIncr) throw new AssertionError();
 
                 if (msg.what == kDevCon) {
                     nm.state = kNetStatData;
                     connecting_adapter = null;
-                    SegmentManager.get_instance().queue_threshold += SegmentManager.kSegThreshold;
+                    SegmentManager.getInstance().queue_threshold += SegmentManager.kSegThreshold;
                 } else {
                     nm.state = nm.prev_state;
                 }
@@ -368,7 +369,7 @@ class OldCore {
         connecting_adapter = na;
         na.close(new Handler() {
             public void handleMessage(Message msg) {
-                OldCore nm = OldCore.get_instance();
+                OldCore nm = OldCore.getInstance();
 
                 if (nm.state != kNetStatDecr) throw new AssertionError();
 
@@ -379,7 +380,7 @@ class OldCore {
                         nm.state = kNetStatControl;
                     }
                     connecting_adapter = null;
-                    SegmentManager.get_instance().queue_threshold -= SegmentManager.kSegThreshold;
+                    SegmentManager.getInstance().queue_threshold -= SegmentManager.kSegThreshold;
                 } else {
                     nm.state = nm.prev_state;
                 }
@@ -413,18 +414,18 @@ class OldCore {
             public void handleMessage(Message msg) {
                 if (msg.what == kDevCon) {
                     Logger.print(tag, "API successfully connected");
-                    OldCore.get_instance().state = kNetStatControl;
-                    OldCore.get_instance().recv_thread = new CtrlRecvThread(mCtrlHandler);
-                    OldCore.get_instance().recv_thread.start();
+                    OldCore.getInstance().state = kNetStatControl;
+                    OldCore.getInstance().recv_thread = new CtrlRecvThread(mCtrlHandler);
+                    OldCore.getInstance().recv_thread.start();
                 } else {
-                    OldCore.get_instance().state = kNetStatDiscon;
+                    OldCore.getInstance().state = kNetStatDiscon;
                     try {
                         Thread.sleep(500);
                     } catch (InterruptedException e) {
                         e.printStackTrace();
                     }
 
-                    OldCore.get_instance().connect_control_adapter();
+                    OldCore.getInstance().connect_control_adapter();
                 }
             }
         });

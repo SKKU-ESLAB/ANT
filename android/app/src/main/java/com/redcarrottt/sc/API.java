@@ -1,4 +1,4 @@
-package selective.connection;
+package com.redcarrottt.sc;
 
 /* Copyright (c) 2017-2018. All rights reserved.
  *  Gyeonghwan Hong (redcarrottt@gmail.com)
@@ -22,10 +22,10 @@ public class API {
     static private API instance = null;
     static String tag = "Comm";
     private API() {
-        SegmentManager sm = SegmentManager.get_instance();
-        Core nm = Core.get_instance();
+        SegmentManager sm = SegmentManager.getInstance();
+        Core nm = Core.getInstance();
     }
-    static public API get_instance() {
+    static public API getInstance() {
         if (instance == null)
             instance = new API();
         return instance;
