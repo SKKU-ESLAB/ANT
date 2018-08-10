@@ -1,12 +1,12 @@
-package selective.connection;
+package com.redcarrottt.sc;
+
+import com.redcarrottt.testapp.Logger;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.IOException;
 import java.net.Socket;
 import java.util.Arrays;
-
-import kr.ac.skku.nyx.selectiveconnection.Logger;
 
 /* Copyright (c) 2017-2018. All rights reserved.
  *  Gyeonghwan Hong (redcarrottt@gmail.com)

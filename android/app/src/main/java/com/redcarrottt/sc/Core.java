@@ -1,4 +1,4 @@
-package selective.connection;
+package com.redcarrottt.sc;
 
 /* Copyright (c) 2017-2018. All rights reserved.
  *  Gyeonghwan Hong (redcarrottt@gmail.com)

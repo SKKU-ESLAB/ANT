@@ -1,4 +1,4 @@
-package selective.connection;
+package com.redcarrottt.sc;
 
 /* Copyright (c) 2017-2018. All rights reserved.
  *  Gyeonghwan Hong (redcarrottt@gmail.com)
@@ -18,12 +18,12 @@ package selective.connection;
  * limitations under the License.
  */
 
+import com.redcarrottt.testapp.Logger;
+
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.ListIterator;
-
-import kr.ac.skku.nyx.selectiveconnection.Logger;
 
 /*
     Segment is the minimum unit of the sending data through the network.
@@ -123,7 +123,7 @@ class SegmentManager {
     }
 
 
-    static public SegmentManager get_instance() {
+    static public SegmentManager getInstance() {
         if (instance == null)
             instance = new SegmentManager();
 
@@ -265,9 +265,9 @@ class SegmentManager {
         if (type == kSegSend) {
             /*
             if (queue_size[type] > queue_threshold) {
-                Core.get_instance().increase_adapter();
+                Core.getInstance().increase_adapter();
             } else if (queue_size[type] == 0) {
-                Core.get_instance().decrease_adapter();
+                Core.getInstance().decrease_adapter();
             }
             */
         }

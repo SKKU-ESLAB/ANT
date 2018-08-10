@@ -1,4 +1,4 @@
-package kr.ac.skku.nyx.selectiveconnection;
+package com.redcarrottt.testapp;
 
 import org.junit.Test;
 

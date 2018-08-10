@@ -1,16 +1,16 @@
-package selective.connection;
+package com.redcarrottt.sc;
 
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothSocket;
+
+import com.redcarrottt.testapp.Logger;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.IOException;
 import java.util.Set;
 import java.util.UUID;
-
-import kr.ac.skku.nyx.selectiveconnection.Logger;
 
 /* Copyright (c) 2017-2018. All rights reserved.
  *  Gyeonghwan Hong (redcarrottt@gmail.com)
@@ -48,6 +48,7 @@ public class BTClientAdapter extends NetworkAdapter {
         reader = null;
         this.dev_type = kBluetooth;
     }
+
     @Override
     public boolean device_on() {
         return false;
@@ -60,7 +61,8 @@ public class BTClientAdapter extends NetworkAdapter {
 
     @Override
     public boolean make_connection() {
-        Set<BluetoothDevice> paired_device = BluetoothAdapter.getDefaultAdapter().getBondedDevices();
+        Set<BluetoothDevice> paired_device = BluetoothAdapter.getDefaultAdapter()
+                .getBondedDevices();
 
         for (BluetoothDevice btDevice : paired_device) {
             if (btDevice.getAddress().equals(dev_addr)) {
@@ -69,14 +71,15 @@ public class BTClientAdapter extends NetworkAdapter {
                     writer = new BufferedOutputStream(btSocket.getOutputStream());
                     reader = new BufferedInputStream(btSocket.getInputStream());
                 } catch (IOException e) {
-                    Logger.print(tag, "Failed to create RFCOMM Socket corresponding to " + uuid.toString());
+                    Logger.print(tag, "Failed to create RFCOMM Socket corresponding to " + uuid
+                            .toString());
                     btSocket = null;
                 }
                 break;
             }
         }
 
-        for (int i=0; i<2; i++) {
+        for (int i = 0; i < 2; i++) {
             try {
                 btSocket.connect();
                 btSocket.getInputStream();
@@ -141,7 +144,7 @@ public class BTClientAdapter extends NetworkAdapter {
         try {
             int read_bytes = 0;
             while (read_bytes < len) {
-                int bytes = reader.read(buf, read_bytes, len-read_bytes);
+                int bytes = reader.read(buf, read_bytes, len - read_bytes);
                 if (bytes < 0) {
                     len = -1;
                     break;
@@ -149,7 +152,7 @@ public class BTClientAdapter extends NetworkAdapter {
                 read_bytes += bytes;
             }
             res = len;
-        }catch (Exception e) {
+        } catch (Exception e) {
             e.printStackTrace();
             res = -1;
         }

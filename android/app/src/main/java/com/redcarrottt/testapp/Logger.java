@@ -1,4 +1,4 @@
-package kr.ac.skku.nyx.selectiveconnection;
+package com.redcarrottt.testapp;
 
 /* Copyright (c) 2018, contributors. All rights reserved.
  *
