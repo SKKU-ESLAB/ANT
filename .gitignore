@@ -17,12 +17,7 @@ SelectiveConnection.PS
 *.iml
 .gradle
 android/local.properties
-android/.idea/workspace.xml
-android/.idea/libraries
-android/.idea/misc.xml
-android/.idea/modules.xml
-android/.idea/vcs.xml
-android/.idea/caches
+android/.idea
 .DS_Store
 android/build
 android/captures
