@@ -27,7 +27,7 @@ public class ClientAdapter {
     // Main Functions: connect, disconnect, send, receive
     public boolean connect(ConnectResultListener listener, boolean isSendConnectMessage) {
         if (this.getState() != State.kDisconnected) {
-            Logger.print(kTag, "It's already connected or connection/disconnection is in progress");
+            Logger.ERR(kTag, "It's already connected or connection/disconnection is in progress");
             return false;
         }
 
@@ -42,7 +42,7 @@ public class ClientAdapter {
 
     public boolean disconnect(DisconnectResultListener listener) {
         if (this.getState() != State.kConnected) {
-            Logger.print(kTag, "It's already disconnected or connection/disconnection is in " +
+            Logger.ERR(kTag, "It's already disconnected or connection/disconnection is in " +
                     "progress");
             return false;
         }
@@ -54,7 +54,7 @@ public class ClientAdapter {
 
     int send(byte[] dataBuffer, int dataLength) {
         if (this.getState() != State.kConnected) {
-            Logger.print(kTag, "It's already disconnected or connection/disconnection is in " +
+            Logger.ERR(kTag, "It's already disconnected or connection/disconnection is in " +
                     "progress");
             return -1;
         }
@@ -70,7 +70,7 @@ public class ClientAdapter {
 
     int receive(byte[] dataBuffer, int dataLength) {
         if (this.getState() != State.kConnected) {
-            Logger.print(kTag, "It's already disconnected or connection/disconnection is in " +
+            Logger.ERR(kTag, "It's already disconnected or connection/disconnection is in " +
                     "progress");
             return -1;
         }
@@ -88,7 +88,7 @@ public class ClientAdapter {
     class ConnectThread extends Thread {
         @Override
         public void run() {
-            Logger.print(kTag, self.getName() + "'s Connect Thread Spawned! (id:" + this.getId() +
+            Logger.VERB(kTag, self.getName() + "'s Connect Thread Spawned! (id:" + this.getId() +
                     ")");
             setState(ClientAdapter.State.kConnecting);
 
@@ -103,7 +103,7 @@ public class ClientAdapter {
 
                 deviceState = self.mDevice.getState();
                 if (!res || deviceState != Device.State.kOn) {
-                    Logger.print("Cannot connect the server adapter - turn-on fail: " + self
+                    Logger.ERR(kTag, "Cannot connect the server adapter - turn-on fail: " + self
                             .getName());
                 }
                 this.onFail();
@@ -123,7 +123,7 @@ public class ClientAdapter {
 
                 p2pClientState = self.mP2PClient.getState();
                 if (!res || p2pClientState != P2PClient.State.kConnected) {
-                    Logger.print("Cannot connect the server adapter - allow fail:" + self.getName
+                    Logger.ERR(kTag, "Cannot connect the server adapter - allow fail:" + self.getName
                             ());
                     self.mDevice.releaseAndTurnOff();
                     this.onFail();
@@ -145,7 +145,7 @@ public class ClientAdapter {
 
                 socketState = self.mClientSocket.getState();
                 if (!res || socketState != ClientSocket.State.kOpened) {
-                    Logger.print(kTag, "Cannot connect the server adapter - socket open fail: " +
+                    Logger.ERR(kTag, "Cannot connect the server adapter - socket open fail: " +
                             self.getName());
                     self.mP2PClient.disconnect();
                     self.mDevice.releaseAndTurnOff();
@@ -191,7 +191,7 @@ public class ClientAdapter {
     class DisconnectThread extends Thread {
         @Override
         public void run() {
-            Logger.print(kTag, self.getName() + "'s Disconnect Thread Spawned! (id:" + this.getId
+            Logger.VERB(kTag, self.getName() + "'s Disconnect Thread Spawned! (id:" + this.getId
                     () + ")");
             setState(ClientAdapter.State.kDisconnecting);
 
@@ -214,7 +214,7 @@ public class ClientAdapter {
 
                 socketState = self.mClientSocket.getState();
                 if (!res || socketState != ClientSocket.State.kClosed) {
-                    Logger.print(kTag, "Cannot disconnect the server adapter - socket close fail: " +
+                    Logger.ERR(kTag, "Cannot disconnect the server adapter - socket close fail: " +
                             "" + "" + self.getName());
                     this.onFail();
                     return;
@@ -228,7 +228,7 @@ public class ClientAdapter {
 
                 p2pClientState = self.mP2PClient.getState();
                 if (!res || p2pClientState != P2PClient.State.kDisconnected) {
-                    Logger.print(kTag, "Cannot disconnect the server adapter - disconnect P2P " +
+                    Logger.ERR(kTag, "Cannot disconnect the server adapter - disconnect P2P " +
                             "client fail: " + self.getName());
                     this.onFail();
                     return;
@@ -242,7 +242,7 @@ public class ClientAdapter {
 
                 deviceState = self.mDevice.getState();
                 if (!res || deviceState != Device.State.kOff) {
-                    Logger.print(kTag, "Cannot disconnect the server adapter - turn-off fail: " +
+                    Logger.ERR(kTag, "Cannot disconnect the server adapter - turn-off fail: " +
                             self.getName());
                     this.onFail();
                     return;
@@ -288,7 +288,13 @@ public class ClientAdapter {
         return false;
     }
 
-    boolean enableReceiverThread() {
+    boolean enableReceiverThread(ReceiveLoop receiveLoop) {
+        if(receiveLoop == null) {
+            this.mReceiveLoop = new ReceiveDataLoop();
+        } else {
+            this.mReceiveLoop = receiveLoop;
+        }
+
         this.mReceiverThread = new ReceiverThread();
         return false;
     }
@@ -353,8 +359,16 @@ public class ClientAdapter {
         private Boolean mIsOn;
     }
 
+    class ReceiveDataLoop implements ReceiveLoop {
+        @Override
+        public void receiveLoop(ClientAdapter adapter) {
+            // TODO: implement it (same as ServerAdapter::receive_data_loop())
+        }
+    }
+
     private SenderThread mSenderThread;
     private ReceiverThread mReceiverThread;
+    private ReceiveLoop mReceiveLoop;
 
     // Initialize
     public ClientAdapter(int id, String name) {

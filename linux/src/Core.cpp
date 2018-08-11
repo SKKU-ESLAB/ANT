@@ -88,7 +88,7 @@ bool Core::stop(void) {
     LOG_ERR("Cannot stop core during starting/stopping!");
     return false;
   } else if (state == CMState::kCMStateIdle) {
-    LOG_ERR("core is already idle state!");
+    LOG_ERR("Core is already idle state!");
     return false;
   } else if (this->mControlAdapter == NULL) {
     LOG_ERR("No control adapter is registered!");
@@ -247,8 +247,9 @@ void Core::receive_control_message_loop(ServerAdapter *adapter) {
       continue;
     }
 
+    char req_code = data[0];
     /*  If the control message is 'connect adapter', */
-    if (data[0] == CtrlReq::kCtrlReqConnect) {
+    if (req_code == CtrlReq::kCtrlReqConnect) {
       // Receive 2Byte: Adapter ID
       res = adapter->receive(data, 2);
       if (res <= 0) {
@@ -263,9 +264,9 @@ void Core::receive_control_message_loop(ServerAdapter *adapter) {
       memcpy(&n_adapter_id, data, 2);
       adapter_id = ntohs(n_adapter_id);
 
-      LOG_DEBUG("Data Adapter Connect request arrived");
+      LOG_DEBUG("Control Request: 'Connect Adapter Request' (%d)", (int)adapter_id);
       NetworkSwitcher::get_instance()->connect_adapter(adapter_id);
-    } else if (data[0] == CtrlReq::kCtrlReqPriv) {
+    } else if (req_code == CtrlReq::kCtrlReqPriv) {
       LOG_VERB("Private data arrived");
       uint16_t n_adapter_id;
       uint16_t adapter_id;
@@ -315,6 +316,7 @@ bool StartCoreTransaction::run(Core *caller) {
     sOngoing->start();
     return true;
   } else {
+    LOG_WARN("Already starting core");
     caller->done_start(false);
     return false;
   }
@@ -324,13 +326,11 @@ bool StartCoreTransaction::start() {
   std::unique_lock<std::mutex> lck(this->mCaller->mControlAdapterLock);
   bool res = this->mCaller->mControlAdapter->connect(
       StartCoreTransaction::connect_control_adapter_callback, false);
-  if (res) {
-    return true;
-  } else {
+  if (!res) {
     LOG_ERR("Connecting control adapter is failed");
     this->done(false);
-    return false;
   }
+  return res;
 }
 
 void StartCoreTransaction::connect_control_adapter_callback(bool is_success) {
@@ -342,12 +342,17 @@ void StartCoreTransaction::connect_control_adapter_callback(bool is_success) {
 
   // Connect first data adapter
   std::unique_lock<std::mutex> lck(sOngoing->mCaller->mDataAdaptersLock);
-  bool res = sOngoing->mCaller->mDataAdapters.front()->connect(
-      StartCoreTransaction::connect_first_data_adapter_callback, true);
+  bool res = true;
+  if(sOngoing->mCaller->mDataAdapters.empty()) {
+    res = false;
+  } else {
+    res = sOngoing->mCaller->mDataAdapters.front()->connect(
+        StartCoreTransaction::connect_first_data_adapter_callback, true);
+  }
+
   if (!res) {
     LOG_ERR("Connecting first data adapter is failed");
     sOngoing->done(false);
-    return;
   }
 }
 
@@ -359,7 +364,6 @@ void StartCoreTransaction::connect_first_data_adapter_callback(
   } else {
     LOG_ERR("Connecting first data adapter is failed");
     sOngoing->done(false);
-    return;
   }
 }
 
@@ -375,7 +379,8 @@ bool StopCoreTransaction::run(Core *caller) {
     sOngoing->start();
     return true;
   } else {
-    caller->done_start(false);
+    LOG_WARN("Already stopping core");
+    caller->done_stop(false);
     return false;
   }
 }
@@ -386,22 +391,23 @@ bool StopCoreTransaction::start() {
   }
 
   // Disconnect control adpater
+  bool res;
   {
     std::unique_lock<std::mutex> lck(this->mCaller->mControlAdapterLock);
-    bool res = this->mCaller->mControlAdapter->disconnect(
+    res = this->mCaller->mControlAdapter->disconnect(
         StopCoreTransaction::disconnect_control_adapter_callback);
-    if (res) {
-      return true;
-    } else {
-      this->done(false);
-      return false;
-    }
   }
+
+  if (!res) {
+    LOG_ERR("Connecting control adapter is failed");
+    this->done(false);
+  }
+  return res;
 }
 
 void StopCoreTransaction::disconnect_control_adapter_callback(bool is_success) {
   if (!is_success) {
-    LOG_ERR("Connecting control adapter is failed 2");
+    LOG_ERR("Connecting control adapter is failed");
     sOngoing->done(false);
     return;
   }
@@ -424,7 +430,7 @@ void StopCoreTransaction::disconnect_control_adapter_callback(bool is_success) {
 
 void StopCoreTransaction::disconnect_data_adapter_callback(bool is_success) {
   if (!is_success) {
-    LOG_ERR("Connecting first data adapter is failed 2");
+    LOG_ERR("Connecting data adapter is failed 2");
     sOngoing->done(false);
     return;
   }
@@ -447,7 +453,7 @@ void StopCoreTransaction::disconnect_data_adapter_callback(bool is_success) {
 }
 
 void StopCoreTransaction::done(bool is_success) {
-    this->mCaller->done_start(is_success);
+    this->mCaller->done_stop(is_success);
     sOngoing = NULL;
   }
 
