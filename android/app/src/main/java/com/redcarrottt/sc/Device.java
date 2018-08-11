@@ -17,7 +17,7 @@ package com.redcarrottt.sc;
  */
 
 public abstract class Device {
-    private final String TAG = "Device";
+    private final String kTag = "Device";
 
     // Main Functions
     boolean holdAndTurnOn() {

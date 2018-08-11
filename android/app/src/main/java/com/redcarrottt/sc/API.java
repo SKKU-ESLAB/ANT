@@ -20,7 +20,7 @@ package com.redcarrottt.sc;
 
 public class API {
     static private API instance = null;
-    static String tag = "Comm";
+    static String kTag = "Comm";
     private API() {
         SegmentManager sm = SegmentManager.getInstance();
         Core nm = Core.getInstance();
@@ -43,11 +43,11 @@ public class API {
 
         packet_size = ProtocolManager.serialize(pd, buf, curr_offset, len);
         if (!(packet_size > 0)) throw new AssertionError();
-        //Logger.print(tag, "serialized packet size " + packet_size);
+        //Logger.print(kTag, "serialized packet size " + packet_size);
 
         sent_bytes = ProtocolManager.send_packet(packet_size);
         if (sent_bytes < 0) throw new AssertionError();
-        //Logger.print(tag, "Sent bytes: " + sent_bytes);
+        //Logger.print(kTag, "Sent bytes: " + sent_bytes);
 
         return sent_bytes;
     }

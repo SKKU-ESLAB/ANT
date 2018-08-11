@@ -55,8 +55,8 @@ public class Logger {
     public static void print(String logMessage) {
         print(defaultContext, logMessage);
     }
-    public static void print(String tag, String logMessage) {
-        print("[" + tag + "] " + logMessage);
+    public static void print(String kTag, String logMessage) {
+        print("[" + kTag + "] " + logMessage);
     }
     public static void setDefaultContext(Context context) {
         Logger.defaultContext = context;

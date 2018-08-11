@@ -21,13 +21,13 @@ import com.redcarrottt.testapp.Logger;
 import java.util.ArrayList;
 
 public class ClientAdapter {
-    private final String TAG = "ClientAdapter";
+    private final String kTag = "ClientAdapter";
     private final ClientAdapter self = this;
 
     // Main Functions: connect, disconnect, send, receive
     public boolean connect(ConnectResultListener listener, boolean isSendConnectMessage) {
         if (this.getState() != State.kDisconnected) {
-            Logger.print(TAG, "It's already connected or connection/disconnection is in progress");
+            Logger.print(kTag, "It's already connected or connection/disconnection is in progress");
             return false;
         }
 
@@ -42,7 +42,7 @@ public class ClientAdapter {
 
     public boolean disconnect(DisconnectResultListener listener) {
         if (this.getState() != State.kConnected) {
-            Logger.print(TAG, "It's already disconnected or connection/disconnection is in " +
+            Logger.print(kTag, "It's already disconnected or connection/disconnection is in " +
                     "progress");
             return false;
         }
@@ -54,7 +54,7 @@ public class ClientAdapter {
 
     int send(byte[] dataBuffer, int dataLength) {
         if (this.getState() != State.kConnected) {
-            Logger.print(TAG, "It's already disconnected or connection/disconnection is in " +
+            Logger.print(kTag, "It's already disconnected or connection/disconnection is in " +
                     "progress");
             return -1;
         }
@@ -70,7 +70,7 @@ public class ClientAdapter {
 
     int receive(byte[] dataBuffer, int dataLength) {
         if (this.getState() != State.kConnected) {
-            Logger.print(TAG, "It's already disconnected or connection/disconnection is in " +
+            Logger.print(kTag, "It's already disconnected or connection/disconnection is in " +
                     "progress");
             return -1;
         }
@@ -88,7 +88,7 @@ public class ClientAdapter {
     class ConnectThread extends Thread {
         @Override
         public void run() {
-            Logger.print(TAG, self.getName() + "'s Connect Thread Spawned! (id:" + this.getId() +
+            Logger.print(kTag, self.getName() + "'s Connect Thread Spawned! (id:" + this.getId() +
                     ")");
             setState(ClientAdapter.State.kConnecting);
 
@@ -145,7 +145,7 @@ public class ClientAdapter {
 
                 socketState = self.mClientSocket.getState();
                 if (!res || socketState != ClientSocket.State.kOpened) {
-                    Logger.print(TAG, "Cannot connect the server adapter - socket open fail: " +
+                    Logger.print(kTag, "Cannot connect the server adapter - socket open fail: " +
                             self.getName());
                     self.mP2PClient.disconnect();
                     self.mDevice.releaseAndTurnOff();
@@ -191,7 +191,7 @@ public class ClientAdapter {
     class DisconnectThread extends Thread {
         @Override
         public void run() {
-            Logger.print(TAG, self.getName() + "'s Disconnect Thread Spawned! (id:" + this.getId
+            Logger.print(kTag, self.getName() + "'s Disconnect Thread Spawned! (id:" + this.getId
                     () + ")");
             setState(ClientAdapter.State.kDisconnecting);
 
@@ -214,7 +214,7 @@ public class ClientAdapter {
 
                 socketState = self.mClientSocket.getState();
                 if (!res || socketState != ClientSocket.State.kClosed) {
-                    Logger.print(TAG, "Cannot disconnect the server adapter - socket close fail: " +
+                    Logger.print(kTag, "Cannot disconnect the server adapter - socket close fail: " +
                             "" + "" + self.getName());
                     this.onFail();
                     return;
@@ -228,7 +228,7 @@ public class ClientAdapter {
 
                 p2pClientState = self.mP2PClient.getState();
                 if (!res || p2pClientState != P2PClient.State.kDisconnected) {
-                    Logger.print(TAG, "Cannot disconnect the server adapter - disconnect P2P " +
+                    Logger.print(kTag, "Cannot disconnect the server adapter - disconnect P2P " +
                             "client fail: " + self.getName());
                     this.onFail();
                     return;
@@ -242,7 +242,7 @@ public class ClientAdapter {
 
                 deviceState = self.mDevice.getState();
                 if (!res || deviceState != Device.State.kOff) {
-                    Logger.print(TAG, "Cannot disconnect the server adapter - turn-off fail: " +
+                    Logger.print(kTag, "Cannot disconnect the server adapter - turn-off fail: " +
                             self.getName());
                     this.onFail();
                     return;

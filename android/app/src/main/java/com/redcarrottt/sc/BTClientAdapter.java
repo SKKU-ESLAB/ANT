@@ -34,7 +34,7 @@ public class BTClientAdapter extends NetworkAdapter {
     private UUID uuid;
     private String dev_addr;
     private BluetoothSocket btSocket;
-    private String tag = "BTClientAdapter";
+    private String kTag = "BTClientAdapter";
     private BufferedOutputStream writer;
     private BufferedInputStream reader;
 
@@ -71,7 +71,7 @@ public class BTClientAdapter extends NetworkAdapter {
                     writer = new BufferedOutputStream(btSocket.getOutputStream());
                     reader = new BufferedInputStream(btSocket.getInputStream());
                 } catch (IOException e) {
-                    Logger.print(tag, "Failed to create RFCOMM Socket corresponding to " + uuid
+                    Logger.print(kTag, "Failed to create RFCOMM Socket corresponding to " + uuid
                             .toString());
                     btSocket = null;
                 }
@@ -85,10 +85,10 @@ public class BTClientAdapter extends NetworkAdapter {
                 btSocket.getInputStream();
                 break;
             } catch (IOException e) {
-                Logger.print(tag, "Failed to connect");
+                Logger.print(kTag, "Failed to connect");
             }
             try {
-                Logger.print(tag, "Once more try to connect BT Client");
+                Logger.print(kTag, "Once more try to connect BT Client");
                 Thread.sleep(500);
             } catch (InterruptedException e) {
                 e.printStackTrace();
@@ -135,7 +135,7 @@ public class BTClientAdapter extends NetworkAdapter {
     @Override
     public int recv(byte[] buf, int len) {
         if (reader == null) {
-            Logger.print(tag, "reader is null");
+            Logger.print(kTag, "reader is null");
             return -1;
         }
 

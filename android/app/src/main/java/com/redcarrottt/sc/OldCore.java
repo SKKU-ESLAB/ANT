@@ -50,10 +50,10 @@ class OldCore {
     static public final int kCtrlReqDecr = 3;
     static public final int kCtrlReqPriv = 4;
 
-    private String tag = "OldCore";
+    private String kTag = "OldCore";
 
     private class CtrlRecvThread extends Thread {
-        private final String tag = "CtrlRecvThread";
+        private final String kTag = "CtrlRecvThread";
         private Handler mHandler = null;
 
         public CtrlRecvThread(Handler handler) {
@@ -69,18 +69,18 @@ class OldCore {
                 if (na == null) throw new AssertionError();
 
                 if (na.recv(data, 1) <= 0) {
-                    Logger.print(tag, "Control adapter might be closed");
+                    Logger.print(kTag, "Control adapter might be closed");
                     break;
                 } else {
-                    Logger.print(tag, "Ctrl Msg: " + Byte.toString(data[0]));
+                    Logger.print(kTag, "Ctrl Msg: " + Byte.toString(data[0]));
                 }
 
                 Byte ctrl_req = data[0];
 
                 if (ctrl_req == kCtrlReqIncr) {
-                    Logger.print(tag, "DataIncr request arrived");
+                    Logger.print(kTag, "DataIncr request arrived");
                     if (na.recv(data, 2) <= 0) {
-                        Logger.print(tag, "Control adapter might be closed");
+                        Logger.print(kTag, "Control adapter might be closed");
                         break;
                     }
 
@@ -88,7 +88,7 @@ class OldCore {
                     buffer.put(data, 0, 2);
 
                     short dev_id = buffer.getShort(0);
-                    Logger.print(tag, "Device ID = " + Short.toString(dev_id));
+                    Logger.print(kTag, "Device ID = " + Short.toString(dev_id));
 
                     NetworkAdapter data_na = null;
 
@@ -106,9 +106,9 @@ class OldCore {
                     OldCore.getInstance().state = kNetStatIncr;
                     data_na.connect(mDataConnectingHandler);
                 } else if (ctrl_req == kCtrlReqDecr) {
-                    Logger.print(tag, "DataDecr request arrived");
+                    Logger.print(kTag, "DataDecr request arrived");
                     if (na.recv(data, 2) <= 0) {
-                        Logger.print(tag, "Control adapter might be closed");
+                        Logger.print(kTag, "Control adapter might be closed");
                         break;
                     }
 
@@ -116,7 +116,7 @@ class OldCore {
                     buffer.put(data, 0, 2);
 
                     short dev_id = buffer.getShort(0);
-                    Logger.print(tag, "Device ID = " + Short.toString(dev_id));
+                    Logger.print(kTag, "Device ID = " + Short.toString(dev_id));
 
                     NetworkAdapter data_na = null;
 
@@ -167,7 +167,7 @@ class OldCore {
                     } while (false);
 
                     if (res <= 0) {
-                        Logger.print(tag, "Control adapter might be closed");
+                        Logger.print(kTag, "Control adapter might be closed");
                         break;
                     }
                 }
@@ -269,17 +269,17 @@ class OldCore {
 
     public void install_control_adapter(NetworkAdapter na) {
         if (state > kNetStatDiscon || adapter_list[kNetCtrl].size() > 0) {
-            Logger.print(tag, "Control port already added");
+            Logger.print(kTag, "Control port already added");
             return;
         }
 
         if (state == kNetStatConnecting) {
-            Logger.print(tag, "Already connecting control port");
+            Logger.print(kTag, "Already connecting control port");
             return;
         }
 
         adapter_list[kNetCtrl].offerLast(na);
-        Logger.print(tag, "Connecting control adapter");
+        Logger.print(kTag, "Connecting control adapter");
         connect_control_adapter();
     }
 
@@ -289,23 +289,23 @@ class OldCore {
 
     public void increase_adapter() {
         if (state == kNetStatIncr || state == kNetStatDecr) {
-            Logger.print(tag, "Data ports are busy");
+            Logger.print(kTag, "Data ports are busy");
             return;
         }
 
         if (state == kNetStatDiscon) {
-            Logger.print(tag, "Control port is not opened yet");
+            Logger.print(kTag, "Control port is not opened yet");
             return;
         }
 
-        Logger.print(tag, "Increasing data adapter");
+        Logger.print(kTag, "Increasing data adapter");
         prev_state = state;
         state = kNetStatIncr;
 
         NetworkAdapter na = select_device();
         if (na == null) {
             state = prev_state;
-            Logger.print(tag, "All device has been up");
+            Logger.print(kTag, "All device has been up");
             return;
         }
 
@@ -338,22 +338,22 @@ class OldCore {
 
     public void decrease_adapter() {
         if (state == kNetStatIncr || state == kNetStatDecr) {
-            Logger.print(tag, "Data ports are busy");
+            Logger.print(kTag, "Data ports are busy");
             return;
         }
 
         if (state == kNetStatDiscon) {
-            Logger.print(tag, "Control port is not opened yet");
+            Logger.print(kTag, "Control port is not opened yet");
             return;
         }
-        Logger.print(tag, "decrease_adapter()");
+        Logger.print(kTag, "decrease_adapter()");
         prev_state = state;
         state = kNetStatDecr;
 
         NetworkAdapter na = select_device_on();
         if (na == null) {
             state = prev_state;
-            Logger.print(tag, "All device has been down");
+            Logger.print(kTag, "All device has been down");
             return;
         }
 
@@ -402,18 +402,18 @@ class OldCore {
 
     private void connect_control_adapter() {
         if (state > kNetStatDiscon) {
-            Logger.print(tag, "connect_control_adapter():Control port already connected");
+            Logger.print(kTag, "connect_control_adapter():Control port already connected");
             return;
         }
 
         NetworkAdapter na = adapter_list[kNetCtrl].peekFirst();
         state = kNetStatConnecting;
-        Logger.print(tag, "Connecting control adapter");
+        Logger.print(kTag, "Connecting control adapter");
 
         na.connect(new Handler() {
             public void handleMessage(Message msg) {
                 if (msg.what == kDevCon) {
-                    Logger.print(tag, "API successfully connected");
+                    Logger.print(kTag, "API successfully connected");
                     OldCore.getInstance().state = kNetStatControl;
                     OldCore.getInstance().recv_thread = new CtrlRecvThread(mCtrlHandler);
                     OldCore.getInstance().recv_thread.start();
@@ -433,12 +433,12 @@ class OldCore {
 
     public void send_control_data(byte[] data, int len) {
         if (state < kNetStatControl) {
-            Logger.print(tag, "API disconnected");
+            Logger.print(kTag, "API disconnected");
             return;
         }
 
         if (state != kNetStatIncr && state != kNetStatDecr) {
-            Logger.print(tag, "Control data must be sent in increasing or decreasing adapters");
+            Logger.print(kTag, "Control data must be sent in increasing or decreasing adapters");
             return;
         }
 

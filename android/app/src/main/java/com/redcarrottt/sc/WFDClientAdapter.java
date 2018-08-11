@@ -48,7 +48,7 @@ public class WFDClientAdapter extends NetworkAdapter {
     private Object server_up_trigger;
     private Object ip_trigger;
     private Object connected_trigger;
-    private String tag = "WFDClientAdapter";
+    private String kTag = "WFDClientAdapter";
     private int port;
     private String ip;
     private Socket sock;
@@ -121,10 +121,10 @@ public class WFDClientAdapter extends NetworkAdapter {
                     server_up_trigger.wait(5000);
                 }
                 if (dev_addr != null){
-                    Logger.print(tag, "Server up");
+                    Logger.print(kTag, "Server up");
                     res = true;
                 } else {
-                    Logger.print(tag, "Waited");
+                    Logger.print(kTag, "Waited");
                     res = false;
                 }
             } catch (InterruptedException e) {
@@ -137,13 +137,13 @@ public class WFDClientAdapter extends NetworkAdapter {
         mManager.discoverPeers(mChannel, new WifiP2pManager.ActionListener() {
             @Override
             public void onSuccess() {
-                Logger.print(tag, "Discover peers succeeded");
+                Logger.print(kTag, "Discover peers succeeded");
 
             }
 
             @Override
             public void onFailure(int reason) {
-                Logger.print(tag, "Discover peers failed");
+                Logger.print(kTag, "Discover peers failed");
             }
         });
 
@@ -158,7 +158,7 @@ public class WFDClientAdapter extends NetworkAdapter {
                 res = true;
             } else {
                 dev_addr = null;
-                Logger.print(tag, "Timeout");
+                Logger.print(kTag, "Timeout");
                 mManager.stopPeerDiscovery(mChannel, null);
                 res = false;
             }
@@ -190,7 +190,7 @@ public class WFDClientAdapter extends NetworkAdapter {
             if (sock != null)
                 sock.close();
 
-            Logger.print(tag, "Connect to " + ip);
+            Logger.print(kTag, "Connect to " + ip);
             sock = new Socket();
             sock.bind(null);
             sock.connect(new InetSocketAddress(ip, port), 2000);
@@ -201,7 +201,7 @@ public class WFDClientAdapter extends NetworkAdapter {
             res = true;
         } catch (Exception e) {
             e.printStackTrace();
-            Logger.print(tag, "Failed to connect to server");
+            Logger.print(kTag, "Failed to connect to server");
 
             writer = null;
             reader = null;
@@ -253,7 +253,7 @@ public class WFDClientAdapter extends NetworkAdapter {
     @Override
     public int recv(byte[] buf, int len) {
         if (reader == null) {
-            Logger.print(tag, "reader is null");
+            Logger.print(kTag, "reader is null");
             return -1;
         }
 
@@ -285,13 +285,13 @@ public class WFDClientAdapter extends NetworkAdapter {
         } else if (len == 8) {
             wps_pin = new String(Arrays.copyOfRange(buf, 0, len));
 
-            Logger.print(tag, dev_addr + " & " + wps_pin);
+            Logger.print(kTag, dev_addr + " & " + wps_pin);
             synchronized(server_up_trigger) {
                 server_up_trigger.notifyAll();
             }
         } else { //IP Addr
             ip = new String(Arrays.copyOfRange(buf, 0, len));
-            Logger.print(tag, ip);
+            Logger.print(kTag, ip);
 
             synchronized(ip_trigger) {
                 ip_trigger.notifyAll();
@@ -302,43 +302,43 @@ public class WFDClientAdapter extends NetworkAdapter {
     class WifiDirectBroadcastReceiver extends BroadcastReceiver {
         private WifiP2pManager.PeerListListener mPeerListListner;
         private WifiP2pManager.ConnectionInfoListener mConnectionListener;
-        private String tag = "BroadcastReceiver";
+        private String kTag = "BroadcastReceiver";
 
         public WifiDirectBroadcastReceiver() {
             mPeerListListner = new WifiP2pManager.PeerListListener() {
                 @Override
                 public void onPeersAvailable(WifiP2pDeviceList peers) {
-                    Logger.print(tag, "onPeersAvailable occurred!");
+                    Logger.print(kTag, "onPeersAvailable occurred!");
                     WifiP2pConfig config = new WifiP2pConfig();
 
                     if (dev_addr == null) {
-                        Logger.print(tag, "dev addr is not set yet");
+                        Logger.print(kTag, "dev addr is not set yet");
                         return;
                     }
-                    Logger.print(tag, "find the peer and request WFD");
+                    Logger.print(kTag, "find the peer and request WFD");
 
                     for (WifiP2pDevice device : peers.getDeviceList()) {
                         if(device.deviceAddress.equals(dev_addr)) {
                             if (device.status == WifiP2pDevice.AVAILABLE) {
                                 config.deviceAddress = dev_addr;
                                 if (device.wpsPbcSupported()) {
-                                    Logger.print(tag, "PBC");
+                                    Logger.print(kTag, "PBC");
                                     config.wps.setup = WpsInfo.PBC;
                                 } else if(device.wpsKeypadSupported()) {
-                                    Logger.print(tag, "KEYPAD");
+                                    Logger.print(kTag, "KEYPAD");
                                     config.wps.setup = WpsInfo.KEYPAD;
                                 } else if(device.wpsDisplaySupported()) {
-                                    Logger.print(tag, "DISPLAY");
+                                    Logger.print(kTag, "DISPLAY");
                                     config.wps.setup = WpsInfo.DISPLAY;
 
                                 }
                                 config.groupOwnerIntent = 0;
                                 config.wps.pin = wps_pin;
-                                Logger.print(tag, "Request to connect: " + device.deviceName + config.deviceAddress + "(" + config.wps.pin + ")");
+                                Logger.print(kTag, "Request to connect: " + device.deviceName + config.deviceAddress + "(" + config.wps.pin + ")");
                                 mManager.connect(mChannel, config, new WifiP2pManager.ActionListener() {
                                     @Override
                                     public void onSuccess() {
-                                        Logger.print(tag, "Manager tries to connect");
+                                        Logger.print(kTag, "Manager tries to connect");
                                     }
 
                                     @Override
@@ -356,11 +356,11 @@ public class WFDClientAdapter extends NetworkAdapter {
         @Override
         public void onReceive(Context context, Intent intent) {
             String action = intent.getAction();
-            Logger.print(tag, "onReceive occurred!");
+            Logger.print(kTag, "onReceive occurred!");
 
             if (WifiP2pManager.WIFI_P2P_PEERS_CHANGED_ACTION.equals(action)) {
                 // Call WifiP2pManager.requestPeers() to get a list of current peers
-                Logger.print(tag, "WIFI_P2P_PEERS_CHANGED_ACTION occurred");
+                Logger.print(kTag, "WIFI_P2P_PEERS_CHANGED_ACTION occurred");
                 if (mManager != null) {
                     mManager.requestPeers(mChannel, mPeerListListner);
                 }
@@ -368,23 +368,23 @@ public class WFDClientAdapter extends NetworkAdapter {
                 int state = intent.getIntExtra(WifiP2pManager.EXTRA_WIFI_STATE, -1);
                 if(state == WifiP2pManager.WIFI_P2P_STATE_ENABLED)
                 {
-                    Logger.print(tag, "Wifi P2P is enabled");
+                    Logger.print(kTag, "Wifi P2P is enabled");
                 }
                 else
                 {
-                    Logger.print(tag, "Wifi P2P is not enabled");
+                    Logger.print(kTag, "Wifi P2P is not enabled");
                 }
-                Logger.print(tag, "P2P state changed - " + state);
+                Logger.print(kTag, "P2P state changed - " + state);
 
             } else if (WifiP2pManager.WIFI_P2P_CONNECTION_CHANGED_ACTION.equals(action)) {
                 // Respond to new connection or disconnections
                 NetworkInfo networkInfo = (NetworkInfo) intent.getParcelableExtra(WifiP2pManager.EXTRA_NETWORK_INFO);
-                Logger.print(tag, "Connection changed - " + networkInfo.toString());
+                Logger.print(kTag, "Connection changed - " + networkInfo.toString());
                 if (networkInfo.isConnected()) {
-                    //Logger.print(tag, "Connected:" + dev_addr);
+                    //Logger.print(kTag, "Connected:" + dev_addr);
                     WifiP2pGroup p2pGroup = (WifiP2pGroup) intent.getParcelableExtra(WifiP2pManager.EXTRA_WIFI_P2P_GROUP);
                     if (p2pGroup.getOwner().deviceAddress != null && p2pGroup.getOwner().deviceAddress.equals(dev_addr)) {
-                        Logger.print(tag, "Connected:" + dev_addr);
+                        Logger.print(kTag, "Connected:" + dev_addr);
                     }
                     synchronized(connected_trigger) {
                         connected_notified = true;
@@ -394,7 +394,7 @@ public class WFDClientAdapter extends NetworkAdapter {
             } else if (WifiP2pManager.WIFI_P2P_DISCOVERY_CHANGED_ACTION.equals(action)) {
                 int discoveryState = intent.getIntExtra(WifiP2pManager.EXTRA_DISCOVERY_STATE,
                         WifiP2pManager.WIFI_P2P_DISCOVERY_STOPPED);
-                //Logger.print(tag, "Discovery state changed: " + discoveryState);
+                //Logger.print(kTag, "Discovery state changed: " + discoveryState);
             }
         }
     }
