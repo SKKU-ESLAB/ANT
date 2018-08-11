@@ -2,7 +2,7 @@
  *  Gyeonghwan Hong (redcarrottt@gmail.com)
  *  Eunsoo Park (esevan.park@gmail.com)
  *  Injung Hwang (sinban04@gmail.com)
- *  
+ *
  * [Contact]
  *  Gyeonghwan Hong (redcarrottt@gmail.com)
  *
@@ -25,9 +25,9 @@
 #include <SegmentManager.h>
 #include <ServerAdapter.h>
 
+#include <mutex>
 #include <stdint.h>
 #include <vector>
-#include <mutex>
 
 namespace cm {
 
@@ -38,15 +38,13 @@ enum CommErr {
 
 /*
  * Control Request Code
- * It is used to classify "control request message" that is transferred to the peer.
+ * It is used to classify "control request message" that is transferred to the
+ * peer.
  *  - Commands: "Connect", "Disconnect"
  *  - Acks: "Ok", "Fail"
  *  - Private Data: "Priv"
  */
-typedef enum {
-  kCtrlReqConnect = 1,
-  kCtrlReqPriv = 2 
-} CtrlReq;
+typedef enum { kCtrlReqConnect = 1, kCtrlReqPriv = 2 } CtrlReq;
 
 /*
  * Core State
@@ -62,34 +60,48 @@ typedef enum {
 
 /*
  * Transactions
- * Series of asynchronous callbacks, especially used for connection/disconnection callbacks.
+ * Series of asynchronous callbacks, especially used for
+ * connection/disconnection callbacks.
  */
 class Core;
 class StartCoreTransaction {
 public:
-  static bool start(Core* caller);
+  static bool run(Core *caller);
+  bool start();
   static void connect_control_adapter_callback(bool is_success);
   static void connect_first_data_adapter_callback(bool is_success);
-protected:
-  static bool sIsOngoing;
-  static Core* sCaller;
+
+private:
+  void done(bool is_success);
+
+  StartCoreTransaction(Core *caller) { this->mCaller = caller; }
+  static StartCoreTransaction *sOngoing;
+
+  Core *mCaller;
 };
 
 class StopCoreTransaction {
 public:
-  static bool start(Core* caller);
+  static bool run(Core *caller);
+  bool start();
   static void disconnect_control_adapter_callback(bool is_success);
   static void disconnect_data_adapter_callback(bool is_success);
-protected:
-  static bool sIsOngoing;
-  static Core* sCaller;
-  static int sDataAdaptersCount;
-  static std::mutex sDataAdaptersCountLock;
+
+private:
+  void done(bool is_success); 
+  
+  StopCoreTransaction(Core *caller) { this->mCaller = caller; }
+  static StopCoreTransaction *sOngoing;
+
+  Core *mCaller;
+  int mDataAdaptersCount;
+  std::mutex mDataAdaptersCountLock;
 };
 
 class ControlMessageListener {
 public:
-  virtual void on_receive_control_message(int adapter_id, void* data, size_t len) = 0;
+  virtual void on_receive_control_message(int adapter_id, void *data,
+                                          size_t len) = 0;
 };
 
 class ServerAdapter;
@@ -110,8 +122,8 @@ public:
   bool stop(void);
   void done_stop(bool is_success);
 
-  void register_control_adapter(ServerAdapter* adapter);
-  void register_data_adapter(ServerAdapter* adapter);
+  void register_control_adapter(ServerAdapter *adapter);
+  void register_data_adapter(ServerAdapter *adapter);
 
   int send(const void *dataBuffer, uint32_t dataLength);
   int receive(void **pDataBuffer);
@@ -120,53 +132,49 @@ public:
     std::unique_lock<std::mutex> lck(this->mStateLock);
     return this->mState;
   }
-  
+
   /* Handling adapters */
-  ServerAdapter* get_data_adapter(int index) {
+  ServerAdapter *get_data_adapter(int index) {
     std::unique_lock<std::mutex> lck(this->mDataAdaptersLock);
     return this->mDataAdapters.at(index);
   }
-  ServerAdapter* find_data_adapter_by_id(int adapter_id) {
+  ServerAdapter *find_data_adapter_by_id(int adapter_id) {
     std::unique_lock<std::mutex> lck(this->mDataAdaptersLock);
-    for(std::vector<ServerAdapter*>::iterator it = this->mDataAdapters.begin();
-        it != this->mDataAdapters.end();
-        it++) {
-      ServerAdapter* adapter = *it;
-      if(adapter->get_id() == adapter_id) {
+    for (std::vector<ServerAdapter *>::iterator it =
+             this->mDataAdapters.begin();
+         it != this->mDataAdapters.end(); it++) {
+      ServerAdapter *adapter = *it;
+      if (adapter->get_id() == adapter_id) {
         return adapter;
       }
     }
     return NULL;
   }
-  ServerAdapter* get_control_adapter() {
-    return this->mControlAdapter;
-  }
-  int get_data_adapter_count(void) {
-    return this->mDataAdapters.size();
-  }
+  ServerAdapter *get_control_adapter() { return this->mControlAdapter; }
+  int get_data_adapter_count(void) { return this->mDataAdapters.size(); }
 
   /* Control message handling */
 private:
   void send_control_message(const void *dataBuffer, size_t dataLength);
+
 public:
   void send_request_connect(uint16_t adapter_id);
-  void send_noti_private_data(uint16_t adapter_id, char* private_data_buf, uint32_t private_data_len);
-  void add_control_message_listener(ControlMessageListener* listener) {
+  void send_noti_private_data(uint16_t adapter_id, char *private_data_buf,
+                              uint32_t private_data_len);
+  void add_control_message_listener(ControlMessageListener *listener) {
     this->mControlMessageListeners.push_back(listener);
   }
-  static void receive_control_message_loop(ServerAdapter* adapter);
+  static void receive_control_message_loop(ServerAdapter *adapter);
 
   /* Singleton */
-  static Core* get_instance(void) {
+  static Core *get_instance(void) {
     if (singleton == NULL) {
       singleton = new Core();
     }
     return singleton;
   }
 
-  ~Core() {
-    SegmentManager::get_instance()->free_segment_all();
-  }
+  ~Core() { SegmentManager::get_instance()->free_segment_all(); }
 
 private:
   /* Main function to switch adapters */
@@ -176,7 +184,7 @@ private:
   }
 
   /* Singleton */
-  static Core* singleton;
+  static Core *singleton;
   Core(void) {
     SegmentManager *sm = SegmentManager::get_instance();
     this->mState = kCMStateIdle;
@@ -190,14 +198,14 @@ private:
    *  - N Data Adapters (+ access lock)
    *  - 1 Control Adapter (+ access lock)
    */
-  std::vector<ServerAdapter*> mDataAdapters;
-  ServerAdapter* mControlAdapter = NULL;
+  std::vector<ServerAdapter *> mDataAdapters;
+  ServerAdapter *mControlAdapter = NULL;
   std::mutex mDataAdaptersLock;
   std::mutex mControlAdapterLock;
 
   /* Control Message Listeners */
-  std::vector<ControlMessageListener*> mControlMessageListeners;
+  std::vector<ControlMessageListener *> mControlMessageListeners;
 };
 
 } /* namespace cm */
-#endif  /* INC_COMMUNICATOR_H_ */
+#endif /* INC_COMMUNICATOR_H_ */
