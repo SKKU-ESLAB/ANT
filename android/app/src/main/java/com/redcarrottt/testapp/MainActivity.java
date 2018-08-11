@@ -34,6 +34,7 @@ import com.redcarrottt.sc.TCPClientAdapter;
 import com.redcarrottt.sc.WFDClientAdapter;
 
 public class MainActivity extends AppCompatActivity implements LogReceiver.Callback {
+    private static final String kTag = "MainActivity";
     private MainActivity self = this;
     private API mAPI;
 
@@ -93,36 +94,60 @@ public class MainActivity extends AppCompatActivity implements LogReceiver.Callb
     }
 
     private class ReceivingThread extends Thread {
+        private static final String kTag = "Recv";
+
         public void run() {
             byte[] buf = new byte[100 * 1024 * 1024];
             String sending_buf = "ACK"; /* Ack Message */
 
             while (true) {
                 int receivedLength = mAPI.recv_data(buf, 100 * 1024 * 1024);
-                Logger.print(self, "Received: Size=" + receivedLength);
+                Logger.VERB(kTag, "Received: Size=" + receivedLength);
                 int sentLength = mAPI.send_data(sending_buf.getBytes(), sending_buf.length());
-                Logger.print(self, "Sent: Size=" + sentLength);
+                Logger.VERB(kTag, "Sent: Size=" + sentLength);
             }
 
         }
     }
 
     @Override
-    public void onLogMessage(final String logMessage) {
+    public void onLogMessage(final int logLevel, final String logMessage) {
+        final int kPrintThreshold = LogLevel.VERB;
         final String kTag = "LOG";
         final String kLogMessage = logMessage;
         this.runOnUiThread(new Runnable() {
             @Override
             public void run() {
-                Log.d(kTag, kLogMessage);
-                TextView logTextView = (TextView) findViewById(R.id.logTextView);
-                String text = String.valueOf(logTextView.getText());
-                if (text.length() > 10000) {
-                    logTextView.setText(logMessage);
-                } else {
-                    logTextView.setText(logMessage + "\n" + text);
+                String printMessage = kLogMessage;
+                switch (logLevel) {
+                    case LogLevel.ERR:
+                        Log.e(kTag, kLogMessage);
+                        printMessage = "[E]" + printMessage;
+                        break;
+                    case LogLevel.WARN:
+                        Log.w(kTag, kLogMessage);
+                        printMessage = "[W]" + printMessage;
+                        break;
+                    case LogLevel.VERB:
+                        Log.i(kTag, kLogMessage);
+                        printMessage = "[V]" + printMessage;
+                        break;
+                    case LogLevel.DEBUG:
+                        Log.d(kTag, kLogMessage);
+                        printMessage = "[D]" + printMessage;
+                        break;
                 }
-                logTextView.invalidate();
+
+                if (logLevel <= kPrintThreshold) {
+                    TextView logTextView = (TextView) findViewById(R.id.logTextView);
+                    String text = String.valueOf(logTextView.getText());
+                    if (text.length() > 10000) {
+                        logTextView.setText(printMessage);
+                    } else {
+                        logTextView.setText(printMessage + "\n" + text);
+                    }
+                    logTextView.invalidate();
+                }
             }
         });
     }
