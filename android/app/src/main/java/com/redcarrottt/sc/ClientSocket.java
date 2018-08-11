@@ -19,12 +19,12 @@ package com.redcarrottt.sc;
 import com.redcarrottt.testapp.Logger;
 
 public abstract class ClientSocket {
-    private final String TAG = "ClientSocket";
+    private final String kTag = "ClientSocket";
 
     // Main Functions
     public boolean open() {
         if (this.getState() != State.kClosed) {
-            Logger.print(TAG, "It's already opened or opening/closing is in progress");
+            Logger.print(kTag, "It's already opened or opening/closing is in progress");
             return false;
         }
 
@@ -40,7 +40,7 @@ public abstract class ClientSocket {
 
     public boolean close() {
         if (this.getState() != State.kOpened) {
-            Logger.print(TAG, "It's already closed or opening/closing is in progress");
+            Logger.print(kTag, "It's already closed or opening/closing is in progress");
             return false;
         }
 
@@ -53,7 +53,7 @@ public abstract class ClientSocket {
 
     public int send(byte[] dataBuffer, int dataLength) {
         if (this.getState() != State.kOpened) {
-            Logger.print(TAG, "Socket is not opened");
+            Logger.print(kTag, "Socket is not opened");
             return -1;
         }
 
@@ -66,7 +66,7 @@ public abstract class ClientSocket {
 
     public int receive(byte[] dataBuffer, int dataLength) {
         if (this.getState() != State.kOpened) {
-            Logger.print(TAG, "Socket is not opened");
+            Logger.print(kTag, "Socket is not opened");
             return -1;
         }
 

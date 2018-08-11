@@ -16,12 +16,28 @@ package com.redcarrottt.sc;
  * limitations under the License.
  */
 
+import com.redcarrottt.testapp.Logger;
+
 import java.util.ArrayList;
 
 public class Core {
+    private static final String kTag = "Core";
+
     // APIs: These functions are mapped to ones in API.
     boolean start() {
-        // TODO
+        if (this.getState() == State.kIdle) {
+            Logger.print(kTag, "Core has already started");
+            return false;
+        } else if (this.mControlAdapter == null) {
+            Logger.print("No control adapter is registered!");
+            return false;
+        } else if (this.mDataAdapters.isEmpty()) {
+            Logger.print("No data adapter is registered!");
+            return false;
+        }
+        this.setState(State.kStarting);
+        StartCoreTransaction.start();
+
         return false;
     }
 
@@ -107,10 +123,41 @@ public class Core {
 
     // Singleton
     private static Core sSingleton;
+
     public static Core getInstance() {
-        if(sSingleton == null) {
+        if (sSingleton == null) {
             sSingleton = new Core();
         }
         return sSingleton;
     }
+
+}
+
+class StartCoreTransaction {
+    public static StartCoreTransaction start() {
+        if (sSingleton == null) {
+            sSingleton = new StartCoreTransaction();
+            sSingleton.connectControlAdapter();
+            return sSingleton;
+        } else {
+            return null;
+        }
+    }
+
+    private void connectControlAdapter() {
+
+    }
+
+    private void onConnectControlAdapter() {
+
+    }
+
+    private void onConnectFirstDataAdapter() {
+    }
+
+    private StartCoreTransaction() {
+        // Private Constructor
+    }
+
+    private static StartCoreTransaction sSingleton = null;
 }

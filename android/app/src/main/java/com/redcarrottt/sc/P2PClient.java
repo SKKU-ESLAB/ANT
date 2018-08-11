@@ -19,12 +19,12 @@ package com.redcarrottt.sc;
 import com.redcarrottt.testapp.Logger;
 
 public abstract class P2PClient {
-    private final String TAG = "P2PClient";
+    private final String kTag = "P2PClient";
 
     // Main Functions
     public boolean discoverAndConnect() {
         if (this.getState() != State.kDisconnected) {
-            Logger.print(TAG, "It's already connected or discovering is in progress");
+            Logger.print(kTag, "It's already connected or discovering is in progress");
             return false;
         }
 
@@ -48,7 +48,7 @@ public abstract class P2PClient {
 
     public boolean disconnect() {
         if (this.getState() != State.kConnected) {
-            Logger.print(TAG, "It's already disconnected or disconnecting is in progress");
+            Logger.print(kTag, "It's already disconnected or disconnecting is in progress");
             return false;
         }
 

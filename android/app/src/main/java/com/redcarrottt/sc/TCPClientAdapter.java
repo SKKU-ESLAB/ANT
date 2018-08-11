@@ -31,7 +31,7 @@ public class TCPClientAdapter extends NetworkAdapter {
     private String ip;
     private int port;
 
-    private String tag = "TCPClientAdapter";
+    private String kTag = "TCPClientAdapter";
 
     private BufferedOutputStream writer;
     private BufferedInputStream reader;
@@ -72,7 +72,7 @@ public class TCPClientAdapter extends NetworkAdapter {
 
             res = true;
         } catch (Exception e) {
-            Logger.print(tag, "Failed to connect to server");
+            Logger.print(kTag, "Failed to connect to server");
 
             writer = null;
             reader = null;
@@ -117,7 +117,7 @@ public class TCPClientAdapter extends NetworkAdapter {
     @Override
     public int recv(byte[] buf, int len) {
         if (reader == null) {
-            Logger.print(tag, "reader is null");
+            Logger.print(kTag, "reader is null");
             return -1;
         }
 
@@ -144,6 +144,6 @@ public class TCPClientAdapter extends NetworkAdapter {
 
     @Override
     public void on_control_recv(byte[] buf, int len) {
-        Logger.print(tag, new String(Arrays.copyOfRange(buf, 0, len)));
+        Logger.print(kTag, new String(Arrays.copyOfRange(buf, 0, len)));
     }
 }

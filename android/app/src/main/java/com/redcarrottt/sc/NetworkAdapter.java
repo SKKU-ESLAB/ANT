@@ -73,16 +73,16 @@ public abstract class NetworkAdapter {
             }
 
             if (dev_type == kBluetooth) {
-                Logger.print(tag, "start bluetooth sender thread");
+                Logger.print(kTag, "start bluetooth sender thread");
             } else if (dev_type == kWifiDirect) {
-                Logger.print(tag, "start WiFi direct sender thread");
+                Logger.print(kTag, "start WiFi direct sender thread");
             }
 
             while (true) {
                 if (dev_type == kBluetooth) {
                     while (sm.wfd_state == 1) {
                         try {
-                            //Logger.print(tag, "WFD is on. stop bluetooth
+                            //Logger.print(kTag, "WFD is on. stop bluetooth
                             // sender thread");
                             sleep(1000);
                         } catch (Exception e) {
@@ -92,7 +92,7 @@ public abstract class NetworkAdapter {
                 }
 
                 if (sender_semaphore == 1) {
-                    Logger.print(tag, "sender semaphore is 1. stop sender " +
+                    Logger.print(kTag, "sender semaphore is 1. stop sender " +
                             "thread");
                     if (dev_type == kWifiDirect) {
                         sm.wfd_state = 0;
@@ -124,9 +124,9 @@ public abstract class NetworkAdapter {
             Segment free_seg = sm.get_free_segment();
 
             if (dev_type == kBluetooth) {
-                Logger.print(tag, "start bluetooth recver thread");
+                Logger.print(kTag, "start bluetooth recver thread");
             } else if (dev_type == kWifiDirect) {
-                Logger.print(tag, "start WiFi direct recver thread");
+                Logger.print(kTag, "start WiFi direct recver thread");
             }
 
             while (true) {
@@ -135,7 +135,7 @@ public abstract class NetworkAdapter {
 
                     while(sm.wfd_state == 1){
                         try {
-                            Logger.print(tag, "WFD is on. stop bluetooth
+                            Logger.print(kTag, "WFD is on. stop bluetooth
                             recver thread");
                             sleep(1000);
                         } catch (Exception e){
@@ -145,36 +145,36 @@ public abstract class NetworkAdapter {
                 }*/
 
                 if (recver_semaphore == 1) {
-                    Logger.print(tag, "recver semaphore is 1. stop the " +
+                    Logger.print(kTag, "recver semaphore is 1. stop the " +
                             "recver thread");
                     break;
                 }
 
                 int len = kSegSize + kSegHeaderSize;
-                //Logger.print(tag, "Recving thread start:"+Integer.toString
+                //Logger.print(kTag, "Recving thread start:"+Integer.toString
                 // (dev_id));
                 int res = recv(free_seg.data, len);
                 if (res < len) {
-                    Logger.print(tag, "Recving failed");
+                    Logger.print(kTag, "Recving failed");
                     sm.free_segment(free_seg);
 
                     if (res <= 0) {
                         break;
                     }
                 } else {
-                    //Logger.print(tag, "Recved : " + Short.toString(dev_id));
+                    //Logger.print(kTag, "Recved : " + Short.toString(dev_id));
                 }
 
                 ByteBuffer buffer = ByteBuffer.allocate(4);
                 buffer.put(free_seg.data, 0, 4);
                 free_seg.seq_no = buffer.getInt(0);
-                //Logger.print(tag, "Recved Seq No : " + Integer.toString
+                //Logger.print(kTag, "Recved Seq No : " + Integer.toString
                 // (free_seg.seq_no));
 
                 buffer = ByteBuffer.allocate(4);
                 buffer.put(free_seg.data, 4, 4);
                 free_seg.flag_len = buffer.getInt(0);
-                //Logger.print(tag, "Recved flag_len: " + Integer.toString
+                //Logger.print(kTag, "Recved flag_len: " + Integer.toString
                 // (free_seg.flag_len));
 
                 sm.enqueue(kSegRecv, free_seg);
@@ -253,7 +253,7 @@ public abstract class NetworkAdapter {
                 }
                 send_thread.interrupt();
                 send_thread = null;
-                Logger.print(tag, "sender thread stopped ");
+                Logger.print(kTag, "sender thread stopped ");
                 sender_semaphore = 0;
             }
             if (recv_thread != null) {
@@ -268,7 +268,7 @@ public abstract class NetworkAdapter {
 
                 recv_thread.interrupt();
                 recv_thread = null;
-                Logger.print(tag, "recver thread stopped ");
+                Logger.print(kTag, "recver thread stopped ");
                 recver_semaphore = 0;
             }
 
@@ -281,7 +281,7 @@ public abstract class NetworkAdapter {
         }
     }
 
-    private String tag = "NetworkAdapter";
+    private String kTag = "NetworkAdapter";
 
     private SenderThread send_thread;
     private RecverThread recv_thread;
@@ -314,7 +314,7 @@ public abstract class NetworkAdapter {
 
     public final void set_data_adapter() {
         if ((at & kATInitialized) == kATInitialized) {
-            Logger.print(tag, "Already initialized");
+            Logger.print(kTag, "Already initialized");
             return;
         }
 
@@ -324,12 +324,12 @@ public abstract class NetworkAdapter {
 
     public final void set_control_adapter() {
         if ((at & kATInitialized) == kATInitialized) {
-            Logger.print(tag, "Already initialized");
+            Logger.print(kTag, "Already initialized");
             return;
         }
 
         if ((at & kATCtrlable) == 0) {
-            Logger.print(tag, "Not controllable adapter");
+            Logger.print(kTag, "Not controllable adapter");
             return;
         }
         at |= kATCtrl | kATInitialized;
@@ -339,13 +339,13 @@ public abstract class NetworkAdapter {
 
     public void connect(Handler handler) {
         if (at == kATuninitialized) {
-            Logger.print(tag, "The adapter has not been installed to " +
+            Logger.print(kTag, "The adapter has not been installed to " +
                     "core");
             return;
         }
 
         if (stat != kDevDiscon) {
-            Logger.print(tag, "The adapter is not disconnected");
+            Logger.print(kTag, "The adapter is not disconnected");
             return;
         }
 
@@ -360,11 +360,11 @@ public abstract class NetworkAdapter {
 
     public void close(Handler handler) {
         if (stat != kDevCon) {
-            Logger.print(tag, "The adapter is not connected");
+            Logger.print(kTag, "The adapter is not connected");
             return;
         }
 
-        Logger.print(tag, "close adapter");
+        Logger.print(kTag, "close adapter");
         stat = kDevDisconnecting;
         if (close_thread != null) {
             close_thread.interrupt();
@@ -380,7 +380,7 @@ public abstract class NetworkAdapter {
 
     public void send_ctrl_msg(byte[] data, int len) {
         if ((at & kATCtrl) == kATCtrl) {
-            Logger.print(tag, "Cannot transfer private data in control " +
+            Logger.print(kTag, "Cannot transfer private data in control " +
                     "adapter");
             return;
         }
