@@ -134,13 +134,13 @@ public class Core {
 }
 
 class StartCoreTransaction {
-    public static StartCoreTransaction start() {
+    public static boolean start() {
         if (sOngoing == null) {
             sOngoing = new StartCoreTransaction();
             sOngoing.connectControlAdapter();
-            return sOngoing;
+            return true;
         } else {
-            return null;
+            return false;
         }
     }
 
