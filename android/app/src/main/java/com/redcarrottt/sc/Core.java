@@ -135,10 +135,10 @@ public class Core {
 
 class StartCoreTransaction {
     public static StartCoreTransaction start() {
-        if (sSingleton == null) {
-            sSingleton = new StartCoreTransaction();
-            sSingleton.connectControlAdapter();
-            return sSingleton;
+        if (sOngoing == null) {
+            sOngoing = new StartCoreTransaction();
+            sOngoing.connectControlAdapter();
+            return sOngoing;
         } else {
             return null;
         }
@@ -159,5 +159,5 @@ class StartCoreTransaction {
         // Private Constructor
     }
 
-    private static StartCoreTransaction sSingleton = null;
+    private static StartCoreTransaction sOngoing = null;
 }
