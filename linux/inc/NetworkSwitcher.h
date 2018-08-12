@@ -47,36 +47,53 @@ class SwitchAdapterTransaction {
    * 7. NetworkSwitcher.done_switch()
    */
 public:
-  static bool start(int prev_index, int next_index);
+  static bool run(int prev_index, int next_index);
+  bool start(void);
   static void connect_callback(bool is_success);
   static void disconnect_callback(bool is_success);
 
 protected:
-  static bool sIsOngoing;
-  static int sPrevIndex;
-  static int sNextIndex;
+  void done(void);
+
+  SwitchAdapterTransaction(int prev_index, int next_index) {
+    this->mPrevIndex = prev_index;
+    this->mNextIndex = next_index;
+  }
+  static SwitchAdapterTransaction *sOngoing;
+
+  int mPrevIndex;
+  int mNextIndex;
 };
 
 class ConnectRequestTransaction {
 public:
-  static bool start(int adapter_id);
+  static bool run(int adapter_id);
+  bool start(void);
   static void connect_callback(bool is_success);
 protected:
-  static void on_fail(void);
+  void done();
 
-  static bool sIsOngoing;
-  static int sAdapterId;
+  ConnectRequestTransaction(int adapter_id) {
+    this->mAdapterId = adapter_id;
+  }
+  static ConnectRequestTransaction *sOngoing;
+
+  int mAdapterId;
 };
 
 class ReconnectControlAdapterTransaction {
 public:
-  static bool start();
+  static bool run();
+  bool start();
   static void disconnect_callback(bool is_success);
   static void connect_callback(bool is_success);
 protected:
-  static void on_fail(bool is_restart);
+  void done(bool require_restart);
+  // static void on_fail(bool is_restart);
 
-  static bool sIsOngoing;
+  ReconnectControlAdapterTransaction() {
+  }
+  static ReconnectControlAdapterTransaction *sOngoing;
 };
 
 class Core;
@@ -95,9 +112,14 @@ class NetworkSwitcher {
 
     /*
      * Connect adapter command.
-     * It is called by peer.
+     * It is called by peer through Core.
      */
     void connect_adapter(int adapter_id);
+
+    /*
+     * Reconnect control adapter command.
+     * It is called by Core.
+     */
     void reconnect_control_adapter(void);
 
     /* Notification of switch done event */

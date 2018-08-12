@@ -25,7 +25,7 @@ public class Core {
     private static final String kTag = "Core";
 
     // APIs: These functions are mapped to ones in API.
-    boolean start() {
+    public boolean start() {
         if (this.getState() == State.kIdle) {
             Logger.ERR(kTag, "Core has already started");
             return false;
@@ -42,7 +42,7 @@ public class Core {
         return false;
     }
 
-    void doneStart(boolean isSuccess) {
+    public void doneStart(boolean isSuccess) {
         if (!isSuccess) {
             Logger.ERR(kTag, "Failed to start core!");
             this.setState(State.kIdle);
@@ -53,7 +53,7 @@ public class Core {
         this.setState(State.kReady);
     }
 
-    boolean stop() {
+    public boolean stop() {
         int state = this.getState();
         if (state == State.kStarting || state == State.kStopping) {
             Logger.ERR(kTag, "Cannot stop core during starting/stopping!");
@@ -74,7 +74,7 @@ public class Core {
         return false;
     }
 
-    void doneStop(boolean isSuccess) {
+    public void doneStop(boolean isSuccess) {
         if (!isSuccess) {
             Logger.ERR(kTag, "Failed to stop core!");
             this.setState(State.kReady);
@@ -280,7 +280,7 @@ public class Core {
         public static final int kStopping = 5;
     }
 
-    protected int getState() {
+    private int getState() {
         int state;
         synchronized (this.mState) {
             state = this.mState;
@@ -288,7 +288,7 @@ public class Core {
         return state;
     }
 
-    protected void setState(int newState) {
+    private void setState(int newState) {
         synchronized (this.mState) {
             this.mState = newState;
         }
@@ -360,7 +360,7 @@ public class Core {
     private static StopCoreTransaction sOngoingStopCore = null;
 
     // Start Core
-    static class StartCoreTransaction {
+    private static class StartCoreTransaction {
         // Private Constructor
         private StartCoreTransaction(Core caller) {
             this.mCaller = caller;
@@ -431,7 +431,7 @@ public class Core {
     }
 
     // Stop Core
-    static class StopCoreTransaction {
+    private static class StopCoreTransaction {
         private StopCoreTransaction(Core caller) {
             this.mCaller = caller;
             this.onDisconnectControlAdapter = new OnDisconnectControlAdapter();
