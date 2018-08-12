@@ -193,7 +193,6 @@ public class Core {
         @Override
         public void receiveLoop(ClientAdapter adapter) {
             byte[] dataBuffer = new byte[512];
-            // TODO
             int res = 0;
             while (true) {
                 // Receive 1Byte: Control Request Code
@@ -220,7 +219,7 @@ public class Core {
                     short adapterId = buffer.getShort();
 
                     Logger.DEBUG(kTag, "Control Request: 'Connect Adapter Request' (" + adapterId + ")");
-                    // TODO: NetworkSwitcher.connect_adapter(adapter_id);
+                    NetworkSwitcher.getInstance().connectAdapter(adapterId);
                 } else if (reqCode == CtrlReq.kPriv) {
                     // "Priv" Request
                     short adapterId;
@@ -260,7 +259,7 @@ public class Core {
             }
             Logger.DEBUG(kTag, "Control adapter has been closed");
 
-            // TODO: NetworkSwitcher.reconnectControlAdapter()
+            NetworkSwitcher.getInstance().reconnectControlAdapter();
         }
     }
 
@@ -303,6 +302,20 @@ public class Core {
         this.mControlMessageListeners.add(listener);
     }
 
+    // Adapters Getter
+    public ClientAdapter findDataAdapterById(int adapterId) {
+        for(ClientAdapter adapter : this.mDataAdapters) {
+            if(adapter.getId() == adapterId) {
+                return adapter;
+            }
+        }
+        return null;
+    }
+
+    public ClientAdapter getControlAdapter() {
+        return this.mControlAdapter;
+    }
+
     // Attributes
     ArrayList<ClientAdapter> mDataAdapters;
     ClientAdapter mControlAdapter;
@@ -321,9 +334,16 @@ public class Core {
         return sSingleton;
     }
 
+    // Constructor
+    private Core() {
+        this.mState = State.kIdle;
+        this.mDataAdapters = new ArrayList<>();
+        this.mControlAdapter = null;
+        this.mControlMessageListeners = new ArrayList<>();
+    }
+
     // Transactions
 // ----------------------------------------------------------------
-    // Singleton
     // Singleton runner
     private static boolean runStartCoreTx(Core caller) {
         if (sOngoingStartCore == null) {
@@ -386,7 +406,7 @@ public class Core {
 
         class OnConnectControlAdapter implements ClientAdapter.ConnectResultListener {
             @Override
-            public void onConnectResult(boolean isSuccess) {
+        public void onConnectResult(boolean isSuccess) {
                 if (!isSuccess) {
                     Logger.ERR(kTag, "Connecting control adapter is failed");
                     doneStartCoreTx(mCaller, false);
