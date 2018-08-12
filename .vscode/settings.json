@@ -5,6 +5,7 @@
         "string_view": "cpp",
         "vector": "cpp",
         "memory": "cpp",
-        "utility": "cpp"
+        "utility": "cpp",
+        "__locale": "cpp"
     }
 }
