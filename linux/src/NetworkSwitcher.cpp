@@ -85,7 +85,7 @@ void NetworkSwitcher::switcher_thread(void) {
 
 void NetworkSwitcher::connect_adapter(int adapter_id) {
   NSState state = this->get_state();
-  if(state != NSState::kNSStateSwitching) {
+  if(state == NSState::kNSStateSwitching) {
     LOG_VERB("It's now switching. Cannot connect to adapter %d.", adapter_id);
     return;
   } else if(state != NSState::kNSStateRunning) {
@@ -98,7 +98,7 @@ void NetworkSwitcher::connect_adapter(int adapter_id) {
 
 void NetworkSwitcher::reconnect_control_adapter(void) {
   NSState state = this->get_state();
-  if(state != NSState::kNSStateSwitching) {
+  if(state == NSState::kNSStateSwitching) {
     LOG_VERB("It's now switching. Cannot reconnect control adapter.");
     this->reconnect_control_adapter();
     return;
