@@ -63,7 +63,7 @@ void receiving_thread() {
 }
 
 int main() {
-  cm::start_communication();
+  cm::start_sc();
   cm::EthServerAdapter ethAdapter(2345, "Eth", 2345);
   cm::BtServerAdapter btAdapter(3333, "Bt", "150e8400-1234-41d4-a716-446655440000");
   cm::WfdServerAdapter wfdAdapter(3456, "Wfd", 3456, "OPEL");
@@ -167,7 +167,7 @@ int main() {
     iter1++;
   }
 
-  cm::stop_communication();
+  cm::stop_sc();
 
   return 0;
 }

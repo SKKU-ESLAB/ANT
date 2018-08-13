@@ -90,7 +90,7 @@ int main(int argc, char** argv) {
   snprintf(trace_file_name, 512, "%s", argv[1]);
   printf("Trace File: %s\n", trace_file_name);
 
-  cm::start_communication();
+  cm::start_sc();
   EthServerAdapter ethAdapter(2345, "Eth", 2345);
   BtServerAdapter btAdapter(3333, "Bt", "150e8400-1234-41d4-a716-446655440000");
   WfdServerAdapter wfdAdapter(3456, "Wfd", 3456, "OPEL");
@@ -207,6 +207,8 @@ int main(int argc, char** argv) {
   }
 
   printf("Finish Workload\n");
+
+  cm::stop_sc();
 
   return 0;
 }

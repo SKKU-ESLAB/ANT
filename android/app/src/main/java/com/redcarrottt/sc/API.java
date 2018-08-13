@@ -19,46 +19,27 @@ package com.redcarrottt.sc;
  */
 
 public class API {
-    static private API instance = null;
-    static String kTag = "Comm";
-    private API() {
-        SegmentManager sm = SegmentManager.getInstance();
-        Core nm = Core.getInstance();
-    }
-    static public API getInstance() {
-        if (instance == null)
-            instance = new API();
-        return instance;
+    public static void start_sc() {
+        Core.getInstance().start();
     }
 
-    public int send_data(byte[] buf, int len) {
-        int curr_offset = 0;
-        int sent_bytes;
-
-        ProtocolData pd = null;
-        int packet_size;
-
-        pd = ProtocolManager.data_to_protocol_data(buf, len);
-        if (pd == null) throw new AssertionError();
-
-        packet_size = ProtocolManager.serialize(pd, buf, curr_offset, len);
-        if (!(packet_size > 0)) throw new AssertionError();
-        //Logger.print(kTag, "serialized packet size " + packet_size);
-
-        sent_bytes = ProtocolManager.send_packet(packet_size);
-        if (sent_bytes < 0) throw new AssertionError();
-        //Logger.print(kTag, "Sent bytes: " + sent_bytes);
-
-        return sent_bytes;
+    public static void stop_sc() {
+        Core.getInstance().stop();
     }
 
-    public int recv_data(byte[] buf, int len) {
-        int ret;
-        int packet_size;
+    public static void register_control_adapter(ClientAdapter adapter) {
+        Core.getInstance().registerControlAdapter(adapter);
+    }
 
-        packet_size = ProtocolManager.recv_packet(buf);
-        if (buf == null) throw new AssertionError();
+    public static void register_data_adapter(ClientAdapter adapter) {
+        Core.getInstance().registerDataAdapter(adapter);
+    }
 
-        return packet_size;
+    public static int send(byte[] dataBuffer, int dataLength) {
+        return Core.getInstance().send(dataBuffer, dataLength);
+    }
+
+    public static int receive(byte[] dataBuffer) {
+        return Core.getInstance().receive(dataBuffer);
     }
 }

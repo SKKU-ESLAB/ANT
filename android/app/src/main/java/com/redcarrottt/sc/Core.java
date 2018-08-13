@@ -531,4 +531,3 @@ public class Core {
         private Integer mDataAdaptersCount;
     }
 }
-

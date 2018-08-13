@@ -28,12 +28,12 @@
 
 namespace cm {
 
-inline void start_communication(void) {
+inline void start_sc(void) {
   NetworkSwitcher::get_instance()->start();
   Core::get_instance()->start();
 }
 
-inline void stop_communication(void) {
+inline void stop_sc(void) {
   NetworkSwitcher::get_instance()->stop();
   Core::get_instance()->stop();
 }
@@ -50,8 +50,8 @@ inline void register_data_adapter(ServerAdapter* adapter) {
  * If data size is big, it is recommanded to use following
  * libraries in a thread
  */
-inline int send(const void *buf, uint32_t len) {
-  Core::get_instance()->send(buf, len);
+inline int send(const void *dataBuffer, uint32_t dataLength) {
+  Core::get_instance()->send(dataBuffer, dataLength);
 }
 
 /**
@@ -59,8 +59,8 @@ inline int send(const void *buf, uint32_t len) {
  * @param buf: OUT buffer read
  * @return: Received bytes(<0 if error)
  */
-inline int receive(void **buf) {
-  Core::get_instance()->receive(buf);
+inline int receive(void **dataBuffer) {
+  Core::get_instance()->receive(dataBuffer);
 }
 
 } /* namespace cm */
