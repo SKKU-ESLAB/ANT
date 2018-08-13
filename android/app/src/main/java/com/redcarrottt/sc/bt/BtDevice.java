@@ -31,9 +31,19 @@ public class BtDevice extends Device {
         return false;
     }
 
+    // Singleton
+    public static BtDevice getSingleton() {
+        if (sSingleton == null) {
+            sSingleton = new BtDevice();
+        }
+        return sSingleton;
+    }
+
+    private static BtDevice sSingleton = null;
+
     // Constructor
-    public BtDevice(String name) {
+    private BtDevice() {
         // TODO:
-        super(name);
+        super("Bluetooth");
     }
 }
