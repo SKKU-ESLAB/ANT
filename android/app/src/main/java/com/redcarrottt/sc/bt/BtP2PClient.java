@@ -20,4 +20,12 @@ public class BtP2PClient extends P2PClient {
         // TODO:
         return false;
     }
+
+    // Constructor
+    public BtP2PClient(String targetMacAddr) {
+        this.mTargetMacAddr = targetMacAddr;
+    }
+
+    // Attributes
+    private String mTargetMacAddr;
 }

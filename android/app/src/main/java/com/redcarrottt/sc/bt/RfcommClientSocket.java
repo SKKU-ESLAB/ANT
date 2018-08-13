@@ -2,6 +2,8 @@ package com.redcarrottt.sc.bt;
 
 import com.redcarrottt.sc.ClientSocket;
 
+import java.util.UUID;
+
 public class RfcommClientSocket extends ClientSocket {
     @Override
     protected boolean openImpl() {
@@ -26,4 +28,11 @@ public class RfcommClientSocket extends ClientSocket {
         // TODO:
         return 0;
     }
+
+    // Constructor
+    public RfcommClientSocket(String serviceUuid) {
+        this.mServiceUuid = UUID.fromString(serviceUuid);
+    }
+
+    UUID mServiceUuid;
 }
