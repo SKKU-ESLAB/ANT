@@ -29,14 +29,13 @@ import android.util.Log;
 import android.widget.TextView;
 
 import com.redcarrottt.sc.API;
-import com.redcarrottt.sc.BTClientAdapter;
-import com.redcarrottt.sc.TCPClientAdapter;
-import com.redcarrottt.sc.WFDClientAdapter;
+import com.redcarrottt.sc.OldBTClientAdapter;
+import com.redcarrottt.sc.OldTCPClientAdapter;
+import com.redcarrottt.sc.OldWFDClientAdapter;
 
 public class MainActivity extends AppCompatActivity implements LogReceiver.Callback {
     private static final String kTag = "MainActivity";
     private MainActivity self = this;
-    private API mAPI;
 
     private ReceivingThread mReceivingThread;
     private LogReceiver mBroadcastReceiver;
@@ -57,16 +56,15 @@ public class MainActivity extends AppCompatActivity implements LogReceiver.Callb
     }
 
     private void initializeCommunication() {
-        mAPI = API.getInstance();
-        TCPClientAdapter tcpClientAdapter = new TCPClientAdapter((short) 2345, "192.168.0.35",
+        OldTCPClientAdapter oldTcpClientAdapter = new OldTCPClientAdapter((short) 2345, "192.168.0.35",
                 2345);
-        BTClientAdapter btClientAdapter = new BTClientAdapter((short) 3333, "B8:27:EB:77:C3:4A",
+        OldBTClientAdapter oldBtClientAdapter = new OldBTClientAdapter((short) 3333, "B8:27:EB:77:C3:4A",
                 "150e8400-1234-41d4-a716-446655440000");
-        WFDClientAdapter wfdClientAdapter = new WFDClientAdapter((short) 3456, 3456, this);
+        OldWFDClientAdapter oldWfdClientAdapter = new OldWFDClientAdapter((short) 3456, 3456, this);
 
-        tcpClientAdapter.set_control_adapter();
-        btClientAdapter.set_data_adapter();
-        wfdClientAdapter.set_data_adapter();
+        oldTcpClientAdapter.set_control_adapter();
+        oldBtClientAdapter.set_data_adapter();
+        oldWfdClientAdapter.set_data_adapter();
 
         this.mReceivingThread = new ReceivingThread();
         this.mReceivingThread.start();
@@ -101,9 +99,9 @@ public class MainActivity extends AppCompatActivity implements LogReceiver.Callb
             String sending_buf = "ACK"; /* Ack Message */
 
             while (true) {
-                int receivedLength = mAPI.recv_data(buf, 100 * 1024 * 1024);
+                int receivedLength = API.receive(buf);
                 Logger.VERB(kTag, "Received: Size=" + receivedLength);
-                int sentLength = mAPI.send_data(sending_buf.getBytes(), sending_buf.length());
+                int sentLength = API.send(sending_buf.getBytes(), sending_buf.length());
                 Logger.VERB(kTag, "Sent: Size=" + sentLength);
             }
 
