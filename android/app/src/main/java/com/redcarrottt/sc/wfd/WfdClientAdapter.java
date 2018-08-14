@@ -12,7 +12,7 @@ public class WfdClientAdapter extends ClientAdapter {
 
         // Components
         WfdDevice device = WfdDevice.getSingleton(ownerActivity);
-        WfdP2PClient p2pClient = new WfdP2PClient(targetDevName);
+        WfdP2PClient p2pClient = new WfdP2PClient(ownerActivity, targetDevName);
         TcpClientSocket clientSocket = new TcpClientSocket(targetIpAddress, targetPort);
 
         // Initialize
