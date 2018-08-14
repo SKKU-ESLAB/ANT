@@ -2,23 +2,23 @@ package com.redcarrottt.sc.bt;
 
 import com.redcarrottt.sc.P2PClient;
 
-public class BtP2PClient extends P2PClient {
+class BtP2PClient extends P2PClient {
     @Override
     protected boolean discoverImpl() {
-        // TODO:
-        return false;
+        // Assume that target device has already been bonded.
+        return true;
     }
 
     @Override
     protected boolean connectImpl() {
-        // TODO:
-        return false;
+        // Assume that target device has already been bonded.
+        return true;
     }
 
     @Override
     protected boolean disconnectImpl() {
-        // TODO:
-        return false;
+        // Assume that target device has already been bonded.
+        return true;
     }
 
     // Constructor

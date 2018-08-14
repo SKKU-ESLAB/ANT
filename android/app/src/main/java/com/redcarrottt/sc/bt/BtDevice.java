@@ -1,5 +1,7 @@
 package com.redcarrottt.sc.bt;
 
+import android.bluetooth.BluetoothAdapter;
+
 import com.redcarrottt.sc.Device;
 
 /* Copyright (c) 2017-2018. All rights reserved.
@@ -18,16 +20,18 @@ import com.redcarrottt.sc.Device;
  * limitations under the License.
  */
 
-public class BtDevice extends Device {
+class BtDevice extends Device {
     @Override
     protected boolean turnOnImpl() {
-        // TODO:
+        BluetoothAdapter adapter = BluetoothAdapter.getDefaultAdapter();
+        adapter.enable();
         return false;
     }
 
     @Override
     protected boolean turnOffImpl() {
-        // TODO:
+        BluetoothAdapter adapter = BluetoothAdapter.getDefaultAdapter();
+        adapter.disable();
         return false;
     }
 
