@@ -19,13 +19,21 @@ class RfcommClientSocket extends ClientSocket {
     @Override
     protected boolean openImpl() {
         // Initialize socket
+        this.mSocket = null;
         Set<BluetoothDevice> pairedBtDevices = BluetoothAdapter.getDefaultAdapter().getBondedDevices();
         for (BluetoothDevice btDevice : pairedBtDevices) {
-            try {
-                this.mSocket = btDevice.createRfcommSocketToServiceRecord(this.mServiceUuid);
-            } catch (IOException e) {
-                Logger.ERR(kTag, "Socket initialization failed");
+            if (btDevice.getAddress().equals(this.mTargetMacAddr)) {
+                try {
+                    this.mSocket = btDevice.createRfcommSocketToServiceRecord(this.mServiceUuid);
+                } catch (IOException e) {
+                    Logger.ERR(kTag, "Socket initialization failed");
+                    return false;
+                }
             }
+        }
+        if(this.mSocket == null) {
+            Logger.ERR(kTag, "Cannot find the target device");
+            return false;
         }
 
         // Try to open socket
@@ -107,7 +115,8 @@ class RfcommClientSocket extends ClientSocket {
     }
 
     // Constructor
-    public RfcommClientSocket(String serviceUuid) {
+    public RfcommClientSocket(String targetMacAddr, String serviceUuid) {
+        this.mTargetMacAddr = targetMacAddr;
         this.mServiceUuid = UUID.fromString(serviceUuid);
     }
 
@@ -116,5 +125,6 @@ class RfcommClientSocket extends ClientSocket {
     private BufferedOutputStream mOutputStream;
 
     // Attributes
-    UUID mServiceUuid;
+    private String mTargetMacAddr;
+    private UUID mServiceUuid;
 }

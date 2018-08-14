@@ -189,7 +189,7 @@ class SegmentManager {
         ProtocolManager.parse_header(Arrays.copyOfRange(seg.data, kSegHeaderSize, seg.data.length), pd);
         if (pd.len == 0) return null;
 
-        //Logger.print(kTag, "pd.len is " + pd.len);
+        //Logger.DEBUG(kTag, "pd.len is " + pd.len);
         serialized = new byte[pd.len];
 
         // Handle the first segment of the data bulk, because it contains protocol data
@@ -202,7 +202,7 @@ class SegmentManager {
 
         while (cont) {
             seg = dequeue(kSegRecv);
-            //Logger.print(kTag, "Dequeing recved data : " + Integer.toString(seg.seq_no));
+            //Logger.DEBUG(kTag, "Dequeing recved data : " + Integer.toString(seg.seq_no));
             data_size = mGetSegLenBits(seg.flag_len);
             System.arraycopy(seg.data, kSegHeaderSize, serialized, offset, data_size);
             cont = (mGetSegFlagBits(seg.flag_len) == kSegFlagMF);
@@ -228,7 +228,7 @@ class SegmentManager {
                 segment_enqueued = true;
             } else {
                 if (seg.seq_no < next_seq_no[type]) {
-                    Logger.print(kTag, ((type==kSegSend)? "Sending Queue" : "Recving Queue") + Integer.toString(seg.seq_no) + ":"+ Integer.toString(next_seq_no[type]));
+                    Logger.DEBUG(kTag, ((type==kSegSend)? "Sending Queue" : "Recving Queue") + Integer.toString(seg.seq_no) + ":"+ Integer.toString(next_seq_no[type]));
                     throw new AssertionError();
                 }
 
@@ -257,7 +257,7 @@ class SegmentManager {
             }
 
             if (segment_enqueued) {
-                //Logger.print(kTag, "WakeUP!");
+                //Logger.DEBUG(kTag, "WakeUP!");
                 queue[type].notifyAll();
             }
         }
@@ -277,7 +277,7 @@ class SegmentManager {
         synchronized (queue[type]) {
             if (queue_size[type] == 0) {
                 try {
-                    //Logger.print(kTag, "Wating for queue is filled");
+                    //Logger.DEBUG(kTag, "Wating for queue is filled");
                     queue[type].wait();
                 } catch (InterruptedException e) {
                     e.printStackTrace();

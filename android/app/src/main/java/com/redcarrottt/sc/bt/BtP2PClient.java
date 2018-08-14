@@ -1,31 +1,32 @@
 package com.redcarrottt.sc.bt;
 
+import com.redcarrottt.sc.OnConnectResult;
+import com.redcarrottt.sc.OnDisconnectResult;
+import com.redcarrottt.sc.OnDiscoverResult;
 import com.redcarrottt.sc.P2PClient;
 
 class BtP2PClient extends P2PClient {
     @Override
-    protected boolean discoverImpl() {
+    protected void discoverImpl(OnDiscoverResult onDiscoverResult) {
         // Assume that target device has already been bonded.
-        return true;
+        onDiscoverResult.onDoneDiscover(true);
     }
 
     @Override
-    protected boolean connectImpl() {
+    protected void connectImpl(OnConnectResult onConnectResult) {
         // Assume that target device has already been bonded.
-        return true;
+        onConnectResult.onDoneConnect(true);
     }
 
     @Override
-    protected boolean disconnectImpl() {
+    protected void disconnectImpl(OnDisconnectResult onDisconnectResult) {
         // Assume that target device has already been bonded.
-        return true;
+        onDisconnectResult.onDoneDisconnect(true);
     }
 
     // Constructor
-    public BtP2PClient(String targetMacAddr) {
-        this.mTargetMacAddr = targetMacAddr;
+    public BtP2PClient() {
     }
 
     // Attributes
-    private String mTargetMacAddr;
 }

@@ -85,7 +85,7 @@ public class ClientAdapter {
     }
 
     // Connect/Disconnect Threads & Callbacks
-    class ConnectThread extends Thread {
+    class ConnectThread extends Thread implements DiscoverAndConnectResultListener {
         @Override
         public void run() {
             Logger.VERB(kTag, self.getName() + "'s Connect Thread Spawned! (id:" + this.getId() +
@@ -119,21 +119,25 @@ public class ClientAdapter {
             }
             int p2pClientState = self.mP2PClient.getState();
             if (p2pClientState != P2PClient.State.kDisconnected) {
-                boolean res = self.mP2PClient.discoverAndConnect();
+                self.mP2PClient.discoverAndConnect(this);
+            }
+        }
 
-                p2pClientState = self.mP2PClient.getState();
-                if (!res || p2pClientState != P2PClient.State.kConnected) {
-                    Logger.ERR(kTag, "Cannot connect the server adapter - allow fail:" + self.getName
-                            ());
-                    self.mDevice.releaseAndTurnOff();
-                    this.onFail();
-                    return;
-                }
+        @Override
+        public void onDiscoverAndConnectResult(boolean isSuccess) {
+            // Check the result of "Discover and connect"
+            int p2pClientState = self.mP2PClient.getState();
+            if (!isSuccess || p2pClientState != P2PClient.State.kConnected) {
+                Logger.ERR(kTag, "Cannot connect the server adapter - allow fail:"
+                        + self.getName());
+                self.mDevice.releaseAndTurnOff();
+                this.onFail();
+                return;
             }
 
             // Open client socket
             if (self.mClientSocket == null) {
-                self.mP2PClient.disconnect();
+                self.mP2PClient.disconnect(null);
                 self.mDevice.releaseAndTurnOff();
 
                 this.onFail();
@@ -145,9 +149,9 @@ public class ClientAdapter {
 
                 socketState = self.mClientSocket.getState();
                 if (!res || socketState != ClientSocket.State.kOpened) {
-                    Logger.ERR(kTag, "Cannot connect the server adapter - socket open fail: " +
-                            self.getName());
-                    self.mP2PClient.disconnect();
+                    Logger.ERR(kTag, "Cannot connect the server adapter - socket open fail: "
+                            + self.getName());
+                    self.mP2PClient.disconnect(null);
                     self.mDevice.releaseAndTurnOff();
                     this.onFail();
                     return;
@@ -188,7 +192,7 @@ public class ClientAdapter {
         }
     }
 
-    class DisconnectThread extends Thread {
+    class DisconnectThread extends Thread implements com.redcarrottt.sc.DisconnectResultListener {
         @Override
         public void run() {
             Logger.VERB(kTag, self.getName() + "'s Disconnect Thread Spawned! (id:" + this.getId
@@ -221,19 +225,24 @@ public class ClientAdapter {
                 }
             }
 
-            // Disconnect
+            // P2P Disconnect
             int p2pClientState = self.mClientSocket.getState();
             if (p2pClientState != P2PClient.State.kDisconnected) {
-                boolean res = self.mP2PClient.disconnect();
-
-                p2pClientState = self.mP2PClient.getState();
-                if (!res || p2pClientState != P2PClient.State.kDisconnected) {
-                    Logger.ERR(kTag, "Cannot disconnect the server adapter - disconnect P2P " +
-                            "client fail: " + self.getName());
-                    this.onFail();
-                    return;
-                }
+                self.mP2PClient.disconnect(this);
             }
+        }
+
+        @Override
+        public void onDisconnectResult(boolean isSuccess) {
+            // Check the result of "P2P Disconnect"
+            int p2pClientState = self.mP2PClient.getState();
+            if (!isSuccess || p2pClientState != P2PClient.State.kDisconnected) {
+                Logger.ERR(kTag, "Cannot disconnect the server adapter - disconnect P2P " +
+                        "client fail: " + self.getName());
+                this.onFail();
+                return;
+            }
+
 
             // Turn off device
             int deviceState = self.mDevice.getState();
@@ -289,7 +298,7 @@ public class ClientAdapter {
     }
 
     boolean enableReceiverThread(ReceiveLoop receiveLoop) {
-        if(receiveLoop == null) {
+        if (receiveLoop == null) {
             this.mReceiveLoop = new ReceiveDataLoop();
         } else {
             this.mReceiveLoop = receiveLoop;

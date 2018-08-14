@@ -364,6 +364,7 @@ public class Core {
     private static boolean runStopCoreTx(Core caller) {
         if (sOngoingStopCore == null) {
             sOngoingStopCore = new StopCoreTransaction(caller);
+            sOngoingStopCore.start();
             return true;
         } else {
             Logger.WARN(kTag, "Already stopping core");

@@ -18,53 +18,139 @@ package com.redcarrottt.sc;
 
 import com.redcarrottt.testapp.Logger;
 
+interface DiscoverAndConnectResultListener {
+    public void onDiscoverAndConnectResult(boolean isSuccess);
+}
+
+interface DisconnectResultListener {
+    public void onDisconnectResult(boolean isSuccess);
+}
+
 public abstract class P2PClient {
     private final String kTag = "P2PClient";
 
-    // Main Functions
-    public boolean discoverAndConnect() {
+    // Main function 1: Discover and connect
+    public void discoverAndConnect(DiscoverAndConnectResultListener resultListener) {
         if (this.getState() != State.kDisconnected) {
-            Logger.print(kTag, "It's already connected or discovering is in progress");
-            return false;
+            Logger.ERR(kTag, "It's already connected or discovering is in progress");
+            doneDiscoverAndConnectTx(resultListener, false);
         }
 
-        this.setState(State.kDiscovering);
-        boolean res = this.discoverImpl();
-        if (!res) {
-            this.setState(State.kDisconnected);
-            return res;
-        }
-
-        this.setState(State.kConnecting);
-        res = this.connectImpl();
-        if (!res) {
-            this.setState(State.kDisconnected);
-            return res;
-        }
-        this.setState(State.kConnected);
-
-        return res;
+        runDiscoverAndConnectTx(resultListener);
     }
 
-    public boolean disconnect() {
-        if (this.getState() != State.kConnected) {
-            Logger.print(kTag, "It's already disconnected or disconnecting is in progress");
-            return false;
+    private void runDiscoverAndConnectTx(DiscoverAndConnectResultListener resultListener) {
+        if (sOngoingDiscoverConnectTx == null) {
+            sOngoingDiscoverConnectTx = new DiscoverAndConnectTransaction();
+            sOngoingDiscoverConnectTx.start(resultListener);
+        } else {
+            Logger.ERR(kTag, "Discover/Connect has already been in progress.");
+            doneDiscoverAndConnectTx(resultListener, false);
+        }
+    }
+
+    private void doneDiscoverAndConnectTx(DiscoverAndConnectResultListener resultListener,
+                                          boolean isSucceed) {
+        if (isSucceed) {
+            this.setState(State.kConnected);
+        } else {
+            this.setState(State.kDisconnected);
+        }
+        if (resultListener != null)
+            resultListener.onDiscoverAndConnectResult(isSucceed);
+    }
+
+    private static DiscoverAndConnectTransaction sOngoingDiscoverConnectTx = null;
+
+    class DiscoverAndConnectTransaction {
+        private DiscoverAndConnectResultListener mResultListener;
+
+        DiscoverAndConnectTransaction() {
         }
 
-        this.setState(State.kDisconnecting);
-        boolean res = this.disconnectImpl();
-        this.setState(State.kDisconnected);
+        void start(DiscoverAndConnectResultListener resultListener) {
+            this.mResultListener = resultListener;
 
-        return res;
+            setState(State.kDiscovering);
+            discoverImpl(onDiscoverResult);
+        }
+
+        private OnDiscoverResult onDiscoverResult = new OnDiscoverResult() {
+            @Override
+            public void onDoneDiscover(boolean isSucceed) {
+                if (isSucceed) {
+                    setState(State.kConnecting);
+                    connectImpl(onConnectResult);
+                } else {
+                    doneDiscoverAndConnectTx(mResultListener, false);
+                }
+            }
+        };
+
+        private OnConnectResult onConnectResult = new OnConnectResult() {
+            @Override
+            public void onDoneConnect(boolean isSucceed) {
+                doneDiscoverAndConnectTx(mResultListener, isSucceed);
+            }
+        };
+    }
+
+    // Main function 2: Disconnect
+    public void disconnect(DisconnectResultListener resultListener) {
+        if (this.getState() != State.kConnected) {
+            Logger.ERR(kTag, "It's already disconnected or disconnecting is in progress");
+            doneDisconnectTx(resultListener, false);
+        }
+
+        runDisconnectTx(resultListener);
+    }
+
+    private void runDisconnectTx(DisconnectResultListener resultListener) {
+        if (sOngoingDisconnectTx == null) {
+            sOngoingDisconnectTx = new DisconnectTransaction();
+            sOngoingDisconnectTx.start(resultListener);
+        } else {
+            Logger.ERR(kTag, "Disconnection has already been in progress.");
+            doneDisconnectTx(resultListener, false);
+        }
+    }
+
+    private void doneDisconnectTx(DisconnectResultListener resultListener, boolean isSucceed) {
+        this.setState(State.kDisconnected);
+        if (resultListener != null)
+            resultListener.onDisconnectResult(isSucceed);
+    }
+
+    private static DisconnectTransaction sOngoingDisconnectTx = null;
+
+    class DisconnectTransaction {
+        private DisconnectResultListener mResultListener;
+
+        DisconnectTransaction() {
+        }
+
+        void start(DisconnectResultListener resultListener) {
+            this.mResultListener = resultListener;
+
+            setState(State.kDisconnecting);
+            disconnectImpl(onDisconnectResult);
+        }
+
+        private OnDisconnectResult onDisconnectResult = new OnDisconnectResult() {
+            @Override
+            public void onDoneDisconnect(boolean isSuccess) {
+                doneDisconnectTx(mResultListener, isSuccess);
+            }
+        };
+
     }
 
     // Implemented by child classes
-    protected abstract boolean discoverImpl();
+    protected abstract void discoverImpl(OnDiscoverResult onDiscoverResult);
 
-    protected abstract boolean connectImpl();
+    protected abstract void connectImpl(OnConnectResult onConnectResult);
 
-    protected abstract boolean disconnectImpl();
+    protected abstract void disconnectImpl(OnDisconnectResult onDisconnectResult);
 
     // State
     class State {
