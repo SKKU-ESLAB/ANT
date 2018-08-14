@@ -51,6 +51,17 @@ public class MainActivity extends AppCompatActivity implements LogReceiver.Callb
         this.initializeCommunication();
     }
 
+    private void requestPermissions() {
+        if (ContextCompat.checkSelfPermission(MainActivity.this, Manifest.permission.INTERNET) !=
+                PackageManager.PERMISSION_GRANTED) {
+            ActivityCompat.requestPermissions(MainActivity.this, new String[]{Manifest.permission
+                    .INTERNET, Manifest.permission.ACCESS_NETWORK_STATE, Manifest.permission
+                    .ACCESS_WIFI_STATE, Manifest.permission.CHANGE_WIFI_STATE, Manifest
+                    .permission.CHANGE_NETWORK_STATE, Manifest.permission
+                    .ACCESS_COARSE_LOCATION}, 0);
+        }
+    }
+
     private void initializeCommunication() {
         // Setting adapters
         BtClientAdapter btControl = new BtClientAdapter(2345, "Control", "B8:27:EB:77:C3:4A",
@@ -91,17 +102,6 @@ public class MainActivity extends AppCompatActivity implements LogReceiver.Callb
         boolean res = API.stopSC();
         if(!res) {
             Log.e(kTag, "Stopping Selective Connection failed");
-        }
-    }
-
-    private void requestPermissions() {
-        if (ContextCompat.checkSelfPermission(MainActivity.this, Manifest.permission.INTERNET) !=
-                PackageManager.PERMISSION_GRANTED) {
-            ActivityCompat.requestPermissions(MainActivity.this, new String[]{Manifest.permission
-                    .INTERNET, Manifest.permission.ACCESS_NETWORK_STATE, Manifest.permission
-                    .ACCESS_WIFI_STATE, Manifest.permission.CHANGE_WIFI_STATE, Manifest
-                    .permission.CHANGE_NETWORK_STATE, Manifest.permission
-                    .ACCESS_COARSE_LOCATION}, 0);
         }
     }
 
