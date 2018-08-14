@@ -18,7 +18,13 @@ package com.redcarrottt.sc;
 
 import com.redcarrottt.testapp.Logger;
 
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
+
+import static com.redcarrottt.sc.SegmentManager.kSegHeaderSize;
+import static com.redcarrottt.sc.SegmentManager.kSegRecv;
+import static com.redcarrottt.sc.SegmentManager.kSegSend;
+import static com.redcarrottt.sc.SegmentManager.kSegSize;
 
 public class ClientAdapter {
     private final String kTag = "ClientAdapter";
@@ -193,8 +199,8 @@ public class ClientAdapter {
     class DisconnectThread extends Thread implements com.redcarrottt.sc.DisconnectResultListener {
         @Override
         public void run() {
-            Logger.VERB(kTag, self.getName() + "'s Disconnect Thread Spawned! (id:"
-                    + this.getId() + ")");
+            Logger.VERB(kTag, self.getName() + "'s Disconnect Thread Spawned! (id:" + this.getId
+                    () + ")");
             setState(ClientAdapter.State.kDisconnecting);
 
             // Finish sender & receiver threads
@@ -302,6 +308,7 @@ public class ClientAdapter {
         }
 
         this.mReceiverThread = new ReceiverThread();
+        this.mReceiverThread.run();
     }
 
     // Receiver Loop Interface
@@ -317,6 +324,30 @@ public class ClientAdapter {
             synchronized (this.mIsOn) {
                 this.mIsOn = true;
             }
+
+            while (this.mIsOn) {
+                SegmentManager sm = SegmentManager.getInstance();
+                Segment segmentToSend;
+
+                // At first, dequeue a segment from failed sending queue
+                segmentToSend = sm.get_failed_sending();
+
+                // If there is no failed segment, dequeue from send queue
+                if (segmentToSend == null) {
+                    segmentToSend = sm.dequeue(kSegSend);
+                }
+
+                int res = send(segmentToSend.data, kSegHeaderSize + kSegSize);
+                if (res < 0) {
+                    Logger.WARN(kTag, "Sending failed at " + ClientAdapter.this.getName());
+                    sm.failed_sending(segmentToSend);
+                    break;
+                }
+                sm.free_segment(segmentToSend);
+            }
+
+            disconnect(null);
+            Logger.VERB(kTag, ClientAdapter.this.getName() + "'s Sender thread ends");
         }
 
         public void finish() {
@@ -343,6 +374,7 @@ public class ClientAdapter {
             synchronized (this.mIsOn) {
                 this.mIsOn = true;
             }
+            mReceiveLoop.receiveLoop(self);
         }
 
         public void finish() {
@@ -365,8 +397,32 @@ public class ClientAdapter {
     class ReceiveDataLoop implements ReceiveLoop {
         @Override
         public void receiveLoop(ClientAdapter adapter) {
-            // TODO: implement it (same as ServerAdapter::receive_data_loop())
+            while (adapter.mReceiverThread.isOn()) {
+                SegmentManager sm = SegmentManager.getInstance();
+                Segment segmentToReceive = sm.get_free_segment();
+                int len = kSegSize + kSegHeaderSize;
 
+                Logger.DEBUG(kTag, adapter.getName() + ": Receiving...");
+                int res = adapter.receive(segmentToReceive.data, len);
+                if (res < len) {
+                    Logger.WARN(kTag, "Receiving failed at " + adapter.getName());
+                    break;
+                }
+
+                // Read segment metadata
+                ByteBuffer buffer = ByteBuffer.allocate(4);
+                buffer.put(segmentToReceive.data, 0, 4);
+                segmentToReceive.seq_no = buffer.getInt(0);
+
+                buffer = ByteBuffer.allocate(4);
+                buffer.put(segmentToReceive.data, 4, 4);
+                segmentToReceive.flag_len = buffer.getInt(0);
+
+                sm.enqueue(kSegRecv, segmentToReceive);
+            }
+
+            disconnect(null);
+            Logger.VERB(kTag, ClientAdapter.this.getName() + "'s Receiver thread ends");
         }
     }
 
