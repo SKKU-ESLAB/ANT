@@ -19,19 +19,19 @@ package com.redcarrottt.sc;
  */
 
 public class API {
-    public static void start_sc() {
+    public static void startSC() {
         Core.getInstance().start();
     }
 
-    public static void stop_sc() {
+    public static void stopSC() {
         Core.getInstance().stop();
     }
 
-    public static void register_control_adapter(ClientAdapter adapter) {
+    public static void registerControlAdapter(ClientAdapter adapter) {
         Core.getInstance().registerControlAdapter(adapter);
     }
 
-    public static void register_data_adapter(ClientAdapter adapter) {
+    public static void registerDataAdapter(ClientAdapter adapter) {
         Core.getInstance().registerDataAdapter(adapter);
     }
 

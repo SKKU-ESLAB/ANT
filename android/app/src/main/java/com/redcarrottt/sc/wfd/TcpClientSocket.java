@@ -2,7 +2,7 @@ package com.redcarrottt.sc.wfd;
 
 import com.redcarrottt.sc.ClientSocket;
 
-public class TcpClientSocket extends ClientSocket {
+class TcpClientSocket extends ClientSocket {
     @Override
     protected boolean openImpl() {
         // TODO:

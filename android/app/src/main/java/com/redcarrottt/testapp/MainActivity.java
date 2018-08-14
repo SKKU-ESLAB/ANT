@@ -29,9 +29,8 @@ import android.util.Log;
 import android.widget.TextView;
 
 import com.redcarrottt.sc.API;
-import com.redcarrottt.sc.OldBTClientAdapter;
-import com.redcarrottt.sc.OldTCPClientAdapter;
-import com.redcarrottt.sc.OldWFDClientAdapter;
+import com.redcarrottt.sc.bt.BtClientAdapter;
+import com.redcarrottt.sc.wfd.WfdClientAdapter;
 
 public class MainActivity extends AppCompatActivity implements LogReceiver.Callback {
     private static final String kTag = "MainActivity";
@@ -56,15 +55,13 @@ public class MainActivity extends AppCompatActivity implements LogReceiver.Callb
     }
 
     private void initializeCommunication() {
-        OldTCPClientAdapter oldTcpClientAdapter = new OldTCPClientAdapter((short) 2345, "192.168.0.35",
-                2345);
-        OldBTClientAdapter oldBtClientAdapter = new OldBTClientAdapter((short) 3333, "B8:27:EB:77:C3:4A",
-                "150e8400-1234-41d4-a716-446655440000");
-        OldWFDClientAdapter oldWfdClientAdapter = new OldWFDClientAdapter((short) 3456, 3456, this);
+        BtClientAdapter btControl = new BtClientAdapter(2345, "Control", "B8:27:EB:77:C3:4A", "150e8400-1234-41d4-a716-446655440000");
+        BtClientAdapter btData = new BtClientAdapter(3333, "Data/BT", "B8:27:EB:77:C3:4A", "150e8400-1234-41d4-a716-446655440001");
+        WfdClientAdapter wfdData = new WfdClientAdapter(3456, "Data/WFD", "SelCon", "192.168.49.1", 3456, this);
 
-        oldTcpClientAdapter.set_control_adapter();
-        oldBtClientAdapter.set_data_adapter();
-        oldWfdClientAdapter.set_data_adapter();
+        API.registerControlAdapter(btControl);
+        API.registerDataAdapter(btData);
+        API.registerDataAdapter(wfdData);
 
         this.mReceivingThread = new ReceivingThread();
         this.mReceivingThread.start();
