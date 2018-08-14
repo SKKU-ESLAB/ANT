@@ -63,9 +63,8 @@ public class ClientAdapter {
             return -2;
         }
 
-        int ret = this.mClientSocket.send(dataBuffer, dataLength);
         // Omit Implementing Statistics: SendDataSize
-        return ret;
+        return this.mClientSocket.send(dataBuffer, dataLength);
     }
 
     int receive(byte[] dataBuffer, int dataLength) {
@@ -79,9 +78,8 @@ public class ClientAdapter {
             return -2;
         }
 
-        int ret = this.mClientSocket.receive(dataBuffer, dataLength);
         // Omit Implementing Statistics: ReceiveDataSize
-        return ret;
+        return this.mClientSocket.receive(dataBuffer, dataLength);
     }
 
     // Connect/Disconnect Threads & Callbacks
@@ -128,8 +126,8 @@ public class ClientAdapter {
             // Check the result of "Discover and connect"
             int p2pClientState = self.mP2PClient.getState();
             if (!isSuccess || p2pClientState != P2PClient.State.kConnected) {
-                Logger.ERR(kTag, "Cannot connect the server adapter - allow fail:"
-                        + self.getName());
+                Logger.ERR(kTag, "Cannot connect the server adapter - allow fail:" + self.getName
+                        ());
                 self.mDevice.releaseAndTurnOff();
                 this.onFail();
                 return;
@@ -149,8 +147,8 @@ public class ClientAdapter {
 
                 socketState = self.mClientSocket.getState();
                 if (!res || socketState != ClientSocket.State.kOpened) {
-                    Logger.ERR(kTag, "Cannot connect the server adapter - socket open fail: "
-                            + self.getName());
+                    Logger.ERR(kTag, "Cannot connect the server adapter - socket open fail: " +
+                            self.getName());
                     self.mP2PClient.disconnect(null);
                     self.mDevice.releaseAndTurnOff();
                     this.onFail();
@@ -187,7 +185,7 @@ public class ClientAdapter {
 
         private ConnectResultListener mResultListener;
 
-        public ConnectThread(ConnectResultListener resultListener) {
+        ConnectThread(ConnectResultListener resultListener) {
             this.mResultListener = resultListener;
         }
     }
@@ -195,8 +193,8 @@ public class ClientAdapter {
     class DisconnectThread extends Thread implements com.redcarrottt.sc.DisconnectResultListener {
         @Override
         public void run() {
-            Logger.VERB(kTag, self.getName() + "'s Disconnect Thread Spawned! (id:" + this.getId
-                    () + ")");
+            Logger.VERB(kTag, self.getName() + "'s Disconnect Thread Spawned! (id:"
+                    + this.getId() + ")");
             setState(ClientAdapter.State.kDisconnecting);
 
             // Finish sender & receiver threads
@@ -218,8 +216,8 @@ public class ClientAdapter {
 
                 socketState = self.mClientSocket.getState();
                 if (!res || socketState != ClientSocket.State.kClosed) {
-                    Logger.ERR(kTag, "Cannot disconnect the server adapter - socket close fail: " +
-                            "" + "" + self.getName());
+                    Logger.ERR(kTag, "Cannot disconnect the server adapter - socket close fail: "
+                            + "" + "" + self.getName());
                     this.onFail();
                     return;
                 }
@@ -278,7 +276,7 @@ public class ClientAdapter {
 
         private DisconnectResultListener mResultListener;
 
-        public DisconnectThread(DisconnectResultListener resultListener) {
+        DisconnectThread(DisconnectResultListener resultListener) {
             this.mResultListener = resultListener;
         }
     }
@@ -292,12 +290,11 @@ public class ClientAdapter {
     }
 
     // Thread Control Functions: enableSenderThread, enableReceiverThread
-    boolean enableSenderThread() {
+    void enableSenderThread() {
         this.mSenderThread = new SenderThread();
-        return false;
     }
 
-    boolean enableReceiverThread(ReceiveLoop receiveLoop) {
+    void enableReceiverThread(ReceiveLoop receiveLoop) {
         if (receiveLoop == null) {
             this.mReceiveLoop = new ReceiveDataLoop();
         } else {
@@ -305,7 +302,6 @@ public class ClientAdapter {
         }
 
         this.mReceiverThread = new ReceiverThread();
-        return false;
     }
 
     // Receiver Loop Interface
@@ -313,7 +309,8 @@ public class ClientAdapter {
         void receiveLoop(ClientAdapter adapter);
     }
 
-    // Sender/Receiver Thraeds
+    // Sender/Receiver Threads
+    @SuppressWarnings("SynchronizeOnNonFinalField")
     class SenderThread extends Thread {
         @Override
         public void run() {
@@ -328,10 +325,8 @@ public class ClientAdapter {
             }
         }
 
-        public SenderThread() {
-            synchronized (this.mIsOn) {
-                this.mIsOn = false;
-            }
+        SenderThread() {
+            this.mIsOn = false;
         }
 
         public boolean isOn() {
@@ -341,6 +336,7 @@ public class ClientAdapter {
         private Boolean mIsOn;
     }
 
+    @SuppressWarnings("SynchronizeOnNonFinalField")
     class ReceiverThread extends Thread {
         @Override
         public void run() {
@@ -355,10 +351,8 @@ public class ClientAdapter {
             }
         }
 
-        public ReceiverThread() {
-            synchronized (this.mIsOn) {
-                this.mIsOn = false;
-            }
+        ReceiverThread() {
+            this.mIsOn = false;
         }
 
         public boolean isOn() {
@@ -372,6 +366,7 @@ public class ClientAdapter {
         @Override
         public void receiveLoop(ClientAdapter adapter) {
             // TODO: implement it (same as ServerAdapter::receive_data_loop())
+
         }
     }
 
@@ -384,6 +379,7 @@ public class ClientAdapter {
         this.mId = id;
         this.mName = name;
         this.mState = State.kDisconnected;
+        this.mListeners = new ArrayList<>();
     }
 
     protected void initialize(Device device, P2PClient p2pClient, ClientSocket clientSocket) {
@@ -409,7 +405,8 @@ public class ClientAdapter {
         public static final int kDisconnecting = 3;
     }
 
-    protected int getState() {
+    @SuppressWarnings("SynchronizeOnNonFinalField")
+    private int getState() {
         int state;
         synchronized (this.mState) {
             state = this.mState;
@@ -417,7 +414,8 @@ public class ClientAdapter {
         return state;
     }
 
-    protected void setState(int newState) {
+    @SuppressWarnings("SynchronizeOnNonFinalField")
+    private void setState(int newState) {
         int oldState;
         synchronized (this.mState) {
             oldState = this.mState;
@@ -441,17 +439,18 @@ public class ClientAdapter {
     }
 
     // Attributes
-    protected int mId;
-    protected String mName;
+    private int mId;
+    private String mName;
 
     // State
-    protected Integer mState;
+    private Integer mState;
 
     // State Listener
-    protected ArrayList<StateListener> mListeners;
+    private final ArrayList<StateListener> mListeners;
 
     // Main Components : Device, P2PClient, ClientSocket
-    protected Device mDevice;
-    protected P2PClient mP2PClient;
-    protected ClientSocket mClientSocket;
+    private Device mDevice;
+    private P2PClient mP2PClient;
+
+    private ClientSocket mClientSocket;
 }

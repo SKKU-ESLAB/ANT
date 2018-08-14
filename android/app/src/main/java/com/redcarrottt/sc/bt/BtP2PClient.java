@@ -25,7 +25,7 @@ class BtP2PClient extends P2PClient {
     }
 
     // Constructor
-    public BtP2PClient() {
+    BtP2PClient() {
     }
 
     // Attributes

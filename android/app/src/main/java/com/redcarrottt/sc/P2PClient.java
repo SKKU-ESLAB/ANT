@@ -19,11 +19,11 @@ package com.redcarrottt.sc;
 import com.redcarrottt.testapp.Logger;
 
 interface DiscoverAndConnectResultListener {
-    public void onDiscoverAndConnectResult(boolean isSuccess);
+    void onDiscoverAndConnectResult(boolean isSuccess);
 }
 
 interface DisconnectResultListener {
-    public void onDisconnectResult(boolean isSuccess);
+    void onDisconnectResult(boolean isSuccess);
 }
 
 public abstract class P2PClient {
@@ -161,6 +161,7 @@ public abstract class P2PClient {
         public static final int kDisconnecting = 4;
     }
 
+    @SuppressWarnings("SynchronizeOnNonFinalField")
     protected int getState() {
         int state;
         synchronized (this.mState) {
@@ -169,18 +170,19 @@ public abstract class P2PClient {
         return state;
     }
 
-    protected void setState(int newState) {
+    @SuppressWarnings("SynchronizeOnNonFinalField")
+    private void setState(int newState) {
         synchronized (this.mState) {
             this.mState = newState;
         }
     }
 
-    public P2PClient() {
+    protected P2PClient() {
         this.mState = State.kDisconnected;
     }
 
     // Attributes
 
     // State
-    protected Integer mState;
+    private Integer mState;
 }

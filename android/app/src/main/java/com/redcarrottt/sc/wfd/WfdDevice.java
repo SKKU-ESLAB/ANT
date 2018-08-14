@@ -1,5 +1,6 @@
 package com.redcarrottt.sc.wfd;
 
+import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.content.Context;
 import android.net.wifi.WifiManager;
@@ -11,16 +12,24 @@ class WfdDevice extends Device {
     protected boolean turnOnImpl() {
         WifiManager wifiManager = (WifiManager) this.mOwnerActivity.getApplicationContext()
                 .getSystemService(Context.WIFI_SERVICE);
-        wifiManager.setWifiEnabled(true);
-        return false;
+        if (wifiManager != null) {
+            wifiManager.setWifiEnabled(true);
+            return true;
+        } else {
+            return false;
+        }
     }
 
     @Override
     protected boolean turnOffImpl() {
         WifiManager wifiManager = (WifiManager) this.mOwnerActivity.getApplicationContext()
                 .getSystemService(Context.WIFI_SERVICE);
-        wifiManager.setWifiEnabled(false);
-        return false;
+        if (wifiManager != null) {
+            wifiManager.setWifiEnabled(false);
+            return true;
+        } else {
+            return false;
+        }
     }
 
     // Singleton
@@ -31,13 +40,15 @@ class WfdDevice extends Device {
         return sSingleton;
     }
 
+    @SuppressLint("StaticFieldLeak")
     private static WfdDevice sSingleton = null;
 
     // Constructor
     private WfdDevice(Activity ownerActivity) {
         super("Wi-fi Direct");
+        this.mOwnerActivity = ownerActivity;
     }
 
     // Attributes
-    Activity mOwnerActivity;
+    private Activity mOwnerActivity;
 }
