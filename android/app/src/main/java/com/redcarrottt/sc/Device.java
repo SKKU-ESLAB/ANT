@@ -16,10 +16,13 @@ package com.redcarrottt.sc;
  * limitations under the License.
  */
 
+import com.redcarrottt.testapp.Logger;
+
 public abstract class Device {
     private final String kTag = "Device";
 
     // Main Functions
+    @SuppressWarnings("SynchronizeOnNonFinalField")
     boolean holdAndTurnOn() {
         int refCount;
         synchronized (this.mRefCount) {
@@ -37,13 +40,16 @@ public abstract class Device {
             } else {
                 this.setState(State.kOn);
             }
+            Logger.VERB(kTag, this.mName + " is turned on");
             return res;
         } else {
             // Already turn on
+            Logger.VERB(kTag, this.mName + " is already turned on");
             return true;
         }
     }
 
+    @SuppressWarnings("SynchronizeOnNonFinalField")
     boolean releaseAndTurnOff() {
         int refCount;
         synchronized (this.mRefCount) {
@@ -61,9 +67,11 @@ public abstract class Device {
             } else {
                 this.setState(State.kOff);
             }
+            Logger.VERB(kTag, this.mName + " is turned off");
             return res;
         } else {
             // Not yet turn off
+            Logger.VERB(kTag, this.mName + " is used by other components, so not turned off");
             return true;
         }
     }
@@ -81,6 +89,7 @@ public abstract class Device {
         public static final int kTurningOff = 3;
     }
 
+    @SuppressWarnings("SynchronizeOnNonFinalField")
     protected int getState() {
         int state;
         synchronized (this.mState) {
@@ -89,7 +98,8 @@ public abstract class Device {
         return state;
     }
 
-    protected void setState(int newState) {
+    @SuppressWarnings("SynchronizeOnNonFinalField")
+    private void setState(int newState) {
         synchronized (this.mState) {
             this.mState = newState;
         }
@@ -101,9 +111,9 @@ public abstract class Device {
     }
 
     // Attributes
-    protected String mName;
+    private String mName;
     private Integer mRefCount;
 
     // State
-    protected Integer mState;
+    private Integer mState;
 }

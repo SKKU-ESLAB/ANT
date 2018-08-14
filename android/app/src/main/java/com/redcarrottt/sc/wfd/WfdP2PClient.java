@@ -92,6 +92,7 @@ class WfdP2PClient extends P2PClient {
             @Override
             public void onReceive(Context context, Intent intent) {
                 String action = intent.getAction();
+                assert action != null;
                 if (action.equals(WifiP2pManager.WIFI_P2P_PEERS_CHANGED_ACTION)) {
                     Logger.DEBUG(kTag, "Peers changed event");
 
@@ -131,8 +132,8 @@ class WfdP2PClient extends P2PClient {
                 Logger.DEBUG(kTag, "Got peer list");
                 boolean isFound = false;
                 for (WifiP2pDevice p2pDevice : peers.getDeviceList()) {
-                    Logger.DEBUG(kTag, "Peer: " + p2pDevice.deviceAddress + " "
-                            + p2pDevice.deviceName);
+                    Logger.DEBUG(kTag, "Peer: " + p2pDevice.deviceAddress + " " + p2pDevice
+                            .deviceName);
                     if (p2pDevice.deviceName.equals(mTargetDevName)) {
                         mFoundWFDDevice = p2pDevice;
                         Logger.DEBUG(kTag, "Peer found");
@@ -185,8 +186,8 @@ class WfdP2PClient extends P2PClient {
         p2pConfig.groupOwnerIntent = 0;
 
         // P2P connection request
-        Logger.DEBUG(kTag, "Request to connect: " + p2pDevice.deviceName + " "
-                + p2pDevice.deviceAddress + " (" + p2pConfig.wps.pin + ")");
+        Logger.DEBUG(kTag, "Request to connect: " + p2pDevice.deviceName + " " + p2pDevice
+                .deviceAddress + " (" + p2pConfig.wps.pin + ")");
         mWFDManager.connect(mWFDChannel, p2pConfig, null);
     }
 
@@ -202,22 +203,20 @@ class WfdP2PClient extends P2PClient {
         @Override
         public void onReceive(Context context, Intent intent) {
             String action = intent.getAction();
+            assert action != null;
             if (action.equals(WifiP2pManager.WIFI_P2P_CONNECTION_CHANGED_ACTION)) {
                 NetworkInfo netInfo = intent.getParcelableExtra(WifiP2pManager.EXTRA_NETWORK_INFO);
                 if (netInfo.isConnected()) {
-                    WifiP2pGroup p2pGroup = intent.getParcelableExtra(
-                            WifiP2pManager.EXTRA_WIFI_P2P_GROUP);
+                    WifiP2pGroup p2pGroup = intent.getParcelableExtra(WifiP2pManager
+                            .EXTRA_WIFI_P2P_GROUP);
                     String goDevName = p2pGroup.getOwner().deviceName;
                     if (goDevName != null && goDevName.equals(mTargetDevName)) {
                         mOnConnectResult.onDoneConnect(true);
-                        return;
                     }
                 }
             }
         }
     }
-
-    ;
 
     @Override
     protected void disconnectImpl(OnDisconnectResult onDisconnectResult) {
@@ -236,7 +235,7 @@ class WfdP2PClient extends P2PClient {
     }
 
     // Constructor
-    public WfdP2PClient(Activity ownerActivity, String targetDevName) {
+    WfdP2PClient(Activity ownerActivity, String targetDevName) {
         this.mOwnerActivity = ownerActivity;
         this.mTargetDevName = targetDevName;
 
@@ -248,11 +247,10 @@ class WfdP2PClient extends P2PClient {
             return;
         }
 
-        this.mWFDChannel = this.mWFDManager.initialize(this.mOwnerActivity,
-                Looper.getMainLooper(), null);
+        this.mWFDChannel = this.mWFDManager.initialize(this.mOwnerActivity, Looper.getMainLooper
+                (), null);
         if (this.mWFDChannel == null) {
             Logger.ERR(kTag, "Failed to initialize Wi-fi Direct Manager");
-            return;
         }
     }
 

@@ -16,6 +16,7 @@ package com.redcarrottt.testapp;
  * limitations under the License.
  */
 
+import android.annotation.SuppressLint;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
@@ -41,7 +42,8 @@ class LogReceiver extends BroadcastReceiver {
     @Override
     public void onReceive(Context context, Intent intent) {
         String action = intent.getAction();
-        if (action.compareTo(kAction) == 0) {
+        assert action != null;
+        if (action.equals(kAction)) {
             String logMessage = intent.getStringExtra(kKeyLogMessage);
             int logLevel = intent.getIntExtra(kKeyLogLevel, LogLevel.DEBUG);
             this.mCallback.onLogMessage(logLevel, logMessage);
@@ -49,7 +51,7 @@ class LogReceiver extends BroadcastReceiver {
     }
 
     interface Callback {
-        public void onLogMessage(final int logLevel, String logMessage);
+        void onLogMessage(final int logLevel, String logMessage);
     }
 }
 
@@ -86,5 +88,6 @@ public class Logger {
         Logger.defaultContext = context;
     }
 
+    @SuppressLint("StaticFieldLeak")
     private static Context defaultContext;
 }

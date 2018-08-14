@@ -94,6 +94,7 @@ public abstract class ClientSocket {
         public static final int kClosing = 3;
     }
 
+    @SuppressWarnings("SynchronizeOnNonFinalField")
     protected int getState() {
         int state;
         synchronized (this.mState) {
@@ -102,18 +103,18 @@ public abstract class ClientSocket {
         return state;
     }
 
-    protected void setState(int newState) {
+    @SuppressWarnings("SynchronizeOnNonFinalField")
+    private void setState(int newState) {
         synchronized (this.mState) {
             this.mState = newState;
         }
     }
 
-    public ClientSocket() {
-        this.mState = State.kClosed;
+    protected ClientSocket() {
     }
 
     // Attributes
 
     // State
-    protected Integer mState;
+    private Integer mState = State.kClosed;
 }

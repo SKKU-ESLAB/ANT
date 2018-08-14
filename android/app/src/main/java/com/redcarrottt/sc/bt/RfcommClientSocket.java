@@ -43,8 +43,11 @@ class RfcommClientSocket extends ClientSocket {
                 this.mSocket.connect();
                 this.mInputStream = new BufferedInputStream(this.mSocket.getInputStream());
                 this.mOutputStream = new BufferedOutputStream(this.mSocket.getOutputStream());
+                break;
             } catch (IOException e) {
                 this.mSocket = null;
+                this.mInputStream = null;
+                this.mOutputStream = null;
                 Logger.WARN(kTag, "Try socket open " + tries);
             }
         }
@@ -115,7 +118,7 @@ class RfcommClientSocket extends ClientSocket {
     }
 
     // Constructor
-    public RfcommClientSocket(String targetMacAddr, String serviceUuid) {
+    RfcommClientSocket(String targetMacAddr, String serviceUuid) {
         this.mTargetMacAddr = targetMacAddr;
         this.mServiceUuid = UUID.fromString(serviceUuid);
     }

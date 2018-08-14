@@ -19,6 +19,7 @@ package com.redcarrottt.testapp;
  */
 
 import android.Manifest;
+import android.annotation.SuppressLint;
 import android.content.IntentFilter;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
@@ -34,10 +35,6 @@ import com.redcarrottt.sc.wfd.WfdClientAdapter;
 
 public class MainActivity extends AppCompatActivity implements LogReceiver.Callback {
     private static final String kTag = "MainActivity";
-    private MainActivity self = this;
-
-    private ReceivingThread mReceivingThread;
-    private LogReceiver mBroadcastReceiver;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -45,26 +42,37 @@ public class MainActivity extends AppCompatActivity implements LogReceiver.Callb
         setContentView(R.layout.activity_main);
         Logger.setDefaultContext(this);
 
-        this.mBroadcastReceiver = new LogReceiver(this);
+        LogReceiver logReceiver = new LogReceiver(this);
         IntentFilter broadcastIntentFilter = new IntentFilter();
         broadcastIntentFilter.addAction(LogReceiver.kAction);
-        this.registerReceiver(this.mBroadcastReceiver, broadcastIntentFilter);
+        this.registerReceiver(logReceiver, broadcastIntentFilter);
 
         this.requestPermissions();
         this.initializeCommunication();
     }
 
     private void initializeCommunication() {
-        BtClientAdapter btControl = new BtClientAdapter(2345, "Control", "B8:27:EB:77:C3:4A", "150e8400-1234-41d4-a716-446655440000");
-        BtClientAdapter btData = new BtClientAdapter(3333, "Data/BT", "B8:27:EB:77:C3:4A", "150e8400-1234-41d4-a716-446655440001");
-        WfdClientAdapter wfdData = new WfdClientAdapter(3456, "Data/WFD", "SelCon", "192.168.49.1", 3456, this);
+        // Setting adapters
+        BtClientAdapter btControl = new BtClientAdapter(2345, "Control", "B8:27:EB:77:C3:4A",
+                "150e8400-1234-41d4-a716-446655440000");
+        BtClientAdapter btData = new BtClientAdapter(3333, "Data/BT", "B8:27:EB:77:C3:4A",
+                "150e8400-1234-41d4-a716-446655440001");
+        WfdClientAdapter wfdData = new WfdClientAdapter(3456, "Data/WFD", "SelCon",
+                "192.168.49.1", 3456, this);
 
         API.registerControlAdapter(btControl);
         API.registerDataAdapter(btData);
         API.registerDataAdapter(wfdData);
 
-        this.mReceivingThread = new ReceivingThread();
-        this.mReceivingThread.start();
+        // Start the selective connection
+        boolean res = API.startSC();
+        if(!res) {
+            Logger.ERR(kTag, "Starting Selective Connection failed");
+            return;
+        }
+
+        ReceivingThread receivingThread = new ReceivingThread();
+        receivingThread.start();
     }
 
     @Override
@@ -75,6 +83,15 @@ public class MainActivity extends AppCompatActivity implements LogReceiver.Callb
     @Override
     protected void onPause() {
         super.onPause();
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        boolean res = API.stopSC();
+        if(!res) {
+            Log.e(kTag, "Stopping Selective Connection failed");
+        }
     }
 
     private void requestPermissions() {
@@ -90,18 +107,27 @@ public class MainActivity extends AppCompatActivity implements LogReceiver.Callb
 
     private class ReceivingThread extends Thread {
         private static final String kTag = "Recv";
+        private boolean mIsAlive;
+
+        ReceivingThread() {
+            this.mIsAlive = false;
+        }
 
         public void run() {
+            this.mIsAlive = true;
             byte[] buf = new byte[100 * 1024 * 1024];
             String sending_buf = "ACK"; /* Ack Message */
 
-            while (true) {
+            while (this.mIsAlive) {
                 int receivedLength = API.receive(buf);
                 Logger.VERB(kTag, "Received: Size=" + receivedLength);
                 int sentLength = API.send(sending_buf.getBytes(), sending_buf.length());
                 Logger.VERB(kTag, "Sent: Size=" + sentLength);
             }
+        }
 
+        public void terminate() {
+            this.mIsAlive = false;
         }
     }
 
@@ -109,26 +135,26 @@ public class MainActivity extends AppCompatActivity implements LogReceiver.Callb
     public void onLogMessage(final int logLevel, final String logMessage) {
         final int kPrintThreshold = LogLevel.VERB;
         final String kTag = "LOG";
-        final String kLogMessage = logMessage;
         this.runOnUiThread(new Runnable() {
+            @SuppressLint("SetTextI18n")
             @Override
             public void run() {
-                String printMessage = kLogMessage;
+                String printMessage = logMessage;
                 switch (logLevel) {
                     case LogLevel.ERR:
-                        Log.e(kTag, kLogMessage);
+                        Log.e(kTag, logMessage);
                         printMessage = "[E]" + printMessage;
                         break;
                     case LogLevel.WARN:
-                        Log.w(kTag, kLogMessage);
+                        Log.w(kTag, logMessage);
                         printMessage = "[W]" + printMessage;
                         break;
                     case LogLevel.VERB:
-                        Log.i(kTag, kLogMessage);
+                        Log.i(kTag, logMessage);
                         printMessage = "[V]" + printMessage;
                         break;
                     case LogLevel.DEBUG:
-                        Log.d(kTag, kLogMessage);
+                        Log.d(kTag, logMessage);
                         printMessage = "[D]" + printMessage;
                         break;
                 }
