@@ -1,4 +1,4 @@
-package com.redcarrottt.sc.wfd;
+package com.redcarrottt.sc.internal.wfd;
 
 import android.app.Activity;
 import android.content.BroadcastReceiver;
@@ -15,10 +15,10 @@ import android.net.wifi.p2p.WifiP2pManager;
 import android.os.Handler;
 import android.os.Looper;
 
-import com.redcarrottt.sc.OnConnectResult;
-import com.redcarrottt.sc.OnDisconnectResult;
-import com.redcarrottt.sc.OnDiscoverResult;
-import com.redcarrottt.sc.P2PClient;
+import com.redcarrottt.sc.internal.OnConnectResult;
+import com.redcarrottt.sc.internal.OnDisconnectResult;
+import com.redcarrottt.sc.internal.OnDiscoverResult;
+import com.redcarrottt.sc.internal.P2PClient;
 import com.redcarrottt.testapp.Logger;
 
 class WfdP2PClient extends P2PClient {
@@ -234,6 +234,7 @@ class WfdP2PClient extends P2PClient {
         });
     }
 
+    // TODO: targetDevName is hard-coded. It can be transferred through "priv noti request".
     // Constructor
     WfdP2PClient(Activity ownerActivity, String targetDevName) {
         this.mOwnerActivity = ownerActivity;

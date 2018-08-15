@@ -1,4 +1,4 @@
-package com.redcarrottt.sc;
+package com.redcarrottt.sc.internal;
 
 /* Copyright (c) 2017-2018. All rights reserved.
  *  Gyeonghwan Hong (redcarrottt@gmail.com)
@@ -40,97 +40,94 @@ class Segment {
         data = new byte[SegmentManager.kSegSize + SegmentManager.kSegHeaderSize];
     }
 }
+
 class SegmentManager {
     static private SegmentManager instance = null;
 
     static public final int kSegMxQueueSize = 104857600;
     static public final int kSegSize = 512;
-    static public final int kSegThreshold = 1024;
+    private static final int kSegThreshold = 1024;
     static public final int kSegQueueThreshold = kSegThreshold / 512;
-    static public final int kSegFreeThreshold = 256;
+    private static final int kSegFreeThreshold = 256;
 
     static public final int kSegHeaderSize = 8;
 
-    static public final int kSegLenOffset = 0;
-    static public final int kSegFlagOffset = 15;
-    static public final int kSegLenMask = 0x00007fff;
-    static public final int kSegFlagMask = 0x00008000;
+    private static final int kSegLenOffset = 0;
+    private static final int kSegFlagOffset = 15;
+    private static final int kSegLenMask = 0x00007fff;
+    private static final int kSegFlagMask = 0x00008000;
 
-    static public final int kSegSend = 0;
-    static public final int kSegRecv = 1;
-    static public final int kSegMaxQueueType = 2;
+    static final int kSegSend = 0;
+    static final int kSegRecv = 1;
+    private static final int kSegMaxQueueType = 2;
 
-    static public final short kSegFlagMF = 1;
+    private static final short kSegFlagMF = 1;
 
     private int seq_no;
-    public int queue_threshold;
-
     private int[] next_seq_no;
 
-    private LinkedList<Segment>[] queue;
-    private LinkedList<Segment> failed_queue;
-    private LinkedList<Segment>[] pending_queue;
+    private LinkedList[] queue;
+    private final LinkedList<Segment> failed_queue;
+    private LinkedList[] pending_queue;
     private int[] queue_size;
-    private String kTag = "SegmentManager";
+    private static String kTag = "SegmentManager";
 
-    private LinkedList<Segment> free_list;
+    private final LinkedList<Segment> free_list;
     private int free_list_size;
 
     public int wfd_state = 0;
 
     // Macro
-    static public int mGetSegLenBits(int x) {
+    private static int mGetSegLenBits(int x) {
         return (x & kSegLenMask) >> kSegLenOffset;
     }
 
-    static public int mGetSegFlagBits(int x) {
+    private static int mGetSegFlagBits(int x) {
         return (x & kSegFlagMask) >> kSegFlagOffset;
     }
 
-    static public int mSetSegLenBits(int x, int dest) {
+    private static int mSetSegLenBits(int x, int dest) {
         return (dest |= (x << kSegLenOffset) & kSegLenMask);
     }
 
-    static public int mSetSegFlagBits(int x, int dest) {
+    private static int mSetSegFlagBits(int x, int dest) {
         return (dest |= (x << kSegFlagOffset) & kSegFlagMask);
     }
 
     private SegmentManager() {
         queue = new LinkedList[kSegMaxQueueType];
-        for (int i=0; i<kSegMaxQueueType; i++) {
+        for (int i = 0; i < kSegMaxQueueType; i++) {
             queue[i] = new LinkedList<Segment>();
         }
 
         failed_queue = new LinkedList<Segment>();
         pending_queue = new LinkedList[kSegMaxQueueType];
-        for (int i=0; i<kSegMaxQueueType; i++) {
+        for (int i = 0; i < kSegMaxQueueType; i++) {
             pending_queue[i] = new LinkedList<Segment>();
         }
 
         queue_size = new int[kSegMaxQueueType];
-        for (int i=0; i<kSegMaxQueueType; i++) {
+        for (int i = 0; i < kSegMaxQueueType; i++) {
             queue_size[i] = 0;
         }
 
         next_seq_no = new int[kSegMaxQueueType];
-        for (int i=0; i<kSegMaxQueueType; i++) {
+        for (int i = 0; i < kSegMaxQueueType; i++) {
             next_seq_no[i] = 0;
         }
 
         free_list = new LinkedList<Segment>();
         seq_no = 0;
-        queue_threshold = 0;
     }
 
 
     static public SegmentManager getInstance() {
-        if (instance == null)
-            instance = new SegmentManager();
+        if (instance == null) instance = new SegmentManager();
 
         return instance;
     }
 
-    int get_seq_no(int len) {
+    private int get_seq_no(int len) {
         int ret = seq_no;
         seq_no += len;
 
@@ -141,11 +138,11 @@ class SegmentManager {
         if (data == null || len <= 0) throw new AssertionError();
 
         int offset = 0;
-        int num_of_segments = (int)((len + kSegSize - 1) / kSegSize);
+        int num_of_segments = (len + kSegSize - 1) / kSegSize;
         int allocated_seq_no = get_seq_no(num_of_segments);
         int seg_idx;
         for (seg_idx = 0; seg_idx < num_of_segments; seg_idx++) {
-            int seg_len = (len - offset < kSegSize)? (len - offset) : kSegSize;
+            int seg_len = (len - offset < kSegSize) ? (len - offset) : kSegSize;
             Segment seg = get_free_segment();
 
             seg.flag_len = mSetSegLenBits(seg_len, seg.flag_len);
@@ -180,13 +177,14 @@ class SegmentManager {
     public byte[] recv_from_segment_manager(ProtocolData pd) {
         if (pd == null) throw new AssertionError();
 
-        byte[] serialized = null;
+        byte[] serialized;
         int offset = 0;
-        int data_size = 0;
-        boolean cont = false;
+        int data_size;
+        boolean cont;
 
         Segment seg = dequeue(kSegRecv);
-        ProtocolManager.parse_header(Arrays.copyOfRange(seg.data, kSegHeaderSize, seg.data.length), pd);
+        ProtocolManager.parse_header(Arrays.copyOfRange(seg.data, kSegHeaderSize, seg.data
+                .length), pd);
         if (pd.len == 0) return null;
 
         //Logger.DEBUG(kTag, "pd.len is " + pd.len);
@@ -194,7 +192,8 @@ class SegmentManager {
 
         // Handle the first segment of the data bulk, because it contains protocol data
         data_size = mGetSegLenBits(seg.flag_len) - ProtocolManager.kProtHeaderSize;
-        System.arraycopy(seg.data, kSegHeaderSize + ProtocolManager.kProtHeaderSize, serialized, offset, data_size);
+        System.arraycopy(seg.data, kSegHeaderSize + ProtocolManager.kProtHeaderSize, serialized,
+                offset, data_size);
         offset += data_size;
 
         cont = (mGetSegFlagBits(seg.flag_len) == kSegFlagMF);
@@ -202,15 +201,12 @@ class SegmentManager {
 
         while (cont) {
             seg = dequeue(kSegRecv);
-            //Logger.DEBUG(kTag, "Dequeing recved data : " + Integer.toString(seg.seq_no));
             data_size = mGetSegLenBits(seg.flag_len);
             System.arraycopy(seg.data, kSegHeaderSize, serialized, offset, data_size);
             cont = (mGetSegFlagBits(seg.flag_len) == kSegFlagMF);
             offset += data_size;
             free_segment(seg);
         }
-
-        if (serialized == null) throw new AssertionError();
 
         return serialized;
     }
@@ -228,13 +224,15 @@ class SegmentManager {
                 segment_enqueued = true;
             } else {
                 if (seg.seq_no < next_seq_no[type]) {
-                    Logger.DEBUG(kTag, ((type==kSegSend)? "Sending Queue" : "Recving Queue") + Integer.toString(seg.seq_no) + ":"+ Integer.toString(next_seq_no[type]));
+                    Logger.DEBUG(kTag, ((type == kSegSend) ? "Sending Queue" : "Recving Queue") +
+                            Integer.toString(seg.seq_no) + ":" + Integer.toString
+                            (next_seq_no[type]));
                     throw new AssertionError();
                 }
 
-                ListIterator<Segment> it = pending_queue[type].listIterator();
+                ListIterator it = pending_queue[type].listIterator();
                 while (it.hasNext()) {
-                    Segment walker = it.next();
+                    Segment walker = (Segment) it.next();
 
                     if (walker.seq_no > seg.seq_no) break;
                 }
@@ -242,9 +240,9 @@ class SegmentManager {
                 it.add(seg);
             }
 
-            ListIterator<Segment> it = pending_queue[type].listIterator();
+            ListIterator it = pending_queue[type].listIterator();
             while (it.hasNext()) {
-                Segment walker = it.next();
+                Segment walker = (Segment) it.next();
 
                 if (walker.seq_no != next_seq_no[type]) break;
 
@@ -262,15 +260,15 @@ class SegmentManager {
             }
         }
 
-        if (type == kSegSend) {
-            /*
-            if (queue_size[type] > queue_threshold) {
-                Core.getInstance().increase_adapter();
-            } else if (queue_size[type] == 0) {
-                Core.getInstance().decrease_adapter();
-            }
-            */
-        }
+//        if (type == kSegSend) {
+//            /*
+//            if (queue_size[type] > queue_threshold) {
+//                Core.getInstance().increase_adapter();
+//            } else if (queue_size[type] == 0) {
+//                Core.getInstance().decrease_adapter();
+//            }
+//            */
+//        }
     }
 
     public Segment dequeue(int type) {
@@ -284,7 +282,7 @@ class SegmentManager {
                 }
             }
 
-            Segment ret = queue[type].pollFirst();
+            Segment ret = (Segment) queue[type].pollFirst();
             queue_size[type]--;
 
             return ret;
@@ -292,7 +290,7 @@ class SegmentManager {
     }
 
     public Segment get_free_segment() {
-        Segment ret = null;
+        Segment ret;
         synchronized (free_list) {
             if (free_list_size == 0) {
                 ret = new Segment();
@@ -320,11 +318,11 @@ class SegmentManager {
         }
     }
 
-    public void free_segment_all() {
-        synchronized (free_list) {
-            release_segment_from_free_list(0);
-        }
-    }
+//    public void free_segment_all() {
+//        synchronized (free_list) {
+//            release_segment_from_free_list(0);
+//        }
+//    }
 
     private void release_segment_from_free_list(int threshold) {
         while (free_list_size > threshold) {
@@ -340,7 +338,7 @@ class SegmentManager {
     }
 
     public Segment get_failed_sending() {
-        Segment ret = null;
+        Segment ret;
         synchronized (failed_queue) {
             ret = failed_queue.pollFirst();
         }

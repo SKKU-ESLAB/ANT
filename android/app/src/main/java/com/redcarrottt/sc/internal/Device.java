@@ -1,4 +1,4 @@
-package com.redcarrottt.sc;
+package com.redcarrottt.sc.internal;
 
 /* Copyright (c) 2017-2018. All rights reserved.
  *  Gyeonghwan Hong (redcarrottt@gmail.com)
@@ -108,6 +108,7 @@ public abstract class Device {
     public Device(String name) {
         this.mState = State.kOff;
         this.mName = name;
+        this.mRefCount = 0;
     }
 
     // Attributes

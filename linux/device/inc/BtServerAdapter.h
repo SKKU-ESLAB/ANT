@@ -35,7 +35,7 @@ namespace cm {
 
 class BtServerAdapter : public ServerAdapter {
 public:
-  BtServerAdapter(int id, char* name, const char* service_uuid) : ServerAdapter(id, name) { 
+  BtServerAdapter(int id, const char* name, const char* service_uuid) : ServerAdapter(id, name) { 
     BtDevice* device = BtDevice::getSingleton();
     BtP2PServer* p2pServer = new BtP2PServer();
     RfcommServerSocket* serverSocket = new RfcommServerSocket(service_uuid);

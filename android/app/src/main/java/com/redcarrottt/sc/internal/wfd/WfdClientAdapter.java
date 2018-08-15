@@ -1,8 +1,8 @@
-package com.redcarrottt.sc.wfd;
+package com.redcarrottt.sc.internal.wfd;
 
 import android.app.Activity;
 
-import com.redcarrottt.sc.ClientAdapter;
+import com.redcarrottt.sc.internal.ClientAdapter;
 
 public class WfdClientAdapter extends ClientAdapter {
     // Constructor

@@ -1,4 +1,4 @@
-package com.redcarrottt.sc;
+package com.redcarrottt.sc.internal;
 
 /* Copyright (c) 2017-2018. All rights reserved.
  *  Gyeonghwan Hong (redcarrottt@gmail.com)
@@ -23,26 +23,26 @@ public class NetworkSwitcher {
 
     // Connect adapter command.
     // It is called by peer through Core.
-    boolean connectAdapter(int adapterId) {
+    void connectAdapter(int adapterId) {
         int state = this.getState();
         if (state != State.kSwitching) {
             Logger.VERB(kTag, "It's now switching. Cannot connect to adapter " + adapterId);
-            return false;
+            return;
         }
         this.setState(State.kSwitching);
-        return runConnectRequestTx(adapterId);
+        runConnectRequestTx(adapterId);
     }
 
     // Reconnect control adapter command.
     // It is called by Core.
-    boolean reconnectControlAdapter() {
+    void reconnectControlAdapter() {
         int state = this.getState();
         if (state != State.kSwitching) {
             Logger.VERB(kTag, "It's now switching. Cannot reconnect control adapter.");
-            return false;
+            return;
         }
         this.setState(State.kSwitching);
-        return runReconnectControlAdapterTx();
+        runReconnectControlAdapterTx();
     }
 
     // Notification of switch done event
@@ -107,25 +107,28 @@ public class NetworkSwitcher {
     private static boolean runConnectRequestTx(int adapterId) {
         if (sOngoingConnectRequest == null) {
             sOngoingConnectRequest = new ConnectRequestTransaction(adapterId);
-            return sOngoingConnectRequest.start();
+            sOngoingConnectRequest.start();
+            return true;
         } else {
             Logger.WARN(kTag, "Already connecting");
             return false;
         }
     }
 
-    private static void doneConnectRequestTx() {
+    private static void doneConnectRequestTx(boolean isSuccess) {
+        if(!isSuccess) {
+            Logger.WARN(kTag, "Connection request failed");
+        }
         NetworkSwitcher.getInstance().doneSwitch();
         sOngoingConnectRequest = null;
     }
 
-    private static boolean runReconnectControlAdapterTx() {
+    private static void runReconnectControlAdapterTx() {
         if (sOngoingReconnectControlAdapter == null) {
             sOngoingReconnectControlAdapter = new ReconnectControlAdapterTransaction();
-            return sOngoingReconnectControlAdapter.start();
+            sOngoingReconnectControlAdapter.start();
         } else {
             Logger.WARN(kTag, "Already stopping core");
-            return false;
         }
     }
 
@@ -143,20 +146,13 @@ public class NetworkSwitcher {
             this.onConnectAdapter = new OnConnectAdapter();
         }
 
-        boolean start() {
+        void start() {
             ClientAdapter adapter = Core.getInstance().findDataAdapterById(this.mAdapterId);
             if (adapter == null) {
                 Logger.ERR(kTag, "Connecting requested data adapter is failed");
-                doneConnectRequestTx();
-                return false;
+                doneConnectRequestTx(false);
             }
-            boolean res = adapter.connect(onConnectAdapter, false);
-            if (!res) {
-                Logger.ERR(kTag, "Connecting requested data adapter is failed");
-                doneConnectRequestTx();
-                return false;
-            }
-            return true;
+            adapter.connect(onConnectAdapter, false);
         }
 
         private OnConnectAdapter onConnectAdapter;
@@ -166,11 +162,10 @@ public class NetworkSwitcher {
             public void onConnectResult(boolean isSuccess) {
                 if (!isSuccess) {
                     Logger.ERR(kTag, "Connecting requested data adapter is failed");
-                    doneConnectRequestTx();
-                    return;
+                    doneConnectRequestTx(false);
                 }
                 Logger.VERB(kTag, "Connecting requested data adapter is done");
-                doneConnectRequestTx();
+                doneConnectRequestTx(true);
             }
         }
 
@@ -183,20 +178,13 @@ public class NetworkSwitcher {
             this.onDisconnectControlAdapter = new OnDisconnectControlAdapter();
         }
 
-        boolean start() {
+        void start() {
             ClientAdapter controlAdapter = Core.getInstance().getControlAdapter();
             if (controlAdapter == null) {
                 Logger.ERR(kTag, "Reconnecting control adapter is failed: retry");
                 restartReconnectControlAdapterTx();
-                return false;
             }
-            boolean res = controlAdapter.disconnect(onDisconnectControlAdapter);
-            if (!res) {
-                Logger.ERR(kTag, "Reconnecting control adapter is failed: retry");
-                restartReconnectControlAdapterTx();
-                return false;
-            }
-            return true;
+            controlAdapter.disconnect(onDisconnectControlAdapter);
         }
 
         private OnDisconnectControlAdapter onDisconnectControlAdapter;
@@ -216,11 +204,7 @@ public class NetworkSwitcher {
                     return;
                 }
 
-                boolean res = controlAdapter.connect(onConnectControlAdapter, false);
-                if (!res) {
-                    Logger.ERR(kTag, "Reconnecting control adapter is failed: retry");
-                    restartReconnectControlAdapterTx();
-                }
+                controlAdapter.connect(onConnectControlAdapter, false);
             }
         }
 

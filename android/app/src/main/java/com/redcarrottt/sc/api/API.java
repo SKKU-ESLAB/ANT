@@ -1,4 +1,4 @@
-package com.redcarrottt.sc;
+package com.redcarrottt.sc.api;
 
 /* Copyright (c) 2017-2018. All rights reserved.
  *  Gyeonghwan Hong (redcarrottt@gmail.com)
@@ -18,13 +18,16 @@ package com.redcarrottt.sc;
  * limitations under the License.
  */
 
+import com.redcarrottt.sc.internal.ClientAdapter;
+import com.redcarrottt.sc.internal.Core;
+
 public class API {
-    public static boolean startSC() {
-        return Core.getInstance().start();
+    public static void startSC(OnStartSCResult resultListener) {
+        Core.getInstance().start(resultListener);
     }
 
-    public static boolean stopSC() {
-        return Core.getInstance().stop();
+    public static void stopSC(OnStopSCResult resultListener) {
+        Core.getInstance().stop(resultListener);
     }
 
     public static void registerControlAdapter(ClientAdapter adapter) {

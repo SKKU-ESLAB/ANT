@@ -1,6 +1,6 @@
-package com.redcarrottt.sc.bt;
+package com.redcarrottt.sc.internal.bt;
 
-import com.redcarrottt.sc.ClientAdapter;
+import com.redcarrottt.sc.internal.ClientAdapter;
 
 public class BtClientAdapter extends ClientAdapter {
     // Constructor

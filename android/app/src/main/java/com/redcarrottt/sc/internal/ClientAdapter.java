@@ -1,4 +1,4 @@
-package com.redcarrottt.sc;
+package com.redcarrottt.sc.internal;
 
 /* Copyright (c) 2017-2018. All rights reserved.
  *  Gyeonghwan Hong (redcarrottt@gmail.com)
@@ -21,20 +21,20 @@ import com.redcarrottt.testapp.Logger;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 
-import static com.redcarrottt.sc.SegmentManager.kSegHeaderSize;
-import static com.redcarrottt.sc.SegmentManager.kSegRecv;
-import static com.redcarrottt.sc.SegmentManager.kSegSend;
-import static com.redcarrottt.sc.SegmentManager.kSegSize;
+import static com.redcarrottt.sc.internal.SegmentManager.kSegHeaderSize;
+import static com.redcarrottt.sc.internal.SegmentManager.kSegRecv;
+import static com.redcarrottt.sc.internal.SegmentManager.kSegSend;
+import static com.redcarrottt.sc.internal.SegmentManager.kSegSize;
 
 public class ClientAdapter {
     private final String kTag = "ClientAdapter";
     private final ClientAdapter self = this;
 
     // Main Functions: connect, disconnect, send, receive
-    public boolean connect(ConnectResultListener listener, boolean isSendConnectMessage) {
+    public void connect(ConnectResultListener listener, boolean isSendConnectMessage) {
         if (this.getState() != State.kDisconnected) {
             Logger.ERR(kTag, "It's already connected or connection/disconnection is in progress");
-            return false;
+            listener.onConnectResult(false);
         }
 
         if (isSendConnectMessage) {
@@ -43,19 +43,17 @@ public class ClientAdapter {
 
         ConnectThread thread = new ConnectThread(listener);
         thread.start();
-        return true;
     }
 
-    public boolean disconnect(DisconnectResultListener listener) {
+    public void disconnect(DisconnectResultListener listener) {
         if (this.getState() != State.kConnected) {
             Logger.ERR(kTag, "It's already disconnected or connection/disconnection is in " +
                     "progress");
-            return false;
+            listener.onDisconnectResult(false);
         }
 
         DisconnectThread thread = new DisconnectThread(listener);
         thread.start();
-        return true;
     }
 
     int send(byte[] dataBuffer, int dataLength) {
@@ -96,33 +94,24 @@ public class ClientAdapter {
                     ")");
             setState(ClientAdapter.State.kConnecting);
 
-            // Turn on device
-            if (self.mDevice == null) {
+            if (self.mDevice == null || self.mP2PClient == null || self.mDevice == null) {
                 this.onFail();
                 return;
             }
-            int deviceState = self.mDevice.getState();
-            if (deviceState != Device.State.kOn) {
-                boolean res = self.mDevice.holdAndTurnOn();
 
-                deviceState = self.mDevice.getState();
-                if (!res || deviceState != Device.State.kOn) {
-                    Logger.ERR(kTag, "Cannot connect the server adapter - turn-on fail: " + self
-                            .getName());
-                }
+            // Turn on device
+            boolean res = self.mDevice.holdAndTurnOn();
+            int deviceState = self.mDevice.getState();
+            if (!res || deviceState != Device.State.kOn) {
+                Logger.ERR(kTag, "Cannot connect the server adapter - turn-on fail: " + self
+                        .getName());
                 this.onFail();
                 return;
             }
 
             // Discover and connect to server
-            if (self.mP2PClient == null) {
-                self.mDevice.releaseAndTurnOff();
-
-                this.onFail();
-                return;
-            }
             int p2pClientState = self.mP2PClient.getState();
-            if (p2pClientState != P2PClient.State.kDisconnected) {
+            if (p2pClientState != P2PClient.State.kConnected) {
                 self.mP2PClient.discoverAndConnect(this);
             }
         }
@@ -140,13 +129,6 @@ public class ClientAdapter {
             }
 
             // Open client socket
-            if (self.mClientSocket == null) {
-                self.mP2PClient.disconnect(null);
-                self.mDevice.releaseAndTurnOff();
-
-                this.onFail();
-                return;
-            }
             int socketState = self.mClientSocket.getState();
             if (socketState != ClientSocket.State.kOpened) {
                 boolean res = self.mClientSocket.open();
@@ -196,7 +178,8 @@ public class ClientAdapter {
         }
     }
 
-    class DisconnectThread extends Thread implements com.redcarrottt.sc.DisconnectResultListener {
+    class DisconnectThread extends Thread implements com.redcarrottt.sc.internal
+            .DisconnectResultListener {
         @Override
         public void run() {
             Logger.VERB(kTag, self.getName() + "'s Disconnect Thread Spawned! (id:" + this.getId
@@ -300,15 +283,19 @@ public class ClientAdapter {
         this.mSenderThread = new SenderThread();
     }
 
+    void enableReceiverThread() {
+        this.mReceiveLoop = new ReceiveDataLoop();
+        this.mReceiverThread = new ReceiverThread();
+    }
+
     void enableReceiverThread(ReceiveLoop receiveLoop) {
         if (receiveLoop == null) {
-            this.mReceiveLoop = new ReceiveDataLoop();
-        } else {
-            this.mReceiveLoop = receiveLoop;
+            Logger.ERR(kTag, "ReceiverLoop is null!");
+            return;
         }
 
+        this.mReceiveLoop = receiveLoop;
         this.mReceiverThread = new ReceiverThread();
-        this.mReceiverThread.run();
     }
 
     // Receiver Loop Interface

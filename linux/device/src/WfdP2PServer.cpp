@@ -108,7 +108,7 @@ bool WfdP2PServer::allow_impl(void) {
   // Set DHCPD config
   WfdP2PServer::sDhcpdPid = this->set_dhcpd_config();
 
-  // Send WFD Device Address
+  // Send "WFD Device MAC Address"
   ret = this->get_wfd_p2p_device_addr(buf, 256);
   if (ret < 0) {
     return false;
@@ -117,7 +117,7 @@ bool WfdP2PServer::allow_impl(void) {
   int adapter_id = ((WfdServerAdapter*)this->mOwner)->get_id();
   Core::get_instance()->send_noti_private_data(adapter_id, buf, strlen(buf));
 
-  // Set & Send WFD PIN
+  // Set & Send "WFD PIN"
   ret = this->reset_wfd_server(buf, 256);
   if (ret < 0) {
     return false;
@@ -125,7 +125,7 @@ bool WfdP2PServer::allow_impl(void) {
   LOG_VERB("WFD Server PIN: %s", buf);
   Core::get_instance()->send_noti_private_data(adapter_id, buf, strlen(buf));
 
-  // Get server's IP address and send the IP address
+  // Get server's IP address and send the "IP address"
   LOG_VERB("Get server's IP\n"); 
   int ip_wait_it;
   for (ip_wait_it = 0; ip_wait_it < 30; ip_wait_it++) {

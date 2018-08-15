@@ -35,7 +35,7 @@ namespace cm {
 
 class WfdServerAdapter : public ServerAdapter {
 public:
-  WfdServerAdapter(int id, char* name, int port, const char* wfd_device_name) : ServerAdapter(id, name) { 
+  WfdServerAdapter(int id, const char* name, int port, const char* wfd_device_name) : ServerAdapter(id, name) { 
     WfdDevice* device = WfdDevice::getSingleton();
     WfdP2PServer* p2pServer = new WfdP2PServer(wfd_device_name, (void*)this);
     TcpServerSocket* serverSocket = new TcpServerSocket(port);

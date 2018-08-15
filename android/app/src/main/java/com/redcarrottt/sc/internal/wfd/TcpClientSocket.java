@@ -1,6 +1,6 @@
-package com.redcarrottt.sc.wfd;
+package com.redcarrottt.sc.internal.wfd;
 
-import com.redcarrottt.sc.ClientSocket;
+import com.redcarrottt.sc.internal.ClientSocket;
 import com.redcarrottt.testapp.Logger;
 
 import java.io.BufferedInputStream;
@@ -101,6 +101,9 @@ class TcpClientSocket extends ClientSocket {
             return -3;
         }
     }
+
+    // TODO: targetIpAddress and targetPort is hard-coded.
+    // TODO: It can be transferred through "priv noti request".
 
     // Constructor
     TcpClientSocket(String targetIpAddress, int targetPort) {

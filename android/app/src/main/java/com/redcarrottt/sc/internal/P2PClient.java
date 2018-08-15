@@ -1,4 +1,4 @@
-package com.redcarrottt.sc;
+package com.redcarrottt.sc.internal;
 
 /* Copyright (c) 2017-2018. All rights reserved.
  *  Gyeonghwan Hong (redcarrottt@gmail.com)
@@ -50,14 +50,14 @@ public abstract class P2PClient {
     }
 
     private void doneDiscoverAndConnectTx(DiscoverAndConnectResultListener resultListener,
-                                          boolean isSucceed) {
-        if (isSucceed) {
+                                          boolean isSuccess) {
+        if (isSuccess) {
             this.setState(State.kConnected);
         } else {
             this.setState(State.kDisconnected);
         }
         if (resultListener != null)
-            resultListener.onDiscoverAndConnectResult(isSucceed);
+            resultListener.onDiscoverAndConnectResult(isSuccess);
     }
 
     private static DiscoverAndConnectTransaction sOngoingDiscoverConnectTx = null;
@@ -77,8 +77,8 @@ public abstract class P2PClient {
 
         private OnDiscoverResult onDiscoverResult = new OnDiscoverResult() {
             @Override
-            public void onDoneDiscover(boolean isSucceed) {
-                if (isSucceed) {
+            public void onDoneDiscover(boolean isSuccess) {
+                if (isSuccess) {
                     setState(State.kConnecting);
                     connectImpl(onConnectResult);
                 } else {
@@ -89,8 +89,8 @@ public abstract class P2PClient {
 
         private OnConnectResult onConnectResult = new OnConnectResult() {
             @Override
-            public void onDoneConnect(boolean isSucceed) {
-                doneDiscoverAndConnectTx(mResultListener, isSucceed);
+            public void onDoneConnect(boolean isSuccess) {
+                doneDiscoverAndConnectTx(mResultListener, isSuccess);
             }
         };
     }
@@ -115,10 +115,10 @@ public abstract class P2PClient {
         }
     }
 
-    private void doneDisconnectTx(DisconnectResultListener resultListener, boolean isSucceed) {
+    private void doneDisconnectTx(DisconnectResultListener resultListener, boolean isSuccess) {
         this.setState(State.kDisconnected);
         if (resultListener != null)
-            resultListener.onDisconnectResult(isSucceed);
+            resultListener.onDisconnectResult(isSuccess);
     }
 
     private static DisconnectTransaction sOngoingDisconnectTx = null;
