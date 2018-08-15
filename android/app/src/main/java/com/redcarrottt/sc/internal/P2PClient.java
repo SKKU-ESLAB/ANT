@@ -51,6 +51,7 @@ public abstract class P2PClient {
 
     private void doneDiscoverAndConnectTx(DiscoverAndConnectResultListener resultListener,
                                           boolean isSuccess) {
+        sOngoingDiscoverConnectTx = null;
         if (isSuccess) {
             this.setState(State.kConnected);
         } else {
@@ -116,6 +117,7 @@ public abstract class P2PClient {
     }
 
     private void doneDisconnectTx(DisconnectResultListener resultListener, boolean isSuccess) {
+        sOngoingDisconnectTx = null;
         this.setState(State.kDisconnected);
         if (resultListener != null)
             resultListener.onDisconnectResult(isSuccess);

@@ -368,8 +368,8 @@ public class Core {
 
     private static void doneStartCoreTx(Core caller, boolean isSuccess, OnStartSCResult
             resultListener) {
-        caller.doneStart(isSuccess, resultListener);
         sOngoingStartCore = null;
+        caller.doneStart(isSuccess, resultListener);
     }
 
     private static void runStopCoreTx(Core caller, OnStopSCResult resultListener) {
@@ -384,8 +384,8 @@ public class Core {
 
     private static void doneStopCoreTx(Core caller, boolean isSuccess, OnStopSCResult
             resultListener) {
-        caller.doneStop(isSuccess, resultListener);
         sOngoingStopCore = null;
+        caller.doneStop(isSuccess, resultListener);
     }
 
     private static StartCoreTransaction sOngoingStartCore = null;
@@ -483,7 +483,7 @@ public class Core {
             @Override
             public void onDisconnectResult(boolean isSuccess) {
                 if (!isSuccess) {
-                    Logger.ERR(kTag, "Connecting control adapter is failed");
+                    Logger.ERR(kTag, "Disconnecting control adapter is failed");
                     doneStopCoreTx(mCaller, false, mResultListener);
                     return;
                 }
