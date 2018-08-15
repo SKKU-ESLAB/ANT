@@ -36,12 +36,18 @@ bool ServerAdapter::connect(ConnectCallback callback, bool is_send_connect_messa
     return false;
   }
 
+  if(this->mConnectThread != NULL) {
+    LOG_ERR("Connect thread not finished!");
+    return false;
+  }
+
   if(is_send_connect_message) {
     Core::get_instance()->send_request_connect(this->get_id());
   }
 
   this->mConnectCallback = callback;
-  std::thread(std::bind(&ServerAdapter::connect_thread, this)).detach();
+  this->mConnectThread = new std::thread(std::bind(&ServerAdapter::connect_thread, this)); 
+  this->mConnectThread->detach();
   return true;
 }
 
@@ -51,16 +57,14 @@ bool ServerAdapter::disconnect(DisconnectCallback callback) {
     return false;
   }
 
-  this->mDisconnectCallback = callback;
-  std::thread(std::bind(&ServerAdapter::disconnect_thread, this)).detach();
-}
-
-void ServerAdapter::on_fail_connect_thread(void) {
-  this->set_state(ServerAdapterState::kDisconnected);
-  if(this->mConnectCallback != NULL) {
-    this->mConnectCallback(false);
-    this->mConnectCallback = NULL;
+  if(this->mDisconnectThread != NULL) {
+    LOG_ERR("Disconnect thread not finished!");
+    return false;
   }
+
+  this->mDisconnectCallback = callback;
+  this->mDisconnectThread = new std::thread(std::bind(&ServerAdapter::disconnect_thread, this));
+  this->mDisconnectThread->detach();
 }
 
 void ServerAdapter::connect_thread(void) {
@@ -69,31 +73,44 @@ void ServerAdapter::connect_thread(void) {
 
   this->set_state(ServerAdapterState::kConnecting);
 
-  // Turn on device
-  if(this->mDevice == NULL) {
-    this->on_fail_connect_thread();
-    return;
-  }
-  DeviceState deviceState = this->mDevice->get_state();
-  if(deviceState != DeviceState::kOn) {
-    bool res = this->mDevice->hold_and_turn_on();
+  bool res = this->__connect_thread();
 
-    deviceState = this->mDevice->get_state();
-    if(!res || deviceState != DeviceState::kOn) {
-      LOG_ERR("Cannot connect the server adapter - turn-on fail: %s", this->get_name());
-
-      this->on_fail_connect_thread();
-      return;
+  if(res) {
+    this->set_state(ServerAdapterState::kConnected);
+    if(this->mConnectCallback != NULL) {
+      this->mConnectCallback(true);
+      this->mConnectCallback = NULL;
     }
+    LOG_DEBUG("%s's Connect thread finished successfully(tid: %d)",
+        this->get_name(), (unsigned int)syscall(224));
+  } else {
+    this->set_state(ServerAdapterState::kDisconnected);
+    if(this->mConnectCallback != NULL) {
+      this->mConnectCallback(false);
+      this->mConnectCallback = NULL;
+    }
+    LOG_DEBUG("%s's Connect thread failed(tid: %d)",
+        this->get_name(), (unsigned int)syscall(224));
+  }
+  this->mConnectThread = NULL;
+}
+
+bool ServerAdapter::__connect_thread(void) {
+  if(this->mDevice == NULL || this->mP2PServer == NULL || this->mServerSocket == NULL) {
+    return false;
+  }
+
+  // Turn on device
+  DeviceState deviceState = this->mDevice->get_state();
+  bool res = this->mDevice->hold_and_turn_on();
+
+  deviceState = this->mDevice->get_state();
+  if(!res || deviceState != DeviceState::kOn) {
+    LOG_ERR("Cannot connect the server adapter - turn-on fail: %s", this->get_name());
+    return false;
   }
 
   // Allow client's connection
-  if(this->mP2PServer == NULL) {
-    this->mDevice->release_and_turn_off();
-
-    this->on_fail_connect_thread();
-    return;
-  }
   P2PServerState p2pServerState = this->mP2PServer->get_state();
   if(p2pServerState != P2PServerState::kAllowed) {
     bool res = this->mP2PServer->allow();
@@ -102,20 +119,11 @@ void ServerAdapter::connect_thread(void) {
     if(!res || p2pServerState != P2PServerState::kAllowed) {
       LOG_ERR("Cannot connect the server adapter - allow fail: %s", this->get_name());
       this->mDevice->release_and_turn_off();
-
-      this->on_fail_connect_thread();
-      return;
+      return false;
     }
   }
 
   // Open server socket
-  if(this->mServerSocket == NULL) {
-    this->mP2PServer->disallow();
-    this->mDevice->release_and_turn_off();
-
-    this->on_fail_connect_thread();
-    return;
-  }
   ServerSocketState socketState = this->mServerSocket->get_state();
   if(socketState != ServerSocketState::kOpened) {
     bool res = this->mServerSocket->open();
@@ -125,37 +133,21 @@ void ServerAdapter::connect_thread(void) {
       LOG_ERR("Cannot connect the server adapter - socket open fail: %s", this->get_name());
       this->mP2PServer->disallow();
       this->mDevice->release_and_turn_off();
-
-      this->on_fail_connect_thread();
-      return;
+      return false;
     }
   }
 
   // Run sender & receiver threads
-  if(this->mSenderThread != NULL && !this->mSenderThreadOn) {
-    this->mSenderThreadOn = true;
+  if(this->mSenderThreadEnabled && this->mSenderThread == NULL) {
+    this->mSenderThread = new std::thread(std::bind(&ServerAdapter::sender_thread, this));
     this->mSenderThread->detach();
   }
-  if(this->mReceiverThread != NULL && !this->mReceiverThreadOn) {
-    this->mReceiverThreadOn = true;
+  if(this->mReceiverThreadEnabled && this->mReceiverThread == NULL) {
+    this->mReceiverThread = new std::thread(std::bind(&ServerAdapter::receiver_thread, this));
     this->mReceiverThread->detach();
   }
 
-  this->set_state(ServerAdapterState::kConnected);
-  if(this->mConnectCallback != NULL) {
-    this->mConnectCallback(true);
-    this->mConnectCallback = NULL;
-  }
-  return;
-}
-
-void ServerAdapter::on_fail_disconnect_thread(void) {
-  this->set_state(ServerAdapterState::kConnected);
-  if(this->mDisconnectCallback != NULL) {
-    this->mDisconnectCallback(false);
-    this->mDisconnectCallback = NULL;
-  }
-  return;
+  return true;
 }
 
 void ServerAdapter::disconnect_thread(void) {
@@ -164,19 +156,42 @@ void ServerAdapter::disconnect_thread(void) {
 
   this->set_state(ServerAdapterState::kDisconnecting);
 
+  bool res = this->__disconnect_thread();
+
+  if(res) {
+    this->set_state(ServerAdapterState::kDisconnected);
+    if(this->mDisconnectCallback != NULL) {
+      this->mDisconnectCallback(true);
+      this->mDisconnectCallback = NULL;
+    }
+    LOG_DEBUG("%s's Disconnect thread finished successfully(tid: %d)",
+      this->get_name(), (unsigned int)syscall(224));
+  } else {
+    this->set_state(ServerAdapterState::kConnected);
+    if(this->mDisconnectCallback != NULL) {
+      this->mDisconnectCallback(false);
+      this->mDisconnectCallback = NULL;
+    }
+    LOG_DEBUG("%s's Disconnect thread failed(tid: %d)",
+          this->get_name(), (unsigned int)syscall(224));
+  }
+  this->mDisconnectThread = NULL;
+}
+
+bool ServerAdapter::__disconnect_thread(void) {
   // Finish sender & receiver threads
   if(this->mSenderThread != NULL) {
-    this->mSenderThreadOn = false;
+    this->mSenderLoopOn = false;
   }
   if(this->mReceiverThread != NULL) {
-    this->mReceiverThreadOn = false;
+    this->mReceiverLoopOn = false;
   }
 
   // Close server socket
   if(this->mServerSocket == NULL) {
-    this->on_fail_disconnect_thread();
-    return;
+    return false;
   }
+
   ServerSocketState socketState = this->mServerSocket->get_state();
   if(socketState != ServerSocketState::kClosed) {
     bool res = this->mServerSocket->close();
@@ -184,16 +199,13 @@ void ServerAdapter::disconnect_thread(void) {
     socketState = this->mServerSocket->get_state();
     if(!res || socketState != ServerSocketState::kClosed) {
       LOG_ERR("Cannot disconnect the server adapter - socket close fail: %s", this->get_name());
-
-      this->on_fail_disconnect_thread();
-      return;
+      return false;
     }
   }
 
   // Turn off device
   if(this->mDevice == NULL) {
-    this->on_fail_disconnect_thread();
-    return;
+    return false;
   }
   DeviceState deviceState = this->mDevice->get_state();
   if(deviceState != DeviceState::kOff) {
@@ -202,18 +214,10 @@ void ServerAdapter::disconnect_thread(void) {
     deviceState = this->mDevice->get_state();
     if(!res || deviceState != DeviceState::kOff) {
       LOG_ERR("Cannot disconnect the server adapter - turn-off fail: %s", this->get_name());
-
-      this->on_fail_disconnect_thread();
-      return;
+      return false;
     }
   }
-
-  this->set_state(ServerAdapterState::kDisconnected);
-  if(this->mDisconnectCallback != NULL) {
-    this->mDisconnectCallback(true);
-    this->mDisconnectCallback = NULL;
-  }
-  return;
+  return true;
 }
 
 int ServerAdapter::send(const void *buf, size_t len) {
@@ -254,7 +258,18 @@ void ServerAdapter::sender_thread(void) {
   LOG_DEBUG("%s's Sender thread spawned(tid: %d)",
       this->get_name(), (unsigned int)syscall(224));
 
-  while(this->mSenderThreadOn) {
+  this->__sender_thread();
+
+  this->disconnect(NULL);
+  LOG_DEBUG("%s's Sender thread ends(tid: %d)",
+      this->get_name(), (unsigned int)syscall(224));
+  this->mSenderLoopOn = false;
+  this->mSenderThread = NULL;
+}
+
+void ServerAdapter::__sender_thread(void) {
+  this->mSenderLoopOn = true;
+  while(this->mSenderLoopOn) {
     SegmentManager *sm = SegmentManager::get_instance();
     Segment *segment_to_send = NULL;
 
@@ -280,11 +295,6 @@ void ServerAdapter::sender_thread(void) {
 
     sm->free_segment(segment_to_send);
   }
-
-  this->disconnect(NULL);
-
-  LOG_DEBUG("%s's Sender thread ends(tid: %d)",
-      this->get_name(), (unsigned int)syscall(224));
 }
 
 void ServerAdapter::receiver_thread(void) {
@@ -300,10 +310,13 @@ void ServerAdapter::receiver_thread(void) {
 
   LOG_DEBUG("%s's Receiver thread ends(tid: %d)",
       this->get_name(), (unsigned int)syscall(224));
+  this->mReceiverLoopOn = false;
+  this->mReceiverThread = NULL;
 }
 
 void ServerAdapter::receive_data_loop(ServerAdapter* adapter) {
-  while(adapter->mReceiverThreadOn) {
+  adapter->mReceiverLoopOn = true;
+  while(adapter->mReceiverLoopOn) {
     SegmentManager *sm = SegmentManager::get_instance();
     Segment *segment_to_receive = sm->get_free_segment();
     void *buf = reinterpret_cast<void *>(segment_to_receive->data);

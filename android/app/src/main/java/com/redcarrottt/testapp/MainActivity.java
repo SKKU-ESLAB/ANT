@@ -29,9 +29,11 @@ import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.widget.TextView;
 
-import com.redcarrottt.sc.API;
-import com.redcarrottt.sc.bt.BtClientAdapter;
-import com.redcarrottt.sc.wfd.WfdClientAdapter;
+import com.redcarrottt.sc.api.API;
+import com.redcarrottt.sc.api.OnStartSCResult;
+import com.redcarrottt.sc.api.OnStopSCResult;
+import com.redcarrottt.sc.internal.bt.BtClientAdapter;
+import com.redcarrottt.sc.internal.wfd.WfdClientAdapter;
 
 public class MainActivity extends AppCompatActivity implements LogReceiver.Callback {
     private static final String kTag = "MainActivity";
@@ -76,14 +78,7 @@ public class MainActivity extends AppCompatActivity implements LogReceiver.Callb
         API.registerDataAdapter(wfdData);
 
         // Start the selective connection
-        boolean res = API.startSC();
-        if(!res) {
-            Logger.ERR(kTag, "Starting Selective Connection failed");
-            return;
-        }
-
-        ReceivingThread receivingThread = new ReceivingThread();
-        receivingThread.start();
+        API.startSC(onStartSCResult);
     }
 
     @Override
@@ -99,11 +94,37 @@ public class MainActivity extends AppCompatActivity implements LogReceiver.Callb
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        boolean res = API.stopSC();
-        if(!res) {
-            Log.e(kTag, "Stopping Selective Connection failed");
-        }
+        API.stopSC(onStopSCResult);
     }
+
+    private OnStartSCResult onStartSCResult = new OnStartSCResult() {
+        @Override
+        public void onDoneStartSC(boolean isSuccess) {
+            if (isSuccess) {
+                // Starting Selective Connection is done
+                ReceivingThread receivingThread = new ReceivingThread();
+                receivingThread.start();
+            } else {
+                // Retry to start SC
+                Logger.VERB(kTag, "Failed to start SC... Retry to start.");
+                try {
+                    Thread.sleep(5000);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+                API.startSC(onStartSCResult);
+            }
+        }
+    };
+
+    private OnStopSCResult onStopSCResult = new OnStopSCResult() {
+        @Override
+        public void onDoneStopSC(boolean isSuccess) {
+            if (!isSuccess) {
+                Log.e(kTag, "Stopping Selective Connection failed");
+            }
+        }
+    };
 
     private class ReceivingThread extends Thread {
         private static final String kTag = "Recv";

@@ -1,10 +1,10 @@
-package com.redcarrottt.sc.bt;
+package com.redcarrottt.sc.internal.bt;
 
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothSocket;
 
-import com.redcarrottt.sc.ClientSocket;
+import com.redcarrottt.sc.internal.ClientSocket;
 import com.redcarrottt.testapp.Logger;
 
 import java.io.BufferedInputStream;

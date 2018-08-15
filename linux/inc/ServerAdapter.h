@@ -62,7 +62,7 @@ public:
   int receive(void *buf, size_t len);
 
   void enable_sender_thread() {
-    this->mSenderThread = new std::thread(std::bind(&ServerAdapter::sender_thread, this));
+    this->mSenderThreadEnabled = true;
     return;
   }
 
@@ -72,7 +72,7 @@ public:
     } else {
       this->mReceiveLoop = receive_loop;
     }
-    this->mReceiverThread = new std::thread(std::bind(&ServerAdapter::receiver_thread, this));
+    this->mReceiverThreadEnabled = true;
     return;
   }
 
@@ -117,7 +117,7 @@ public:
     this->mStateListeners.push_back(listener);
   }
 
-  ServerAdapter(int id, char* name) {
+  ServerAdapter(int id, const char* name) {
     this->mState = ServerAdapterState::kDisconnected;
     snprintf(this->mName, sizeof(this->mName), name);
     this->mId = id; 
@@ -180,17 +180,26 @@ protected:
 
 private:
   void connect_thread(void);
-  void on_fail_connect_thread(void);
+  bool __connect_thread(void);
+
   void disconnect_thread(void);
-  void on_fail_disconnect_thread(void);
+  bool __disconnect_thread(void);
+
   void sender_thread(void);
+  void __sender_thread(void);
+
   void receiver_thread(void);
   static void receive_data_loop(ServerAdapter* adapter);
 
+  std::thread *mConnectThread = NULL;
+  std::thread *mDisconnectThread = NULL;
+
   std::thread *mSenderThread = NULL;
   std::thread *mReceiverThread = NULL;
-  bool mSenderThreadOn = false;
-  bool mReceiverThreadOn = false;
+  bool mSenderThreadEnabled = false;
+  bool mReceiverThreadEnabled = false;
+  bool mSenderLoopOn = false;
+  bool mReceiverLoopOn = false;
 
   ReceiveLoop mReceiveLoop = NULL;
 }; /* class ServerAdapter */

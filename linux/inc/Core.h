@@ -53,8 +53,8 @@ typedef enum {
   kCMStateIdle = 0,
   kCMStateStarting = 1,
   kCMStateReady = 2,
-  kCMStateConnecting = 3,
-  kCMStateDisconnecting = 4,
+  kCMStateConnecting = 3, // Deprecated: this state is managed by network switcher.
+  kCMStateDisconnecting = 4, // Deprecated: this state is managed by network switcher.
   kCMStateStopping = 5
 } CMState;
 
@@ -117,9 +117,9 @@ public:
    */
   friend StartCoreTransaction;
   friend StopCoreTransaction;
-  bool start(void);
+  void start(void);
   void done_start(bool is_success);
-  bool stop(void);
+  void stop(void);
   void done_stop(bool is_success);
 
   void register_control_adapter(ServerAdapter *adapter);

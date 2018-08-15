@@ -1,9 +1,9 @@
-package com.redcarrottt.sc.bt;
+package com.redcarrottt.sc.internal.bt;
 
-import com.redcarrottt.sc.OnConnectResult;
-import com.redcarrottt.sc.OnDisconnectResult;
-import com.redcarrottt.sc.OnDiscoverResult;
-import com.redcarrottt.sc.P2PClient;
+import com.redcarrottt.sc.internal.OnConnectResult;
+import com.redcarrottt.sc.internal.OnDisconnectResult;
+import com.redcarrottt.sc.internal.OnDiscoverResult;
+import com.redcarrottt.sc.internal.P2PClient;
 
 class BtP2PClient extends P2PClient {
     @Override

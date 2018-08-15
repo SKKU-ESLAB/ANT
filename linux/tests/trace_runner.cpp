@@ -91,18 +91,21 @@ int main(int argc, char** argv) {
   printf("Trace File: %s\n", trace_file_name);
 
   cm::start_sc();
-  EthServerAdapter ethAdapter(2345, "Eth", 2345);
-  BtServerAdapter btAdapter(3333, "Bt", "150e8400-1234-41d4-a716-446655440000");
-  WfdServerAdapter wfdAdapter(3456, "Wfd", 3456, "OPEL");
+  //EthServerAdapter ethAdapter(2345, "Eth", 2345);
+  BtServerAdapter btControl(2345, "BtCt", "150e8400-1234-41d4-a716-446655440000");
+  BtServerAdapter btData(3333, "BtDt", "150e8400-1234-41d4-a716-446655440001");
+  WfdServerAdapter wfdData(3456, "WfdDt", 3456, "OPEL");
 
   printf("Step 1. Initializing Network Adapters\n");
 
-  printf("  a) Control Adapter: TCP over Ethernet\n");
-  cm::register_control_adapter(&ethAdapter);
+  // printf("  a) Control Adapter: TCP over Ethernet\n");
+  // cm::register_control_adapter(&ethAdapter);
+  printf("  a) Control Adapter: RFCOMM over Bluetooth\n");
+  cm::register_control_adapter(&btControl);
   printf("  b) Data Adapter: RFCOMM over Bluetooth\n");
-  cm::register_data_adapter(&btAdapter);
+  cm::register_data_adapter(&btData);
   printf("  c) Data Adapter: TCP over Wi-fi Direct\n");
-  cm::register_data_adapter(&wfdAdapter);
+  cm::register_data_adapter(&wfdData);
 
   int iter = 0;
   char sending_buf[8192];

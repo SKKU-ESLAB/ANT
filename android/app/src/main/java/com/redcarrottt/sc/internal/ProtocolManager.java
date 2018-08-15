@@ -1,4 +1,4 @@
-package com.redcarrottt.sc;
+package com.redcarrottt.sc.internal;
 
 /* Copyright (c) 2017-2018. All rights reserved.
  *  Gyeonghwan Hong (redcarrottt@gmail.com)
@@ -86,7 +86,7 @@ class ProtocolManager {
         return vec_size;
     }
 
-    static int parse_header(byte[] serialized, ProtocolData ret_pd) {
+    static void parse_header(byte[] serialized, ProtocolData ret_pd) {
         if (serialized == null || ret_pd == null) throw new AssertionError();
 
         int vec_offset = 0;
@@ -100,10 +100,9 @@ class ProtocolManager {
         buffer = ByteBuffer.allocate(4);
         buffer.put(serialized, vec_offset, 4);
         ret_pd.len = buffer.getInt(0);
-        vec_offset += 4;
+        //vec_offset += 4;
         //Logger.DEBUG(kTag, "ret_pd.len is " + ret_pd.len);
 
-        return vec_offset;
     }
 
     static public int send_packet(int packet_size) {
@@ -126,5 +125,5 @@ class ProtocolManager {
         return pd.len;
     }
 
-    private static String kTag = "protocol manager";
+//    private static String kTag = "protocol manager";
 }

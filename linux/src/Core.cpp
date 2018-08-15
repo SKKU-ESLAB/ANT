@@ -51,67 +51,72 @@ StartCoreTransaction *StartCoreTransaction::sOngoing = NULL;
 StopCoreTransaction *StopCoreTransaction::sOngoing = NULL;
 
 // Start core: connect initial adapters
-bool Core::start(void) {
+void Core::start(void) {
   if (this->get_state() != CMState::kCMStateIdle) {
     LOG_ERR("Core has already started.");
-    return false;
+    this->done_start(false);
+    return;
   } else if (this->mControlAdapter == NULL) {
     LOG_ERR("No control adapter is registered!");
-    return false;
+    this->done_start(false);
+    return;
   } else if (this->mDataAdapters.empty()) {
     LOG_ERR("No data adapter is registered!");
-    return false;
+    this->done_start(false);
+    return;
   }
 
   // Connect control adapter & first data adapter
   this->set_state(CMState::kCMStateStarting);
   StartCoreTransaction::run(this);
-  return true;
 }
 
 void Core::done_start(bool is_success) {
-  if (!is_success) {
+  if (is_success) {
+    LOG_VERB("Succeed to start core!");
+    this->set_state(CMState::kCMStateReady);
+  } else {
     LOG_ERR("Failed to start core!");
     this->set_state(CMState::kCMStateIdle);
     return;
   }
-
-  LOG_VERB("Succeed to start core!");
-  this->set_state(CMState::kCMStateReady);
 }
 
 // Stop core: disconnect all the adapters
-bool Core::stop(void) {
+void Core::stop(void) {
   CMState state = this->get_state();
   if (state == CMState::kCMStateStarting ||
       state == CMState::kCMStateStopping) {
     LOG_ERR("Cannot stop core during starting/stopping!");
-    return false;
+    this->done_stop(false);
+    return;
   } else if (state == CMState::kCMStateIdle) {
     LOG_ERR("Core is already idle state!");
-    return false;
+    this->done_stop(false);
+    return;
   } else if (this->mControlAdapter == NULL) {
     LOG_ERR("No control adapter is registered!");
-    return false;
+    this->done_stop(false);
+    return;
   } else if (this->mDataAdapters.empty()) {
     LOG_ERR("No data adapter is registered!");
-    return false;
+    this->done_stop(false);
+    return;
   }
 
   // Disconnect all the adapters
   this->set_state(CMState::kCMStateStopping);
   StopCoreTransaction::run(this);
-  return true;
 }
 
 void Core::done_stop(bool is_success) {
-  if (!is_success) {
+  if (is_success) {
+    LOG_VERB("Succeed to stop core!");
+    this->set_state(CMState::kCMStateIdle);
+  } else {
     LOG_ERR("Failed to stop core!");
     this->set_state(CMState::kCMStateReady);
   }
-
-  LOG_VERB("Succeed to stop core!");
-  this->set_state(CMState::kCMStateIdle);
 }
 
 // Register control adpater
@@ -157,8 +162,7 @@ int Core::send(const void *dataBuffer, uint32_t dataLength) {
   ProtocolManager::data_to_protocol_data((const uint8_t *)dataBuffer,
                                          dataLength, &pd);
   // The serialized_vector buffer is allocated in here
-  packet_size =
-      ProtocolManager::serialize(&pd, (const uint8_t *)dataBuffer, curr_offset,
+  packet_size = ProtocolManager::serialize(&pd, (const uint8_t *)dataBuffer, curr_offset,
                                  dataLength, &serialized_vector);
   assert(serialized_vector != NULL && packet_size > 0);
 
@@ -347,7 +351,7 @@ void StartCoreTransaction::connect_control_adapter_callback(bool is_success) {
     res = false;
   } else {
     res = sOngoing->mCaller->mDataAdapters.front()->connect(
-        StartCoreTransaction::connect_first_data_adapter_callback, true);
+        StartCoreTransaction::connect_first_data_adapter_callback, false);
   }
 
   if (!res) {

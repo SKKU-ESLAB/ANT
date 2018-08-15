@@ -1,11 +1,11 @@
-package com.redcarrottt.sc.wfd;
+package com.redcarrottt.sc.internal.wfd;
 
 import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.content.Context;
 import android.net.wifi.WifiManager;
 
-import com.redcarrottt.sc.Device;
+import com.redcarrottt.sc.internal.Device;
 
 class WfdDevice extends Device {
     @Override
