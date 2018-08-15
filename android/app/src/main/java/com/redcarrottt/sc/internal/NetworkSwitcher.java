@@ -116,11 +116,12 @@ public class NetworkSwitcher {
     }
 
     private static void doneConnectRequestTx(boolean isSuccess) {
+        sOngoingConnectRequest = null;
         if(!isSuccess) {
             Logger.WARN(kTag, "Connection request failed");
         }
         NetworkSwitcher.getInstance().doneSwitch();
-        sOngoingConnectRequest = null;
+                    sOngoingConnectRequest = null;
     }
 
     private static void runReconnectControlAdapterTx() {

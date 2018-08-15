@@ -20,13 +20,20 @@ package com.redcarrottt.testapp;
 
 import android.Manifest;
 import android.annotation.SuppressLint;
+import android.content.Context;
 import android.content.IntentFilter;
 import android.content.pm.PackageManager;
+import android.graphics.Color;
 import android.os.Bundle;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.view.ViewGroup;
+import android.widget.BaseAdapter;
+import android.widget.ListView;
 import android.widget.TextView;
 
 import com.redcarrottt.sc.api.API;
@@ -35,20 +42,33 @@ import com.redcarrottt.sc.api.OnStopSCResult;
 import com.redcarrottt.sc.internal.bt.BtClientAdapter;
 import com.redcarrottt.sc.internal.wfd.WfdClientAdapter;
 
+import java.util.ArrayList;
+
 public class MainActivity extends AppCompatActivity implements LogReceiver.Callback {
     private static final String kTag = "MainActivity";
+
+    // Components
+    private ArrayList<LogListViewItem> mLogListViewData = new ArrayList<>();
+    private LogListViewAdapter mLogListViewAdapter;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        Logger.setDefaultContext(this);
 
+        // Initialize LogListView
+        this.mLogListViewAdapter = new LogListViewAdapter(this, this.mLogListViewData);
+        ListView logListView = (ListView) findViewById(R.id.logListView);
+        logListView.setAdapter(this.mLogListViewAdapter);
+
+        // Initialize Log Receiver
+        Logger.setDefaultContext(this);
         LogReceiver logReceiver = new LogReceiver(this);
         IntentFilter broadcastIntentFilter = new IntentFilter();
         broadcastIntentFilter.addAction(LogReceiver.kAction);
         this.registerReceiver(logReceiver, broadcastIntentFilter);
 
+        // Initialize SC
         this.requestPermissions();
         this.initializeCommunication();
     }
@@ -98,6 +118,9 @@ public class MainActivity extends AppCompatActivity implements LogReceiver.Callb
     }
 
     private OnStartSCResult onStartSCResult = new OnStartSCResult() {
+        private int mRetries = 0;
+        private static final int kMaxRetries = 5;
+
         @Override
         public void onDoneStartSC(boolean isSuccess) {
             if (isSuccess) {
@@ -106,13 +129,15 @@ public class MainActivity extends AppCompatActivity implements LogReceiver.Callb
                 receivingThread.start();
             } else {
                 // Retry to start SC
-                Logger.VERB(kTag, "Failed to start SC... Retry to start.");
-                try {
-                    Thread.sleep(5000);
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
+                if (mRetries++ < kMaxRetries) {
+                    Logger.VERB(kTag, "Failed to start SC... Retry to start.");
+                    try {
+                        Thread.sleep(5000);
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+                    API.startSC(onStartSCResult);
                 }
-                API.startSC(onStartSCResult);
             }
         }
     };
@@ -161,36 +186,93 @@ public class MainActivity extends AppCompatActivity implements LogReceiver.Callb
             @Override
             public void run() {
                 String printMessage = logMessage;
+                int color = Color.BLACK;
                 switch (logLevel) {
                     case LogLevel.ERR:
                         Log.e(kTag, logMessage);
                         printMessage = "[E]" + printMessage;
+                        color = Color.RED;
                         break;
                     case LogLevel.WARN:
                         Log.w(kTag, logMessage);
                         printMessage = "[W]" + printMessage;
+                        color = Color.parseColor("#FF8000");
                         break;
                     case LogLevel.VERB:
                         Log.i(kTag, logMessage);
                         printMessage = "[V]" + printMessage;
+                        color = Color.parseColor("#0072C1");
                         break;
                     case LogLevel.DEBUG:
                         Log.d(kTag, logMessage);
                         printMessage = "[D]" + printMessage;
+                        color = Color.parseColor("#5C676F");
                         break;
                 }
 
                 if (logLevel <= kPrintThreshold) {
-                    TextView logTextView = (TextView) findViewById(R.id.logTextView);
-                    String text = String.valueOf(logTextView.getText());
-                    if (text.length() > 10000) {
-                        logTextView.setText(printMessage);
-                    } else {
-                        logTextView.setText(printMessage + "\n" + text);
-                    }
-                    logTextView.invalidate();
+                    mLogListViewData.add(0, new LogListViewItem(printMessage, color));
+                    mLogListViewAdapter.notifyDataSetChanged();
                 }
             }
         });
+    }
+}
+
+class LogListViewItem {
+    private String mText;
+    private int mColor;
+
+    public String getText() {
+        return this.mText;
+    }
+
+    public int getColor() {
+        return this.mColor;
+    }
+
+    LogListViewItem(String text, int color) {
+        this.mText = text;
+        this.mColor = color;
+    }
+}
+
+class LogListViewAdapter extends BaseAdapter {
+    private LayoutInflater mInflater;
+    private int mLayout;
+    private ArrayList<LogListViewItem> mData;
+
+    LogListViewAdapter(Context context, ArrayList<LogListViewItem> data) {
+        this.mInflater = (LayoutInflater) context.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
+        this.mLayout = R.layout.item;
+        this.mData = data;
+    }
+
+    @Override
+    public int getCount() {
+        return this.mData.size();
+    }
+
+    @Override
+    public String getItem(int position) {
+        return this.mData.get(position).getText();
+    }
+
+    @Override
+    public long getItemId(int position) {
+        return position;
+    }
+
+    @Override
+    public View getView(int position, View convertView, ViewGroup parent) {
+        if (convertView == null) {
+            convertView = mInflater.inflate(this.mLayout, parent, false);
+        }
+
+        LogListViewItem item = this.mData.get(position);
+        TextView contentsTextView = (TextView) convertView.findViewById(R.id.contentsTextView);
+        contentsTextView.setText(item.getText());
+        contentsTextView.setTextColor(item.getColor());
+        return contentsTextView;
     }
 }
