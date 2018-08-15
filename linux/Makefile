@@ -22,12 +22,15 @@ $(DEV_OBJ_DIR)/%.o: $(DEV_SRC)/%.cpp
 _DEV_OBJ=BtDevice.o BtP2PServer.o RfcommServerSocket.o TcpServerSocket.o Util.o WfdDevice.o WfdP2PServer.o EthServerAdapter.o
 DEV_OBJ=$(patsubst %, $(DEV_OBJ_DIR)/%, $(_DEV_OBJ)) 
 
-all : file_based_test trace_runner
+all : file_based_test trace_runner simple_test
 
 trace_runner: tests/trace_runner.cpp $(OBJ) $(DEV_OBJ)
 	$(CC) -o $(BIN_DIR)/$@ $^ -I$(INC) $(FLAG) $(LIB) -I$(DEV_INC)
 
 file_based_test: tests/file_based_test.cpp $(OBJ) $(DEV_OBJ)
+	$(CC) -o $(BIN_DIR)/$@ $^ -I$(INC) $(FLAG) $(LIB) -I$(DEV_INC)
+
+simple_test: tests/simple_test.cpp $(OBJ) $(DEV_OBJ)
 	$(CC) -o $(BIN_DIR)/$@ $^ -I$(INC) $(FLAG) $(LIB) -I$(DEV_INC)
 
 clean:
