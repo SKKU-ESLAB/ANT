@@ -21,7 +21,6 @@
 
 #include <Core.h>
 
-#include <APICallbacks.h>
 #include <DebugLog.h>
 #include <NetworkSwitcher.h>
 #include <ProtocolManager.h>
