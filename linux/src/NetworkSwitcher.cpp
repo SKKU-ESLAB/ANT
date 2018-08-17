@@ -31,7 +31,7 @@
 
 #define SLEEP_USECS 250 * 1000
 
-namespace cm {
+namespace sc {
 NetworkSwitcher* NetworkSwitcher::singleton = NULL;
 
 SwitchAdapterTransaction* SwitchAdapterTransaction::sOngoing = NULL;
@@ -504,4 +504,4 @@ void ReconnectControlAdapterTransaction::connect_callback(bool is_success) {
   NetworkSwitcher::get_instance()->done_switch();
 }
 
-} /* namespace cm */
+} /* namespace sc */

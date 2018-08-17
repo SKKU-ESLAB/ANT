@@ -19,6 +19,6 @@
 
 #include <EthServerAdapter.h>
 
-using namespace cm;
+using namespace sc;
 
 EthDevice* EthDevice::sSingleton = NULL;

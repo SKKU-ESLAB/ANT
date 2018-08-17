@@ -29,7 +29,7 @@
 #include <stdint.h>
 #include <vector>
 
-namespace cm {
+namespace sc {
 
 enum CommErr {
   kProtOk = 0,
@@ -215,5 +215,5 @@ private:
   std::vector<ControlMessageListener *> mControlMessageListeners;
 };
 
-} /* namespace cm */
+} /* namespace sc */
 #endif /* INC_COMMUNICATOR_H_ */

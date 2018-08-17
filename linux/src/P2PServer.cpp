@@ -19,7 +19,7 @@
 
 #include <P2PServer.h>
 
-using namespace cm;
+using namespace sc;
 
 bool P2PServer::allow(void) {
   bool res = this->allow_impl();

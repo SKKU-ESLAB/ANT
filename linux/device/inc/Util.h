@@ -22,7 +22,7 @@
 
 #include <stdio.h>
 
-namespace cm {
+namespace sc {
 
 #define HCICONFIG_PATH "/usr/sbin/hciconfig"
 #define WPA_CLI_PATH "/sbin/wpa_cli"
@@ -34,6 +34,6 @@ public:
   static int run_client(const char *path, char * const params[], char *res_buf, size_t len);
 }; /* class Util */
 
-} /* namespace cm */
+} /* namespace sc */
 
 #endif /* !defined(_UTIL_H_) */

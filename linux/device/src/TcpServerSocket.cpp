@@ -28,7 +28,7 @@
 #include <arpa/inet.h>
 #include <unistd.h>
 
-using namespace cm;
+using namespace sc;
 
 bool TcpServerSocket::open_impl(void) {
   if(this->mIpAddressRaw == 0) {

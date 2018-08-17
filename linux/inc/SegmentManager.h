@@ -53,7 +53,7 @@
 #define mSetSegFlagBits(x, dest) \
     mSetSegBits(x, dest, kSegFlagOffset, kSegFlagMask)
 
-namespace cm {
+namespace sc {
 /*
  *  Queue Type
  */
@@ -173,5 +173,5 @@ class SegmentManager {
   void reset_send_queue(void);
   void reset_recv_queue(void);
 };
-} /* namespace cm */
+} /* namespace sc */
 #endif  // INC_SEGMENT_MANAGER_H_

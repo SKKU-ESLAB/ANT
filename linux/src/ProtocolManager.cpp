@@ -29,7 +29,7 @@
 #include <netinet/in.h>
 
 
-namespace cm {
+namespace sc {
 uint16_t ProtocolManager::packet_id = 1;
 
 void ProtocolManager::data_to_protocol_data(const uint8_t *dat,
@@ -146,4 +146,4 @@ uint32_t ProtocolManager::recv_packet(uint8_t **buf) {
 
   return pd . len;
 }
-} /* namespace cm */
+} /* namespace sc */

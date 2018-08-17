@@ -34,7 +34,7 @@
 #include <string.h>
 #include <unistd.h>
 
-namespace cm {
+namespace sc {
 
 class ServerSocket;
 class WfdIpAddressListener;
@@ -69,6 +69,6 @@ protected:
 private:
 }; /* class TcpServerSocket */
 
-} /* namespace cm */
+} /* namespace sc */
 
 #endif /* !defined(_TCP_SERVER_SOCKET_H_) */

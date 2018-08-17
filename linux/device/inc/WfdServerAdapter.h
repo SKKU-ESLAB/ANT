@@ -30,7 +30,7 @@
 
 #include <stdio.h>
 
-namespace cm {
+namespace sc {
 
 class WfdServerAdapter : public ServerAdapter {
 public:
@@ -48,6 +48,6 @@ public:
 protected:
 }; /* class WfdServerAdapter */
 
-} /* namespace cm */
+} /* namespace sc */
 
 #endif /* !defined(_WFD_SERVER_ADAPTER_H_) */

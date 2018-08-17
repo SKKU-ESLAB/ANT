@@ -19,7 +19,7 @@
 
 #include <API.h>
 
-using namespace cm;
+using namespace sc;
 
 void start_sc(StartCallback startCallback) {
   Core::get_instance()->start(startCallback);

@@ -21,7 +21,7 @@
 
 #include <DebugLog.h>
 
-using namespace cm;
+using namespace sc;
 
 bool ServerSocket::open(void) {
   if(this->get_state() != ServerSocketState::kClosed) {

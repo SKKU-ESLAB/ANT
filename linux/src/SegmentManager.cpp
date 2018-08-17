@@ -30,7 +30,7 @@
 
 #include <list>
 
-namespace cm {
+namespace sc {
 /* Singleton */
 SegmentManager* SegmentManager::singleton = NULL;
 
@@ -310,4 +310,4 @@ void SegmentManager::notify_queue() {
   this->mCondEnqueued[kSegRecv].notify_all();
 }
 
-}; /* namespace cm */
+}; /* namespace sc */

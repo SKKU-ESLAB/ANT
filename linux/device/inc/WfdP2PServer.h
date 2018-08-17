@@ -31,7 +31,7 @@
 #include <stdio.h>
 #include <signal.h>
 
-namespace cm {
+namespace sc {
 
 class WfdP2PServer : public P2PServer {
 public:
@@ -85,6 +85,6 @@ private:
   int kill_dhcpd(void);
 }; /* class WfdP2PServer */
 
-} /* namespace cm */
+} /* namespace sc */
 
 #endif /* !defined(_WFD_P2P_SERVER_H_) */

@@ -31,7 +31,7 @@
 #define kProtHeaderSize 6
 
 
-namespace cm {
+namespace sc {
 
 /**
  * Do not use architecture dependent sized types in this file
@@ -66,6 +66,6 @@ class ProtocolManager {
                               uint8_t *vec_ptr);
 };
 
-} /* namespace cm */
+} /* namespace sc */
 
 #endif  // INC_PROTOCOL_MANAGER_H_

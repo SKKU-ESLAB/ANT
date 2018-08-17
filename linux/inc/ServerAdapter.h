@@ -32,7 +32,7 @@
 #include <P2PServer.h>
 #include <Device.h>
 
-namespace cm {
+namespace sc {
 
 typedef enum {
   kDisconnected = 0,
@@ -200,6 +200,6 @@ private:
   ReceiveLoop mReceiveLoop = NULL;
 }; /* class ServerAdapter */
 
-} /* namespace cm */
+} /* namespace sc */
 
 #endif /* !defined(_SERVER_ADAPTER_H_) */

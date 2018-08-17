@@ -26,7 +26,7 @@
 
 #include <stdio.h>
 
-using namespace cm;
+using namespace sc;
 
 #define DEFAULT_WFD_DEVICE_NAME "wlan0"
 

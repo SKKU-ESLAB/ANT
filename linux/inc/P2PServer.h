@@ -25,7 +25,7 @@
 
 #include <stdio.h>
 
-namespace cm {
+namespace sc {
 
 typedef enum {
   kDisallowed = 0,
@@ -58,6 +58,6 @@ protected:
   P2PServerState mState;
 }; /* class P2PServer */
 
-} /* namespace cm */
+} /* namespace sc */
 
 #endif /* !defined(_P2P_SERVER_H_) */
