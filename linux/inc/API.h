@@ -1,7 +1,5 @@
 /* Copyright 2017-2018 All Rights Reserved.
  *  Gyeonghwan Hong (redcarrottt@gmail.com)
- *  Eunsoo Park (esevan.park@gmail.com)
- *  Injung Hwang (sinban04@gmail.com)
  *  
  * [Contact]
  *  Gyeonghwan Hong (redcarrottt@gmail.com)
@@ -22,20 +20,21 @@
 #ifndef INC_API_H_
 #define INC_API_H_
 
+#include <APICallbacks.h>
 #include <Core.h>
 #include <ServerAdapter.h>
 #include <NetworkSwitcher.h>
 
 namespace cm {
 
-inline void start_sc(void) {
+inline void start_sc(StartCallback startCallback) {
+  Core::get_instance()->start(startCallback);
   NetworkSwitcher::get_instance()->start();
-  Core::get_instance()->start();
 }
 
-inline void stop_sc(void) {
+inline void stop_sc(StopCallback stopCallback) {
   NetworkSwitcher::get_instance()->stop();
-  Core::get_instance()->stop();
+  Core::get_instance()->stop(stopCallback);
 }
 
 inline void register_control_adapter(ServerAdapter* adapter) {

@@ -124,9 +124,6 @@ public:
   }
 
   ~ServerAdapter() {
-    if(this->mDevice != NULL) {
-      delete this->mDevice;
-    }
     if(this->mP2PServer != NULL) {
       delete this->mP2PServer;
     }
