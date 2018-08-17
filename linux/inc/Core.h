@@ -24,7 +24,6 @@
 
 #include <SegmentManager.h>
 #include <ServerAdapter.h>
-#include <APICallbacks.h>
 
 #include <mutex>
 #include <stdint.h>

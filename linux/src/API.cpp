@@ -17,10 +17,18 @@
  * limitations under the License.
  */
 
-#ifndef INC_API_CALLBACKS_H_
-#define INC_API_CALLBACKS_H_
+#include <API.h>
 
-typedef void (*StartCallback)(bool is_success);
-typedef void (*StopCallback)(bool is_success);
+using namespace cm;
 
-#endif /* !defined(INC_API_CALLBACKS_H_) */
+void start_sc(StartCallback startCallback) {
+  Core::get_instance()->start(startCallback);
+  NetworkSwitcher::get_instance()->start();
+  // TODO: sparate user-side callback and api-side callback
+}
+
+void stop_sc(StopCallback stopCallback) {
+  NetworkSwitcher::get_instance()->stop();
+  Core::get_instance()->stop(stopCallback);
+  // TODO: sparate user-side callback and api-side callback
+}

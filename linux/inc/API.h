@@ -20,22 +20,17 @@
 #ifndef INC_API_H_
 #define INC_API_H_
 
-#include <APICallbacks.h>
 #include <Core.h>
 #include <ServerAdapter.h>
 #include <NetworkSwitcher.h>
 
 namespace cm {
 
-inline void start_sc(StartCallback startCallback) {
-  Core::get_instance()->start(startCallback);
-  NetworkSwitcher::get_instance()->start();
-}
+typedef void (*StartCallback)(bool is_success);
+void start_sc(StartCallback startCallback);
 
-inline void stop_sc(StopCallback stopCallback) {
-  NetworkSwitcher::get_instance()->stop();
-  Core::get_instance()->stop(stopCallback);
-}
+typedef void (*StopCallback)(bool is_success);
+inline void stop_sc(StopCallback stopCallback);
 
 inline void register_control_adapter(ServerAdapter* adapter) {
   Core::get_instance()->register_control_adapter(adapter);
