@@ -43,7 +43,7 @@
  * to application memory, serialized vector should be freed. ProtocolManager is
  * in charge of freeing this memory.
  */
-namespace cm {
+namespace sc {
 
 Core *Core::singleton = NULL;
 
@@ -467,4 +467,4 @@ void StopCoreTransaction::done(bool is_success) {
     sOngoing = NULL;
   }
 
-} /* namespace cm */
+} /* namespace sc */

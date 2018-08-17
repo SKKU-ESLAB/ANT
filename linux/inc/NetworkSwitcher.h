@@ -28,7 +28,7 @@
 #define kSegThreshold 512
 #define kSegQueueThreshold 50*(kSegThreshold / 512)
 
-namespace cm {
+namespace sc {
 typedef enum {
   kNSStateInitialized = 0,
   kNSStateRunning = 1,
@@ -253,6 +253,6 @@ class NetworkSwitcher {
     int mTotalBandwidthNowValues[METRIC_WINDOW_LENGTH];
     int mValuesCursor;
 };
-} /* namespace cm */
+} /* namespace sc */
 
 #endif /* INC_NETWORK_SWITCHER_H_ */

@@ -27,7 +27,7 @@
 
 #include <stdio.h>
 
-namespace cm {
+namespace sc {
 
 class BtP2PServer : public P2PServer {
 public:
@@ -43,6 +43,6 @@ public:
 protected:
 }; /* class BtP2PServer */
 
-} /* namespace cm */
+} /* namespace sc */
 
 #endif /* !defined(_BT_P2P_SERVER_H_) */

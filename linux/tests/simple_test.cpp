@@ -34,7 +34,7 @@
 #include <fcntl.h>
 #include <sys/time.h>
 
-using namespace cm;
+using namespace sc;
 
 #define DEBUG_SHOW_DATA 0
 #define DEBUG_SHOW_TIME 0

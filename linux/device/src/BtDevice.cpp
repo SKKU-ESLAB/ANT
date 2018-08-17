@@ -26,7 +26,7 @@
 
 #include <stdio.h>
 
-using namespace cm;
+using namespace sc;
 
 BtDevice* BtDevice::sSingleton = NULL;
 

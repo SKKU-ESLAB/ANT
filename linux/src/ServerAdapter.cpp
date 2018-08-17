@@ -27,7 +27,7 @@
 #include <thread>
 #include <mutex>
 
-using namespace cm;
+using namespace sc;
 
 bool ServerAdapter::connect(ConnectCallback callback, bool is_send_connect_message) {
   if(this->get_state() != ServerAdapterState::kDisconnected) {

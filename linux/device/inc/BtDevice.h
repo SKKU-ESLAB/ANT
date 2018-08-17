@@ -27,7 +27,7 @@
 
 #include <stdio.h>
 
-namespace cm {
+namespace sc {
 
 class BtDevice : public Device {
 public:
@@ -52,6 +52,6 @@ protected:
 
 }; /* class BtDevice */
 
-} /* namespace cm */
+} /* namespace sc */
 
 #endif /* !defined(_BT_DEVICE_H_) */

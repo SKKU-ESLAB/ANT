@@ -22,7 +22,7 @@
 
 #include <mutex>
 
-namespace cm {
+namespace sc {
 
 class RefCount {
 public:
@@ -48,5 +48,5 @@ protected:
   int mCount;
   std::mutex mLock;
 };
-} /* namespace cm */
+} /* namespace sc */
 #endif /* !defined(_REF_COUNT_H_) */

@@ -26,7 +26,7 @@
 
 #include <stdio.h>
 
-using namespace cm;
+using namespace sc;
 
 bool BtP2PServer::allow_impl(void) {
   return true;

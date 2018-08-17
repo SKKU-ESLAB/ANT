@@ -24,7 +24,7 @@
 
 #include <mutex>
 
-namespace cm {
+namespace sc {
 class Counter {
   public:
     Counter() {
@@ -90,6 +90,6 @@ class Counter {
     int mPrevSize;
     struct timeval mLastAccessedTS;
 };
-} /* namespace cm */
+} /* namespace sc */
 
 #endif /* INC_SPEED_METRIC_H_ */

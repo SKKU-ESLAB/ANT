@@ -24,7 +24,7 @@
 #include <ServerAdapter.h>
 #include <NetworkSwitcher.h>
 
-namespace cm {
+namespace sc {
 
 typedef void (*StartCallback)(bool is_success);
 void start_sc(StartCallback startCallback);
@@ -57,5 +57,5 @@ inline int receive(void **dataBuffer) {
   Core::get_instance()->receive(dataBuffer);
 }
 
-} /* namespace cm */
+} /* namespace sc */
 #endif  /* INC_API_H_ */

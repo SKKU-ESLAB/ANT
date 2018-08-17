@@ -19,7 +19,7 @@
 
 #include <ServerAdapter.h>
 
-using namespace cm;
+using namespace sc;
 
 bool Device::hold_and_turn_on(void) {
   if(this->mRefCount.increase() == 1) {

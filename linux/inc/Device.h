@@ -27,7 +27,7 @@
 
 #include <stdio.h>
 
-namespace cm {
+namespace sc {
 
 typedef enum {
   kOff        = 0,
@@ -68,6 +68,6 @@ protected:
   RefCount mRefCount;
 }; /* class Device */
 
-} /* namespace cm */
+} /* namespace sc */
 
 #endif /* !defined(_DEVICE_H_) */

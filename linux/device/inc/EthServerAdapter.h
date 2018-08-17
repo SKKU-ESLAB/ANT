@@ -33,7 +33,7 @@
 
 #include <stdio.h>
 
-namespace cm {
+namespace sc {
 
 class EthDevice : public Device {
 public:
@@ -83,6 +83,6 @@ public:
 protected:
 }; /* class EthServerAdapter */
 
-} /* namespace cm */
+} /* namespace sc */
 
 #endif /* !defined(_ETH_SERVER_ADAPTER_H_) */

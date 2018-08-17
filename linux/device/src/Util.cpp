@@ -24,7 +24,7 @@
 #include <errno.h>
 #include <string.h>
 
-using namespace cm;
+using namespace sc;
 
 int Util::run_client(const char *path, char * const params[], char *res_buf, size_t len) {
   int fd[2];

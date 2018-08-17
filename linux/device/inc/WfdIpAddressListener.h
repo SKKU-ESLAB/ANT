@@ -20,13 +20,13 @@
 #ifndef _WFD_WFD_IP_ADDRESS_LISTENER_H_
 #define _WFD_WFD_IP_ADDRESS_LISTENER_H_
 
-namespace cm {
+namespace sc {
 
 class WfdIpAddressListener {
 public:
   virtual void on_change_ip_address(const char* ip_address) = 0;
 };
 
-} /* namespace cm */
+} /* namespace sc */
 
 #endif /* !defined(_WFD_WFD_IP_ADDRESS_LISTENER_H_) */

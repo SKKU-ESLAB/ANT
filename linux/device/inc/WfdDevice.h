@@ -27,7 +27,7 @@
 
 #include <stdio.h>
 
-namespace cm {
+namespace sc {
 
 class WfdDevice : public Device {
 public:
@@ -52,6 +52,6 @@ protected:
 
 }; /* class WfdDevice */
 
-} /* namespace cm */
+} /* namespace sc */
 
 #endif /* !defined(_WFD_DEVICE_H_) */

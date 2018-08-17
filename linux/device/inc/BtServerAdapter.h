@@ -30,7 +30,7 @@
 
 #include <stdio.h>
 
-namespace cm {
+namespace sc {
 
 class BtServerAdapter : public ServerAdapter {
 public:
@@ -47,6 +47,6 @@ public:
 protected:
 }; /* class BtServerAdapter */
 
-} /* namespace cm */
+} /* namespace sc */
 
 #endif /* !defined(_BT_SERVER_ADAPTER_H_) */

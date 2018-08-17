@@ -39,7 +39,7 @@
 #include <bluetooth/bluetooth.h>
 #include <bluetooth/rfcomm.h>
 
-namespace cm {
+namespace sc {
 
 class RfcommServerSocket : public ServerSocket {
 public:
@@ -75,6 +75,6 @@ private:
   int str2uuid(char *str, uuid_t *uuid);
 }; /* class RfcommServerSocket */
 
-} /* namespace cm */
+} /* namespace sc */
 
 #endif /* !defined(_RFCOMM_SERVER_SOCKET_H_) */

@@ -38,7 +38,7 @@
 #define DEFAULT_WFD_IP_ADDRESS "192.168.49.1"
 #define UDHCPD_CONFIG_PATH "dhcpd.conf"
 
-using namespace cm;
+using namespace sc;
 
 struct sigaction WfdP2PServer::sSigaction;
 struct sigaction WfdP2PServer::sSigactionOld;

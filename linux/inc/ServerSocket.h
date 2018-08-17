@@ -25,7 +25,7 @@
 
 #include <stdio.h>
 
-namespace cm {
+namespace sc {
 
 typedef enum {
   kClosed  = 0,
@@ -64,6 +64,6 @@ protected:
   ServerSocketState mState;
 }; /* class ServerSocket */
 
-} /* namespace cm */
+} /* namespace sc */
 
 #endif /* !defined(_SERVER_SOCKET_H_) */
