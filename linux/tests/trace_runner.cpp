@@ -79,34 +79,45 @@ static char *rand_string(char *str, size_t size)
   return str;
 }
 
+void on_connect(bool is_success);
+
+char g_trace_file_name[512];
+
+cm::BtServerAdapter* btControl;
+cm::BtServerAdapter* btData;
+cm::WfdServerAdapter* wfdData;
+
 int main(int argc, char** argv) {
   /* Parse arguments */
   if(argc != 2) {
-    printf("[Usage] %s <trace_file_name>\n", argv[0]);
+    printf("[Usage] %s <g_trace_file_name>\n", argv[0]);
     return -1;
   }
 
-  char trace_file_name[512];
-  snprintf(trace_file_name, 512, "%s", argv[1]);
-  printf("Trace File: %s\n", trace_file_name);
+  snprintf(g_trace_file_name, 512, "%s", argv[1]);
+  printf("Trace File: %s\n", g_trace_file_name);
 
-  cm::start_sc();
   //EthServerAdapter ethAdapter(2345, "Eth", 2345);
-  BtServerAdapter btControl(2345, "BtCt", "150e8400-1234-41d4-a716-446655440000");
-  BtServerAdapter btData(3333, "BtDt", "150e8400-1234-41d4-a716-446655440001");
-  WfdServerAdapter wfdData(3456, "WfdDt", 3456, "OPEL");
+  btControl = new cm::BtServerAdapter(2345, "BtCt", "150e8400-1234-41d4-a716-446655440000");
+  btData = new cm::BtServerAdapter(3333, "BtDt", "150e8400-1234-41d4-a716-446655440001");
+  wfdData = new cm::WfdServerAdapter(3456, "WfdDt", 3456, "OPEL");
 
   printf("Step 1. Initializing Network Adapters\n");
 
   // printf("  a) Control Adapter: TCP over Ethernet\n");
   // cm::register_control_adapter(&ethAdapter);
   printf("  a) Control Adapter: RFCOMM over Bluetooth\n");
-  cm::register_control_adapter(&btControl);
+  cm::register_control_adapter(btControl);
   printf("  b) Data Adapter: RFCOMM over Bluetooth\n");
-  cm::register_data_adapter(&btData);
+  cm::register_data_adapter(btData);
   printf("  c) Data Adapter: TCP over Wi-fi Direct\n");
-  cm::register_data_adapter(&wfdData);
+  cm::register_data_adapter(wfdData);
 
+  cm::start_sc(on_connect);
+  return 0;
+}
+
+void on_connect(bool is_success) {
   int iter = 0;
   char sending_buf[8192];
   int ret, numbytes;
@@ -135,10 +146,10 @@ int main(int argc, char** argv) {
 #define BUFFER_SIZE (20*1024*1024)
 #define SOURCE_LOCALHOST_BT "localhost (ANT-0)"
 #define SOURCE_LOCALHOST_WFD "192.168.0.33"
-  printf("Step 3. Send Workload (%s)\n", trace_file_name);
+  printf("Step 3. Send Workload (%s)\n", g_trace_file_name);
   
   /* Initialize CSV Parser */
-  io::CSVReader<3, io::trim_chars<>, io::double_quote_escape<',','\"'>> in(trace_file_name);
+  io::CSVReader<3, io::trim_chars<>, io::double_quote_escape<',','\"'>> in(g_trace_file_name);
   in.read_header(io::ignore_extra_column, "Time", "Source", "Payload");
   std::string timestr;
   std::string source;
@@ -174,7 +185,7 @@ int main(int argc, char** argv) {
     if(sleep_us < 0) {
       printf("[Error] Invalid sleep time: %d(%d:%d -> %d:%d)\n",
           sleep_us, recent_sent_sec, recent_sent_usec, time_sec, time_usec);
-      return -2;
+      return;
     }
     /* printf(" * Packet %d (Length: %d / Time: %d:%d) Wait for %d us...\n",
         iter, payload_length, time_sec, time_usec, sleep_us); */
@@ -186,7 +197,7 @@ int main(int argc, char** argv) {
     buffer = (char*) calloc(payload_length, sizeof(char));
     if(buffer == NULL) {
       fprintf(stderr, "[Error] Buffer allocation failed: size=%d\n", payload_length);
-      return -3;
+      return;
     } else {
 #if DEBUG_SHOW_TIME == 1
       gettimeofday(&start, NULL);
@@ -211,7 +222,7 @@ int main(int argc, char** argv) {
 
   printf("Finish Workload\n");
 
-  cm::stop_sc();
+  cm::stop_sc(NULL);
 
-  return 0;
+  return;
 }

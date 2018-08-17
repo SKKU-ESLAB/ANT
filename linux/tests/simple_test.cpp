@@ -79,21 +79,34 @@ static char *rand_string(char *str, size_t size)
   return str;
 }
 
+void on_connect(bool is_success);
+
+cm::BtServerAdapter* btControl;
+cm::BtServerAdapter* btData;
+
 int main(int argc, char** argv) {
 
-  cm::start_sc();
   //EthServerAdapter ethAdapter(2345, "Eth", 2345);
-  BtServerAdapter btControl(2345, "BtCt", "150e8400-1234-41d4-a716-446655440000");
-  BtServerAdapter btData(3333, "BtDt", "150e8400-1234-41d4-a716-446655440001");
+  btControl = new cm::BtServerAdapter(2345, "BtCt", "150e8400-1234-41d4-a716-446655440000");
+  btData = new cm::BtServerAdapter(3333, "BtDt", "150e8400-1234-41d4-a716-446655440001");
 
   printf("Step 1. Initializing Network Adapters\n");
 
   // printf("  a) Control Adapter: TCP over Ethernet\n");
   // cm::register_control_adapter(&ethAdapter);
   printf("  a) Control Adapter: RFCOMM over Bluetooth\n");
-  cm::register_control_adapter(&btControl);
+  cm::register_control_adapter(btControl);
   printf("  b) Data Adapter: RFCOMM over Bluetooth\n");
-  cm::register_data_adapter(&btData);
+  cm::register_data_adapter(btData);
+
+  cm::start_sc(on_connect);
+}
+
+void on_connect(bool is_success) {
+  if(!is_success) {
+      cm::start_sc(on_connect);
+      return;
+  }
 
   char* temp_buf;
 
@@ -115,7 +128,7 @@ int main(int argc, char** argv) {
 
   printf("Finish Workload\n");
 
-  cm::stop_sc();
+  cm::stop_sc(NULL);
 
-  return 0;
+  return;
 }

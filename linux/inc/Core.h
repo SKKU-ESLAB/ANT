@@ -24,6 +24,7 @@
 
 #include <SegmentManager.h>
 #include <ServerAdapter.h>
+#include <APICallbacks.h>
 
 #include <mutex>
 #include <stdint.h>
@@ -66,7 +67,7 @@ typedef enum {
 class Core;
 class StartCoreTransaction {
 public:
-  static bool run(Core *caller);
+  static bool run(Core *caller, StartCallback startCallback);
   bool start();
   static void connect_control_adapter_callback(bool is_success);
   static void connect_first_data_adapter_callback(bool is_success);
@@ -74,15 +75,19 @@ public:
 private:
   void done(bool is_success);
 
-  StartCoreTransaction(Core *caller) { this->mCaller = caller; }
+  StartCoreTransaction(Core *caller, StartCallback startCallback) {
+    this->mCaller = caller;
+    this->mStartCallback = startCallback;
+  }
   static StartCoreTransaction *sOngoing;
 
   Core *mCaller;
+  StartCallback mStartCallback;
 };
 
 class StopCoreTransaction {
 public:
-  static bool run(Core *caller);
+  static bool run(Core *caller, StopCallback stopCallback);
   bool start();
   static void disconnect_control_adapter_callback(bool is_success);
   static void disconnect_data_adapter_callback(bool is_success);
@@ -90,10 +95,14 @@ public:
 private:
   void done(bool is_success); 
   
-  StopCoreTransaction(Core *caller) { this->mCaller = caller; }
+  StopCoreTransaction(Core *caller, StopCallback stopCallback) {
+    this->mCaller = caller;
+    this->mStopCallback = stopCallback;
+  }
   static StopCoreTransaction *sOngoing;
 
   Core *mCaller;
+  StopCallback mStopCallback;
   int mDataAdaptersCount;
   std::mutex mDataAdaptersCountLock;
 };
@@ -117,10 +126,10 @@ public:
    */
   friend StartCoreTransaction;
   friend StopCoreTransaction;
-  void start(void);
-  void done_start(bool is_success);
-  void stop(void);
-  void done_stop(bool is_success);
+  void start(StartCallback startCallback);
+  void done_start(bool is_success, StartCallback startCallback);
+  void stop(StopCallback stopCallback);
+  void done_stop(bool is_success, StopCallback stopCallback);
 
   void register_control_adapter(ServerAdapter *adapter);
   void register_data_adapter(ServerAdapter *adapter);

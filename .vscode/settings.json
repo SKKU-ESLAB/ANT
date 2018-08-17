@@ -18,6 +18,7 @@
         "type_traits": "cpp",
         "typeinfo": "cpp",
         "algorithm": "cpp",
-        "locale": "cpp"
+        "locale": "cpp",
+        "iosfwd": "cpp"
     }
 }

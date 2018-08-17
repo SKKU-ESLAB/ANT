@@ -62,20 +62,34 @@ void receiving_thread() {
   }
 }
 
+void on_connect(bool is_success);
+
+cm::EthServerAdapter* ethAdapter;
+cm::BtServerAdapter* btAdapter;
+cm::WfdServerAdapter* wfdAdapter;
 int main() {
-  cm::start_sc();
-  cm::EthServerAdapter ethAdapter(2345, "Eth", 2345);
-  cm::BtServerAdapter btAdapter(3333, "Bt", "150e8400-1234-41d4-a716-446655440000");
-  cm::WfdServerAdapter wfdAdapter(3456, "Wfd", 3456, "OPEL");
+  ethAdapter = new cm::EthServerAdapter(2345, "Eth", 2345);
+  btAdapter = new cm::BtServerAdapter(3333, "Bt", "150e8400-1234-41d4-a716-446655440000");
+  wfdAdapter = new cm::WfdServerAdapter(3456, "Wfd", 3456, "OPEL");
 
   printf("Step 1. Initializing Network Adapters\n");
 
   printf("  a) Control Adapter: TCP over Ethernet\n");
-  cm::register_control_adapter(&ethAdapter);
+  cm::register_control_adapter(ethAdapter);
   printf("  b) Data Adapter: RFCOMM over Bluetooth\n");
-  cm::register_data_adapter(&btAdapter);
+  cm::register_data_adapter(btAdapter);
   printf("  c) Data Adapter: TCP over Wi-fi Direct\n");
-  cm::register_data_adapter(&wfdAdapter);
+  cm::register_data_adapter(wfdAdapter);
+
+  cm::start_sc(on_connect);
+  return 0;
+}
+
+void on_connect(bool is_success) {
+  if(!is_success) {
+      cm::start_sc(on_connect);
+      return;
+  }
 
   int iter = 0;
   int iter1 = 0;
@@ -167,7 +181,5 @@ int main() {
     iter1++;
   }
 
-  cm::stop_sc();
-
-  return 0;
+  cm::stop_sc(NULL);
 }
