@@ -19,6 +19,7 @@
         "typeinfo": "cpp",
         "algorithm": "cpp",
         "locale": "cpp",
-        "iosfwd": "cpp"
+        "iosfwd": "cpp",
+        "condition_variable": "cpp"
     }
 }

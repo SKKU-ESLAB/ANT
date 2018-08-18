@@ -30,7 +30,7 @@ typedef void (*StartCallback)(bool is_success);
 void start_sc(StartCallback startCallback);
 
 typedef void (*StopCallback)(bool is_success);
-inline void stop_sc(StopCallback stopCallback);
+void stop_sc(StopCallback stopCallback);
 
 inline void register_control_adapter(ServerAdapter* adapter) {
   Core::get_instance()->register_control_adapter(adapter);

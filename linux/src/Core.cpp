@@ -51,27 +51,27 @@ StartCoreTransaction *StartCoreTransaction::sOngoing = NULL;
 StopCoreTransaction *StopCoreTransaction::sOngoing = NULL;
 
 // Start core: connect initial adapters
-void Core::start(StartCallback startCallback) {
+void Core::start() {
   if (this->get_state() != CMState::kCMStateIdle) {
     LOG_ERR("Core has already started.");
-    this->done_start(false, startCallback);
+    this->done_start(false);
     return;
   } else if (this->mControlAdapter == NULL) {
     LOG_ERR("No control adapter is registered!");
-    this->done_start(false, startCallback);
+    this->done_start(false);
     return;
   } else if (this->mDataAdapters.empty()) {
     LOG_ERR("No data adapter is registered!");
-    this->done_start(false, startCallback);
+    this->done_start(false);
     return;
   }
 
   // Connect control adapter & first data adapter
   this->set_state(CMState::kCMStateStarting);
-  StartCoreTransaction::run(this, startCallback);
+  StartCoreTransaction::run(this);
 }
 
-void Core::done_start(bool is_success, StartCallback startCallback) {
+void Core::done_start(bool is_success) {
   if (is_success) {
     LOG_VERB("Succeed to start core!");
     this->set_state(CMState::kCMStateReady);
@@ -80,39 +80,38 @@ void Core::done_start(bool is_success, StartCallback startCallback) {
     this->set_state(CMState::kCMStateIdle);
     return;
   }
-  if(startCallback != NULL) {
-    startCallback(is_success);
-  }
+
+  start_sc_done(is_success);
 }
 
 // Stop core: disconnect all the adapters
-void Core::stop(StopCallback stopCallback) {
+void Core::stop() {
   CMState state = this->get_state();
   if (state == CMState::kCMStateStarting ||
       state == CMState::kCMStateStopping) {
     LOG_ERR("Cannot stop core during starting/stopping!");
-    this->done_stop(false, stopCallback);
+    this->done_stop(false);
     return;
   } else if (state == CMState::kCMStateIdle) {
     LOG_ERR("Core is already idle state!");
-    this->done_stop(false, stopCallback);
+    this->done_stop(false);
     return;
   } else if (this->mControlAdapter == NULL) {
     LOG_ERR("No control adapter is registered!");
-    this->done_stop(false, stopCallback);
+    this->done_stop(false);
     return;
   } else if (this->mDataAdapters.empty()) {
     LOG_ERR("No data adapter is registered!");
-    this->done_stop(false, stopCallback);
+    this->done_stop(false);
     return;
   }
 
   // Disconnect all the adapters
   this->set_state(CMState::kCMStateStopping);
-  StopCoreTransaction::run(this, stopCallback);
+  StopCoreTransaction::run(this);
 }
 
-void Core::done_stop(bool is_success, StopCallback stopCallback) {
+void Core::done_stop(bool is_success) {
   if (is_success) {
     LOG_VERB("Succeed to stop core!");
     this->set_state(CMState::kCMStateIdle);
@@ -120,9 +119,8 @@ void Core::done_stop(bool is_success, StopCallback stopCallback) {
     LOG_ERR("Failed to stop core!");
     this->set_state(CMState::kCMStateReady);
   }
-  if(stopCallback != NULL) {
-    stopCallback(is_success);
-  }
+
+  stop_sc_done(is_success);
 }
 
 // Register control adpater
@@ -320,14 +318,14 @@ void Core::receive_control_message_loop(ServerAdapter *adapter) {
 // ----------------------------------------------------------------------------------
 
 // Start Core
-bool StartCoreTransaction::run(Core *caller, StartCallback startCallback) {
+bool StartCoreTransaction::run(Core *caller) {
   if (sOngoing == NULL) {
-    sOngoing = new StartCoreTransaction(caller, startCallback);
+    sOngoing = new StartCoreTransaction(caller);
     sOngoing->start();
     return true;
   } else {
     LOG_WARN("Already starting core");
-    caller->done_start(false, startCallback);
+    caller->done_start(false);
     return false;
   }
 }
@@ -378,19 +376,19 @@ void StartCoreTransaction::connect_first_data_adapter_callback(
 }
 
 void StartCoreTransaction::done(bool is_success) {
-    this->mCaller->done_start(is_success, this->mStartCallback);
+    this->mCaller->done_start(is_success);
     sOngoing = NULL;
   }
 
 // Stop Core
-bool StopCoreTransaction::run(Core *caller, StopCallback stopCallback) {
+bool StopCoreTransaction::run(Core *caller) {
   if (sOngoing == NULL) {
-    sOngoing = new StopCoreTransaction(caller, stopCallback);
+    sOngoing = new StopCoreTransaction(caller);
     sOngoing->start();
     return true;
   } else {
     LOG_WARN("Already stopping core");
-    caller->done_stop(false, stopCallback);
+    caller->done_stop(false);
     return false;
   }
 }
@@ -463,7 +461,7 @@ void StopCoreTransaction::disconnect_data_adapter_callback(bool is_success) {
 }
 
 void StopCoreTransaction::done(bool is_success) {
-    this->mCaller->done_stop(is_success, this->mStopCallback);
+    this->mCaller->done_stop(is_success);
     sOngoing = NULL;
   }
 
