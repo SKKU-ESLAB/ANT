@@ -51,7 +51,7 @@ void receiving_thread() {
   printf("[INFO] Receiving thread created! tid: %d\n", (unsigned int)syscall(224));
 
   while (true) {
-    int ret = cm::receive(&buf);
+    int ret = sc::receive(&buf);
 #if DEBUG_SHOW_DATA == 1
     printf("Recv %d> %s\n\n", ret, reinterpret_cast<char *>(buf));
 #endif
@@ -81,30 +81,30 @@ static char *rand_string(char *str, size_t size)
 
 void on_connect(bool is_success);
 
-cm::BtServerAdapter* btControl;
-cm::BtServerAdapter* btData;
+sc::BtServerAdapter* btControl;
+sc::BtServerAdapter* btData;
 
 int main(int argc, char** argv) {
 
   //EthServerAdapter ethAdapter(2345, "Eth", 2345);
-  btControl = new cm::BtServerAdapter(2345, "BtCt", "150e8400-1234-41d4-a716-446655440000");
-  btData = new cm::BtServerAdapter(3333, "BtDt", "150e8400-1234-41d4-a716-446655440001");
+  btControl = new sc::BtServerAdapter(2345, "BtCt", "150e8400-1234-41d4-a716-446655440000");
+  btData = new sc::BtServerAdapter(3333, "BtDt", "150e8400-1234-41d4-a716-446655440001");
 
   printf("Step 1. Initializing Network Adapters\n");
 
   // printf("  a) Control Adapter: TCP over Ethernet\n");
-  // cm::register_control_adapter(&ethAdapter);
+  // sc::register_control_adapter(&ethAdapter);
   printf("  a) Control Adapter: RFCOMM over Bluetooth\n");
-  cm::register_control_adapter(btControl);
+  sc::register_control_adapter(btControl);
   printf("  b) Data Adapter: RFCOMM over Bluetooth\n");
-  cm::register_data_adapter(btData);
+  sc::register_data_adapter(btData);
 
-  cm::start_sc(on_connect);
+  sc::start_sc(on_connect);
 }
 
 void on_connect(bool is_success) {
   if(!is_success) {
-      cm::start_sc(on_connect);
+      sc::start_sc(on_connect);
       return;
   }
 
@@ -118,7 +118,7 @@ void on_connect(bool is_success) {
   for(i=0; i<1; i++) {
     sleep(2);
     temp_buf = (char*)calloc(TEST_DATA_SIZE, sizeof(char));
-    cm::send(temp_buf, TEST_DATA_SIZE);
+    sc::send(temp_buf, TEST_DATA_SIZE);
     sleep(10);
     free(temp_buf);
   }
@@ -128,7 +128,7 @@ void on_connect(bool is_success) {
 
   printf("Finish Workload\n");
 
-  cm::stop_sc(NULL);
+  sc::stop_sc(NULL);
 
   return;
 }

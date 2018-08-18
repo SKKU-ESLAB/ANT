@@ -48,7 +48,7 @@ void receiving_thread() {
   printf("[INFO] Receiving thread created! tid: %d\n", (unsigned int)syscall(224));
 
   while (true) {
-    int ret = cm::receive(&buf);
+    int ret = sc::receive(&buf);
 #if DEBUG_SHOW_DATA == 1
     printf("Recv %d> %s\n\n", ret, reinterpret_cast<char *>(buf));
 #endif
@@ -64,30 +64,30 @@ void receiving_thread() {
 
 void on_connect(bool is_success);
 
-cm::EthServerAdapter* ethAdapter;
-cm::BtServerAdapter* btAdapter;
-cm::WfdServerAdapter* wfdAdapter;
+sc::EthServerAdapter* ethAdapter;
+sc::BtServerAdapter* btAdapter;
+sc::WfdServerAdapter* wfdAdapter;
 int main() {
-  ethAdapter = new cm::EthServerAdapter(2345, "Eth", 2345);
-  btAdapter = new cm::BtServerAdapter(3333, "Bt", "150e8400-1234-41d4-a716-446655440000");
-  wfdAdapter = new cm::WfdServerAdapter(3456, "Wfd", 3456, "OPEL");
+  ethAdapter = new sc::EthServerAdapter(2345, "Eth", 2345);
+  btAdapter = new sc::BtServerAdapter(3333, "Bt", "150e8400-1234-41d4-a716-446655440000");
+  wfdAdapter = new sc::WfdServerAdapter(3456, "Wfd", 3456, "OPEL");
 
   printf("Step 1. Initializing Network Adapters\n");
 
   printf("  a) Control Adapter: TCP over Ethernet\n");
-  cm::register_control_adapter(ethAdapter);
+  sc::register_control_adapter(ethAdapter);
   printf("  b) Data Adapter: RFCOMM over Bluetooth\n");
-  cm::register_data_adapter(btAdapter);
+  sc::register_data_adapter(btAdapter);
   printf("  c) Data Adapter: TCP over Wi-fi Direct\n");
-  cm::register_data_adapter(wfdAdapter);
+  sc::register_data_adapter(wfdAdapter);
 
-  cm::start_sc(on_connect);
+  sc::start_sc(on_connect);
   return 0;
 }
 
 void on_connect(bool is_success) {
   if(!is_success) {
-      cm::start_sc(on_connect);
+      sc::start_sc(on_connect);
       return;
   }
 
@@ -111,7 +111,7 @@ void on_connect(bool is_success) {
   for(i=0; i<1; i++) {
     sleep(2);
     temp_buf = (char*)calloc(TEST_DATA_SIZE, sizeof(char));
-    cm::send(temp_buf, TEST_DATA_SIZE);
+    sc::send(temp_buf, TEST_DATA_SIZE);
     sleep(10);
     free(temp_buf);
   }
@@ -168,7 +168,7 @@ void on_connect(bool is_success) {
         gettimeofday(&start, NULL);
 #endif
         // Send Data
-        ret = cm::send(buffer, count); 
+        ret = sc::send(buffer, count); 
 #if DEBUG_SHOW_DATA == 1
         printf("  - Send data: size=%d\n", count);
 #endif
@@ -181,5 +181,5 @@ void on_connect(bool is_success) {
     iter1++;
   }
 
-  cm::stop_sc(NULL);
+  sc::stop_sc(NULL);
 }

@@ -18,17 +18,51 @@
  */
 
 #include <API.h>
+#include <APIInternal.h>
+
+#include <mutex>
+#include <condition_variable>
 
 using namespace sc;
 
-void start_sc(StartCallback startCallback) {
-  Core::get_instance()->start(startCallback);
+std::mutex g_wait_lock_start_sc;
+std::condition_variable g_wait_cond_start_sc;
+bool g_start_sc_success;
+
+std::mutex g_wait_lock_stop_sc;
+std::condition_variable g_wait_cond_stop_sc;
+bool g_stop_sc_success;
+
+void sc::start_sc(StartCallback startCallback) {
+  Core::get_instance()->start();
   NetworkSwitcher::get_instance()->start();
-  // TODO: sparate user-side callback and api-side callback
+
+  // Wait until connect thread ends
+  std::unique_lock<std::mutex> lck(g_wait_lock_start_sc);
+  g_wait_cond_start_sc.wait(lck);
+
+  // Execute callback
+  startCallback(g_start_sc_success);
 }
 
-void stop_sc(StopCallback stopCallback) {
+void sc::start_sc_done(bool is_success) {
+  g_start_sc_success = is_success;
+  g_wait_cond_start_sc.notify_all();
+}
+
+void sc::stop_sc(StopCallback stopCallback) {
   NetworkSwitcher::get_instance()->stop();
-  Core::get_instance()->stop(stopCallback);
-  // TODO: sparate user-side callback and api-side callback
+  Core::get_instance()->stop();
+  
+  // Wait until connect thread ends
+  std::unique_lock<std::mutex> lck(g_wait_lock_stop_sc);
+  g_wait_cond_stop_sc.wait(lck);
+
+  // Execute callback
+  stopCallback(g_stop_sc_success);
+}
+
+void sc::stop_sc_done(bool is_success) {
+  g_stop_sc_success = is_success;
+  g_wait_cond_stop_sc.notify_all();
 }
