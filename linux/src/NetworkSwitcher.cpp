@@ -51,6 +51,7 @@ void NetworkSwitcher::stop(void) {
 void NetworkSwitcher::switcher_thread(void) {
   this->set_state(NSState::kNSStateRunning);
 
+  int count = 0;
   while(this->mSwitcherThreadOn) {
     int avg_send_request_speed;
     int avg_send_queue_data_size;
