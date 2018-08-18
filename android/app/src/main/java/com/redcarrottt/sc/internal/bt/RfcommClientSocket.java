@@ -20,8 +20,11 @@ class RfcommClientSocket extends ClientSocket {
     protected boolean openImpl() {
         // Initialize socket
         this.mSocket = null;
-        Set<BluetoothDevice> pairedBtDevices = BluetoothAdapter.getDefaultAdapter().getBondedDevices();
+        Set<BluetoothDevice> pairedBtDevices = BluetoothAdapter.getDefaultAdapter()
+                .getBondedDevices();
         for (BluetoothDevice btDevice : pairedBtDevices) {
+            Logger.DEBUG(kTag, "Found Device: " + btDevice.getAddress() + " / " + btDevice
+                    .getName());
             if (btDevice.getAddress().equals(this.mTargetMacAddr)) {
                 try {
                     this.mSocket = btDevice.createRfcommSocketToServiceRecord(this.mServiceUuid);
@@ -31,7 +34,7 @@ class RfcommClientSocket extends ClientSocket {
                 }
             }
         }
-        if(this.mSocket == null) {
+        if (this.mSocket == null) {
             Logger.ERR(kTag, "Cannot find the target device");
             return false;
         }
@@ -103,7 +106,8 @@ class RfcommClientSocket extends ClientSocket {
         try {
             int receivedBytes = 0;
             while (receivedBytes < dataLength) {
-                int onceReceivedBytes = this.mInputStream.read(dataBuffer, receivedBytes, dataLength - receivedBytes);
+                int onceReceivedBytes = this.mInputStream.read(dataBuffer, receivedBytes,
+                        dataLength - receivedBytes);
                 if (onceReceivedBytes < 0) {
                     Logger.ERR(kTag, "Receive failed! 1");
                     return -2;
