@@ -1,8 +1,15 @@
 package com.redcarrottt.sc.internal.bt;
 
+import android.app.Activity;
 import android.bluetooth.BluetoothAdapter;
+import android.content.BroadcastReceiver;
+import android.content.Context;
+import android.content.Intent;
+import android.content.IntentFilter;
 
 import com.redcarrottt.sc.internal.Device;
+import com.redcarrottt.testapp.Logger;
+import com.redcarrottt.testapp.MainActivity;
 
 /* Copyright (c) 2017-2018. All rights reserved.
  *  Gyeonghwan Hong (redcarrottt@gmail.com)
@@ -21,32 +28,93 @@ import com.redcarrottt.sc.internal.Device;
  */
 
 class BtDevice extends Device {
+    private static final String kTag = "BtDevice";
+
+    // TODO: there is no timeout on turn on/off of BtDevice
     @Override
-    protected boolean turnOnImpl() {
+    protected void turnOnImpl() {
+        // Register bluetooth device on event receiver
+        IntentFilter intentFilter = new IntentFilter();
+        intentFilter.addAction(BluetoothAdapter.ACTION_STATE_CHANGED);
+        Context context = this.mOwnerActivity.getApplicationContext();
+        context.registerReceiver(this.mBtDeviceOnEventReceiver, intentFilter);
+
+        // turn on adapter command
         BluetoothAdapter adapter = BluetoothAdapter.getDefaultAdapter();
-        adapter.enable();
-        return true;
+        if (adapter.isEnabled()) {
+            Logger.DEBUG(kTag, "Bluetooth is already turned on");
+            this.doneTurnOn(true);
+        } else {
+            adapter.enable();
+        }
     }
 
     @Override
-    protected boolean turnOffImpl() {
+    protected void turnOffImpl() {
+        // Register bluetooth device off event receiver
+        IntentFilter intentFilter = new IntentFilter();
+        intentFilter.addAction(BluetoothAdapter.ACTION_STATE_CHANGED);
+        Context context = this.mOwnerActivity.getApplicationContext();
+        context.registerReceiver(this.mBtDeviceOffEventReceiver, intentFilter);
+
+        // turn off adapter command
         BluetoothAdapter adapter = BluetoothAdapter.getDefaultAdapter();
-        adapter.disable();
-        return true;
+        if(!adapter.isEnabled()) {
+            Logger.DEBUG(kTag, "Bluetooth is already turned off");
+            this.doneTurnOff(true);
+        } else {
+            adapter.disable();
+        }
     }
+
+    private BroadcastReceiver mBtDeviceOnEventReceiver = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            final String action = intent.getAction();
+            if (action.equals(BluetoothAdapter.ACTION_STATE_CHANGED)) {
+                final int state = intent.getIntExtra(BluetoothAdapter.EXTRA_STATE,
+                        BluetoothAdapter.ERROR);
+                Logger.DEBUG(kTag, "Bluetooth Adapter state changed: " + state);
+                if (state == BluetoothAdapter.STATE_ON) {
+                    Logger.DEBUG(kTag, "Bluetooth is turned on successfully");
+                    doneTurnOn(true);
+                    context.unregisterReceiver(mBtDeviceOnEventReceiver);
+                }
+            }
+        }
+    };
+
+    private BroadcastReceiver mBtDeviceOffEventReceiver = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            final String action = intent.getAction();
+            if (action.equals(BluetoothAdapter.ACTION_STATE_CHANGED)) {
+                final int state = intent.getIntExtra(BluetoothAdapter.EXTRA_STATE,
+                        BluetoothAdapter.ERROR);
+                Logger.DEBUG(kTag, "Bluetooth Adapter state changed: " + state);
+                if (state == BluetoothAdapter.STATE_OFF) {
+                    Logger.DEBUG(kTag, "Bluetooth is turned off successfully");
+                    doneTurnOff(true);
+                    context.unregisterReceiver(mBtDeviceOffEventReceiver);
+                }
+            }
+        }
+    };
 
     // Singleton
-    public static BtDevice getSingleton() {
+    public static BtDevice getSingleton(Activity ownerActivity) {
         if (sSingleton == null) {
-            sSingleton = new BtDevice();
+            sSingleton = new BtDevice(ownerActivity);
         }
         return sSingleton;
     }
 
     private static BtDevice sSingleton = null;
+    private Activity mOwnerActivity;
 
     // Constructor
-    private BtDevice() {
+    private BtDevice(Activity ownerActivity) {
         super("Bluetooth");
+        this.mOwnerActivity = ownerActivity;
     }
 }

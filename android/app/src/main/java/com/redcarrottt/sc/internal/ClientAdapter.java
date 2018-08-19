@@ -87,7 +87,8 @@ public class ClientAdapter {
     }
 
     // Connect/Disconnect Threads & Callbacks
-    class ConnectThread extends Thread implements DiscoverAndConnectResultListener {
+    class ConnectThread extends Thread implements TurnOnResultListener,
+            DiscoverAndConnectResultListener {
         @Override
         public void run() {
             Logger.VERB(kTag, self.getName() + "'s Connect Thread Spawned! (id:" + this.getId() +
@@ -100,14 +101,20 @@ public class ClientAdapter {
             }
 
             // Turn on device
-            boolean res = self.mDevice.holdAndTurnOn();
+            self.mDevice.holdAndTurnOn(this);
+        }
+
+        @Override
+        public void onTurnOnResult(boolean isSuccess) {
             int deviceState = self.mDevice.getState();
-            if (!res || deviceState != Device.State.kOn) {
-                Logger.ERR(kTag, "Cannot connect the server adapter - turn-on fail: " + self
-                        .getName());
+            if (!isSuccess || deviceState != Device.State.kOn) {
+                Logger.ERR(kTag, "Cannot connect the server adapter - turn-on fail: "
+                        + self.getName());
                 this.onFail();
                 return;
             }
+
+            Logger.VERB(kTag,"Turn on success: " + self.getName());
 
             // Discover and connect to server
             int p2pClientState = self.mP2PClient.getState();
@@ -123,10 +130,12 @@ public class ClientAdapter {
             if (!isSuccess || p2pClientState != P2PClient.State.kConnected) {
                 Logger.ERR(kTag, "Cannot connect the server adapter - allow fail:" + self.getName
                         ());
-                self.mDevice.releaseAndTurnOff();
+                self.mDevice.releaseAndTurnOff(null);
                 this.onFail();
                 return;
             }
+
+            Logger.VERB(kTag,"P2P connect success: " + self.getName());
 
             // Open client socket
             int socketState = self.mClientSocket.getState();
@@ -138,11 +147,13 @@ public class ClientAdapter {
                     Logger.ERR(kTag, "Cannot connect the server adapter - socket open fail: " +
                             self.getName());
                     self.mP2PClient.disconnect(null);
-                    self.mDevice.releaseAndTurnOff();
+                    self.mDevice.releaseAndTurnOff(null);
                     this.onFail();
                     return;
                 }
             }
+
+            Logger.VERB(kTag,"Socket connect success: " + self.getName());
 
             // Run sender & receiver threads
             if (self.mSenderThread != null && !self.mSenderThread.isOn()) {
@@ -179,7 +190,7 @@ public class ClientAdapter {
     }
 
     class DisconnectThread extends Thread implements com.redcarrottt.sc.internal
-            .DisconnectResultListener {
+            .DisconnectResultListener, TurnOffResultListener {
         @Override
         public void run() {
             Logger.VERB(kTag, self.getName() + "'s Disconnect Thread Spawned! (id:" + this.getId
@@ -234,15 +245,18 @@ public class ClientAdapter {
             // Turn off device
             int deviceState = self.mDevice.getState();
             if (deviceState != Device.State.kOff) {
-                boolean res = self.mDevice.releaseAndTurnOff();
+                self.mDevice.releaseAndTurnOff(this);
+            }
+        }
 
-                deviceState = self.mDevice.getState();
-                if (!res || deviceState != Device.State.kOff) {
-                    Logger.ERR(kTag, "Cannot disconnect the server adapter - turn-off fail: " +
-                            self.getName());
-                    this.onFail();
-                    return;
-                }
+        @Override
+        public void onTurnOffResult(boolean isSuccess) {
+            int deviceState = self.mDevice.getState();
+            if (!isSuccess || deviceState != Device.State.kOff) {
+                Logger.ERR(kTag, "Cannot disconnect the server adapter - turn-off fail: " +
+                        self.getName());
+                this.onFail();
+                return;
             }
 
             // Report result success

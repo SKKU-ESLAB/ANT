@@ -70,7 +70,7 @@ sc::WfdServerAdapter* wfdAdapter;
 int main() {
   ethAdapter = new sc::EthServerAdapter(2345, "Eth", 2345);
   btAdapter = new sc::BtServerAdapter(3333, "Bt", "150e8400-1234-41d4-a716-446655440000");
-  wfdAdapter = new sc::WfdServerAdapter(3456, "Wfd", 3456, "OPEL");
+  wfdAdapter = new sc::WfdServerAdapter(3456, "Wfd", 3456, "SelCon");
 
   printf("Step 1. Initializing Network Adapters\n");
 

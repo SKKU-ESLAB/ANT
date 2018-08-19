@@ -18,68 +18,94 @@ package com.redcarrottt.sc.internal;
 
 import com.redcarrottt.testapp.Logger;
 
+interface TurnOnResultListener {
+    void onTurnOnResult(boolean isSuccess);
+}
+
+interface TurnOffResultListener {
+    void onTurnOffResult(boolean isSuccess);
+}
+
 public abstract class Device {
     private final String kTag = "Device";
 
     // Main Functions
     @SuppressWarnings("SynchronizeOnNonFinalField")
-    boolean holdAndTurnOn() {
+    void holdAndTurnOn(TurnOnResultListener resultListener) {
         int refCount;
         synchronized (this.mRefCount) {
             this.mRefCount++;
             refCount = this.mRefCount;
         }
+        this.mTurnOnResultListener = resultListener;
         if (refCount == 1) {
             this.setState(State.kTurningOn);
-            boolean res = this.turnOnImpl();
-            if (!res) {
-                synchronized (this.mRefCount) {
-                    this.mRefCount--;
-                }
-                this.setState(State.kOff);
-            } else {
-                this.setState(State.kOn);
-            }
-            Logger.VERB(kTag, this.mName + " is turned on");
-            return res;
+            this.turnOnImpl();
         } else {
             // Already turn on
             Logger.VERB(kTag, this.mName + " is already turned on");
-            return true;
+            if (this.mTurnOnResultListener != null)
+                this.mTurnOnResultListener.onTurnOnResult(true);
         }
     }
 
+    private TurnOnResultListener mTurnOnResultListener;
+
+    protected void doneTurnOn(boolean isSuccess) {
+        if (isSuccess) {
+            // Proceed state
+            this.setState(State.kOn);
+        } else {
+            // Recover original state
+            synchronized (this.mRefCount) {
+                this.mRefCount--;
+            }
+            this.setState(State.kOff);
+        }
+        if (this.mTurnOnResultListener != null)
+            this.mTurnOnResultListener.onTurnOnResult(isSuccess);
+    }
+
     @SuppressWarnings("SynchronizeOnNonFinalField")
-    boolean releaseAndTurnOff() {
+    void releaseAndTurnOff(TurnOffResultListener resultListener) {
         int refCount;
         synchronized (this.mRefCount) {
             this.mRefCount--;
             refCount = this.mRefCount;
         }
+        this.mTurnOffResultListener = resultListener;
         if (refCount == 0) {
             this.setState(State.kTurningOff);
-            boolean res = this.turnOffImpl();
-            if (!res) {
-                synchronized (this.mRefCount) {
-                    this.mRefCount++;
-                }
-                this.setState(State.kOn);
-            } else {
-                this.setState(State.kOff);
-            }
-            Logger.VERB(kTag, this.mName + " is turned off");
-            return res;
+            this.turnOffImpl();
         } else {
             // Not yet turn off
             Logger.VERB(kTag, this.mName + " is used by other components, so not turned off");
-            return true;
+            if (this.mTurnOffResultListener != null)
+                this.mTurnOffResultListener.onTurnOffResult(true);
         }
     }
 
-    // Implemented by child classes
-    protected abstract boolean turnOnImpl();
+    private TurnOffResultListener mTurnOffResultListener;
 
-    protected abstract boolean turnOffImpl();
+    protected void doneTurnOff(boolean isSuccess) {
+        if (isSuccess) {
+            // Proceed state
+            this.setState(State.kOff);
+        } else {
+            // Recover original state
+            synchronized (this.mRefCount) {
+                this.mRefCount++;
+            }
+            this.setState(State.kOn);
+        }
+        if (this.mTurnOffResultListener != null)
+            this.mTurnOffResultListener.onTurnOffResult(isSuccess);
+    }
+
+    // Implemented by child classes
+    protected abstract void turnOnImpl();
+
+    protected abstract void turnOffImpl();
 
     // State
     class State {

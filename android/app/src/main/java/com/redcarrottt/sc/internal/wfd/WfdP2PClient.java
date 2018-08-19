@@ -103,8 +103,7 @@ class WfdP2PClient extends P2PClient {
                     }
 
                     // Unregister this receiver
-                    Context bContext = mOwnerActivity.getApplicationContext();
-                    bContext.unregisterReceiver(this);
+                    context.unregisterReceiver(this);
                 }
             }
         };

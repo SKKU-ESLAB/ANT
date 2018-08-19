@@ -86,10 +86,17 @@ public class MainActivity extends AppCompatActivity implements LogReceiver.Callb
 
     private void initializeCommunication() {
         // Setting adapters
+//        BtClientAdapter btControl = new BtClientAdapter(2345, "Control", "B8:27:EB:77:C3:4A",
+//                "150e8400-1234-41d4-a716-446655440000", this);
+//        BtClientAdapter btData = new BtClientAdapter(3333, "Data/BT", "B8:27:EB:77:C3:4A",
+//                "150e8400-1234-41d4-a716-446655440001", this);
+//        WfdClientAdapter wfdData = new WfdClientAdapter(3456, "Data/WFD", "SelCon",
+//                "192.168.49.1", 3456, this);
+
         BtClientAdapter btControl = new BtClientAdapter(2345, "Control", "B8:27:EB:77:C3:4A",
-                "150e8400-1234-41d4-a716-446655440000");
+                "150e8400-1234-41d4-a716-446655440000", this);
         BtClientAdapter btData = new BtClientAdapter(3333, "Data/BT", "B8:27:EB:77:C3:4A",
-                "150e8400-1234-41d4-a716-446655440001");
+                "150e8400-1234-41d4-a716-446655440001", this);
         WfdClientAdapter wfdData = new WfdClientAdapter(3456, "Data/WFD", "SelCon",
                 "192.168.49.1", 3456, this);
 

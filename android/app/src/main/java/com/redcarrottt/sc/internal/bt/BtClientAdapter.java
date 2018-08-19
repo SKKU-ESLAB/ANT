@@ -1,14 +1,17 @@
 package com.redcarrottt.sc.internal.bt;
 
+import android.app.Activity;
+
 import com.redcarrottt.sc.internal.ClientAdapter;
 
 public class BtClientAdapter extends ClientAdapter {
     // Constructor
-    public BtClientAdapter(int id, String name, String targetMacAddr, String serviceUuid) {
+    public BtClientAdapter(int id, String name, String targetMacAddr, String serviceUuid,
+                           Activity ownerActivity) {
         super(id, name);
 
         // Components
-        BtDevice device = BtDevice.getSingleton();
+        BtDevice device = BtDevice.getSingleton(ownerActivity);
         BtP2PClient p2pClient = new BtP2PClient();
         RfcommClientSocket clientSocket = new RfcommClientSocket(targetMacAddr, serviceUuid);
 
