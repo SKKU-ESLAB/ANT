@@ -34,6 +34,7 @@ std::condition_variable g_wait_cond_stop_sc;
 bool g_stop_sc_success;
 
 void sc::start_sc(StartCallback startCallback) {
+  // Core start procedure
   Core::get_instance()->start();
   NetworkSwitcher::get_instance()->start();
 
@@ -51,6 +52,7 @@ void sc::start_sc_done(bool is_success) {
 }
 
 void sc::stop_sc(StopCallback stopCallback) {
+  // Core stop procedure
   NetworkSwitcher::get_instance()->stop();
   Core::get_instance()->stop();
   

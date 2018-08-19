@@ -100,7 +100,7 @@ int main(int argc, char** argv) {
   //EthServerAdapter ethAdapter(2345, "Eth", 2345);
   btControl = new sc::BtServerAdapter(2345, "BtCt", "150e8400-1234-41d4-a716-446655440000");
   btData = new sc::BtServerAdapter(3333, "BtDt", "150e8400-1234-41d4-a716-446655440001");
-  wfdData = new sc::WfdServerAdapter(3456, "WfdDt", 3456, "OPEL");
+  wfdData = new sc::WfdServerAdapter(3456, "WfdDt", 3456, "SelCon");
 
   printf("Step 1. Initializing Network Adapters\n");
 

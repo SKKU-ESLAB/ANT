@@ -35,7 +35,7 @@ class RfcommClientSocket extends ClientSocket {
             }
         }
         if (this.mSocket == null) {
-            Logger.ERR(kTag, "Cannot find the target device");
+            Logger.ERR(kTag, "Cannot create bluetooth socket");
             return false;
         }
 
@@ -48,7 +48,6 @@ class RfcommClientSocket extends ClientSocket {
                 this.mOutputStream = new BufferedOutputStream(this.mSocket.getOutputStream());
                 break;
             } catch (IOException e) {
-                this.mSocket = null;
                 this.mInputStream = null;
                 this.mOutputStream = null;
                 Logger.WARN(kTag, "Try socket open " + tries);
