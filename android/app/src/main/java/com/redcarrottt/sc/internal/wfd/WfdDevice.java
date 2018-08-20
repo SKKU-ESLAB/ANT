@@ -17,13 +17,6 @@ class WfdDevice extends Device {
     // TODO: there is no timeout on turn on/off of WfdDevice
     @Override
     protected void turnOnImpl() {
-        // Register wi-fi device on event receiver
-        IntentFilter intentFilter = new IntentFilter();
-        intentFilter.addAction(WifiManager.WIFI_STATE_CHANGED_ACTION);
-        Context context = this.mOwnerActivity.getApplicationContext();
-        context.registerReceiver(this.mWfdDeviceOnEventReceiver, intentFilter);
-
-        // turn on wi-fi command
         WifiManager wifiManager = (WifiManager) this.mOwnerActivity.getApplicationContext()
                 .getSystemService(Context.WIFI_SERVICE);
         if (wifiManager == null) {
@@ -32,6 +25,13 @@ class WfdDevice extends Device {
             Logger.DEBUG(kTag, "Wi-fi Direct is already turned on");
             doneTurnOn(true);
         } else {
+            // Register wi-fi device on event receiver
+            IntentFilter intentFilter = new IntentFilter();
+            intentFilter.addAction(WifiManager.WIFI_STATE_CHANGED_ACTION);
+            Context context = this.mOwnerActivity.getApplicationContext();
+            context.registerReceiver(this.mWfdDeviceOnEventReceiver, intentFilter);
+
+            // turn on wi-fi command
             wifiManager.setWifiEnabled(true);
         }
     }

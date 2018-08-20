@@ -86,22 +86,22 @@ public class MainActivity extends AppCompatActivity implements LogReceiver.Callb
 
     private void initializeCommunication() {
         // Setting adapters
+        BtClientAdapter btControl = new BtClientAdapter(2345, "Control", "B8:27:EB:D9:FA:85",
+                "150e8400-1234-41d4-a716-446655440000", this);
+//        BtClientAdapter btData = new BtClientAdapter(3333, "Data/BT", "B8:27:EB:D9:FA:85",
+//                "150e8400-1234-41d4-a716-446655440001", this);
+        WfdClientAdapter wfdData = new WfdClientAdapter(3456, "Data/WFD", "4a:76:24:e4:36:e1",
+                "192.168.49.1", 3456, this);
+
 //        BtClientAdapter btControl = new BtClientAdapter(2345, "Control", "B8:27:EB:77:C3:4A",
 //                "150e8400-1234-41d4-a716-446655440000", this);
 //        BtClientAdapter btData = new BtClientAdapter(3333, "Data/BT", "B8:27:EB:77:C3:4A",
 //                "150e8400-1234-41d4-a716-446655440001", this);
-//        WfdClientAdapter wfdData = new WfdClientAdapter(3456, "Data/WFD", "SelCon",
+//        WfdClientAdapter wfdData = new WfdClientAdapter(3456, "Data/WFD", "76:ae:ce:9f:b8:c5",
 //                "192.168.49.1", 3456, this);
 
-        BtClientAdapter btControl = new BtClientAdapter(2345, "Control", "B8:27:EB:77:C3:4A",
-                "150e8400-1234-41d4-a716-446655440000", this);
-        BtClientAdapter btData = new BtClientAdapter(3333, "Data/BT", "B8:27:EB:77:C3:4A",
-                "150e8400-1234-41d4-a716-446655440001", this);
-        WfdClientAdapter wfdData = new WfdClientAdapter(3456, "Data/WFD", "SelCon",
-                "192.168.49.1", 3456, this);
-
         API.registerControlAdapter(btControl);
-        API.registerDataAdapter(btData);
+//        API.registerDataAdapter(btData);
         API.registerDataAdapter(wfdData);
 
         // Start the selective connection

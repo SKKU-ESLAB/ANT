@@ -1,6 +1,6 @@
 /* Copyright 2017-2018 All Rights Reserved.
  *  Gyeonghwan Hong (redcarrottt@gmail.com)
- *  
+ *
  * [Contact]
  *  Gyeonghwan Hong (redcarrottt@gmail.com)
  *
@@ -21,17 +21,17 @@
 
 #include <DebugLog.h>
 
+#include <arpa/inet.h>
+#include <errno.h>
 #include <stdio.h>
 #include <string.h>
-#include <errno.h>
 #include <sys/socket.h>
-#include <arpa/inet.h>
 #include <unistd.h>
 
 using namespace sc;
 
 bool TcpServerSocket::open_impl(void) {
-  if(this->mIpAddressRaw == 0) {
+  if (this->mIpAddressRaw == 0) {
     LOG_ERR("IP Address is not set yet");
     return false;
   }
@@ -50,8 +50,9 @@ bool TcpServerSocket::open_impl(void) {
     LOG_ERR("Socket setup failed");
     return false;
   }
-  
-  int err = ::bind(this->mServerSocket, (struct sockaddr *)&server_address, sizeof(server_address));
+
+  int err = ::bind(this->mServerSocket, (struct sockaddr *)&server_address,
+                   sizeof(server_address));
   if (err < 0) {
     LOG_ERR("Socket bind failed");
     return false;
@@ -66,14 +67,23 @@ bool TcpServerSocket::open_impl(void) {
   struct sockaddr_in client_address;
   memset(&client_address, 0, sizeof(client_address));
   int client_address_len = sizeof(client_address);
-  LOG_VERB("Accepting client...");
-  this->mClientSocket = ::accept(this->mServerSocket,
-      (struct sockaddr *)&client_address, (socklen_t *)&client_address_len);
-  if (this->mClientSocket < 0) {
-    LOG_ERR("Accept failed %s", strerror(errno));
-    return false;
+  const int kMaxTries = 10;
+  for(int tries = 0; tries < kMaxTries; tries++) {
+    LOG_VERB("Accepting client... (%d)", tries);
+    this->mClientSocket =
+        ::accept(this->mServerSocket, (struct sockaddr *)&client_address,
+                 (socklen_t *)&client_address_len);
+    if(this->mClientSocket >= 0) {
+      return true;
+    } else {
+      if(errno == EINTR) {
+        LOG_WARN("Interrupted system call: Retry to accept...");
+      } else {
+        LOG_ERR("Accept failed %s", strerror(errno));
+        return false;
+      }
+    }
   }
-
   return true;
 }
 
@@ -93,7 +103,8 @@ int TcpServerSocket::send_impl(const void *data_buffer, size_t data_length) {
     return -1;
 
   while (sent_bytes < data_length) {
-    int once_sent_bytes = ::write(this->mClientSocket, data_buffer, data_length);
+    int once_sent_bytes =
+        ::write(this->mClientSocket, data_buffer, data_length);
     if (once_sent_bytes <= 0) {
       LOG_WARN("Cli sock closed");
       return -1;
@@ -108,10 +119,12 @@ int TcpServerSocket::send_impl(const void *data_buffer, size_t data_length) {
 int TcpServerSocket::receive_impl(void *data_buffer, size_t data_length) {
   int received_bytes = 0;
 
-  if (this->mClientSocket <= 0) return -1;
+  if (this->mClientSocket <= 0)
+    return -1;
 
   while (received_bytes < data_length) {
-    int once_received_bytes = ::read(this->mClientSocket, data_buffer, data_length);
+    int once_received_bytes =
+        ::read(this->mClientSocket, data_buffer, data_length);
     if (once_received_bytes <= 0) {
       LOG_WARN("Cli sock closed");
       return -1;
@@ -124,6 +137,6 @@ int TcpServerSocket::receive_impl(void *data_buffer, size_t data_length) {
   return received_bytes;
 }
 
-void TcpServerSocket::on_change_ip_address(const char* ip_address) {
+void TcpServerSocket::on_change_ip_address(const char *ip_address) {
   this->set_ip_address_raw(inet_addr(ip_address));
 }
