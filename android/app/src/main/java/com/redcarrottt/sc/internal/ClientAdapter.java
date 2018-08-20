@@ -108,13 +108,13 @@ public class ClientAdapter {
         public void onTurnOnResult(boolean isSuccess) {
             int deviceState = self.mDevice.getState();
             if (!isSuccess || deviceState != Device.State.kOn) {
-                Logger.ERR(kTag, "Cannot connect the server adapter - turn-on fail: "
-                        + self.getName());
+                Logger.ERR(kTag, "Cannot connect the server adapter - turn-on fail: " + self
+                        .getName());
                 this.onFail();
                 return;
             }
 
-            Logger.VERB(kTag,"Turn on success: " + self.getName());
+            Logger.VERB(kTag, "Turn on success: " + self.getName());
 
             // Discover and connect to server
             int p2pClientState = self.mP2PClient.getState();
@@ -135,40 +135,50 @@ public class ClientAdapter {
                 return;
             }
 
-            Logger.VERB(kTag,"P2P connect success: " + self.getName());
+            Logger.VERB(kTag, "P2P connect success: " + self.getName());
 
-            // Open client socket
-            int socketState = self.mClientSocket.getState();
-            if (socketState != ClientSocket.State.kOpened) {
-                boolean res = self.mClientSocket.open();
+            this.mSocketOpenThread = new SocketOpenThread();
+            this.mSocketOpenThread.start();
+        }
 
-                socketState = self.mClientSocket.getState();
-                if (!res || socketState != ClientSocket.State.kOpened) {
-                    Logger.ERR(kTag, "Cannot connect the server adapter - socket open fail: " +
-                            self.getName());
-                    self.mP2PClient.disconnect(null);
-                    self.mDevice.releaseAndTurnOff(null);
-                    this.onFail();
-                    return;
+        private SocketOpenThread mSocketOpenThread;
+
+        class SocketOpenThread extends Thread {
+            @Override
+            public void run() {
+                // Open client socket
+                int socketState = self.mClientSocket.getState();
+                if (socketState != ClientSocket.State.kOpened) {
+                    boolean res = self.mClientSocket.open();
+
+                    socketState = self.mClientSocket.getState();
+                    if (!res || socketState != ClientSocket.State.kOpened) {
+                        Logger.ERR(kTag, "Cannot connect the server adapter - socket open fail: "
+                                + self.getName());
+                        self.mP2PClient.disconnect(null);
+                        self.mDevice.releaseAndTurnOff(null);
+                        onFail();
+                        return;
+                    }
                 }
-            }
 
-            Logger.VERB(kTag,"Socket connect success: " + self.getName());
+                Logger.VERB(kTag, "Socket connect success: " + self.getName());
 
-            // Run sender & receiver threads
-            if (self.mSenderThread != null && !self.mSenderThread.isOn()) {
-                self.mSenderThread.start();
-            }
+                // Run sender & receiver threads
+                if (self.mSenderThread != null && !self.mSenderThread.isOn()) {
+                    self.mSenderThread.start();
+                }
 
-            if (self.mReceiverThread != null && !self.mReceiverThread.isOn()) {
-                self.mReceiverThread.start();
-            }
+                if (self.mReceiverThread != null && !self.mReceiverThread.isOn()) {
+                    self.mReceiverThread.start();
+                }
 
-            // Report result success
-            self.setState(ClientAdapter.State.kConnected);
-            if (this.mResultListener != null) {
-                this.mResultListener.onConnectResult(true);
-                this.mResultListener = null;
+                // Report result success
+                self.setState(ClientAdapter.State.kConnected);
+                if (mResultListener != null) {
+                    mResultListener.onConnectResult(true);
+                    mResultListener = null;
+                }
             }
         }
 
@@ -253,8 +263,8 @@ public class ClientAdapter {
         public void onTurnOffResult(boolean isSuccess) {
             int deviceState = self.mDevice.getState();
             if (!isSuccess || deviceState != Device.State.kOff) {
-                Logger.ERR(kTag, "Cannot disconnect the server adapter - turn-off fail: " +
-                        self.getName());
+                Logger.ERR(kTag, "Cannot disconnect the server adapter - turn-off fail: " + self
+                        .getName());
                 this.onFail();
                 return;
             }

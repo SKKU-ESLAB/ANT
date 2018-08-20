@@ -1,6 +1,6 @@
 /* Copyright 2017-2018 All Rights Reserved.
  *  Gyeonghwan Hong (redcarrottt@gmail.com)
- *  
+ *
  * [Contact]
  *  Gyeonghwan Hong (redcarrottt@gmail.com)
  *
@@ -20,13 +20,14 @@
 
 #include <DebugLog.h>
 
-#include <unistd.h>
 #include <errno.h>
 #include <string.h>
+#include <unistd.h>
 
 using namespace sc;
 
-int Util::run_client(const char *path, char * const params[], char *res_buf, size_t len) {
+int Util::run_client(const char *path, char *const params[], char *res_buf,
+                     size_t len) {
   int fd[2];
   int pid;
   int bk;
@@ -41,7 +42,7 @@ int Util::run_client(const char *path, char * const params[], char *res_buf, siz
   if ((pid = fork()) < 0) {
     LOG_ERR("fork error");
     return errno;
-  } else if (pid > 0) { //LOG_VERB("Forked PID : %d", pid);
+  } else if (pid > 0) { // LOG_VERB("Forked PID : %d", pid);
     /* Parent process */
     close(fd[1]);
 
@@ -53,7 +54,7 @@ int Util::run_client(const char *path, char * const params[], char *res_buf, siz
       return errno;
     }
 
-    memcpy(res_buf, buf, read_bytes < len ? read_bytes:len);
+    memcpy(res_buf, buf, read_bytes < len ? read_bytes : len);
     dup2(bk, 1);
 
     close(fd[0]);
@@ -64,7 +65,7 @@ int Util::run_client(const char *path, char * const params[], char *res_buf, siz
     close(fd[0]);
     dup2(fd[1], 1);
 
-    execv(HCICONFIG_PATH, params);
+    execv(path, params);
     return 0;
   }
 }

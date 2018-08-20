@@ -6,13 +6,13 @@ import com.redcarrottt.sc.internal.ClientAdapter;
 
 public class WfdClientAdapter extends ClientAdapter {
     // Constructor
-    public WfdClientAdapter(int id, String name, String targetDevName,
+    public WfdClientAdapter(int id, String name, String targetMacAddress,
                             String targetIpAddress, int targetPort, Activity ownerActivity) {
         super(id, name);
 
         // Components
         WfdDevice device = WfdDevice.getSingleton(ownerActivity);
-        WfdP2PClient p2pClient = new WfdP2PClient(ownerActivity, targetDevName);
+        WfdP2PClient p2pClient = new WfdP2PClient(ownerActivity, targetMacAddress);
         TcpClientSocket clientSocket = new TcpClientSocket(targetIpAddress, targetPort);
 
         // Initialize

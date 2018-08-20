@@ -9,7 +9,6 @@ import android.content.IntentFilter;
 
 import com.redcarrottt.sc.internal.Device;
 import com.redcarrottt.testapp.Logger;
-import com.redcarrottt.testapp.MainActivity;
 
 /* Copyright (c) 2017-2018. All rights reserved.
  *  Gyeonghwan Hong (redcarrottt@gmail.com)
@@ -33,18 +32,18 @@ class BtDevice extends Device {
     // TODO: there is no timeout on turn on/off of BtDevice
     @Override
     protected void turnOnImpl() {
-        // Register bluetooth device on event receiver
-        IntentFilter intentFilter = new IntentFilter();
-        intentFilter.addAction(BluetoothAdapter.ACTION_STATE_CHANGED);
-        Context context = this.mOwnerActivity.getApplicationContext();
-        context.registerReceiver(this.mBtDeviceOnEventReceiver, intentFilter);
-
-        // turn on adapter command
         BluetoothAdapter adapter = BluetoothAdapter.getDefaultAdapter();
         if (adapter.isEnabled()) {
             Logger.DEBUG(kTag, "Bluetooth is already turned on");
             this.doneTurnOn(true);
         } else {
+            // Register bluetooth device on event receiver
+            IntentFilter intentFilter = new IntentFilter();
+            intentFilter.addAction(BluetoothAdapter.ACTION_STATE_CHANGED);
+            Context context = this.mOwnerActivity.getApplicationContext();
+            context.registerReceiver(this.mBtDeviceOnEventReceiver, intentFilter);
+
+            // turn on adapter command
             adapter.enable();
         }
     }

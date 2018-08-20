@@ -5,14 +5,13 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
-import android.net.NetworkInfo;
 import android.net.wifi.WpsInfo;
 import android.net.wifi.p2p.WifiP2pConfig;
 import android.net.wifi.p2p.WifiP2pDevice;
 import android.net.wifi.p2p.WifiP2pDeviceList;
 import android.net.wifi.p2p.WifiP2pGroup;
+import android.net.wifi.p2p.WifiP2pInfo;
 import android.net.wifi.p2p.WifiP2pManager;
-import android.os.Handler;
 import android.os.Looper;
 
 import com.redcarrottt.sc.internal.OnConnectResult;
@@ -50,9 +49,16 @@ class WfdP2PClient extends P2PClient {
     private class DiscoverTransaction {
         // TODO: Adding timeout on this transaction would be good.
         private OnDiscoverResult mOnDiscoverResult;
+        private int mTries = 0;
+        private final int kMaxTries = 5;
 
         void run(OnDiscoverResult onDiscoverResult) {
+            this.mTries = 0;
             this.mOnDiscoverResult = onDiscoverResult;
+            stopP2PDiscovery();
+        }
+
+        void retry() {
             stopP2PDiscovery();
         }
 
@@ -66,26 +72,16 @@ class WfdP2PClient extends P2PClient {
         // Step 2
         private void startP2PDiscovery() {
             Logger.DEBUG(kTag, "Start discovery");
-            final Handler handler = new Handler();
-            handler.postDelayed(this.mStartP2PDiscoveryRunnable, 500);
+
+            // Start to listen peer change
+            IntentFilter intentFilter = new IntentFilter();
+            intentFilter.addAction(WifiP2pManager.WIFI_P2P_PEERS_CHANGED_ACTION);
+            Context context = mOwnerActivity.getApplicationContext();
+            context.registerReceiver(mPeersChangedReceiver, intentFilter);
+
+            // Discover peers
+            mWFDManager.discoverPeers(mWFDChannel, null);
         }
-
-        // Step 3
-        private Runnable mStartP2PDiscoveryRunnable = new Runnable() {
-            @Override
-            public void run() {
-                Logger.DEBUG(kTag, "Start discovery inner");
-
-                // Start to listen peer change
-                IntentFilter intentFilter = new IntentFilter();
-                intentFilter.addAction(WifiP2pManager.WIFI_P2P_PEERS_CHANGED_ACTION);
-                Context context = mOwnerActivity.getApplicationContext();
-                context.registerReceiver(mPeersChangedReceiver, intentFilter);
-
-                // Discover peers
-                mWFDManager.discoverPeers(mWFDChannel, null);
-            }
-        };
 
         // Step 4
         private BroadcastReceiver mPeersChangedReceiver = new BroadcastReceiver() {
@@ -131,9 +127,10 @@ class WfdP2PClient extends P2PClient {
                 Logger.DEBUG(kTag, "Got peer list");
                 boolean isFound = false;
                 for (WifiP2pDevice p2pDevice : peers.getDeviceList()) {
-                    Logger.DEBUG(kTag, "Peer: " + p2pDevice.deviceAddress + " " + p2pDevice
-                            .deviceName);
-                    if (p2pDevice.deviceName.equals(mTargetDevName)) {
+                    Logger.DEBUG(kTag, "Peer: " + p2pDevice.deviceAddress + " / " + p2pDevice
+                            .deviceName + " / " + p2pDevice.status);
+                    if (p2pDevice.deviceAddress.equals(mTargetMacAddress) && p2pDevice.status ==
+                            WifiP2pDevice.AVAILABLE) {
                         mFoundWFDDevice = p2pDevice;
                         Logger.DEBUG(kTag, "Peer found");
                         isFound = true;
@@ -142,7 +139,17 @@ class WfdP2PClient extends P2PClient {
                 }
 
                 this.resetWaiting();
-                doneDiscoverTx(mOnDiscoverResult, isFound);
+
+                if (isFound) {
+                    doneDiscoverTx(mOnDiscoverResult, true);
+                } else {
+                    mTries++;
+                    if (mTries < kMaxTries) {
+                        retry();
+                    } else {
+                        doneDiscoverTx(mOnDiscoverResult, false);
+                    }
+                }
             }
         }
     }
@@ -161,9 +168,9 @@ class WfdP2PClient extends P2PClient {
         // Start to listen P2P connection event
         IntentFilter intentFilter = new IntentFilter();
         intentFilter.addAction(WifiP2pManager.WIFI_P2P_CONNECTION_CHANGED_ACTION);
-        Context context = this.mOwnerActivity.getApplicationContext();
-        this.mWFDConnectionReceiver.setOnConnectResult(onConnectResult);
-        context.registerReceiver(this.mWFDConnectionReceiver, intentFilter);
+        Context context = mOwnerActivity.getApplicationContext();
+        mWFDConnectionReceiver.setOnConnectResult(onConnectResult);
+        context.registerReceiver(mWFDConnectionReceiver, intentFilter);
 
         // Setting P2P config
         Logger.DEBUG(kTag, "Connect WFD Peer");
@@ -204,12 +211,17 @@ class WfdP2PClient extends P2PClient {
             String action = intent.getAction();
             assert action != null;
             if (action.equals(WifiP2pManager.WIFI_P2P_CONNECTION_CHANGED_ACTION)) {
-                NetworkInfo netInfo = intent.getParcelableExtra(WifiP2pManager.EXTRA_NETWORK_INFO);
-                if (netInfo.isConnected()) {
+                WifiP2pInfo wfdInfo = intent.getParcelableExtra(WifiP2pManager.EXTRA_WIFI_P2P_INFO);
+
+                Logger.DEBUG(kTag, "Wi-fi direct connection change detected " + wfdInfo.groupFormed);
+                if(wfdInfo.groupFormed) {
+                    Logger.DEBUG(kTag, "Wi-fi direct Connected!");
                     WifiP2pGroup p2pGroup = intent.getParcelableExtra(WifiP2pManager
                             .EXTRA_WIFI_P2P_GROUP);
-                    String goDevName = p2pGroup.getOwner().deviceName;
-                    if (goDevName != null && goDevName.equals(mTargetDevName)) {
+                    String goMacAddress = p2pGroup.getOwner().deviceAddress;
+                    Logger.DEBUG(kTag, "Group owner address: " + goMacAddress);
+                    if (goMacAddress != null && goMacAddress.equals(mTargetMacAddress)) {
+                        context.unregisterReceiver(mWFDConnectionReceiver);
                         mOnConnectResult.onDoneConnect(true);
                     }
                 }
@@ -235,9 +247,9 @@ class WfdP2PClient extends P2PClient {
 
     // TODO: targetDevName is hard-coded. It can be transferred through "priv noti request".
     // Constructor
-    WfdP2PClient(Activity ownerActivity, String targetDevName) {
+    WfdP2PClient(Activity ownerActivity, String targetMacAddress) {
         this.mOwnerActivity = ownerActivity;
-        this.mTargetDevName = targetDevName;
+        this.mTargetMacAddress = targetMacAddress;
 
         // Initialize Android WFD Manager Channel
         this.mWFDManager = (WifiP2pManager) this.mOwnerActivity.getApplicationContext()
@@ -256,7 +268,7 @@ class WfdP2PClient extends P2PClient {
 
     // Attributes
     private Activity mOwnerActivity;
-    private String mTargetDevName;
+    private String mTargetMacAddress;
 
     // Components
     private WifiP2pManager mWFDManager;

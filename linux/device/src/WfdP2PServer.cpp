@@ -59,8 +59,6 @@ bool WfdP2PServer::allow_impl(void) {
   if (ret < 0)
     return false;
 
-  printf("wfd_add_p2p_group: %s\n", buf);
-
   // Get WPA Device Name from wpa-cli
   if (this->mWpaDevName[0] == '\0') {
     LOG_VERB("%s", buf);
@@ -84,7 +82,6 @@ bool WfdP2PServer::allow_impl(void) {
 
   // Get WPA Interface Name from wpa-cli
   ret = this->ping_wpa_cli(buf, 1024);
-  printf("wfd_ping: %s\n", buf);
   if (ret < 0)
     return false;
   else {
