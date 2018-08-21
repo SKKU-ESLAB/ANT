@@ -77,7 +77,6 @@ bool WfdP2PServer::allow_impl(void) {
       ptr = strtok_r(NULL, "\t \n\'", &ptrptr);
     }
   }
-  usleep(100000);
 
   // Get WPA Interface Name from wpa-cli
   ret = this->ping_wpa_cli(buf, 1024);
