@@ -17,8 +17,8 @@
  * limitations under the License.
  */
 
-#ifndef INC_SPEED_METRIC_H_
-#define INC_SPEED_METRIC_H_
+#ifndef INC_COUNTER_H_
+#define INC_COUNTER_H_
 
 #include <sys/time.h>
 
@@ -28,35 +28,35 @@ namespace sc {
 class Counter {
   public:
     Counter() {
-      this->mSize = 0;
-      this->mPrevSize = 0;
+      this->mValue = 0;
+      this->mPrevValue = 0;
       this->mLastAccessedTS.tv_sec = 0;
       this->mLastAccessedTS.tv_usec = 0;
     }
 
     void add(int diff) {
       std::unique_lock<std::mutex> lock(this->mLock);
-      this->mSize = this->mSize + diff;
+      this->mValue = this->mValue + diff;
     }
 
     void sub(int diff) {
       std::unique_lock<std::mutex> lock(this->mLock);
-      this->mSize = this->mSize - diff;
+      this->mValue = this->mValue - diff;
     }
 
     void increase(void) {
       std::unique_lock<std::mutex> lock(this->mLock);
-      this->mSize++;
+      this->mValue++;
     }
     
     void decrease(void) {
       std::unique_lock<std::mutex> lock(this->mLock);
-      this->mSize--;
+      this->mValue--;
     }
 
     int get_size() {
       std::unique_lock<std::mutex> lock(this->mLock);
-      return this->mSize;
+      return this->mValue;
     }
 
     int get_speed() {
@@ -74,22 +74,22 @@ class Counter {
         uint64_t interval = end - start;
 
         if(start != 0 && interval != 0) {
-          speed = (int)((float)(this->mSize - this->mPrevSize) / ((float)interval / (1000 * 1000)));
+          speed = (int)((float)(this->mValue - this->mPrevValue) / ((float)interval / (1000 * 1000)));
         } else {
           speed = 0;
         }
       }
-      this->mPrevSize = this->mSize;
+      this->mPrevValue = this->mValue;
       this->mLastAccessedTS = endTS;
       return speed;
     };
   private:
     std::mutex mLock;
 
-    int mSize;
-    int mPrevSize;
+    int mValue;
+    int mPrevValue;
     struct timeval mLastAccessedTS;
 };
 } /* namespace sc */
 
-#endif /* INC_SPEED_METRIC_H_ */
+#endif /* INC_COUNTER_H_ */

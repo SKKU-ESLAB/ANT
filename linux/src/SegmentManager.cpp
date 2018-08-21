@@ -148,6 +148,7 @@ void SegmentManager::enqueue(SegQueueType type, Segment *seg) {
 
   if (type == kSegSend) {
     this->mSendRequest.add(SEGMENT_DATA_SIZE);
+    this->mAverageArrivalTime.arrive();
   }
 
   if (seg->seq_no == this->mNextSeqNo[type]) {

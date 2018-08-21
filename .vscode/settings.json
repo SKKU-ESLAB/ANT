@@ -21,6 +21,11 @@
         "locale": "cpp",
         "iosfwd": "cpp",
         "condition_variable": "cpp",
-        "istream": "cpp"
+        "istream": "cpp",
+        "__bit_reference": "cpp",
+        "__split_buffer": "cpp",
+        "bitset": "cpp",
+        "list": "cpp",
+        "chrono": "cpp"
     }
 }
