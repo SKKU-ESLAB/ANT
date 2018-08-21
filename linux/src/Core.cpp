@@ -196,21 +196,21 @@ int Core::receive(void **pDataBuffer) {
 }
 
 void Core::send_control_message(const void *dataBuffer, size_t dataLength) {
-  // TODO: change to control adapter's state
-  CMState state = this->get_state();
-  if (state != CMState::kCMStateReady) {
-    LOG_ERR("Core is not started yet, so you cannot send the data");
+  ServerAdapter *control_adapter = this->get_control_adapter();
+  ServerAdapterState controlAdapterState = control_adapter->get_state();
+  if(controlAdapterState != ServerAdapterState::kConnected) {
+    LOG_ERR("Control adapter is not started yet, so you cannot send the data");
     return;
   }
-  ServerAdapter *control_adapter = this->get_control_adapter();
+
   control_adapter->send(dataBuffer, dataLength);
 }
 
 void Core::send_request_connect(uint16_t adapter_id) {
-  // TODO: change to control adapter's state
-  CMState state = this->get_state();
-  if (state != CMState::kCMStateReady) {
-    LOG_ERR("Core is not started yet, so you cannot send the data");
+  ServerAdapter *control_adapter = this->get_control_adapter();
+  ServerAdapterState controlAdapterState = control_adapter->get_state();
+  if(controlAdapterState != ServerAdapterState::kConnected) {
+    LOG_ERR("Control adapter is not started yet, so you cannot send the data");
     return;
   }
 
@@ -223,12 +223,13 @@ void Core::send_request_connect(uint16_t adapter_id) {
 
 void Core::send_noti_private_data(uint16_t adapter_id, char *private_data_buf,
                                   uint32_t private_data_len) {
-  // TODO: change to control adapter's state
-  CMState state = this->get_state();
-  if (state != CMState::kCMStateReady) {
-    LOG_ERR("Core is not started yet, so you cannot send the data");
+  ServerAdapter *control_adapter = this->get_control_adapter();
+  ServerAdapterState controlAdapterState = control_adapter->get_state();
+  if(controlAdapterState != ServerAdapterState::kConnected) {
+    LOG_ERR("Control adapter is not started yet, so you cannot send the data");
     return;
   }
+  
   uint8_t request_code = kCtrlReqPriv;
   uint16_t net_adapter_id = htons(adapter_id);
   uint32_t net_private_data_len = htonl(private_data_len);

@@ -32,6 +32,7 @@ namespace sc {
 class Util {
 public:
   static int run_client(const char *path, char * const params[], char *res_buf, size_t len);
+  static int run_client(const char *path, char * const params[]);
 }; /* class Util */
 
 } /* namespace sc */

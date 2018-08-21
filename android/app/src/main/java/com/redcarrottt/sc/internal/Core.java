@@ -237,8 +237,9 @@ public class Core {
                         break;
                     } else {
                         ByteBuffer tempBuffer = ByteBuffer.allocate(2);
+                        //Logger.DEBUG(kTag, "tempBuffer remaining: " + tempBuffer.remaining());
                         tempBuffer.put(dataBuffer, 0, 2);
-                        adapterId = tempBuffer.getShort();
+                        adapterId = tempBuffer.getShort(0);
                     }
 
                     // Receive 4Byte: Private Data Length
@@ -247,8 +248,9 @@ public class Core {
                         break;
                     } else {
                         ByteBuffer tempBuffer2 = ByteBuffer.allocate(4);
+                        //Logger.DEBUG(kTag, "tempBuffer2 remaining: " + tempBuffer2.remaining());
                         tempBuffer2.put(dataBuffer, 0, 4);
-                        privDataLength = tempBuffer2.getInt();
+                        privDataLength = tempBuffer2.getInt(0);
                     }
                     if (privDataLength > 512) throw new AssertionError();
 
@@ -302,11 +304,6 @@ public class Core {
         synchronized (this.mState) {
             this.mState = newState;
         }
-    }
-
-    // Control Message Listener
-    interface ControlMessageListener {
-        void onReceiveControlMessage(int adapterId, byte[] dataBuffer, int dataLength);
     }
 
     public void addControlMessageListener(ControlMessageListener listener) {
