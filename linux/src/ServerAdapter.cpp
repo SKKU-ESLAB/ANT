@@ -51,7 +51,8 @@ bool ServerAdapter::connect(ConnectCallback callback, bool is_send_connect_messa
 }
 
 bool ServerAdapter::disconnect(DisconnectCallback callback) {
-  if(this->get_state() != ServerAdapterState::kConnected) {
+  ServerAdapterState state = this->get_state();
+  if(state == ServerAdapterState::kDisconnected || state == ServerAdapterState::kDisconnecting) {
     LOG_ERR("It is already disconnected or connection/disconnection is in progress.");
     return false;
   }
@@ -75,7 +76,7 @@ void ServerAdapter::connect_thread(void) {
   bool res = this->__connect_thread();
 
   if(res) {
-    this->set_state(ServerAdapterState::kConnected);
+    this->set_state(ServerAdapterState::kActive);
     if(this->mConnectCallback != NULL) {
       this->mConnectCallback(true);
       this->mConnectCallback = NULL;
@@ -153,6 +154,7 @@ void ServerAdapter::disconnect_thread(void) {
   LOG_DEBUG("%s's Disconnect thread spawned(tid: %d)",
       this->get_name(), (unsigned int)syscall(224));
 
+  ServerAdapterState oldState = this->get_state();
   this->set_state(ServerAdapterState::kDisconnecting);
 
   bool res = this->__disconnect_thread();
@@ -166,7 +168,7 @@ void ServerAdapter::disconnect_thread(void) {
     LOG_DEBUG("%s's Disconnect thread finished successfully(tid: %d)",
       this->get_name(), (unsigned int)syscall(224));
   } else {
-    this->set_state(ServerAdapterState::kConnected);
+    this->set_state(oldState);
     if(this->mDisconnectCallback != NULL) {
       this->mDisconnectCallback(false);
       this->mDisconnectCallback = NULL;
@@ -220,8 +222,8 @@ bool ServerAdapter::__disconnect_thread(void) {
 }
 
 int ServerAdapter::send(const void *buf, size_t len) {
-  if(this->get_state() != ServerAdapterState::kConnected) {
-    LOG_ERR("It is already disconnected or connection/disconnection is in progress.");
+  if(this->get_state() != ServerAdapterState::kActive) {
+    LOG_ERR("It is not in active state.");
     return -1;
   }
 
@@ -237,8 +239,8 @@ int ServerAdapter::send(const void *buf, size_t len) {
 }
 
 int ServerAdapter::receive(void *buf, size_t len) {
-  if(this->get_state() != ServerAdapterState::kConnected) {
-    LOG_ERR("It is already disconnected or connection/disconnection is in progress.");
+  if(this->get_state() != ServerAdapterState::kActive) {
+    LOG_ERR("It is not int active state.");
     return false;
   }
 

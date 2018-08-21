@@ -57,8 +57,7 @@ public abstract class P2PClient {
         } else {
             this.setState(State.kDisconnected);
         }
-        if (resultListener != null)
-            resultListener.onDiscoverAndConnectResult(isSuccess);
+        if (resultListener != null) resultListener.onDiscoverAndConnectResult(isSuccess);
     }
 
     private static DiscoverAndConnectTransaction sOngoingDiscoverConnectTx = null;
@@ -98,7 +97,8 @@ public abstract class P2PClient {
 
     // Main function 2: Disconnect
     public void disconnect(DisconnectResultListener resultListener) {
-        if (this.getState() != State.kConnected) {
+        int state = this.getState();
+        if (state == State.kDisconnected || state == State.kDisconnecting) {
             Logger.ERR(kTag, "It's already disconnected or disconnecting is in progress");
             doneDisconnectTx(resultListener, false);
         }
@@ -119,8 +119,7 @@ public abstract class P2PClient {
     private void doneDisconnectTx(DisconnectResultListener resultListener, boolean isSuccess) {
         sOngoingDisconnectTx = null;
         this.setState(State.kDisconnected);
-        if (resultListener != null)
-            resultListener.onDisconnectResult(isSuccess);
+        if (resultListener != null) resultListener.onDisconnectResult(isSuccess);
     }
 
     private static DisconnectTransaction sOngoingDisconnectTx = null;

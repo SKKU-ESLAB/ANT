@@ -23,6 +23,7 @@
 #define INC_SEGMENT_MANAGER_H_
 
 #include <Counter.h>
+#include <AverageArrivalTime.h>
 
 #include <stdint.h>
 #include <list>
@@ -117,6 +118,10 @@ class SegmentManager {
     return this->mSendRequest.get_speed();
   }
 
+  uint64_t get_average_arrival_time(uint64_t windowSizeUS) {
+    return this->mAverageArrivalTime.getAverage(windowSizeUS);
+  }
+
   /* Singleton */
   static SegmentManager* get_instance(void) {
     if (singleton == NULL)
@@ -160,6 +165,7 @@ class SegmentManager {
   Counter mSendRequest;
   Counter mQueueLength[kSegMaxQueueType];
   Counter mFailedSendingQueueLength;
+  AverageArrivalTime mAverageArrivalTime;
 
   /* Reserved free segment list */
   std::mutex mFreeSegmentListLock;

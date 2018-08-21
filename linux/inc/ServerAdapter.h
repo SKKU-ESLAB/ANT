@@ -37,8 +37,11 @@ namespace sc {
 typedef enum {
   kDisconnected = 0,
   kConnecting = 1,
-  kConnected = 2,
-  kDisconnecting = 3
+  kActive = 2,
+  kDisconnecting = 3,
+  kGoingSleeping = 4,
+  kSleeping = 5,
+  kWakingUp = 6
 } ServerAdapterState;
 
 class ServerAdapter;
@@ -59,6 +62,7 @@ public:
   bool disconnect(DisconnectCallback callback);
   int send(const void *buf, size_t len);
   int receive(void *buf, size_t len);
+  // TODO: wake_up(), sleep()
 
   void enable_sender_thread() {
     this->mSenderThreadEnabled = true;
@@ -158,6 +162,7 @@ protected:
   ServerAdapterState mState;
   std::mutex mStateLock;
   char mName[256];
+  // TODO: ID is now defined by user. However, the ID should be maintained by system finally.
   int mId;
   Device* mDevice = NULL;
   P2PServer* mP2PServer = NULL;

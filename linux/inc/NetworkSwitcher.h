@@ -28,6 +28,11 @@
 #define kSegThreshold 512
 #define kSegQueueThreshold 50*(kSegThreshold / 512)
 
+// Network Switcher Configs
+#define METRIC_WINDOW_LENGTH 8
+#define SLEEP_USECS (250 * 1000)
+#define AVERAGE_ARRIVAL_TIME_WINDOW_SIZE_US (2 * 1000 * 1000)
+
 namespace sc {
 typedef enum {
   kNSStateInitialized = 0,
@@ -144,8 +149,6 @@ class NetworkSwitcher {
     }
 
   private:
-#define METRIC_WINDOW_LENGTH 8
-
     /* Singleton */
     static NetworkSwitcher* singleton;
     NetworkSwitcher(void) {
@@ -166,9 +169,9 @@ class NetworkSwitcher {
 
     /* Monitoring */
     void monitor(int &avg_send_request_speed,
-        int& avg_send_queue_data_size, int& avg_total_bandwidth_now);
+        int& avg_send_queue_data_size, int& avg_total_bandwidth_now, int& avg_arrival_time);
     void check_and_handover(int avg_send_request_speed,
-        int avg_send_queue_data_size, int avg_total_bandwidth_now);
+        int avg_send_queue_data_size, int avg_total_bandwidth_now, uint64_t avg_arrival_time_us);
 
     bool check_increase_adapter(int send_request_speed, int send_queue_data_size);
     bool check_decrease_adapter(int bandwidth_now, int bandwidth_when_increasing);

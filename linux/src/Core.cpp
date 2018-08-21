@@ -198,7 +198,7 @@ int Core::receive(void **pDataBuffer) {
 void Core::send_control_message(const void *dataBuffer, size_t dataLength) {
   ServerAdapter *control_adapter = this->get_control_adapter();
   ServerAdapterState controlAdapterState = control_adapter->get_state();
-  if(controlAdapterState != ServerAdapterState::kConnected) {
+  if(controlAdapterState != ServerAdapterState::kActive) {
     LOG_ERR("Control adapter is not started yet, so you cannot send the data");
     return;
   }
@@ -209,7 +209,7 @@ void Core::send_control_message(const void *dataBuffer, size_t dataLength) {
 void Core::send_request_connect(uint16_t adapter_id) {
   ServerAdapter *control_adapter = this->get_control_adapter();
   ServerAdapterState controlAdapterState = control_adapter->get_state();
-  if(controlAdapterState != ServerAdapterState::kConnected) {
+  if(controlAdapterState != ServerAdapterState::kActive) {
     LOG_ERR("Control adapter is not started yet, so you cannot send the data");
     return;
   }
@@ -225,7 +225,7 @@ void Core::send_noti_private_data(uint16_t adapter_id, char *private_data_buf,
                                   uint32_t private_data_len) {
   ServerAdapter *control_adapter = this->get_control_adapter();
   ServerAdapterState controlAdapterState = control_adapter->get_state();
-  if(controlAdapterState != ServerAdapterState::kConnected) {
+  if(controlAdapterState != ServerAdapterState::kActive) {
     LOG_ERR("Control adapter is not started yet, so you cannot send the data");
     return;
   }

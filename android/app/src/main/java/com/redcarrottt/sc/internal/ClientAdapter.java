@@ -32,7 +32,8 @@ public class ClientAdapter {
 
     // Main Functions: connect, disconnect, send, receive
     public void connect(ConnectResultListener listener, boolean isSendConnectMessage) {
-        if (this.getState() != State.kDisconnected) {
+        int state = this.getState();
+        if (state != State.kDisconnected) {
             Logger.ERR(kTag, "It's already connected or connection/disconnection is in progress");
             listener.onConnectResult(false);
         }
@@ -46,7 +47,7 @@ public class ClientAdapter {
     }
 
     public void disconnect(DisconnectResultListener listener) {
-        if (this.getState() != State.kConnected) {
+        if (this.getState() == State.kDisconnected || this.getState() == State.kDisconnected) {
             Logger.ERR(kTag, "It's already disconnected or connection/disconnection is in " +
                     "progress");
             listener.onDisconnectResult(false);
@@ -57,7 +58,7 @@ public class ClientAdapter {
     }
 
     int send(byte[] dataBuffer, int dataLength) {
-        if (this.getState() != State.kConnected) {
+        if (this.getState() != State.kActive) {
             Logger.ERR(kTag, "It's already disconnected or connection/disconnection is in " +
                     "progress");
             return -1;
@@ -72,7 +73,7 @@ public class ClientAdapter {
     }
 
     int receive(byte[] dataBuffer, int dataLength) {
-        if (this.getState() != State.kConnected) {
+        if (this.getState() != State.kActive) {
             Logger.ERR(kTag, "It's already disconnected or connection/disconnection is in " +
                     "progress");
             return -1;
@@ -174,7 +175,7 @@ public class ClientAdapter {
                 }
 
                 // Report result success
-                self.setState(ClientAdapter.State.kConnected);
+                self.setState(ClientAdapter.State.kActive);
                 if (mResultListener != null) {
                     mResultListener.onConnectResult(true);
                     mResultListener = null;
@@ -251,7 +252,6 @@ public class ClientAdapter {
                 return;
             }
 
-
             // Turn off device
             int deviceState = self.mDevice.getState();
             if (deviceState != Device.State.kOff) {
@@ -278,7 +278,7 @@ public class ClientAdapter {
         }
 
         private void onFail() {
-            self.setState(ClientAdapter.State.kConnected);
+            self.setState(ClientAdapter.State.kActive);
 
             // Report result fail
             if (this.mResultListener != null) {
@@ -468,8 +468,11 @@ public class ClientAdapter {
     class State {
         public static final int kDisconnected = 0;
         public static final int kConnecting = 1;
-        public static final int kConnected = 2;
+        public static final int kActive = 2;
         public static final int kDisconnecting = 3;
+        public static final int kGoingSleep = 4;
+        public static final int kSleeping = 5;
+        public static final int kWakingUp = 6;
     }
 
     @SuppressWarnings("SynchronizeOnNonFinalField")
