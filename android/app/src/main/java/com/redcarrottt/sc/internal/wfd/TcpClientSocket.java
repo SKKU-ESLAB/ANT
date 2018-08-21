@@ -14,7 +14,8 @@ class TcpClientSocket extends ClientSocket {
 
     @Override
     protected boolean openImpl() {
-        Logger.DEBUG(kTag, "Connect to server " + this.mTargetIpAddress + ":" + this.mTargetPort);
+        Logger.DEBUG(kTag, "Connect to server " + this.getTargetIpAddress() + ":" + this
+                .mTargetPort);
 
         // Try to open socket
         final int kMaxTries = 2;
@@ -23,7 +24,7 @@ class TcpClientSocket extends ClientSocket {
                 this.mSocket = new Socket();
                 this.mSocket.setReuseAddress(true);
                 this.mSocket.bind(null);
-                this.mSocket.connect(new InetSocketAddress(this.mTargetIpAddress, this
+                this.mSocket.connect(new InetSocketAddress(this.getTargetIpAddress(), this
                         .mTargetPort));
                 this.mInputStream = new BufferedInputStream(this.mSocket.getInputStream());
                 this.mOutputStream = new BufferedOutputStream(this.mSocket.getOutputStream());
@@ -102,13 +103,40 @@ class TcpClientSocket extends ClientSocket {
         }
     }
 
-    // TODO: targetIpAddress and targetPort is hard-coded.
-    // TODO: It can be transferred through "priv noti request".
-
     // Constructor
-    TcpClientSocket(String targetIpAddress, int targetPort) {
-        this.mTargetIpAddress = targetIpAddress;
+    TcpClientSocket(int targetPort) {
         this.mTargetPort = targetPort;
+        this.mIsInfoSet = false;
+        this.mInfoSetTrigger = new Object();
+    }
+
+    public void setTcpClientInfo(String targetIpAddress) {
+        this.mTargetIpAddress = targetIpAddress;
+
+        Logger.DEBUG(kTag, "Notify: WfdP2PInfo");
+        this.mIsInfoSet = true;
+        synchronized (this.mInfoSetTrigger) {
+            this.mInfoSetTrigger.notifyAll();
+        }
+    }
+
+    private String getTargetIpAddress() {
+        // Wait until wps pin is set, then get the information.
+        if (this.mIsInfoSet) {
+            return this.mTargetIpAddress;
+        } else {
+            Logger.DEBUG(kTag, "Waiting: mTargetIpAddress");
+            while (!this.mIsInfoSet) {
+                synchronized (this.mInfoSetTrigger) {
+                    try {
+                        this.mInfoSetTrigger.wait();
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+                }
+            }
+            return this.mTargetIpAddress;
+        }
     }
 
     // Components
@@ -116,7 +144,12 @@ class TcpClientSocket extends ClientSocket {
     private BufferedInputStream mInputStream;
     private BufferedOutputStream mOutputStream;
 
+    // TODO: adding port to WFD info would be good.
     // Attributes
-    private String mTargetIpAddress;
     private int mTargetPort;
+
+    // TCP Socket Info Attributes
+    private boolean mIsInfoSet;
+    private final Object mInfoSetTrigger;
+    private String mTargetIpAddress;
 }

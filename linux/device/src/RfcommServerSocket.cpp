@@ -182,7 +182,7 @@ int RfcommServerSocket::send_impl(const void *data_buffer, size_t data_length) {
   int sent_bytes = 0;
 
   if (this->mClientSocket <= 0) {
-    LOG_WARN("Socket closed\n");
+    LOG_WARN("Socket closed");
     return -1;
   }
 
@@ -192,7 +192,7 @@ int RfcommServerSocket::send_impl(const void *data_buffer, size_t data_length) {
       LOG_WARN("Cli sock closed");
       return -1;
     }
-    LOG_DEBUG("BT %d] send: %d\n", this->mPort, once_sent_bytes);
+    LOG_DEBUG("BT %d] send: %d", this->mPort, once_sent_bytes);
     sent_bytes += once_sent_bytes;
   }
 
@@ -213,7 +213,7 @@ int RfcommServerSocket::receive_impl(void *data_buffer, size_t data_length) {
     }
 
     received_bytes += once_received_bytes;
-    LOG_DEBUG("BT %d] receive : %d\n", this->mPort, once_received_bytes);
+    LOG_DEBUG("BT %d] receive : %d", this->mPort, once_received_bytes);
   }
 
   return received_bytes;

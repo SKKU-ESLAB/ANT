@@ -20,6 +20,7 @@
         "algorithm": "cpp",
         "locale": "cpp",
         "iosfwd": "cpp",
-        "condition_variable": "cpp"
+        "condition_variable": "cpp",
+        "istream": "cpp"
     }
 }

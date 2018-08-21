@@ -1,7 +1,6 @@
 /* Copyright 2017-2018 All Rights Reserved.
  *  Gyeonghwan Hong (redcarrottt@gmail.com)
- *  Injung Hwang (sinban04@gmail.com)
- *  
+ *
  * [Contact]
  *  Gyeonghwan Hong (redcarrottt@gmail.com)
  *
@@ -23,13 +22,24 @@
 using namespace sc;
 
 int main() {
-    char ret[512];
-    size_t len = 512;
-    
+  char ret[512];
+  size_t len = 512;
+
+  {
     char *const params[] = {"wpa_cli", "p2p_group_add", NULL};
-
     Util::run_client(WPA_CLI_PATH, params, ret, len);
-    printf("p2p_group_add: %s\n", ret);
+    printf("wpa_cli p2p_group_add: %s\n", ret);
+  }
+  {
+    char *const params[] = {"wpa_cli", "status", NULL};
+    Util::run_client(WPA_CLI_PATH, params, ret, len);
+    printf("wpa_cli status: %s\n", ret);
+  }
+  {
+    char *const params[] = {"wpa_cli", "ping", NULL};
+    Util::run_client(WPA_CLI_PATH, params, ret, len);
+    printf("wpa_cli ping: %s\n", ret);
+  }
 
-    return 0;
+  return 0;
 }

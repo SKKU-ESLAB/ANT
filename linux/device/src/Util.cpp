@@ -31,7 +31,6 @@ int Util::run_client(const char *path, char *const params[], char *res_buf,
   int fd[2];
   int pid;
   int bk;
-  static int initialized;
 
   if (pipe(fd) < 0) {
     LOG_ERR("pipe open error");
@@ -47,10 +46,18 @@ int Util::run_client(const char *path, char *const params[], char *res_buf,
     close(fd[1]);
 
     char buf[1024];
-    int read_bytes = read(fd[0], buf, 1024);
+    const int kMaxTries = 5;
+    int read_bytes;
+    for (int tries = 0; tries < kMaxTries; tries++) {
+      read_bytes = read(fd[0], buf, 1024);
 
+      if (read_bytes < 0) {
+        LOG_DEBUG("%s(pid %d): read error(%s) / retry %d", path, pid, strerror(errno), tries);
+      } else {
+        break;
+      }
+    }
     if (read_bytes < 0) {
-      LOG_ERR("%d read error", pid);
       return errno;
     }
 
@@ -65,6 +72,21 @@ int Util::run_client(const char *path, char *const params[], char *res_buf,
     close(fd[0]);
     dup2(fd[1], 1);
 
+    execv(path, params);
+    return 0;
+  }
+}
+
+int Util::run_client(const char *path, char *const params[]) {
+  int pid;
+
+  if ((pid = fork()) < 0) {
+    LOG_ERR("fork error");
+    return errno;
+  } else if (pid > 0) { // LOG_VERB("Forked PID : %d", pid);
+    /* Parent process */
+    return pid;
+  } else {
     execv(path, params);
     return 0;
   }

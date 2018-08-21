@@ -109,7 +109,7 @@ int TcpServerSocket::send_impl(const void *data_buffer, size_t data_length) {
       LOG_WARN("Cli sock closed");
       return -1;
     }
-    LOG_DEBUG("WFD %d] send: %d\n", this->mPort, once_sent_bytes);
+    LOG_DEBUG("WFD %d] send: %d", this->mPort, once_sent_bytes);
     sent_bytes += once_sent_bytes;
   }
 
@@ -131,7 +131,7 @@ int TcpServerSocket::receive_impl(void *data_buffer, size_t data_length) {
     }
 
     received_bytes += once_received_bytes;
-    LOG_DEBUG("WFD %d] receive : %d\n", this->mPort, once_received_bytes);
+    LOG_DEBUG("WFD %d] receive : %d", this->mPort, once_received_bytes);
   }
 
   return received_bytes;
