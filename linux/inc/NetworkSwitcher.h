@@ -31,7 +31,7 @@
 // Network Switcher Configs
 #define METRIC_WINDOW_LENGTH 8
 #define SLEEP_USECS (250 * 1000)
-#define AVERAGE_ARRIVAL_TIME_WINDOW_SIZE_US (2 * 1000 * 1000)
+#define AVERAGE_ARRIVAL_TIME_WINDOW_SIZE_US (120 * 1000 * 1000)
 
 namespace sc {
 typedef enum {
@@ -39,6 +39,11 @@ typedef enum {
   kNSStateRunning = 1,
   kNSStateSwitching = 2,
 } NSState;
+
+typedef enum {
+  kNSModeEnergyAware = 0,
+  kNSModeLatencyAware = 1,
+} NSMode;
 
 class SwitchAdapterTransaction {
   /*
@@ -248,6 +253,8 @@ class NetworkSwitcher {
     bool mSwitcherThreadOn;
     NSState mState;
     std::mutex mStateLock;
+    NSMode mMode;
+    std::mutex mModeLock;
     int mBandwidthWhenIncreasing;
     int mDecreasingCheckCount;
 
