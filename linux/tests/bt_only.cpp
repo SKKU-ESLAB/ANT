@@ -121,8 +121,8 @@ void on_connect(bool is_success) {
     free(temp_buf);
   }
 
-  printf("Wait for 30 seconds...\n");
-  sleep(30);
+  printf("Wait for 10 seconds...\n");
+  sleep(10);
 
   printf("Finish Workload\n");
 

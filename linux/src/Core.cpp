@@ -411,7 +411,7 @@ bool StopCoreTransaction::start() {
   }
 
   if (!res) {
-    LOG_ERR("Connecting control adapter is failed");
+    LOG_ERR("Disconnecting control adapter is failed");
     this->done(false);
   }
   return res;
@@ -419,7 +419,7 @@ bool StopCoreTransaction::start() {
 
 void StopCoreTransaction::disconnect_control_adapter_callback(bool is_success) {
   if (!is_success) {
-    LOG_ERR("Connecting control adapter is failed");
+    LOG_ERR("Disconnecting control adapter is failed");
     sOngoing->done(false);
     return;
   }
@@ -442,7 +442,7 @@ void StopCoreTransaction::disconnect_control_adapter_callback(bool is_success) {
 
 void StopCoreTransaction::disconnect_data_adapter_callback(bool is_success) {
   if (!is_success) {
-    LOG_ERR("Connecting data adapter is failed 2");
+    LOG_ERR("Disconnecting data adapter is failed 2");
     sOngoing->done(false);
     return;
   }
