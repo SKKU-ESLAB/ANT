@@ -65,6 +65,7 @@ bool ServerAdapter::disconnect(DisconnectCallback callback) {
   this->mDisconnectCallback = callback;
   this->mDisconnectThread = new std::thread(std::bind(&ServerAdapter::disconnect_thread, this));
   this->mDisconnectThread->detach();
+  return true;
 }
 
 void ServerAdapter::connect_thread(void) {
@@ -189,7 +190,7 @@ bool ServerAdapter::__disconnect_thread(void) {
   }
 
   // Close server socket
-  if(this->mServerSocket != NULL) {
+  if(this->mServerSocket == NULL) {
     LOG_ERR("Cannot find server socket: %s", this->get_name());
     return false;
   }
