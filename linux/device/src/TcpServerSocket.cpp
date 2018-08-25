@@ -94,6 +94,8 @@ bool TcpServerSocket::close_impl(void) {
   this->mServerSocket = 0;
 
   LOG_VERB("Socket closed");
+  
+  return true;
 }
 
 int TcpServerSocket::send_impl(const void *data_buffer, size_t data_length) {

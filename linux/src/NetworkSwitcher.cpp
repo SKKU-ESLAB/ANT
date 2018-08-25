@@ -61,19 +61,19 @@ void NetworkSwitcher::switcher_thread(void) {
 
     switch (this->get_state()) {
     case NSState::kNSStateInitialized:
-      LOG_VERB("%s %d %lu %d %0.4f", "Initialized", avg_send_request_speed,
+      LOG_VERB("%s %d %d %d %0.4f", "Initialized", avg_send_request_speed,
                avg_send_queue_data_size, avg_total_bandwidth_now,
                avg_arrival_time_sec);
       break;
     case NSState::kNSStateRunning:
-      LOG_VERB("%s %d %lu %d %0.4f", "Ready", avg_send_request_speed,
+      LOG_VERB("%s %d %d %d %0.4f", "Ready", avg_send_request_speed,
                avg_send_queue_data_size, avg_total_bandwidth_now,
                avg_arrival_time_sec);
       this->check_and_handover(avg_send_request_speed, avg_send_queue_data_size,
                                avg_total_bandwidth_now, avg_arrival_time_us);
       break;
     case NSState::kNSStateSwitching:
-      LOG_VERB("%s %d %lu %d %0.4f", "Switching", avg_send_request_speed,
+      LOG_VERB("%s %d %d %d %0.4f", "Switching", avg_send_request_speed,
                avg_send_queue_data_size, avg_total_bandwidth_now,
                avg_arrival_time_sec);
       /* Network switcher do not work during increasing or decreasing adapter */
