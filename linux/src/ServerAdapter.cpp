@@ -169,12 +169,12 @@ void ServerAdapter::disconnect_thread(void) {
       this->get_name(), (unsigned int)syscall(224));
   } else {
     this->set_state(oldState);
+    LOG_DEBUG("%s's Disconnect thread failed(tid: %d)",
+          this->get_name(), (unsigned int)syscall(224));
     if(this->mDisconnectCallback != NULL) {
       this->mDisconnectCallback(false);
       this->mDisconnectCallback = NULL;
     }
-    LOG_DEBUG("%s's Disconnect thread failed(tid: %d)",
-          this->get_name(), (unsigned int)syscall(224));
   }
   this->mDisconnectThread = NULL;
 }
@@ -189,7 +189,8 @@ bool ServerAdapter::__disconnect_thread(void) {
   }
 
   // Close server socket
-  if(this->mServerSocket == NULL) {
+  if(this->mServerSocket != NULL) {
+    LOG_ERR("Cannot find server socket: %s", this->get_name());
     return false;
   }
 
@@ -204,8 +205,11 @@ bool ServerAdapter::__disconnect_thread(void) {
     }
   }
 
+  // TODO: Disallow scan P2P Server
+
   // Turn off device
   if(this->mDevice == NULL) {
+    LOG_ERR("Cannot find device: %s", this->get_name());
     return false;
   }
   DeviceState deviceState = this->mDevice->get_state();
