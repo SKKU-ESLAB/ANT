@@ -28,7 +28,7 @@
 namespace sc {
 class AverageArrivalTime {
 public:
-  AverageArrivalTime(uint64_t intervalUS) {
+  AverageArrivalTime(void) {
     this->mLastAccessedTS.tv_sec = 0;
     this->mLastAccessedTS.tv_usec = 0;
   }
