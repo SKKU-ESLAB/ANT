@@ -1,5 +1,6 @@
 package com.redcarrottt.sc.internal.wfd;
 
+import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.content.BroadcastReceiver;
 import android.content.Context;
@@ -284,28 +285,6 @@ class WfdP2PClient extends P2PClient {
         });
     }
 
-    // Constructor
-    WfdP2PClient(Activity ownerActivity) {
-        this.mOwnerActivity = ownerActivity;
-        this.mIsInfoSet = false;
-        this.mInfoSetTrigger = new Object();
-
-        // Initialize Android WFD Manager Channel
-        this.mWFDManager = (WifiP2pManager) this.mOwnerActivity.getApplicationContext()
-                .getSystemService(Context.WIFI_P2P_SERVICE);
-        if (this.mWFDManager == null) {
-            Logger.ERR(kTag, "Failed to initialize Wi-fi Direct Manager");
-            return;
-        }
-
-
-        this.mWFDChannel = this.mWFDManager.initialize(this.mOwnerActivity, Looper.getMainLooper
-                (), null);
-        if (this.mWFDChannel == null) {
-            Logger.ERR(kTag, "Failed to initialize Wi-fi Direct Manager");
-        }
-    }
-
     public void setWfdP2PInfo(String targetMacAddress, String wpsPin) {
         this.mTargetMacAddress = targetMacAddress;
         this.mWpsPin = wpsPin;
@@ -352,6 +331,39 @@ class WfdP2PClient extends P2PClient {
                 }
             }
             return this.mWpsPin;
+        }
+    }
+
+    //Singleton
+    public static WfdP2PClient getSingleton(Activity ownerActivity) {
+        if(sSingleton == null) {
+            sSingleton = new WfdP2PClient(ownerActivity);
+        }
+        return sSingleton;
+    }
+
+    @SuppressLint("StaticFieldLeak")
+    private static WfdP2PClient sSingleton = null;
+
+    // Constructor
+    private WfdP2PClient(Activity ownerActivity) {
+        this.mOwnerActivity = ownerActivity;
+        this.mIsInfoSet = false;
+        this.mInfoSetTrigger = new Object();
+
+        // Initialize Android WFD Manager Channel
+        this.mWFDManager = (WifiP2pManager) this.mOwnerActivity.getApplicationContext()
+                .getSystemService(Context.WIFI_P2P_SERVICE);
+        if (this.mWFDManager == null) {
+            Logger.ERR(kTag, "Failed to initialize Wi-fi Direct Manager");
+            return;
+        }
+
+
+        this.mWFDChannel = this.mWFDManager.initialize(this.mOwnerActivity, Looper.getMainLooper
+                (), null);
+        if (this.mWFDChannel == null) {
+            Logger.ERR(kTag, "Failed to initialize Wi-fi Direct Manager");
         }
     }
 

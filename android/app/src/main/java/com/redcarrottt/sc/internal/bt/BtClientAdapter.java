@@ -12,7 +12,7 @@ public class BtClientAdapter extends ClientAdapter {
 
         // Components
         BtDevice device = BtDevice.getSingleton(ownerActivity);
-        BtP2PClient p2pClient = new BtP2PClient();
+        BtP2PClient p2pClient = BtP2PClient.getSingleton();
         RfcommClientSocket clientSocket = new RfcommClientSocket(targetMacAddr, serviceUuid);
 
         // Initialize

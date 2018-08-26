@@ -20,6 +20,8 @@
 #ifndef _P2P_SERVER_H_
 #define _P2P_SERVER_H_
 
+#include <RefCount.h>
+
 #include <thread>
 #include <mutex>
 
@@ -34,11 +36,11 @@ typedef enum {
 
 class P2PServer {
 public:
-  bool allow(void);
-  bool disallow(void);
+  bool hold_and_allow_discover(void);
+  bool release_and_disallow_discover(void);
 
-  virtual bool allow_impl(void) = 0;
-  virtual bool disallow_impl(void) = 0;
+  virtual bool allow_discover_impl(void) = 0;
+  virtual bool disallow_discover_impl(void) = 0;
 
   P2PServerState get_state(void) {
     return this->mState;
@@ -56,6 +58,9 @@ protected:
   }
 
   P2PServerState mState;
+
+  /* Reference Count */
+  RefCount mRefCount;
 }; /* class P2PServer */
 
 } /* namespace sc */

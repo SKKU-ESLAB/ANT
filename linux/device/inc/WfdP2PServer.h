@@ -35,13 +35,25 @@ namespace sc {
 
 class WfdP2PServer : public P2PServer {
 public:
-  virtual bool allow_impl(void);
-  virtual bool disallow_impl(void);
+  virtual bool allow_discover_impl(void);
+  virtual bool disallow_discover_impl(void);
 
   void add_wfd_ip_address_listener(WfdIpAddressListener *listener) {
     this->mIpAddrListeners.push_back(listener);
   }
 
+  static WfdP2PServer* getSingleton(const char *wfd_device_name, void *owner) {
+    if(WfdP2PServer::sSingleton == NULL) {
+      WfdP2PServer::sSingleton = new WfdP2PServer(wfd_device_name, owner);
+    }
+    return WfdP2PServer::sSingleton;
+  }
+
+  static WfdP2PServer* sSingleton;
+
+  ~WfdP2PServer(void) {}
+
+protected:
   WfdP2PServer(const char *wfd_device_name, void *owner) {
     snprintf(this->mWfdDeviceName, 100, "%s", wfd_device_name);
     this->mWfdDeviceName[0] = '\0';
@@ -50,9 +62,6 @@ public:
     this->mOwner = owner;
   }
 
-  ~WfdP2PServer(void) {}
-
-protected:
   std::vector<WfdIpAddressListener *> mIpAddrListeners;
 
   char mWfdDeviceName[100];

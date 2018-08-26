@@ -114,11 +114,11 @@ bool ServerAdapter::__connect_thread(void) {
   // Allow client's connection
   P2PServerState p2pServerState = this->mP2PServer->get_state();
   if(p2pServerState != P2PServerState::kAllowed) {
-    bool res = this->mP2PServer->allow();
+    bool res = this->mP2PServer->hold_and_allow_discover();
 
     p2pServerState = this->mP2PServer->get_state();
     if(!res || p2pServerState != P2PServerState::kAllowed) {
-      LOG_ERR("Cannot connect the server adapter - allow fail: %s", this->get_name());
+      LOG_ERR("Cannot connect the server adapter - allow discover fail: %s", this->get_name());
       this->mDevice->release_and_turn_off();
       return false;
     }
@@ -132,7 +132,7 @@ bool ServerAdapter::__connect_thread(void) {
     socketState = this->mServerSocket->get_state();
     if(!res || socketState != ServerSocketState::kOpened) {
       LOG_ERR("Cannot connect the server adapter - socket open fail: %s", this->get_name());
-      this->mP2PServer->disallow();
+      this->mP2PServer->release_and_disallow_discover();
       this->mDevice->release_and_turn_off();
       return false;
     }
@@ -206,7 +206,22 @@ bool ServerAdapter::__disconnect_thread(void) {
     }
   }
 
-  // TODO: Disallow scan P2P Server
+  // Disallow scan P2P Server
+  if(this->mP2PServer == NULL) {
+    LOG_ERR("Cannot find P2P server: %s", this->get_name());
+    return false;
+  }
+
+  P2PServerState p2pServerState = this->mP2PServer->get_state();
+  if(p2pServerState != P2PServerState::kAllowed) {
+    bool res = this->mP2PServer->release_and_disallow_discover();
+
+    p2pServerState = this->mP2PServer->get_state();
+    if(!res || p2pServerState != P2PServerState::kDisallowed) {
+      LOG_ERR("Cannot disconnect the server adapter - disallow discover fail: %s", this->get_name());
+      return false;
+    }
+  }
 
   // Turn off device
   if(this->mDevice == NULL) {

@@ -23,7 +23,7 @@ public class WfdClientAdapter extends ClientAdapter implements ControlMessageLis
 
         // Components
         WfdDevice device = WfdDevice.getSingleton(ownerActivity);
-        this.mP2pClient = new WfdP2PClient(ownerActivity);
+        this.mP2pClient = WfdP2PClient.getSingleton(ownerActivity);
         this.mClientSocket = new TcpClientSocket(targetPort);
 
         // Initialize

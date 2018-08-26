@@ -31,16 +31,24 @@ namespace sc {
 
 class BtP2PServer : public P2PServer {
 public:
-  virtual bool allow_impl(void);
-  virtual bool disallow_impl(void);
+  virtual bool allow_discover_impl(void);
+  virtual bool disallow_discover_impl(void);
 
-  BtP2PServer(void) {
+  static BtP2PServer* getSingleton() {
+    if(BtP2PServer::sSingleton == NULL) {
+      BtP2PServer::sSingleton = new BtP2PServer();
+    }
+    return BtP2PServer::sSingleton;
   }
+
+  static BtP2PServer* sSingleton;
 
   ~BtP2PServer(void) {
   }
 
 protected:
+  BtP2PServer(void) {
+  }
 }; /* class BtP2PServer */
 
 } /* namespace sc */

@@ -36,7 +36,7 @@ class BtServerAdapter : public ServerAdapter {
 public:
   BtServerAdapter(int id, const char* name, const char* service_uuid) : ServerAdapter(id, name) { 
     BtDevice* device = BtDevice::getSingleton();
-    BtP2PServer* p2pServer = new BtP2PServer();
+    BtP2PServer* p2pServer = BtP2PServer::getSingleton();
     RfcommServerSocket* serverSocket = new RfcommServerSocket(service_uuid);
     this->initialize(device, p2pServer, serverSocket);
   }

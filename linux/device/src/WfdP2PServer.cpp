@@ -41,6 +41,7 @@
 
 using namespace sc;
 
+WfdP2PServer* WfdP2PServer::sSingleton;
 struct sigaction WfdP2PServer::sSigaction;
 struct sigaction WfdP2PServer::sSigactionOld;
 bool WfdP2PServer::sDhcpdMonitoring = false;
@@ -48,7 +49,7 @@ int WfdP2PServer::sDhcpdPid = 0;
 WfdP2PServer *WfdP2PServer::sDhcpdCaller = NULL;
 bool WfdP2PServer::sDhcpdEnabled = false;
 
-bool WfdP2PServer::allow_impl(void) {
+bool WfdP2PServer::allow_discover_impl(void) {
   char buf[1024];
   int ret;
 
@@ -359,7 +360,7 @@ void WfdP2PServer::sighandler_monitor_udhcpd(int signo, siginfo_t *sinfo,
   }
 }
 
-bool WfdP2PServer::disallow_impl(void) {
+bool WfdP2PServer::disallow_discover_impl(void) {
   char buf[1024];
   int ret;
 

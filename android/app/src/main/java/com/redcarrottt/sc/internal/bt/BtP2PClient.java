@@ -1,5 +1,7 @@
 package com.redcarrottt.sc.internal.bt;
 
+import android.annotation.SuppressLint;
+
 import com.redcarrottt.sc.internal.OnConnectResult;
 import com.redcarrottt.sc.internal.OnDisconnectResult;
 import com.redcarrottt.sc.internal.OnDiscoverResult;
@@ -24,8 +26,18 @@ class BtP2PClient extends P2PClient {
         onDisconnectResult.onDoneDisconnect(true);
     }
 
+    // Singleton
+    public static BtP2PClient getSingleton() {
+        if(sSingleton == null) {
+            sSingleton = new BtP2PClient();
+        }
+        return sSingleton;
+    }
+    @SuppressLint("StaticFieldLeak")
+    private static BtP2PClient sSingleton = null;
+
     // Constructor
-    BtP2PClient() {
+    private BtP2PClient() {
     }
 
     // Attributes
