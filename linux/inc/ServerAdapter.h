@@ -25,6 +25,7 @@
 #include <vector>
 #include <thread>
 #include <mutex>
+#include <condition_variable>
 
 #include <stdio.h>
 
@@ -58,11 +59,12 @@ typedef void (*ReceiveLoop)(ServerAdapter* adapter);
 
 class ServerAdapter {
 public:
-  bool connect(ConnectCallback callback, bool is_send_connect_message);
+  bool connect(ConnectCallback callback, bool is_send_request);
   bool disconnect(DisconnectCallback callback);
   int send(const void *buf, size_t len);
   int receive(void *buf, size_t len);
-  // TODO: wake_up(), sleep()
+  bool sleep(bool is_send_request);
+  bool wake_up(bool is_send_request);
 
   void enable_sender_thread() {
     this->mSenderThreadEnabled = true;
@@ -113,6 +115,10 @@ public:
     return this->mServerSocket;
   }
 
+  bool is_sleeping_allowed(void) {
+    return this->mIsSleepingAllowed;
+  }
+
   void listen_state(ServerAdapterStateListener* listener) {
     std::unique_lock<std::mutex> lck(this->mStateLock);
 
@@ -123,7 +129,8 @@ public:
   ServerAdapter(int id, const char* name) {
     this->mState = ServerAdapterState::kDisconnected;
     snprintf(this->mName, sizeof(this->mName), name);
-    this->mId = id; 
+    this->mId = id;
+    this->mIsSleepingAllowed = false;
   }
 
   ~ServerAdapter() {
@@ -136,10 +143,11 @@ public:
   }
 
 protected:
-  void initialize(Device* device, P2PServer* p2pServer, ServerSocket* serverSocket) {
+  void initialize(Device* device, P2PServer* p2pServer, ServerSocket* serverSocket, bool is_sleeping_allowed) {
     this->mDevice = device;
     this->mP2PServer = p2pServer;
     this->mServerSocket = serverSocket;
+    this->mIsSleepingAllowed = is_sleeping_allowed;
   }
 
   void set_state(ServerAdapterState new_state) {
@@ -159,11 +167,15 @@ protected:
     }
   }
 
+  /* Attributes */
   ServerAdapterState mState;
   std::mutex mStateLock;
   char mName[256];
   // TODO: ID is now defined by user. However, the ID should be maintained by system finally.
   int mId;
+  bool mIsSleepingAllowed;
+
+  /* Components */
   Device* mDevice = NULL;
   P2PServer* mP2PServer = NULL;
   ServerSocket* mServerSocket = NULL;
@@ -201,6 +213,9 @@ private:
   bool mReceiverThreadEnabled = false;
   bool mSenderLoopOn = false;
   bool mReceiverLoopOn = false;
+  bool mSenderSuspended = false;
+  std::mutex mSenderSuspendedMutex;
+  std::condition_variable mSenderSuspendedCond;
 
   ReceiveLoop mReceiveLoop = NULL;
 }; /* class ServerAdapter */

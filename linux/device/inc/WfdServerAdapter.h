@@ -39,7 +39,7 @@ public:
     WfdP2PServer* p2pServer = WfdP2PServer::getSingleton(wfd_device_name, (void*)this);
     TcpServerSocket* serverSocket = new TcpServerSocket(port);
     p2pServer->add_wfd_ip_address_listener(serverSocket);
-    this->initialize(device, p2pServer, serverSocket);
+    this->initialize(device, p2pServer, serverSocket, false);
   }
 
   ~WfdServerAdapter(void) {

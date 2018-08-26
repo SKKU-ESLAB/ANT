@@ -74,7 +74,7 @@ public:
     EthP2PServer* p2pServer = new EthP2PServer();
     TcpServerSocket* serverSocket = new TcpServerSocket(port);
     serverSocket->set_ip_address_raw(htonl(INADDR_ANY));
-    this->initialize(device, p2pServer, serverSocket);
+    this->initialize(device, p2pServer, serverSocket, false);
   }
 
   ~EthServerAdapter(void) {

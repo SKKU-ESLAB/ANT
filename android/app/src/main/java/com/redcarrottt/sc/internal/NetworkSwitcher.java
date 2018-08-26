@@ -33,6 +33,34 @@ public class NetworkSwitcher {
         runConnectRequestTx(adapterId);
     }
 
+    // Sleep adapter command.
+    // It is called by peer through Core.
+    void sleepAdapter(int adapterId) {
+        int state = this.getState();
+        if (state != State.kSwitching) {
+            Logger.VERB(kTag, "It's now switching. Cannot sleep to adapter " + adapterId);
+            return;
+        }
+        this.setState(State.kSwitching);
+        ClientAdapter adapter = Core.getInstance().findDataAdapterById(adapterId);
+        adapter.sleep(false);
+        this.setState(State.kRunning);
+    }
+
+    // Wake up adapter command.
+    // It is called by peer through Core.
+    void wakeUpAdapter(int adapterId) {
+        int state = this.getState();
+        if (state != State.kSwitching) {
+            Logger.VERB(kTag, "It's now switching. Cannot sleep to adapter " + adapterId);
+            return;
+        }
+        this.setState(State.kSwitching);
+        ClientAdapter adapter = Core.getInstance().findDataAdapterById(adapterId);
+        adapter.wakeUp(false);
+        this.setState(State.kRunning);
+    }
+
     // Reconnect control adapter command.
     // It is called by Core.
     void reconnectControlAdapter() {

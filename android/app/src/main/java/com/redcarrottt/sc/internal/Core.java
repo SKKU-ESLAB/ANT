@@ -171,14 +171,12 @@ public class Core {
         controlAdapter.send(dataBuffer, dataLength);
     }
 
-    public void sendRequestConnect(short adapterId) {
+    private void sendRequest(char requestCode, short adapterId) {
         int state = this.getState();
         if (state != State.kReady) {
             Logger.ERR(kTag, "Core is not started yet, so you cannot send the data");
             return;
         }
-
-        char requestCode = CtrlReq.kConnect;
 
         {
             ByteBuffer buffer = ByteBuffer.allocate(1);
@@ -190,6 +188,18 @@ public class Core {
             buffer.putShort(adapterId);
             this.sendControlMessage(buffer.array(), 2);
         }
+    }
+
+    public void sendRequestConnect(short adapterId) {
+        this.sendRequest(CtrlReq.kConnect, adapterId);
+    }
+
+    public void sendRequestSleep(short adapterId) {
+        this.sendRequest(CtrlReq.kSleep, adapterId);
+    }
+
+    public void sendRequestWakeup(short adapterId) {
+        this.sendRequest(CtrlReq.kWakeup, adapterId);
     }
 
     public void sendNotiPrivateData(short adapterId, byte[] privDataBuffer) {
@@ -215,7 +225,8 @@ public class Core {
                 }
 
                 Byte reqCode = dataBuffer[0];
-                if (reqCode == CtrlReq.kConnect) {
+                if (reqCode == CtrlReq.kConnect || reqCode == CtrlReq.kSleep || reqCode ==
+                        CtrlReq.kWakeup) {
                     // "Connect Adapter" Request
                     // Receive 2Byte: Adapter ID
                     res = adapter.receive(dataBuffer, 2);
@@ -224,9 +235,19 @@ public class Core {
                     buffer.put(dataBuffer, 0, 2);
                     short adapterId = buffer.getShort();
 
-                    Logger.DEBUG(kTag, "Control Request: 'Connect Adapter Request' (" + adapterId
-                            + ")");
-                    NetworkSwitcher.getInstance().connectAdapter(adapterId);
+                    if (reqCode == CtrlReq.kConnect) {
+                        Logger.DEBUG(kTag, "Control Request: 'Connect Adapter Request' (" +
+                                adapterId + ")");
+                        NetworkSwitcher.getInstance().connectAdapter(adapterId);
+                    } else if (reqCode == CtrlReq.kSleep) {
+                        Logger.DEBUG(kTag, "Sleep Request: 'Connect Adapter Request' (" +
+                                adapterId + ")");
+                        NetworkSwitcher.getInstance().sleepAdapter(adapterId);
+                    } else if (reqCode == CtrlReq.kWakeup) {
+                        Logger.DEBUG(kTag, "Wake Up Request: 'Connect Adapter Request' (" +
+                                adapterId + ")");
+                        NetworkSwitcher.getInstance().wakeUpAdapter(adapterId);
+                    }
                 } else if (reqCode == CtrlReq.kPriv) {
                     // "Priv" Request
                     short adapterId;
@@ -275,7 +296,9 @@ public class Core {
     // Control Request Code
     class CtrlReq {
         public static final char kConnect = 1;
-        public static final char kPriv = 2;
+        public static final char kSleep = 2;
+        public static final char kWakeup = 3;
+        public static final char kPriv = 10;
     }
 
     // State
