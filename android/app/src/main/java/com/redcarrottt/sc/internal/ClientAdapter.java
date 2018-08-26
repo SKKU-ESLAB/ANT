@@ -31,14 +31,14 @@ public class ClientAdapter {
     private final ClientAdapter self = this;
 
     // Main Functions: connect, releaseAndDisconnect, send, receive
-    public void connect(ConnectResultListener listener, boolean isSendConnectMessage) {
+    public void connect(ConnectResultListener listener, boolean isSendRequest) {
         int state = this.getState();
         if (state != State.kDisconnected) {
             Logger.ERR(kTag, "It's already connected or connection/disconnection is in progress");
             listener.onConnectResult(false);
         }
 
-        if (isSendConnectMessage) {
+        if (isSendRequest) {
             Core.getInstance().sendRequestConnect((short) this.getId());
         }
 
@@ -73,7 +73,9 @@ public class ClientAdapter {
     }
 
     int receive(byte[] dataBuffer, int dataLength) {
-        if (this.getState() != State.kActive) {
+        int state = this.getState();
+        if (state != State.kActive && state != State.kGoingSleep && state != State.kSleeping &&
+                state != State.kWakingUp) {
             Logger.ERR(kTag, "It's already disconnected or connection/disconnection is in " +
                     "progress");
             return -1;
@@ -129,8 +131,8 @@ public class ClientAdapter {
             // Check the result of "Discover and connect"
             int p2pClientState = self.mP2PClient.getState();
             if (!isSuccess || p2pClientState != P2PClient.State.kConnected) {
-                Logger.ERR(kTag, "Cannot connect the server adapter - discover fail:" + self.getName
-                        ());
+                Logger.ERR(kTag, "Cannot connect the server adapter - discover fail:" + self
+                        .getName());
                 self.mDevice.releaseAndTurnOff(null);
                 this.onFail();
                 return;
@@ -227,8 +229,8 @@ public class ClientAdapter {
 
                 socketState = self.mClientSocket.getState();
                 if (!res || socketState != ClientSocket.State.kClosed) {
-                    Logger.ERR(kTag, "Cannot releaseAndDisconnect the server adapter - socket close fail: "
-                            + "" + "" + self.getName());
+                    Logger.ERR(kTag, "Cannot releaseAndDisconnect the server adapter - socket " +
+                            "close fail: " + "" + "" + self.getName());
                     this.onFail();
                     return;
                 }
@@ -246,8 +248,8 @@ public class ClientAdapter {
             // Check the result of "P2P Disconnect"
             int p2pClientState = self.mP2PClient.getState();
             if (!isSuccess || p2pClientState != P2PClient.State.kDisconnected) {
-                Logger.ERR(kTag, "Cannot releaseAndDisconnect the server adapter - releaseAndDisconnect P2P " +
-                        "client fail: " + self.getName());
+                Logger.ERR(kTag, "Cannot releaseAndDisconnect the server adapter - " +
+                        "releaseAndDisconnect P2P " + "client fail: " + self.getName());
                 this.onFail();
                 return;
             }
@@ -263,8 +265,8 @@ public class ClientAdapter {
         public void onTurnOffResult(boolean isSuccess) {
             int deviceState = self.mDevice.getState();
             if (!isSuccess || deviceState != Device.State.kOff) {
-                Logger.ERR(kTag, "Cannot releaseAndDisconnect the server adapter - turn-off fail: " + self
-                        .getName());
+                Logger.ERR(kTag, "Cannot releaseAndDisconnect the server adapter - turn-off " +
+                        "fail:" + " " + self.getName());
                 this.onFail();
                 return;
             }
@@ -335,10 +337,36 @@ public class ClientAdapter {
             synchronized (this.mIsOn) {
                 this.mIsOn = true;
             }
+            synchronized (this.mIsSuspended) {
+                this.mIsSuspended = false;
+            }
 
             while (this.mIsOn) {
                 SegmentManager sm = SegmentManager.getInstance();
                 Segment segmentToSend;
+
+                // If this sender is set to be suspended, wait until it wakes up
+                {
+                    boolean sender_suspended;
+                    do {
+                        synchronized (mSenderSuspended) {
+                            sender_suspended = mSenderSuspended;
+                        }
+                        if (!sender_suspended) {
+                            break;
+                        }
+                        Logger.VERB(kTag, "Sender thread suspended: " + this.getName());
+                        setState(ClientAdapter.State.kSleeping);
+                        synchronized (mSenderSuspended) {
+                            try {
+                                mSenderSuspended.wait();
+                            } catch (InterruptedException e) {
+                                e.printStackTrace();
+                            }
+                        }
+                        setState(ClientAdapter.State.kActive);
+                    } while (true);
+                }
 
                 // At first, dequeue a segment from failed sending queue
                 segmentToSend = sm.get_failed_sending();
@@ -346,6 +374,20 @@ public class ClientAdapter {
                 // If there is no failed segment, dequeue from send queue
                 if (segmentToSend == null) {
                     segmentToSend = sm.dequeue(kSegSend);
+                }
+
+                // If it is suspended, push the segment to the send-fail queue
+                {
+                    boolean sender_suspended;
+                    synchronized (mSenderSuspended) {
+                        sender_suspended = mSenderSuspended;
+                    }
+                    if (sender_suspended) {
+                        Logger.VERB(kTag, "Sending segment is pushed to failed queue at " + this
+                                .getName() + " (suspended)");
+                        sm.failed_sending(segmentToSend);
+                        continue;
+                    }
                 }
 
                 int res = send(segmentToSend.data, kSegHeaderSize + kSegSize);
@@ -365,10 +407,14 @@ public class ClientAdapter {
             synchronized (this.mIsOn) {
                 this.mIsOn = false;
             }
+            synchronized (this.mIsSuspended) {
+                this.mIsSuspended = false;
+            }
         }
 
         SenderThread() {
             this.mIsOn = false;
+            this.mIsSuspended = false;
         }
 
         public boolean isOn() {
@@ -376,6 +422,7 @@ public class ClientAdapter {
         }
 
         private Boolean mIsOn;
+        private Boolean mIsSuspended;
     }
 
     @SuppressWarnings("SynchronizeOnNonFinalField")
@@ -440,6 +487,59 @@ public class ClientAdapter {
     private SenderThread mSenderThread;
     private ReceiverThread mReceiverThread;
     private ReceiveLoop mReceiveLoop;
+    private Boolean mSenderSuspended;
+
+    @SuppressWarnings("SynchronizeOnNonFinalField")
+    public boolean sleep(boolean isSendRequest) {
+        int state = this.getState();
+        if (state != State.kActive) {
+            Logger.ERR(kTag, "Failed to sleep: " + this.getName() + "(state: " + state + ")");
+            return false;
+        }
+
+        synchronized (this.mSenderSuspended) {
+            if (this.mSenderSuspended) {
+                Logger.ERR(kTag, "Sender has already been suspended!: " + this.getName());
+                return false;
+            } else {
+                // Send Request
+                Core.getInstance().sendRequestSleep((short) this.getId());
+
+                // Sleep
+                this.setState(State.kGoingSleep);
+                this.mSenderSuspended = true;
+                return true;
+            }
+        }
+    }
+
+    @SuppressWarnings("SynchronizeOnNonFinalField")
+    public boolean wakeUp(boolean isSendRequest) {
+        int state = this.getState();
+        if (state != State.kSleeping) {
+            Logger.ERR(kTag, "Failed to wake up: " + this.getName() + "(state: " + state + ")");
+            return false;
+        }
+        boolean sender_suspended;
+        synchronized (this.mSenderSuspended) {
+            sender_suspended = this.mSenderSuspended;
+        }
+        if (sender_suspended) {
+            // Send Request
+            Core.getInstance().sendRequestWakeup((short) this.getId());
+
+            // Wake up
+            this.setState(State.kWakingUp);
+            synchronized (this.mSenderSuspended) {
+                this.mSenderSuspended = false;
+            }
+            this.mSenderSuspended.notifyAll();
+            return true;
+        } else {
+            Logger.ERR(kTag, "Sender has not been suspended!: " + this.getName());
+            return false;
+        }
+    }
 
     // Initialize
     public ClientAdapter(int id, String name) {
@@ -447,6 +547,7 @@ public class ClientAdapter {
         this.mName = name;
         this.mState = State.kDisconnected;
         this.mListeners = new ArrayList<>();
+        this.mSenderSuspended = false;
     }
 
     protected void initialize(Device device, P2PClient p2pClient, ClientSocket clientSocket) {

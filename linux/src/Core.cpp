@@ -206,7 +206,7 @@ void Core::send_control_message(const void *dataBuffer, size_t dataLength) {
   control_adapter->send(dataBuffer, dataLength);
 }
 
-void Core::send_request_connect(uint16_t adapter_id) {
+void Core::send_request(CtrlReq request_code, uint16_t adapter_id) {
   ServerAdapter *control_adapter = this->get_control_adapter();
   ServerAdapterState controlAdapterState = control_adapter->get_state();
   if(controlAdapterState != ServerAdapterState::kActive) {
@@ -214,11 +214,23 @@ void Core::send_request_connect(uint16_t adapter_id) {
     return;
   }
 
-  uint8_t request_code = kCtrlReqConnect;
+  uint8_t net_request_code = (uint8_t)request_code;
   uint16_t net_adapter_id = htons(adapter_id);
 
-  this->send_control_message(&request_code, 1);
+  this->send_control_message(&net_request_code, 1);
   this->send_control_message(&net_adapter_id, 2);
+}
+
+void Core::send_request_connect(uint16_t adapter_id) {
+  this->send_request(kCtrlReqConnect, adapter_id);
+}
+
+void Core::send_request_sleep(uint16_t adapter_id) {
+  this->send_request(kCtrlReqSleep, adapter_id);
+}
+
+void Core::send_request_wake_up(uint16_t adapter_id) {
+  this->send_request(kCtrlReqWakeUp, adapter_id);
 }
 
 void Core::send_noti_private_data(uint16_t adapter_id, char *private_data_buf,
@@ -261,7 +273,7 @@ void Core::receive_control_message_loop(ServerAdapter *adapter) {
 
     char req_code = data[0];
     /*  If the control message is 'connect adapter', */
-    if (req_code == CtrlReq::kCtrlReqConnect) {
+    if (req_code == CtrlReq::kCtrlReqConnect || req_code == CtrlReq::kCtrlReqSleep || req_code == CtrlReq::kCtrlReqWakeUp) {
       // Receive 2Byte: Adapter ID
       res = adapter->receive(data, 2);
       if (res <= 0) {
@@ -276,8 +288,16 @@ void Core::receive_control_message_loop(ServerAdapter *adapter) {
       memcpy(&n_adapter_id, data, 2);
       adapter_id = ntohs(n_adapter_id);
 
-      LOG_DEBUG("Control Request: 'Connect Adapter Request' (%d)", (int)adapter_id);
-      NetworkSwitcher::get_instance()->connect_adapter(adapter_id);
+      if(req_code == CtrlReq::kCtrlReqConnect) {
+        LOG_DEBUG("Control Request: 'Connect Adapter Request' (%d)", (int)adapter_id);
+        NetworkSwitcher::get_instance()->connect_adapter(adapter_id);
+      } else if(req_code == CtrlReq::kCtrlReqSleep) {
+        LOG_DEBUG("Control Request: 'Sleep Adapter Request' (%d)", (int)adapter_id);
+        NetworkSwitcher::get_instance()->sleep_adapter(adapter_id);
+      } else if(req_code == CtrlReq::kCtrlReqWakeUp) {
+        LOG_DEBUG("Control Request: 'Wake Up Adapter Request' (%d)", (int)adapter_id);
+        NetworkSwitcher::get_instance()->wake_up_adapter(adapter_id);
+      } 
     } else if (req_code == CtrlReq::kCtrlReqPriv) {
       LOG_VERB("Private data arrived");
       uint16_t n_adapter_id;

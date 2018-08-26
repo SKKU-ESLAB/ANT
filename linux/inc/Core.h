@@ -45,7 +45,12 @@ enum CommErr {
  *  - Acks: "Ok", "Fail"
  *  - Private Data: "Priv"
  */
-typedef enum { kCtrlReqConnect = 1, kCtrlReqPriv = 2 } CtrlReq;
+typedef enum {
+  kCtrlReqConnect = 1,
+  kCtrlReqSleep = 2,
+  kCtrlReqWakeUp = 3,
+  kCtrlReqPriv = 10,
+} CtrlReq;
 
 /*
  * Core State
@@ -164,8 +169,13 @@ private:
 
 public:
   void send_request_connect(uint16_t adapter_id);
+  void send_request_sleep(uint16_t adapter_id);
+  void send_request_wake_up(uint16_t adapter_id);
   void send_noti_private_data(uint16_t adapter_id, char *private_data_buf,
-                              uint32_t private_data_len);
+                              uint32_t private_data_len);  
+private:
+  void send_request(CtrlReq request_code, uint16_t adapter_id);
+public:
   void add_control_message_listener(ControlMessageListener *listener) {
     this->mControlMessageListeners.push_back(listener);
   }
