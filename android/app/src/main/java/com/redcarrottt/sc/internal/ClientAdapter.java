@@ -30,7 +30,7 @@ public class ClientAdapter {
     private final String kTag = "ClientAdapter";
     private final ClientAdapter self = this;
 
-    // Main Functions: connect, disconnect, send, receive
+    // Main Functions: connect, releaseAndDisconnect, send, receive
     public void connect(ConnectResultListener listener, boolean isSendConnectMessage) {
         int state = this.getState();
         if (state != State.kDisconnected) {
@@ -120,7 +120,7 @@ public class ClientAdapter {
             // Discover and connect to server
             int p2pClientState = self.mP2PClient.getState();
             if (p2pClientState != P2PClient.State.kConnected) {
-                self.mP2PClient.discoverAndConnect(this);
+                self.mP2PClient.holdAndDiscoverAndConnect(this);
             }
         }
 
@@ -129,7 +129,7 @@ public class ClientAdapter {
             // Check the result of "Discover and connect"
             int p2pClientState = self.mP2PClient.getState();
             if (!isSuccess || p2pClientState != P2PClient.State.kConnected) {
-                Logger.ERR(kTag, "Cannot connect the server adapter - allow fail:" + self.getName
+                Logger.ERR(kTag, "Cannot connect the server adapter - discover fail:" + self.getName
                         ());
                 self.mDevice.releaseAndTurnOff(null);
                 this.onFail();
@@ -156,7 +156,7 @@ public class ClientAdapter {
                     if (!res || socketState != ClientSocket.State.kOpened) {
                         Logger.ERR(kTag, "Cannot connect the server adapter - socket open fail: "
                                 + self.getName());
-                        self.mP2PClient.disconnect(null);
+                        self.mP2PClient.releaseAndDisconnect(null);
                         self.mDevice.releaseAndTurnOff(null);
                         onFail();
                         return;
@@ -227,7 +227,7 @@ public class ClientAdapter {
 
                 socketState = self.mClientSocket.getState();
                 if (!res || socketState != ClientSocket.State.kClosed) {
-                    Logger.ERR(kTag, "Cannot disconnect the server adapter - socket close fail: "
+                    Logger.ERR(kTag, "Cannot releaseAndDisconnect the server adapter - socket close fail: "
                             + "" + "" + self.getName());
                     this.onFail();
                     return;
@@ -237,7 +237,7 @@ public class ClientAdapter {
             // P2P Disconnect
             int p2pClientState = self.mClientSocket.getState();
             if (p2pClientState != P2PClient.State.kDisconnected) {
-                self.mP2PClient.disconnect(this);
+                self.mP2PClient.releaseAndDisconnect(this);
             }
         }
 
@@ -246,7 +246,7 @@ public class ClientAdapter {
             // Check the result of "P2P Disconnect"
             int p2pClientState = self.mP2PClient.getState();
             if (!isSuccess || p2pClientState != P2PClient.State.kDisconnected) {
-                Logger.ERR(kTag, "Cannot disconnect the server adapter - disconnect P2P " +
+                Logger.ERR(kTag, "Cannot releaseAndDisconnect the server adapter - releaseAndDisconnect P2P " +
                         "client fail: " + self.getName());
                 this.onFail();
                 return;
@@ -263,7 +263,7 @@ public class ClientAdapter {
         public void onTurnOffResult(boolean isSuccess) {
             int deviceState = self.mDevice.getState();
             if (!isSuccess || deviceState != Device.State.kOff) {
-                Logger.ERR(kTag, "Cannot disconnect the server adapter - turn-off fail: " + self
+                Logger.ERR(kTag, "Cannot releaseAndDisconnect the server adapter - turn-off fail: " + self
                         .getName());
                 this.onFail();
                 return;

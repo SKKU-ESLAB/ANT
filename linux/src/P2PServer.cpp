@@ -21,24 +21,34 @@
 
 using namespace sc;
 
-bool P2PServer::allow(void) {
-  bool res = this->allow_impl();
+bool P2PServer::hold_and_allow_discover(void) {
+  if(this->mRefCount.increase() == 1) {
+    bool res = this->allow_discover_impl();
 
-  if(!res) {
-    this->set_state(P2PServerState::kDisallowed);
+    if(!res) {
+      this->mRefCount.decrease();
+      this->set_state(P2PServerState::kDisallowed);
+    } else {
+      this->set_state(P2PServerState::kAllowed);
+    }
+    return res;
   } else {
-    this->set_state(P2PServerState::kAllowed);
+    return true;
   }
-  return res;
 }
 
-bool P2PServer::disallow(void) {
-  bool res = this->disallow_impl();
+bool P2PServer::release_and_disallow_discover(void) {
+  if(this->mRefCount.decrease() == 0) {
+    bool res = this->disallow_discover_impl();
 
-  if(!res) {
-    this->set_state(P2PServerState::kAllowed);
+    if(!res) {
+      this->mRefCount.increase();
+      this->set_state(P2PServerState::kAllowed);
+    } else {
+      this->set_state(P2PServerState::kDisallowed);
+    }
+    return res;
   } else {
-    this->set_state(P2PServerState::kDisallowed);
+    return true;
   }
-  return res;
 }

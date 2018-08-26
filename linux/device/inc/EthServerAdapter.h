@@ -59,10 +59,10 @@ protected:
 
 class EthP2PServer : public P2PServer {
 public:
-  virtual bool allow_impl(void) {
+  virtual bool allow_discover_impl(void) {
     return true;
   }
-  virtual bool disallow_impl(void) {
+  virtual bool disallow_discover_impl(void) {
     return true;
   }
 };

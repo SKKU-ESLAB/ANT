@@ -36,7 +36,7 @@ class WfdServerAdapter : public ServerAdapter {
 public:
   WfdServerAdapter(int id, const char* name, int port, const char* wfd_device_name) : ServerAdapter(id, name) { 
     WfdDevice* device = WfdDevice::getSingleton();
-    WfdP2PServer* p2pServer = new WfdP2PServer(wfd_device_name, (void*)this);
+    WfdP2PServer* p2pServer = WfdP2PServer::getSingleton(wfd_device_name, (void*)this);
     TcpServerSocket* serverSocket = new TcpServerSocket(port);
     p2pServer->add_wfd_ip_address_listener(serverSocket);
     this->initialize(device, p2pServer, serverSocket);
