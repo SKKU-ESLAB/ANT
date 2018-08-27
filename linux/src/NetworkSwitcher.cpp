@@ -110,9 +110,9 @@ bool NetworkSwitcher::sleep_adapter(int adapter_id) {
              adapter_id);
     return false;
   }
-  
-  ServerAdapter* adapter = Core::get_instance()->get_data_adapter(adapter_id);
-  if(adapter != NULL) {
+
+  ServerAdapter *adapter = Core::get_instance()->get_data_adapter(adapter_id);
+  if (adapter != NULL) {
     this->set_state(NSState::kNSStateSwitching);
     bool res = adapter->sleep(false);
     this->set_state(NSState::kNSStateRunning);
@@ -132,9 +132,9 @@ bool NetworkSwitcher::wake_up_adapter(int adapter_id) {
              adapter_id);
     return false;
   }
-  
-  ServerAdapter* adapter = Core::get_instance()->get_data_adapter(adapter_id);
-  if(adapter != NULL) {
+
+  ServerAdapter *adapter = Core::get_instance()->get_data_adapter(adapter_id);
+  if (adapter != NULL) {
     this->set_state(NSState::kNSStateSwitching);
     bool res = adapter->wake_up(false);
     this->set_state(NSState::kNSStateRunning);
@@ -162,15 +162,15 @@ void NetworkSwitcher::reconnect_control_adapter(void) {
 void NetworkSwitcher::monitor(int &avg_send_request_speed,
                               int &avg_send_queue_data_size,
                               int &avg_total_bandwidth_now,
-                              int &avg_arrival_time) {
+                              int &avg_arrival_time_us) {
   // TODO: consider peer's request_speed, queue_data_size
   /* Monitor metrics */
-  int send_request_speed;
+  int queue_arrival_speed;
   int send_queue_data_size;
   int total_bandwidth_now = 0;
 
   SegmentManager *segment_manager = SegmentManager::get_instance();
-  send_request_speed = segment_manager->get_send_request_per_sec();
+  queue_arrival_speed = segment_manager->get_send_request_per_sec();
   send_queue_data_size = segment_manager->get_queue_data_size(kSegSend);
   send_queue_data_size += segment_manager->get_failed_sending_queue_data_size();
 
@@ -204,12 +204,12 @@ void NetworkSwitcher::monitor(int &avg_send_request_speed,
   }
 
   /* Get average */
-  put_values(send_request_speed, send_queue_data_size, total_bandwidth_now);
+  put_values(queue_arrival_speed, send_queue_data_size, total_bandwidth_now);
 
   avg_send_request_speed = get_average_send_request_speed();
   avg_send_queue_data_size = get_average_send_queue_data_size();
   avg_total_bandwidth_now = get_average_total_bandwidth_now();
-  avg_arrival_time = segment_manager->get_average_arrival_time(
+  avg_arrival_time_us = segment_manager->get_average_arrival_time(
       AVERAGE_ARRIVAL_TIME_WINDOW_SIZE_US);
 }
 
@@ -229,8 +229,8 @@ void NetworkSwitcher::check_and_handover(int avg_send_request_speed,
     if (!res) {
       this->done_switch();
     }
-  } else if (this->check_decrease_adapter(avg_total_bandwidth_now,
-                                          this->mBandwidthWhenIncreasing)) {
+  } else if (this->check_decrease_adapter(avg_send_request_speed,
+                                          avg_arrival_time_us)) {
     /* Decrease Adapter */
     this->set_state(NSState::kNSStateSwitching);
     bool res = this->decrease_adapter();
@@ -240,32 +240,58 @@ void NetworkSwitcher::check_and_handover(int avg_send_request_speed,
   }
 }
 
-#define AVERAGE_INCREASE_LATENCY_SEC 8.04f /* 8.04 sec */
-#define MAX_BANDWIDTH 90000                /* 90000B/s */
-bool NetworkSwitcher::check_increase_adapter(int send_request_speed,
+/* Energy constants (mJ) */
+#define BT_TX_ENERGY_1B_BASIS 5.0342f
+#define BT_TX_ENERGY_PER_1B 0.9018f
+#define WFD_TX_ENERGY_1B_BASIS 2.0554f
+#define WFD_TX_ENERGY_PER_1B 0.2054f
+#define WFD_INIT_ENERGY 3157.8248f
+#define WFD_IDLE_ENERGY_PER_1SEC 156.13f
+
+int NetworkSwitcher::get_init_energy_payoff_point(void) {
+  /* 4534B */
+  return (int)((WFD_INIT_ENERGY) /
+               (BT_TX_ENERGY_PER_1B - WFD_TX_ENERGY_PER_1B));
+}
+int NetworkSwitcher::get_idle_energy_payoff_point(int avg_arrival_time_us) {
+  /*
+   * 224B at 1sec
+   * 6726B at 30sec
+   */
+  return (int)((WFD_IDLE_ENERGY_PER_1SEC * avg_arrival_time_us / 1000000) /
+               (BT_TX_ENERGY_PER_1B - WFD_TX_ENERGY_PER_1B));
+}
+
+int NetworkSwitcher::get_predicted_queue_arrival_speed(
+    int queue_arrival_speed, int avg_arrival_time_us) {
+  // TODO:
+  // Assume that the arrival speed does not change in the future
+  return queue_arrival_speed;
+}
+
+#define AVERAGE_WFD_ON_LATENCY_SEC 8.04f /* 8.04 sec */
+#define MAX_BANDWIDTH 90000              /* 90000B/s */
+bool NetworkSwitcher::check_increase_adapter(int queue_arrival_speed,
                                              int send_queue_data_size) {
   /*
-   * Increase condition: LHS > RHS
-   * LHS: (average increase latency) * (r(t): send request speed) + (|SQ(t)|:
-   * send queue data size) RHS: (average increase latency) * (maximum bluetooth
-   * bandwidth)
+   * Increase condition:
+   *   send queue data size + queue arrival speed > energy payoff point
    */
   if (!this->is_increaseable()) {
     return false;
   } else if (Core::get_instance()->get_state() != kCMStateReady) {
     return false;
-  } else if (((float)AVERAGE_INCREASE_LATENCY_SEC * send_request_speed +
-              send_queue_data_size) >
-             ((float)AVERAGE_INCREASE_LATENCY_SEC * MAX_BANDWIDTH)) {
+  } else if (queue_arrival_speed + send_queue_data_size >
+             this->get_init_energy_payoff_point()) {
     return true;
   } else {
     return false;
   }
 }
 
-#define CHECK_DECREASING_OK_COUNT 5
-bool NetworkSwitcher::check_decrease_adapter(int bandwidth_now,
-                                             int bandwidth_when_increasing) {
+#define CHECK_DECREASING_OK_COUNT 2
+bool NetworkSwitcher::check_decrease_adapter(int queue_arrival_speed,
+                                             int avg_arrival_time_us) {
   /*
    * Decrease condition: LHS < RHS (6 times)
    * LHS: (b(t): total bandwidth)
@@ -275,18 +301,39 @@ bool NetworkSwitcher::check_decrease_adapter(int bandwidth_now,
     return false;
   } else if (Core::get_instance()->get_state() != kCMStateReady) {
     return false;
-  } else if (bandwidth_when_increasing == 0) {
-    return false;
-  } else if (bandwidth_now < bandwidth_when_increasing) {
-    this->mDecreasingCheckCount++;
-    if (this->mDecreasingCheckCount >= CHECK_DECREASING_OK_COUNT) {
-      this->mDecreasingCheckCount = 0;
-      return true;
+  } else {
+    bool wfd_off;
+    if (WFD_INIT_ENERGY <
+        (WFD_IDLE_ENERGY_PER_1SEC * avg_arrival_time_us / 1000000)) {
+      wfd_off = true;
+    } else {
+      int next_arrival_speed = get_predicted_queue_arrival_speed(
+          queue_arrival_speed, avg_arrival_time_us);
+      int idle_energy_payoff_point =
+          get_idle_energy_payoff_point(avg_arrival_time_us);
+      if (next_arrival_speed > idle_energy_payoff_point) {
+        wfd_off = true;
+      } else {
+        wfd_off = false;
+      }
+    }
+
+    if (wfd_off) {
+      if (queue_arrival_speed <
+          this->get_idle_energy_payoff_point(avg_arrival_time_us)) {
+        this->mDecreasingCheckCount++;
+        if (this->mDecreasingCheckCount >= CHECK_DECREASING_OK_COUNT) {
+          this->mDecreasingCheckCount = 0;
+          return true;
+        } else {
+          return false;
+        }
+      } else {
+        return false;
+      }
     } else {
       return false;
     }
-  } else {
-    return false;
   }
 }
 

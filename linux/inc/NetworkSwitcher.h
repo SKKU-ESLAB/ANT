@@ -187,14 +187,19 @@ private:
 
   /* Monitoring */
   void monitor(int &avg_send_request_speed, int &avg_send_queue_data_size,
-               int &avg_total_bandwidth_now, int &avg_arrival_time);
+               int &avg_total_bandwidth_now, int &avg_arrival_time_us);
   void check_and_handover(int avg_send_request_speed,
                           int avg_send_queue_data_size,
                           int avg_total_bandwidth_now,
                           uint64_t avg_arrival_time_us);
 
-  bool check_increase_adapter(int send_request_speed, int send_queue_data_size);
-  bool check_decrease_adapter(int bandwidth_now, int bandwidth_when_increasing);
+  int get_init_energy_payoff_point(void);
+  int get_idle_energy_payoff_point(int avg_arrival_time_us);
+  int get_predicted_queue_arrival_speed(int queue_arrival_speed,
+                                        int avg_arrival_time_us);
+  bool check_increase_adapter(int queue_arrival_speed,
+                              int send_queue_data_size);
+  bool check_decrease_adapter(int queue_arrival_speed, int avg_arrival_time_us);
 
   /* Switch adapters */
   bool increase_adapter(void);
@@ -225,9 +230,9 @@ public:
 
 private:
   /* Values */
-  void put_values(int send_request_speed, int send_queue_data_size,
+  void put_values(int queue_arrival_speed, int send_queue_data_size,
                   int total_bandwidth_now) {
-    this->mSendRequestSpeedValues[this->mValuesCursor] = send_request_speed;
+    this->mSendRequestSpeedValues[this->mValuesCursor] = queue_arrival_speed;
     this->mSendQueueDataSizeValues[this->mValuesCursor] = send_queue_data_size;
     this->mTotalBandwidthNowValues[this->mValuesCursor] = total_bandwidth_now;
     this->mValuesCursor = (this->mValuesCursor + 1) % METRIC_WINDOW_LENGTH;
