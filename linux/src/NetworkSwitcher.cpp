@@ -51,30 +51,25 @@ void NetworkSwitcher::switcher_thread(void) {
 
   int count = 0;
   while (this->mSwitcherThreadOn) {
-    int avg_send_request_speed;
-    int avg_send_queue_data_size;
-    int avg_total_bandwidth_now;
-    int avg_arrival_time_us;
-    this->monitor(avg_send_request_speed, avg_send_queue_data_size,
-                  avg_total_bandwidth_now, avg_arrival_time_us);
-    float avg_arrival_time_sec = avg_arrival_time_us / 1000000;
+    Stats stats;
+    this->get_stats(stats);
+    float avg_arrival_time_sec = stats.avg_arrival_time_us / 1000000;
 
     switch (this->get_state()) {
     case NSState::kNSStateInitialized:
-      LOG_VERB("%s %d %d %d %0.4f", "Initialized", avg_send_request_speed,
-               avg_send_queue_data_size, avg_total_bandwidth_now,
+      LOG_VERB("%s %d %d %d %0.4f", "Initialized", stats.avg_send_request_speed,
+               stats.avg_send_queue_data_size, stats.avg_total_bandwidth_now,
                avg_arrival_time_sec);
       break;
     case NSState::kNSStateRunning:
-      LOG_VERB("%s %d %d %d %0.4f", "Ready", avg_send_request_speed,
-               avg_send_queue_data_size, avg_total_bandwidth_now,
+      LOG_VERB("%s %d %d %d %0.4f", "Ready", stats.avg_send_request_speed,
+               stats.avg_send_queue_data_size, stats.avg_total_bandwidth_now,
                avg_arrival_time_sec);
-      this->check_and_handover(avg_send_request_speed, avg_send_queue_data_size,
-                               avg_total_bandwidth_now, avg_arrival_time_us);
+      this->check_and_handover(stats);
       break;
     case NSState::kNSStateSwitching:
-      LOG_VERB("%s %d %d %d %0.4f", "Switching", avg_send_request_speed,
-               avg_send_queue_data_size, avg_total_bandwidth_now,
+      LOG_VERB("%s %d %d %d %0.4f", "Switching", stats.avg_send_request_speed,
+               stats.avg_send_queue_data_size, stats.avg_total_bandwidth_now,
                avg_arrival_time_sec);
       /* Network switcher do not work during increasing or decreasing adapter */
       break;
@@ -159,10 +154,7 @@ void NetworkSwitcher::reconnect_control_adapter(void) {
   ReconnectControlAdapterTransaction::run();
 }
 
-void NetworkSwitcher::monitor(int &avg_send_request_speed,
-                              int &avg_send_queue_data_size,
-                              int &avg_total_bandwidth_now,
-                              int &avg_arrival_time_us) {
+void NetworkSwitcher::get_stats(Stats &stats) {
   // TODO: consider peer's request_speed, queue_data_size
   /* Monitor metrics */
   int queue_arrival_speed;
@@ -206,22 +198,19 @@ void NetworkSwitcher::monitor(int &avg_send_request_speed,
   /* Get average */
   put_values(queue_arrival_speed, send_queue_data_size, total_bandwidth_now);
 
-  avg_send_request_speed = get_average_send_request_speed();
-  avg_send_queue_data_size = get_average_send_queue_data_size();
-  avg_total_bandwidth_now = get_average_total_bandwidth_now();
-  avg_arrival_time_us = segment_manager->get_average_arrival_time(
+  stats.avg_send_request_speed = get_average_send_request_speed();
+  stats.avg_send_queue_data_size = get_average_send_queue_data_size();
+  stats.avg_total_bandwidth_now = get_average_total_bandwidth_now();
+  stats.avg_arrival_time_us = segment_manager->get_average_arrival_time(
       AVERAGE_ARRIVAL_TIME_WINDOW_SIZE_US);
 }
 
-void NetworkSwitcher::check_and_handover(int avg_send_request_speed,
-                                         int avg_send_queue_data_size,
-                                         int avg_total_bandwidth_now,
-                                         uint64_t avg_arrival_time_us) {
+void NetworkSwitcher::check_and_handover(Stats& stats) {
   /* Determine Increasing/Decreasing adapter */
-  if (this->check_increase_adapter(avg_send_request_speed,
-                                   avg_send_queue_data_size)) {
+  if (this->check_increase_adapter(stats.avg_send_request_speed,
+                                   stats.avg_send_queue_data_size)) {
     /* Maintain bandwidth when increasing */
-    this->mBandwidthWhenIncreasing = avg_total_bandwidth_now;
+    this->mBandwidthWhenIncreasing = stats.avg_total_bandwidth_now;
 
     /* Increase Adapter */
     this->set_state(NSState::kNSStateSwitching);
@@ -229,8 +218,8 @@ void NetworkSwitcher::check_and_handover(int avg_send_request_speed,
     if (!res) {
       this->done_switch();
     }
-  } else if (this->check_decrease_adapter(avg_send_request_speed,
-                                          avg_arrival_time_us)) {
+  } else if (this->check_decrease_adapter(stats.avg_send_request_speed,
+                                          stats.avg_arrival_time_us)) {
     /* Decrease Adapter */
     this->set_state(NSState::kNSStateSwitching);
     bool res = this->decrease_adapter();
