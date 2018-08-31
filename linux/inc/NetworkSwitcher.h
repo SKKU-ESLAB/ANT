@@ -107,6 +107,14 @@ protected:
   static ReconnectControlAdapterTransaction *sOngoing;
 };
 
+class Stats {
+public:
+  int avg_send_request_speed = 0; // TODO: ema_send_request
+  int avg_send_queue_data_size = 0;
+  int avg_total_bandwidth_now = 0;
+  int avg_arrival_time_us = 0; // TODO: ema_arrival_time_us
+};
+
 class Core;
 class NetworkSwitcher {
 public:
@@ -186,12 +194,8 @@ private:
   }
 
   /* Monitoring */
-  void monitor(int &avg_send_request_speed, int &avg_send_queue_data_size,
-               int &avg_total_bandwidth_now, int &avg_arrival_time_us);
-  void check_and_handover(int avg_send_request_speed,
-                          int avg_send_queue_data_size,
-                          int avg_total_bandwidth_now,
-                          uint64_t avg_arrival_time_us);
+  void get_stats(Stats& stats);
+  void check_and_handover(Stats& stats);
 
   int get_init_energy_payoff_point(void);
   int get_idle_energy_payoff_point(int avg_arrival_time_us);
