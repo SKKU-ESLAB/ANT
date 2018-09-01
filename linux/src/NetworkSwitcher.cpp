@@ -52,29 +52,12 @@ void NetworkSwitcher::switcher_thread(void) {
     // Get statistics
     Stats stats;
     this->get_stats(stats);
-    float avg_arrival_time_sec = stats.ema_arrival_time_us / 1000000;
 
-    // Get present state
-    NSState state = this->get_state();
-
-    // Print present state & statistics
-    char state_str[512];
-    switch (state) {
-    case NSState::kNSStateInitialized:
-      strncpy(state_str, "Initialized", 512);
-      break;
-    case NSState::kNSStateRunning:
-      strncpy(state_str, "Ready", 512);
-      break;
-    case NSState::kNSStateSwitching:
-      strncpy(state_str, "Switching", 512);
-      break;
-    }
-    LOG_VERB("%s %d %d %d %0.4f", state_str, stats.ema_queue_arrival_speed,
-             stats.now_queue_data_size, stats.now_total_bandwidth,
-             avg_arrival_time_sec);
+    // Print statistics
+    this->print_stats(stats);
 
     // Handover
+    NSState state = this->get_state();
     if (state == NSState::kNSStateRunning) {
       this->check_and_handover(stats);
     }
@@ -83,6 +66,58 @@ void NetworkSwitcher::switcher_thread(void) {
   }
 
   this->set_state(NSState::kNSStateInitialized);
+}
+
+void NetworkSwitcher::print_stats(Stats &stats) {
+  float ema_arrival_time_sec = stats.ema_arrival_time_us / 1000000;
+
+  const int k_state_str_length = 20;
+  char state_str[k_state_str_length];
+  switch (this->get_state()) {
+  case NSState::kNSStateInitialized:
+    strncpy(state_str, "Initialized", k_state_str_length);
+    break;
+  case NSState::kNSStateRunning:
+    strncpy(state_str, "Ready", k_state_str_length);
+    break;
+  case NSState::kNSStateSwitching:
+    strncpy(state_str, "Switching", k_state_str_length);
+    break;
+  default:
+    strncpy(state_str, "Unknown", k_state_str_length);
+    break;
+  }
+
+  const int k_mode_str_length = 20;
+  char mode_str[k_mode_str_length];
+  switch (this->get_mode()) {
+  case NSMode::kNSModeEnergyAware:
+    strncpy(mode_str, "Energy-Aware", k_mode_str_length);
+    break;
+  case NSMode::kNSModeLatencyAware:
+    strncpy(mode_str, "Latency-Aware", k_mode_str_length);
+    break;
+  case NSMode::kNSModeCapDynamic:
+    strncpy(mode_str, "Cap-Dynamic", k_mode_str_length);
+    break;
+  default:
+    strncpy(mode_str, "Unknown", k_mode_str_length);
+    break;
+  }
+
+  /* Print statistics
+   *  - EMA(Send Request Size (B))
+   *  - EMA(Queue Arrival Speed (B/s))
+   *
+   *  - Queue Data Size
+   *
+   *  - Total Bandwidth
+   *  - EMA(Arrival Time (sec))
+   */
+  LOG_VERB("%d ( %d ) => [ %d ] => %d %0.4f // %s %s",
+           stats.ema_send_request_size, stats.ema_queue_arrival_speed,
+           stats.now_queue_data_size, stats.now_total_bandwidth,
+           ema_arrival_time_sec, mode_str, state_str);
 }
 
 void NetworkSwitcher::connect_adapter(int adapter_id) {
@@ -168,21 +203,18 @@ void NetworkSwitcher::get_stats(Stats &stats) {
   stats.ema_queue_arrival_speed = this->mQueueArrivalSpeed.get_em_average();
 
   /* Statistics used in CoolSpots Policy */
-  stats.now_total_bandwidth = Core::get_instance()->get_total_bandwidth();
+  stats.now_total_bandwidth = core->get_total_bandwidth();
 
   /* Statistics used in Energy-aware & Latency-aware Policy */
   stats.ema_send_request_size = core->get_ema_send_request_size();
+  stats.ema_arrival_time_us = core->get_ema_send_arrival_time();
   stats.now_queue_data_size = sm->get_queue_data_size(kSegSend) +
                               sm->get_failed_sending_queue_data_size();
-  stats.ema_arrival_time_us = sm->get_average_arrival_time(
-      AVERAGE_ARRIVAL_TIME_WINDOW_SIZE_US); // TODO: remake it with Counter
-      // TODO: move it to Core
 }
 
 void NetworkSwitcher::check_and_handover(Stats &stats) {
   /* Determine Increasing/Decreasing adapter */
-  if (this->check_increase_adapter(stats.ema_queue_arrival_speed,
-                                   stats.now_queue_data_size)) {
+  if (this->check_increase_adapter(stats)) {
     /* Maintain bandwidth when increasing */
     this->mBandwidthWhenIncreasing = stats.now_total_bandwidth;
 
@@ -192,8 +224,7 @@ void NetworkSwitcher::check_and_handover(Stats &stats) {
     if (!res) {
       this->done_switch();
     }
-  } else if (this->check_decrease_adapter(stats.ema_queue_arrival_speed,
-                                          stats.ema_arrival_time_us)) {
+  } else if (this->check_decrease_adapter(stats)) {
     /* Decrease Adapter */
     this->set_state(NSState::kNSStateSwitching);
     bool res = this->decrease_adapter();
@@ -227,70 +258,120 @@ int NetworkSwitcher::get_idle_energy_payoff_point(int ema_arrival_time_us) {
 
 #define AVERAGE_WFD_ON_LATENCY_SEC 8.04f /* 8.04 sec */
 #define MAX_BANDWIDTH 90000              /* 90000B/s */
-bool NetworkSwitcher::check_increase_adapter(int queue_arrival_speed,
-                                             int now_queue_data_size) {
-  /*
-   * Increase condition:
-   *   send queue data size + queue arrival speed > energy payoff point
-   */
+bool NetworkSwitcher::check_increase_adapter(const Stats &stats) {
   if (!this->is_increaseable()) {
     return false;
   } else if (Core::get_instance()->get_state() != kCMStateReady) {
     return false;
-  } else if (queue_arrival_speed + now_queue_data_size >
-             this->get_init_energy_payoff_point()) {
-    return true;
   } else {
-    return false;
+    switch (this->get_mode()) {
+    case NSMode::kNSModeEnergyAware: {
+      /*
+       * Energy-aware Policy:
+       *  - queue data size + EMA(send_request_size) > init energy payoff point
+       */
+      if (stats.ema_send_request_size + stats.now_queue_data_size >
+          this->get_init_energy_payoff_point()) {
+        return true;
+      } else {
+        return false;
+      }
+      break;
+    }
+    case NSMode::kNSModeLatencyAware: {
+      /*
+       * Latency-aware Policy:
+       *  - queue data size + EMA(send_request_size) > init latency payoff point
+       */
+      break;
+    }
+    case NSMode::kNSModeCapDynamic: {
+      /*
+       * Cap-dynamic Policy:
+       */
+      break;
+    }
+    default: {
+      LOG_ERR("Unsupported mode!: %d", this->get_mode());
+      return false;
+      break;
+    }
+    }
   }
 }
 
 #define CHECK_DECREASING_OK_COUNT 2
-bool NetworkSwitcher::check_decrease_adapter(int queue_arrival_speed,
-                                             int ema_arrival_time_us) {
-  /*
-   * Decrease condition: LHS < RHS (6 times)
-   * LHS: (b(t): total bandwidth)
-   * RHS: (b(t_wfdon): total bandwidth when increasing)
-   */
+bool NetworkSwitcher::check_decrease_adapter(const Stats &stats) {
   if (!this->is_decreaseable()) {
     return false;
   } else if (Core::get_instance()->get_state() != kCMStateReady) {
     return false;
   } else {
-    bool wfd_off;
-    if (WFD_INIT_ENERGY <
-        (WFD_IDLE_ENERGY_PER_1SEC * ema_arrival_time_us / 1000000)) {
-      wfd_off = true;
-    } else {
-      //int next_arrival_speed = ;
-      int idle_energy_payoff_point =
-          get_idle_energy_payoff_point(ema_arrival_time_us);
-      if (next_arrival_speed > idle_energy_payoff_point) {
+    switch (this->get_mode()) {
+    case NSMode::kNSModeEnergyAware: {
+      /*
+       * Energy-aware Policy:
+       *  - if(wfd_idle_energy < wfd_init_energy) EMA(send_request_size)
+       *      > idle energy payoff point
+       *  - if(wfd_idle_energy > wfd_init_energy) always false
+       */
+
+      bool wfd_off;
+      int wfd_idle_energy =
+          WFD_IDLE_ENERGY_PER_1SEC * stats.ema_arrival_time_us / 1000000;
+      if (WFD_INIT_ENERGY < wfd_idle_energy) {
         wfd_off = true;
       } else {
-        wfd_off = false;
+        int next_request_size = stats.ema_send_request_size;
+        int idle_energy_payoff_point =
+            get_idle_energy_payoff_point(stats.ema_arrival_time_us);
+        if (next_request_size > idle_energy_payoff_point) {
+          wfd_off = true;
+        } else {
+          wfd_off = false;
+        }
       }
-    }
 
-    if (wfd_off) {
-      if (queue_arrival_speed <
-          this->get_idle_energy_payoff_point(ema_arrival_time_us)) {
-        this->mDecreasingCheckCount++;
-        if (this->mDecreasingCheckCount >= CHECK_DECREASING_OK_COUNT) {
-          this->mDecreasingCheckCount = 0;
-          return true;
+      if (wfd_off) {
+        if (stats.ema_send_request_size <
+            this->get_idle_energy_payoff_point(stats.ema_arrival_time_us)) {
+          this->mDecreasingCheckCount++;
+          if (this->mDecreasingCheckCount >= CHECK_DECREASING_OK_COUNT) {
+            this->mDecreasingCheckCount = 0;
+            return true;
+          } else {
+            return false;
+          }
         } else {
           return false;
         }
       } else {
         return false;
       }
-    } else {
+      break;
+    }
+    case NSMode::kNSModeLatencyAware: {
+      /*
+       * Latency-aware Policy:
+       *  - always false
+       */
       return false;
+      break;
+    }
+    case NSMode::kNSModeCapDynamic: {
+      /*
+       * Cap-dynamic Policy:
+       */
+      break;
+    }
+    default: {
+      LOG_ERR("Unsupported mode!: %d", this->get_mode());
+      return false;
+      break;
+    }
     }
   }
-}
+} // namespace sc
 
 bool NetworkSwitcher::increase_adapter(void) {
   NSState state = this->get_state();

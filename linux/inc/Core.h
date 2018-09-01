@@ -25,6 +25,7 @@
 #include <SegmentManager.h>
 #include <ServerAdapter.h>
 #include <APIInternal.h>
+#include <ArrivalTimeCounter.h>
 
 #include <mutex>
 #include <stdint.h>
@@ -207,8 +208,13 @@ public:
   }
   static void receive_control_message_loop(ServerAdapter *adapter);
 
+  /* Get statistics */
   int get_ema_send_request_size() {
     return this->mSendRequestSize.get_em_average();
+  }
+
+  int get_ema_send_arrival_time() {
+    return this->mSendArrivalTime.get_em_average();
   }
 
   /* Singleton */
@@ -253,6 +259,7 @@ private:
 
   /* Statistics */
   Counter mSendRequestSize;
+  ArrivalTimeCounter mSendArrivalTime;
 };
 
 } /* namespace sc */
