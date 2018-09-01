@@ -17,8 +17,10 @@
  * limitations under the License.
  */
 
-#ifndef INC_AVERAGE_ARRIVAL_TIME_H_
-#define INC_AVERAGE_ARRIVAL_TIME_H_
+#ifndef INC_ARRIVAL_TIME_COUNTER_H_
+#define INC_ARRIVAL_TIME_COUNTER_H_
+
+#include <Counter.h>
 
 #include <sys/time.h>
 
@@ -26,9 +28,16 @@
 #include <vector>
 
 namespace sc {
-class AverageArrivalTime {
+class ArrivalTimeCounter : public Counter {
 public:
-  AverageArrivalTime(void) {
+  ArrivalTimeCounter(int simple_moving_average_length,
+                     float exponential_moving_average_weight)
+      : Counter(simple_moving_average_length,
+                exponential_moving_average_weight) {
+    this->mLastAccessedTS.tv_sec = 0;
+    this->mLastAccessedTS.tv_usec = 0;
+  }
+  ArrivalTimeCounter(void) : Counter() {
     this->mLastAccessedTS.tv_sec = 0;
     this->mLastAccessedTS.tv_usec = 0;
   }
@@ -44,43 +53,19 @@ public:
       uint64_t endUS = (uint64_t)endTS.tv_sec * 1000 * 1000 + endTS.tv_usec;
       uint64_t startUS =
           (uint64_t)startTS.tv_sec * 1000 * 1000 + startTS.tv_usec;
-      uint64_t intervalUS = endUS - startUS;
-      this->mArrivalTimeUSs.insert(this->mArrivalTimeUSs.begin(), intervalUS);
+      int intervalUS = (int)(endUS - startUS);
+      this->set_value(intervalUS);
     }
 
     // Store last accessed timestamp
     this->mLastAccessedTS = endTS;
   }
 
-  uint64_t getAverage(uint64_t windowSizeUS) {
-    std::unique_lock<std::mutex> lock(this->mLock);
-    std::vector<uint64_t>::iterator it = this->mArrivalTimeUSs.begin();
-
-    uint64_t totalArrivalTimeUS = 0;
-    int count = 0;
-    while (it != this->mArrivalTimeUSs.end()) {
-      uint64_t arrivalTimeUS = *it;
-      if (totalArrivalTimeUS < windowSizeUS) {
-        // not exceed window size: sum the arrival time
-        totalArrivalTimeUS += arrivalTimeUS;
-        count++;
-        it++;
-      } else {
-        // exceed window size: erase the entry
-        it = this->mArrivalTimeUSs.erase(it);
-      }
-    }
-
-    uint64_t average = (count != 0) ? (totalArrivalTimeUS / count) : 0;
-    return average;
-  }
-
 private:
   std::mutex mLock;
 
-  std::vector<uint64_t> mArrivalTimeUSs;
   struct timeval mLastAccessedTS;
 };
 } /* namespace sc */
 
-#endif /* INC_AVERAGE_ARRIVAL_TIME_H_ */
+#endif /* INC_ARRIVAL_TIME_H_ COUNTER_*/

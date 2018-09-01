@@ -31,7 +31,6 @@
 // Network Switcher Configs
 #define METRIC_WINDOW_LENGTH 8
 #define SLEEP_USECS (250 * 1000)
-#define AVERAGE_ARRIVAL_TIME_WINDOW_SIZE_US (120 * 1000 * 1000)
 
 namespace sc {
 typedef enum {
@@ -41,8 +40,9 @@ typedef enum {
 } NSState;
 
 typedef enum {
-  kNSModeEnergyAware = 0,
-  kNSModeLatencyAware = 1,
+  kNSModeEnergyAware = 0, /* WearDrive-like */
+  kNSModeLatencyAware = 1, /* Selective Connection Unique */
+  kNSModeCapDynamic = 2 /* CoolSpots */
 } NSMode;
 
 class SwitchAdapterTransaction {
@@ -114,11 +114,11 @@ public:
 
   /* Statistics used in CoolSpots Policy */
   int now_total_bandwidth = 0;
-  
+
   /* Statistics used in Energy-aware & Latency-aware Policy */
   int ema_send_request_size = 0;
-  int now_queue_data_size = 0;
   int ema_arrival_time_us = 0;
+  int now_queue_data_size = 0;
 };
 
 class Core;
@@ -128,12 +128,23 @@ public:
   void start(void);
   void stop(void);
 
+  /* Get state */
   NSState get_state(void) {
     std::unique_lock<std::mutex> lck(this->mStateLock);
     return this->mState;
   }
 
-  void switcher_thread(void);
+  /* Get or set mode */
+  NSMode get_mode(void) {
+    std::unique_lock<std::mutex> lck(this->mModeLock);
+    NSMode mode = this->mMode;
+    return mode;
+  }
+
+  void set_mode(NSMode new_mode) {
+    std::unique_lock<std::mutex> lck(this->mModeLock);
+    this->mMode = new_mode;
+  }
 
   /*
    * Connect adapter command.
@@ -190,17 +201,21 @@ private:
     this->mBandwidthWhenIncreasing = 0;
     this->mDecreasingCheckCount = 0;
     this->mActiveDataAdapterIndex = 0;
+    this->set_mode(NSMode::kNSModeEnergyAware);
   }
 
+  /* Network switcher thread */
+  void switcher_thread(void);
+
   /* Monitoring */
-  void get_stats(Stats& stats);
-  void check_and_handover(Stats& stats);
+  void get_stats(Stats &stats);
+  void print_stats(Stats &stats);
+  void check_and_handover(Stats &stats);
 
   int get_init_energy_payoff_point(void);
   int get_idle_energy_payoff_point(int avg_arrival_time_us);
-  bool check_increase_adapter(int queue_arrival_speed,
-                              int send_queue_data_size);
-  bool check_decrease_adapter(int queue_arrival_speed, int avg_arrival_time_us);
+  bool check_increase_adapter(const Stats &stats);
+  bool check_decrease_adapter(const Stats &stats);
 
   /* Switch adapters */
   bool increase_adapter(void);

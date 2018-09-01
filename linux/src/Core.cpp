@@ -164,6 +164,7 @@ int Core::send(const void *dataBuffer, uint32_t dataLength) {
 
   /* Update statistics */
   this->mSendRequestSize.set_value(dataLength);
+  this->mSendArrivalTime.arrive();
 
   /* Attach the protocol header to the payload */
   ProtocolManager::data_to_protocol_data((const uint8_t *)dataBuffer,
