@@ -2,7 +2,7 @@
  *  Gyeonghwan Hong (redcarrottt@gmail.com)
  *  Eunsoo Park (esevan.park@gmail.com)
  *  Injung Hwang (sinban04@gmail.com)
- *  
+ *
  * [Contact]
  *  Gyeonghwan Hong (redcarrottt@gmail.com)
  *
@@ -30,7 +30,6 @@
  */
 #define kProtHeaderSize 6
 
-
 namespace sc {
 
 /**
@@ -44,28 +43,25 @@ typedef struct {
 } ProtocolData;
 
 class ProtocolManager {
- public:
-  static void data_to_protocol_data(const uint8_t *data,
-                                     uint32_t len,
-                                     ProtocolData *ret_pd);
-  static uint32_t serialize(ProtocolData *pd,
-                             const uint8_t *buf,
-                             uint32_t offset,
-                             uint32_t payload_size,
-                             uint8_t **ret_vector);
+public:
+  static void data_to_protocol_data(const uint8_t *data, uint32_t len,
+                                    ProtocolData *ret_pd);
+  static uint32_t serialize(ProtocolData *pd, const uint8_t *buf,
+                            uint32_t offset, uint32_t payload_size,
+                            uint8_t **ret_vector);
   static int send_packet(uint8_t *serialized, uint32_t packet_size);
 
   static uint32_t recv_packet(uint8_t **seralized);
 
   static uint32_t parse_header(uint8_t *serialized, ProtocolData *ret_pd);
- private:
-  static uint16_t packet_id;
+
+private:
+  static uint16_t sPacketId;
   static void serialize_header(ProtocolData *pd, uint8_t *vec_ptr);
-  static void serialize_data(const uint8_t *dat_buf,
-                              uint32_t len,
-                              uint8_t *vec_ptr);
+  static void serialize_data(const uint8_t *dat_buf, uint32_t len,
+                             uint8_t *vec_ptr);
 };
 
 } /* namespace sc */
 
-#endif  // INC_PROTOCOL_MANAGER_H_
+#endif // INC_PROTOCOL_MANAGER_H_

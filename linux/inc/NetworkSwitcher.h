@@ -109,10 +109,16 @@ protected:
 
 class Stats {
 public:
-  int avg_send_request_speed = 0; // TODO: ema_send_request
-  int avg_send_queue_data_size = 0;
-  int avg_total_bandwidth_now = 0;
-  int avg_arrival_time_us = 0; // TODO: ema_arrival_time_us
+  /* Statistics used to print present status */
+  int ema_queue_arrival_speed = 0;
+
+  /* Statistics used in CoolSpots Policy */
+  int now_total_bandwidth = 0;
+  
+  /* Statistics used in Energy-aware & Latency-aware Policy */
+  int ema_send_request_size = 0;
+  int now_queue_data_size = 0;
+  int ema_arrival_time_us = 0;
 };
 
 class Core;
@@ -184,13 +190,6 @@ private:
     this->mBandwidthWhenIncreasing = 0;
     this->mDecreasingCheckCount = 0;
     this->mActiveDataAdapterIndex = 0;
-
-    for (int i = 0; i < METRIC_WINDOW_LENGTH; i++) {
-      this->mSendRequestSpeedValues[i] = 0;
-      this->mSendQueueDataSizeValues[i] = 0;
-      this->mTotalBandwidthNowValues[i] = 0;
-    }
-    this->mValuesCursor = 0;
   }
 
   /* Monitoring */
@@ -199,8 +198,6 @@ private:
 
   int get_init_energy_payoff_point(void);
   int get_idle_energy_payoff_point(int avg_arrival_time_us);
-  int get_predicted_queue_arrival_speed(int queue_arrival_speed,
-                                        int avg_arrival_time_us);
   bool check_increase_adapter(int queue_arrival_speed,
                               int send_queue_data_size);
   bool check_decrease_adapter(int queue_arrival_speed, int avg_arrival_time_us);
@@ -233,42 +230,6 @@ public:
   }
 
 private:
-  /* Values */
-  void put_values(int queue_arrival_speed, int send_queue_data_size,
-                  int total_bandwidth_now) {
-    this->mSendRequestSpeedValues[this->mValuesCursor] = queue_arrival_speed;
-    this->mSendQueueDataSizeValues[this->mValuesCursor] = send_queue_data_size;
-    this->mTotalBandwidthNowValues[this->mValuesCursor] = total_bandwidth_now;
-    this->mValuesCursor = (this->mValuesCursor + 1) % METRIC_WINDOW_LENGTH;
-  }
-
-  int get_average_send_request_speed() {
-    int average = 0;
-    for (int i = 0; i < METRIC_WINDOW_LENGTH; i++) {
-      average += this->mSendRequestSpeedValues[i];
-    }
-    average = average / METRIC_WINDOW_LENGTH;
-    return average;
-  }
-
-  int get_average_send_queue_data_size() {
-    int average = 0;
-    for (int i = 0; i < METRIC_WINDOW_LENGTH; i++) {
-      average += this->mSendQueueDataSizeValues[i];
-    }
-    average = average / METRIC_WINDOW_LENGTH;
-    return average;
-  }
-
-  int get_average_total_bandwidth_now() {
-    int average = 0;
-    for (int i = 0; i < METRIC_WINDOW_LENGTH; i++) {
-      average += this->mTotalBandwidthNowValues[i];
-    }
-    average = average / METRIC_WINDOW_LENGTH;
-    return average;
-  }
-
   void set_state(NSState new_state) {
     std::unique_lock<std::mutex> lck(this->mStateLock);
     this->mState = new_state;
@@ -284,10 +245,7 @@ private:
   int mBandwidthWhenIncreasing;
   int mDecreasingCheckCount;
 
-  int mSendRequestSpeedValues[METRIC_WINDOW_LENGTH];
-  int mSendQueueDataSizeValues[METRIC_WINDOW_LENGTH];
-  int mTotalBandwidthNowValues[METRIC_WINDOW_LENGTH];
-  int mValuesCursor;
+  Counter mQueueArrivalSpeed; /* to achieve the ema of queue arrival speed */
 };
 } /* namespace sc */
 

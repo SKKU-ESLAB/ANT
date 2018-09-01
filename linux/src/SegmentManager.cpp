@@ -2,7 +2,7 @@
  *  Gyeonghwan Hong (redcarrottt@gmail.com)
  *  Eunsoo Park (esevan.park@gmail.com)
  *  Injung Hwang (sinban04@gmail.com)
- *  
+ *
  * [Contact]
  *  Gyeonghwan Hong (redcarrottt@gmail.com)
  *
@@ -24,15 +24,15 @@
 #include <DebugLog.h>
 #include <ProtocolManager.h>
 
+#include <netinet/in.h>
 #include <stdlib.h>
 #include <string.h>
-#include <netinet/in.h>
 
 #include <list>
 
 namespace sc {
 /* Singleton */
-SegmentManager* SegmentManager::singleton = NULL;
+SegmentManager *SegmentManager::singleton = NULL;
 
 uint32_t SegmentManager::get_next_global_seq_no(uint32_t num_segments) {
   uint32_t res;
@@ -45,9 +45,9 @@ uint32_t SegmentManager::get_next_global_seq_no(uint32_t num_segments) {
 
 void SegmentManager::serialize_segment_header(Segment *seg) {
   uint32_t net_seq_no = htonl(seg->seq_no);
-  uint32_t net_flag_len = htonl(seg->flag_len); 
+  uint32_t net_flag_len = htonl(seg->flag_len);
   memcpy(seg->data, &net_seq_no, sizeof(uint32_t));
-  memcpy(seg->data+4, &net_flag_len, sizeof(uint32_t));
+  memcpy(seg->data + 4, &net_flag_len, sizeof(uint32_t));
 }
 
 int SegmentManager::send_to_segment_manager(uint8_t *data, size_t len) {
@@ -59,10 +59,10 @@ int SegmentManager::send_to_segment_manager(uint8_t *data, size_t len) {
 
   /* Reserve sequence numbers to this thread */
   uint32_t allocated_seq_no = get_next_global_seq_no(num_of_segments);
-  
+
   int seg_idx;
-  for (seg_idx = 0; seg_idx < num_of_segments; seg_idx ++) {
-    uint32_t seg_len =(len - offset < kSegSize)? len - offset : kSegSize;
+  for (seg_idx = 0; seg_idx < num_of_segments; seg_idx++) {
+    uint32_t seg_len = (len - offset < kSegSize) ? len - offset : kSegSize;
     Segment *seg = get_free_segment();
 
     /* Set segment length */
@@ -70,13 +70,14 @@ int SegmentManager::send_to_segment_manager(uint8_t *data, size_t len) {
 
     /* Set segment sequence number */
     seg->seq_no = allocated_seq_no++;
- 
+
     /* Set segment data */
     memcpy(&(seg->data[kSegHeaderSize]), data + offset, seg_len);
     offset += seg_len;
 
     /* Set segment MF flag */
-    if (offset < len) mSetSegFlagBits(kSegFlagMF, seg->flag_len);
+    if (offset < len)
+      mSetSegFlagBits(kSegFlagMF, seg->flag_len);
 
     /* Set segment header to data */
     serialize_segment_header(seg);
@@ -98,9 +99,9 @@ uint8_t *SegmentManager::recv_from_segment_manager(void *proc_data_handle) {
   bool dequeued = false;
   Segment *seg;
 
-  while(dequeued == false){
+  while (dequeued == false) {
     seg = dequeue(kSegRecv);
-    if(seg){
+    if (seg) {
       dequeued = true;
     }
   }
@@ -113,8 +114,7 @@ uint8_t *SegmentManager::recv_from_segment_manager(void *proc_data_handle) {
   serialized = reinterpret_cast<uint8_t *>(calloc(pd->len, sizeof(uint8_t)));
 
   data_size = mGetSegLenBits(seg->flag_len) - kProtHeaderSize;
-  memcpy(serialized + offset,
-         &(seg->data[kSegHeaderSize]) + kProtHeaderSize,
+  memcpy(serialized + offset, &(seg->data[kSegHeaderSize]) + kProtHeaderSize,
          data_size);
   offset += data_size;
 
@@ -125,10 +125,8 @@ uint8_t *SegmentManager::recv_from_segment_manager(void *proc_data_handle) {
   while (cont) {
     seg = dequeue(kSegRecv);
     data_size = mGetSegLenBits(seg->flag_len);
-    memcpy(serialized + offset,
-           &(seg->data[kSegHeaderSize]),
-           data_size);
-    cont =(mGetSegFlagBits(seg->flag_len) == kSegFlagMF);
+    memcpy(serialized + offset, &(seg->data[kSegHeaderSize]), data_size);
+    cont = (mGetSegFlagBits(seg->flag_len) == kSegFlagMF);
     offset += data_size;
     free_segment(seg);
   }
@@ -142,7 +140,7 @@ uint8_t *SegmentManager::recv_from_segment_manager(void *proc_data_handle) {
  */
 void SegmentManager::enqueue(SegQueueType type, Segment *seg) {
   assert(type < kSegMaxQueueType);
-  // Get lock for the queue 
+  // Get lock for the queue
   std::unique_lock<std::mutex> lck(this->mQueueLock[type]);
   bool segment_enqueued = false;
 
@@ -160,15 +158,14 @@ void SegmentManager::enqueue(SegQueueType type, Segment *seg) {
     this->mQueues[type].push_back(seg);
     this->mQueueLength[type].increase();
     segment_enqueued = true;
-  }
-  else {
+  } else {
     /*
      * If the sequence number is not the next expected one,
      * it enqueues its segments to the pending queue, not normal queue.
      */
-    if (seg->seq_no <= this->mNextSeqNo[type]){
-      LOG_ERR("Sequence # Error!: %d > %d, %s", 
-          seg->seq_no, this->mNextSeqNo[type], type == kSegSend? "Send":"Recv");
+    if (seg->seq_no <= this->mNextSeqNo[type]) {
+      LOG_ERR("Sequence # Error!: %d > %d, %s", seg->seq_no,
+              this->mNextSeqNo[type], type == kSegSend ? "Send" : "Recv");
     }
     assert(seg->seq_no > this->mNextSeqNo[type]);
 
@@ -181,11 +178,11 @@ void SegmentManager::enqueue(SegQueueType type, Segment *seg) {
     while (curr_it != this->mPendingQueues[type].end()) {
       Segment *walker = *curr_it;
       assert(walker->seq_no != seg->seq_no);
-      if (walker->seq_no > seg->seq_no) break;
+      if (walker->seq_no > seg->seq_no)
+        break;
       curr_it++;
     }
     this->mPendingQueues[type].insert(curr_it, seg);
-
   }
 
   /*
@@ -205,20 +202,21 @@ void SegmentManager::enqueue(SegQueueType type, Segment *seg) {
     this->mPendingQueues[type].erase(to_erase);
   }
 
-  if (segment_enqueued) this->mCondEnqueued[type].notify_all();
+  if (segment_enqueued)
+    this->mCondEnqueued[type].notify_all();
 }
 
 /*
  * Dequeue the segment from the queue.
  * Note that this function is used for sending & receiving queue.
  */
-Segment *SegmentManager::dequeue(SegQueueType type) { 
+Segment *SegmentManager::dequeue(SegQueueType type) {
   assert(type < kSegMaxQueueType);
   std::unique_lock<std::mutex> lck(this->mQueueLock[type]);
 
   /* If queue is empty, wait until some segment is enqueued */
   if (this->mQueueLength[type].get_size() == 0) {
-    if(type == kSegSend) {
+    if (type == kSegSend) {
       LOG_DEBUG("sending queue is empty. wait for another\n");
     } else {
       LOG_DEBUG("receiving queue is empty. wait for another\n");
@@ -230,7 +228,7 @@ Segment *SegmentManager::dequeue(SegQueueType type) {
   /* Dequeue from queue */
   Segment *ret = this->mQueues[type].front();
   if (ret == NULL) {
-    LOG_DEBUG("Queue[%s] is NULL(empty)", type==0? "send":"recv");
+    LOG_DEBUG("Queue[%s] is NULL(empty)", type == 0 ? "send" : "recv");
     return NULL;
   }
   this->mQueues[type].pop_front();
@@ -293,7 +291,8 @@ void SegmentManager::failed_sending(Segment *seg) {
 
 Segment *SegmentManager::get_failed_sending(void) {
   std::unique_lock<std::mutex> lck(this->mSendFailQueueLock);
-  if (this->mSendFailQueue.size() == 0) return NULL;
+  if (this->mSendFailQueue.size() == 0)
+    return NULL;
 
   Segment *res = this->mSendFailQueue.front();
   this->mSendFailQueue.pop_front();
@@ -301,9 +300,7 @@ Segment *SegmentManager::get_failed_sending(void) {
   return res;
 }
 
-void SegmentManager::reset(void) {
-  
-}
+void SegmentManager::reset(void) {}
 
 void SegmentManager::notify_queue() {
   LOG_VERB("notify all\n");
