@@ -2,7 +2,7 @@
  *  Gyeonghwan Hong (redcarrottt@gmail.com)
  *  Eunsoo Park (esevan.park@gmail.com)
  *  Injung Hwang (sinban04@gmail.com)
- *  
+ *
  * [Contact]
  *  Gyeonghwan Hong (redcarrottt@gmail.com)
  *
@@ -22,13 +22,13 @@
 #ifndef INC_SEGMENT_MANAGER_H_
 #define INC_SEGMENT_MANAGER_H_
 
-#include <Counter.h>
 #include <AverageArrivalTime.h>
+#include <Counter.h>
 
-#include <stdint.h>
+#include <condition_variable>
 #include <list>
 #include <mutex>
-#include <condition_variable>
+#include <stdint.h>
 
 // For experiment
 #include <sys/time.h>
@@ -38,40 +38,34 @@
 #define kSegSize 512
 
 #define kSegFreeThreshold 256
-#define kSegHeaderSize  8
+#define kSegHeaderSize 8
 
 #define kSegLenOffset 0
 #define kSegLenMask 0x00007FFF
-#define kSegFlagOffset  15
+#define kSegFlagOffset 15
 #define kSegFlagMask 0x00008000
-#define mGetSegLenBits(x)(((x) & kSegLenMask) >> kSegLenOffset)
-#define mGetSegFlagBits(x)(((x) & kSegFlagMask) >> kSegFlagOffset)
-#define mSetSegBits(x, dest, offset, mask)  do {\
-  dest |=((x << offset) & mask); \
-} while (0)
-#define mSetSegLenBits(x, dest) \
-    mSetSegBits(x, dest, kSegLenOffset, kSegLenMask)
-#define mSetSegFlagBits(x, dest) \
-    mSetSegBits(x, dest, kSegFlagOffset, kSegFlagMask)
+#define mGetSegLenBits(x) (((x)&kSegLenMask) >> kSegLenOffset)
+#define mGetSegFlagBits(x) (((x)&kSegFlagMask) >> kSegFlagOffset)
+#define mSetSegBits(x, dest, offset, mask)                                     \
+  do {                                                                         \
+    dest |= ((x << offset) & mask);                                            \
+  } while (0)
+#define mSetSegLenBits(x, dest) mSetSegBits(x, dest, kSegLenOffset, kSegLenMask)
+#define mSetSegFlagBits(x, dest)                                               \
+  mSetSegBits(x, dest, kSegFlagOffset, kSegFlagMask)
 
 namespace sc {
 /*
  *  Queue Type
  */
-typedef enum {
-  kSegSend = 0,
-  kSegRecv = 1,
-  kSegMaxQueueType = 2
-} SegQueueType;
+typedef enum { kSegSend = 0, kSegRecv = 1, kSegMaxQueueType = 2 } SegQueueType;
 /*  Types of Flag
  */
-typedef enum {
-  kSegFlagMF = 1
-} SegFlagVal;
+typedef enum { kSegFlagMF = 1 } SegFlagVal;
 
 /*
  * < Data Structure of Segment > - Handled by Segment Manager
- * Segment is the minimum unit of sending data through the network. 
+ * Segment is the minimum unit of sending data through the network.
  * The partial of the segment cannot be sent.
  *
  * (*c.f.) Segment Header (seq_no + flag_len) is delicate to memroy alignment.
@@ -80,12 +74,12 @@ typedef enum {
 #define SEGMENT_DATA_SIZE (kSegSize + kSegHeaderSize)
 typedef struct {
   uint32_t seq_no;
-  uint32_t flag_len;    // To present the size of the segment(consider the flag)
+  uint32_t flag_len; // To present the size of the segment(consider the flag)
   uint8_t data[SEGMENT_DATA_SIZE];
 } Segment;
 
 class SegmentManager {
- public:
+public:
   /* Used in protocol manager */
   int send_to_segment_manager(uint8_t *data, size_t len);
   uint8_t *recv_from_segment_manager(void *proc_data_handle);
@@ -93,7 +87,7 @@ class SegmentManager {
   void failed_sending(Segment *seg);
   Segment *get_failed_sending(void);
   void enqueue(SegQueueType type, Segment *seg);
-  Segment *dequeue(SegQueueType type);  
+  Segment *dequeue(SegQueueType type);
   Segment *get_free_segment(void);
   void free_segment(Segment *seg);
   void free_segment_all(void);
@@ -102,9 +96,7 @@ class SegmentManager {
 
   void notify_queue(void);
 
-  int get_queue_length(int type) {
-    return this->mQueueLength[type].get_size();
-  }
+  int get_queue_length(int type) { return this->mQueueLength[type].get_size(); }
 
   int get_queue_data_size(int type) {
     return this->mQueueLength[type].get_size() * SEGMENT_DATA_SIZE;
@@ -114,24 +106,22 @@ class SegmentManager {
     return this->mFailedSendingQueueLength.get_size() * SEGMENT_DATA_SIZE;
   }
 
-  int get_send_request_per_sec() {
-    return this->mSendRequest.get_speed();
-  }
+  int get_send_request_per_sec() { return this->mSendRequest.get_speed(); }
 
   uint64_t get_average_arrival_time(uint64_t windowSizeUS) {
     return this->mAverageArrivalTime.getAverage(windowSizeUS);
   }
 
   /* Singleton */
-  static SegmentManager* get_instance(void) {
+  static SegmentManager *get_instance(void) {
     if (singleton == NULL)
       singleton = new SegmentManager();
     return singleton;
   }
 
- private:
+private:
   /* Singleton */
-  static SegmentManager* singleton;
+  static SegmentManager *singleton;
   SegmentManager(void) {
     this->mNextGlobalSeqNo = 0;
     this->mNextSeqNo[kSegSend] = 0;
@@ -148,7 +138,7 @@ class SegmentManager {
 
   // for experiment
   int is_start, is_finish;
-  struct timeval start,end;
+  struct timeval start, end;
   FILE *fp2;
 
   /* When access to queue, lock should be acquired */
@@ -180,4 +170,4 @@ class SegmentManager {
   void reset_recv_queue(void);
 };
 } /* namespace sc */
-#endif  // INC_SEGMENT_MANAGER_H_
+#endif // INC_SEGMENT_MANAGER_H_

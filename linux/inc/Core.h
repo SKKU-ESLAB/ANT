@@ -163,6 +163,32 @@ public:
   ServerAdapter *get_control_adapter() { return this->mControlAdapter; }
   int get_data_adapter_count(void) { return this->mDataAdapters.size(); }
 
+  int get_total_bandwidth(void) {
+    int num_adapters = 0;
+    int now_total_bandwidth = 0;
+    /* Statistics from control adapter */
+    {
+      ServerAdapter *adapter = this->get_control_adapter();
+      int bandwidth_up = adapter->get_bandwidth_up();
+      int bandwidth_down = adapter->get_bandwidth_down();
+      now_total_bandwidth += (bandwidth_up + bandwidth_down);
+      num_adapters++;
+    }
+
+    /* Statistics from data adapters */
+    int data_adapter_count = this->get_data_adapter_count();
+    for (int i = 0; i < data_adapter_count; i++) {
+      ServerAdapter *adapter = this->get_data_adapter(i);
+      if (adapter == NULL)
+        continue;
+      int bandwidth_up = adapter->get_bandwidth_up();
+      int bandwidth_down = adapter->get_bandwidth_down();
+      now_total_bandwidth += (bandwidth_up + bandwidth_down);
+      num_adapters++;
+    }
+    return now_total_bandwidth;
+  }
+
   /* Control message handling */
 private:
   void send_control_message(const void *dataBuffer, size_t dataLength);
@@ -180,6 +206,10 @@ public:
     this->mControlMessageListeners.push_back(listener);
   }
   static void receive_control_message_loop(ServerAdapter *adapter);
+
+  int get_ema_send_request_size() {
+    return this->mSendRequestSize.get_em_average();
+  }
 
   /* Singleton */
   static Core *get_instance(void) {
@@ -220,6 +250,9 @@ private:
 
   /* Control Message Listeners */
   std::vector<ControlMessageListener *> mControlMessageListeners;
+
+  /* Statistics */
+  Counter mSendRequestSize;
 };
 
 } /* namespace sc */

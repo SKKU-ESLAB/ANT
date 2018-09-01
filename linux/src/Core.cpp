@@ -162,15 +162,19 @@ int Core::send(const void *dataBuffer, uint32_t dataLength) {
   uint8_t *serialized_vector;
   uint32_t packet_size;
 
-  // Attach the protocol header to the payload
+  /* Update statistics */
+  this->mSendRequestSize.set_value(dataLength);
+
+  /* Attach the protocol header to the payload */
   ProtocolManager::data_to_protocol_data((const uint8_t *)dataBuffer,
                                          dataLength, &pd);
-  // The serialized_vector buffer is allocated in here
+                                         
+  /* The serialized_vector buffer is allocated in here */
   packet_size = ProtocolManager::serialize(&pd, (const uint8_t *)dataBuffer, curr_offset,
                                  dataLength, &serialized_vector);
   assert(serialized_vector != NULL && packet_size > 0);
 
-  // Hand over the data to the Protocol Manager
+  /* Hand over the data to the Protocol Manager */
   sent_bytes = ProtocolManager::send_packet(serialized_vector, packet_size);
   if (unlikely(sent_bytes < 0)) {
     LOG_ERR("Sending stopped(%u/%u) by %d", curr_offset, dataLength,

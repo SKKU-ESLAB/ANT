@@ -2,7 +2,7 @@
  *  Gyeonghwan Hong (redcarrottt@gmail.com)
  *  Eunsoo Park (esevan.park@gmail.com)
  *  Injung Hwang (sinban04@gmail.com)
- *  
+ *
  * [Contact]
  *  Gyeonghwan Hong (redcarrottt@gmail.com)
  *
@@ -21,40 +21,36 @@
 
 #include <ProtocolManager.h>
 
-#include <SegmentManager.h>
 #include <DebugLog.h>
+#include <SegmentManager.h>
 
+#include <netinet/in.h>
 #include <stdlib.h>
 #include <string.h>
-#include <netinet/in.h>
-
 
 namespace sc {
-uint16_t ProtocolManager::packet_id = 1;
+uint16_t ProtocolManager::sPacketId = 1;
+Counter ProtocolManager::sSendRequestSize;
 
-void ProtocolManager::data_to_protocol_data(const uint8_t *dat,
-                                            uint32_t size,
+void ProtocolManager::data_to_protocol_data(const uint8_t *dat, uint32_t size,
                                             ProtocolData *ret_pd) {
   assert(ret_pd != NULL);
   assert(size <= UINT32_MAX);
-  ret_pd -> id = packet_id++;
-  ret_pd -> len = size;
-  ret_pd -> data = dat;
+  ret_pd->id = sPacketId++;
+  ret_pd->len = size;
+  ret_pd->data = dat;
 
 #ifdef COMMUNICATOR_UNIT_TEST
-  LOG_VERB("%d\t%u\t[%s]",
-               ret_pd -> id,
-               ret_pd -> len,
-               ret_pd -> data);
+  LOG_VERB("%d\t%u\t[%s]", ret_pd->id, ret_pd->len, ret_pd->data);
 #endif /* COMMUNICATOR_UNIT_TEST */
 }
 
 inline void ProtocolManager::serialize_header(ProtocolData *pd,
                                               uint8_t *vec_ptr) {
   uint32_t vec_offset = 0;
-  uint16_t net_id = htons(pd -> id);
-  uint32_t net_len = htonl(pd -> len);
-   
+  uint16_t net_id = htons(pd->id);
+  uint32_t net_len = htonl(pd->len);
+
   memcpy(vec_ptr + vec_offset, &net_id, sizeof(uint16_t));
   vec_offset += sizeof(uint16_t);
   memcpy(vec_ptr + vec_offset, &net_len, sizeof(uint32_t));
@@ -62,15 +58,12 @@ inline void ProtocolManager::serialize_header(ProtocolData *pd,
 }
 
 inline void ProtocolManager::serialize_data(const uint8_t *dat_buf,
-                                            uint32_t len,
-                                            uint8_t *vec_ptr) {
-  memcpy(vec_ptr, dat_buf, (size_t) len);
+                                            uint32_t len, uint8_t *vec_ptr) {
+  memcpy(vec_ptr, dat_buf, (size_t)len);
 }
 
-uint32_t ProtocolManager::serialize(ProtocolData *pd,
-                                    const uint8_t *buf,
-                                    uint32_t offset,
-                                    uint32_t payload_size,
+uint32_t ProtocolManager::serialize(ProtocolData *pd, const uint8_t *buf,
+                                    uint32_t offset, uint32_t payload_size,
                                     uint8_t **ret_vector) {
   uint8_t *serialized_vector;
   uint32_t vector_size;
@@ -79,25 +72,21 @@ uint32_t ProtocolManager::serialize(ProtocolData *pd,
   data_offset = kProtHeaderSize;
   vector_size = data_offset + payload_size;
 
-  serialized_vector = reinterpret_cast<uint8_t *>(calloc((size_t) vector_size,
-                                                         sizeof(uint8_t)));
+  serialized_vector =
+      reinterpret_cast<uint8_t *>(calloc((size_t)vector_size, sizeof(uint8_t)));
 
   serialize_header(pd, serialized_vector);
   serialize_data(buf + offset, payload_size, serialized_vector + data_offset);
 
 #ifdef COMMUNICATOR_UNIT_TEST
-  LOG_VERB("%p\t(%u)\tFrom %p~%p(%u)",
-               serialized_vector,
-               vector_size,
-               buf + offset,
-               buf + offset + payload_size - 1,
-               payload_size);
+  LOG_VERB("%p\t(%u)\tFrom %p~%p(%u)", serialized_vector, vector_size,
+           buf + offset, buf + offset + payload_size - 1, payload_size);
 
   uint8_t buf_test = *(serialized_vector);
   buf_test = *(serialized_vector + vector_size - 1);
   if (buf != NULL) {
     buf_test = *(buf);
-    buf_test = *(buf + offset + payload_size -1);
+    buf_test = *(buf + offset + payload_size - 1);
   }
   LOG_VERB("Done");
 #endif /* COMMUNICATOR_UNIT_TEST */
@@ -115,11 +104,11 @@ uint32_t ProtocolManager::parse_header(uint8_t *serialized,
 
   memcpy(&net_id, serialized + vec_offset, sizeof(uint16_t));
   vec_offset += sizeof(uint16_t);
-  ret_pd -> id = ntohs(net_id);
+  ret_pd->id = ntohs(net_id);
 
   memcpy(&net_len, serialized + vec_offset, sizeof(uint32_t));
   vec_offset += sizeof(uint32_t);
-  ret_pd -> len = ntohl(net_len);
+  ret_pd->len = ntohl(net_len);
 
   return vec_offset;
 }
@@ -132,18 +121,18 @@ int ProtocolManager::send_packet(uint8_t *serialized, uint32_t packet_size) {
   free(serialized);
 #endif
   // Hand over the data to the segment manager
-  return sm -> send_to_segment_manager(serialized, packet_size);
+  return sm->send_to_segment_manager(serialized, packet_size);
 }
 
 uint32_t ProtocolManager::recv_packet(uint8_t **buf) {
   ProtocolData pd = {0, 0, NULL};
   SegmentManager *sm = SegmentManager::get_instance();
   uint8_t *p_data_buf =
-      sm -> recv_from_segment_manager(reinterpret_cast<void *>(&pd));
+      sm->recv_from_segment_manager(reinterpret_cast<void *>(&pd));
   assert(pd.len == 0 || p_data_buf != NULL);
 
   *buf = p_data_buf;
 
-  return pd . len;
+  return pd.len;
 }
 } /* namespace sc */

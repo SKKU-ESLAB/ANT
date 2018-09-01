@@ -26,6 +26,7 @@
         "__split_buffer": "cpp",
         "bitset": "cpp",
         "list": "cpp",
-        "chrono": "cpp"
+        "chrono": "cpp",
+        "ios": "cpp"
     }
 }

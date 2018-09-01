@@ -1,6 +1,6 @@
 /* Copyright 2017-2018 All Rights Reserved.
  *  Gyeonghwan Hong (redcarrottt@gmail.com)
- *  
+ *
  * [Contact]
  *  Gyeonghwan Hong (redcarrottt@gmail.com)
  *
@@ -20,75 +20,136 @@
 #ifndef INC_COUNTER_H_
 #define INC_COUNTER_H_
 
-#include <sys/time.h>
-
+#include <assert.h>
 #include <mutex>
+#include <sys/time.h>
 
 namespace sc {
 class Counter {
-  public:
-    Counter() {
-      this->mValue = 0;
-      this->mPrevValue = 0;
-      this->mLastAccessedTS.tv_sec = 0;
-      this->mLastAccessedTS.tv_usec = 0;
-    }
+public:
+  Counter(int simple_moving_average_length,
+          float exponential_moving_average_weight) {
+    this->mValue = 0;
+    this->mPrevValue = 0;
+    this->mLastAccessedTS.tv_sec = 0;
+    this->mLastAccessedTS.tv_usec = 0;
 
-    void add(int diff) {
-      std::unique_lock<std::mutex> lock(this->mLock);
-      this->mValue = this->mValue + diff;
+    /* Simple moving average */
+    assert(simple_moving_average_length > 0);
+    this->mSmaLength = simple_moving_average_length;
+    this->mHistoryValues = new int[this->mSmaLength];
+    for (int i = 0; i < this->mSmaLength; i++) {
+      this->mHistoryValues[i] = 0;
     }
+    this->mHistoryCursor = 0;
 
-    void sub(int diff) {
-      std::unique_lock<std::mutex> lock(this->mLock);
-      this->mValue = this->mValue - diff;
-    }
+    /* Exponential moving average */
+    this->mEma = 0;
+    this->mEmaWeight = exponential_moving_average_weight;
+    assert(exponential_moving_average_weight >= 0 &&
+           exponential_moving_average_weight <= 1);
+  }
 
-    void increase(void) {
-      std::unique_lock<std::mutex> lock(this->mLock);
-      this->mValue++;
-    }
-    
-    void decrease(void) {
-      std::unique_lock<std::mutex> lock(this->mLock);
-      this->mValue--;
-    }
+#define DEFAULT_SIMPLE_MOVING_AVERAGE_LENGTH 10
+#define DEFAULT_EXPONENTIAL_MOVING_AVERAGE_WEIGHT 0.9
+  Counter()
+      : Counter(DEFAULT_SIMPLE_MOVING_AVERAGE_LENGTH,
+                DEFAULT_EXPONENTIAL_MOVING_AVERAGE_WEIGHT) {}
 
-    int get_size() {
-      std::unique_lock<std::mutex> lock(this->mLock);
-      return this->mValue;
-    }
+  ~Counter() { delete this->mHistoryValues; }
 
-    int get_speed() {
-      std::unique_lock<std::mutex> lock(this->mLock);
-      int speed;
-      struct timeval startTS, endTS;
-      startTS = this->mLastAccessedTS;
-      gettimeofday(&endTS, NULL);
+  void add(int diff) {
+    std::unique_lock<std::mutex> lock(this->mLock);
+    this->set_value(this->mValue + diff);
+  }
 
-      if(startTS.tv_sec == 0 && startTS.tv_usec == 0) {
-        speed = 0;
+  void sub(int diff) {
+    std::unique_lock<std::mutex> lock(this->mLock);
+    this->set_value(this->mValue - diff);
+  }
+
+  void increase(void) {
+    std::unique_lock<std::mutex> lock(this->mLock);
+    this->set_value(this->mValue + 1);
+  }
+
+  void decrease(void) {
+    std::unique_lock<std::mutex> lock(this->mLock);
+    this->set_value(this->mValue - 1);
+  }
+
+  void set_value(int new_value) {
+    std::unique_lock<std::mutex> lock(this->mLock);
+
+    /* Update new value */
+    this->mValue = new_value;
+
+    /* Update history for simple moving average */
+    this->mHistoryValues[this->mHistoryCursor] = new_value;
+    this->mHistoryCursor = (this->mHistoryCursor + 1) % this->mSmaLength;
+
+    /* Update exponential moving average */
+    this->mEma = (this->mEma * (1 - this->mEmaWeight)) +
+                 (this->mValue * this->mEmaWeight);
+  }
+
+  int get_size() {
+    std::unique_lock<std::mutex> lock(this->mLock);
+    return this->mValue;
+  }
+
+  int get_speed() {
+    std::unique_lock<std::mutex> lock(this->mLock);
+    int speed;
+    struct timeval startTS, endTS;
+    startTS = this->mLastAccessedTS;
+    gettimeofday(&endTS, NULL);
+
+    if (startTS.tv_sec == 0 && startTS.tv_usec == 0) {
+      speed = 0;
+    } else {
+      uint64_t end = (uint64_t)endTS.tv_sec * 1000 * 1000 + endTS.tv_usec;
+      uint64_t start = (uint64_t)startTS.tv_sec * 1000 * 1000 + startTS.tv_usec;
+      uint64_t interval = end - start;
+
+      if (start != 0 && interval != 0) {
+        speed = (int)((float)(this->mValue - this->mPrevValue) /
+                      ((float)interval / (1000 * 1000)));
       } else {
-        uint64_t end = (uint64_t)endTS.tv_sec * 1000 * 1000 + endTS.tv_usec;
-        uint64_t start = (uint64_t)startTS.tv_sec * 1000 * 1000 + startTS.tv_usec;
-        uint64_t interval = end - start;
-
-        if(start != 0 && interval != 0) {
-          speed = (int)((float)(this->mValue - this->mPrevValue) / ((float)interval / (1000 * 1000)));
-        } else {
-          speed = 0;
-        }
+        speed = 0;
       }
-      this->mPrevValue = this->mValue;
-      this->mLastAccessedTS = endTS;
-      return speed;
-    };
-  private:
-    std::mutex mLock;
+    }
+    this->mPrevValue = this->mValue;
+    this->mLastAccessedTS = endTS;
+    return speed;
+  };
 
-    int mValue;
-    int mPrevValue;
-    struct timeval mLastAccessedTS;
+  int get_sm_average(void) {
+    int simple_mavg = 0;
+    for (int i = 0; i < this->mSmaLength; i++) {
+      simple_mavg += this->mHistoryValues[i];
+    }
+    simple_mavg /= this->mSmaLength;
+    return simple_mavg;
+  }
+
+  int get_em_average(void) { return this->mEma; }
+
+private:
+  std::mutex mLock;
+
+  int mValue;
+  int mPrevValue;
+  struct timeval mLastAccessedTS;
+
+  /* Simple moving average (SMA) */
+  int *mHistoryValues; /* History values for simple moving average */
+  int mHistoryCursor;  /* Cursor on history values */
+  int mSmaLength;      /* Length for simple moving average */
+
+  /* Exponential moving average (EMA) */
+  int mEma;         /* Exponential moving average */
+  float mEmaWeight; /* Weight for Exponential moving average */
 };
 } /* namespace sc */
 

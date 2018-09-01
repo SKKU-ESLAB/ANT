@@ -27,8 +27,6 @@
 #include <thread>
 #include <unistd.h>
 
-#define PRINT_DETAILS 0
-
 namespace sc {
 NetworkSwitcher *NetworkSwitcher::singleton = NULL;
 
@@ -51,28 +49,34 @@ void NetworkSwitcher::switcher_thread(void) {
 
   int count = 0;
   while (this->mSwitcherThreadOn) {
+    // Get statistics
     Stats stats;
     this->get_stats(stats);
-    float avg_arrival_time_sec = stats.avg_arrival_time_us / 1000000;
+    float avg_arrival_time_sec = stats.ema_arrival_time_us / 1000000;
 
-    switch (this->get_state()) {
+    // Get present state
+    NSState state = this->get_state();
+
+    // Print present state & statistics
+    char state_str[512];
+    switch (state) {
     case NSState::kNSStateInitialized:
-      LOG_VERB("%s %d %d %d %0.4f", "Initialized", stats.avg_send_request_speed,
-               stats.avg_send_queue_data_size, stats.avg_total_bandwidth_now,
-               avg_arrival_time_sec);
+      strncpy(state_str, "Initialized", 512);
       break;
     case NSState::kNSStateRunning:
-      LOG_VERB("%s %d %d %d %0.4f", "Ready", stats.avg_send_request_speed,
-               stats.avg_send_queue_data_size, stats.avg_total_bandwidth_now,
-               avg_arrival_time_sec);
-      this->check_and_handover(stats);
+      strncpy(state_str, "Ready", 512);
       break;
     case NSState::kNSStateSwitching:
-      LOG_VERB("%s %d %d %d %0.4f", "Switching", stats.avg_send_request_speed,
-               stats.avg_send_queue_data_size, stats.avg_total_bandwidth_now,
-               avg_arrival_time_sec);
-      /* Network switcher do not work during increasing or decreasing adapter */
+      strncpy(state_str, "Switching", 512);
       break;
+    }
+    LOG_VERB("%s %d %d %d %0.4f", state_str, stats.ema_queue_arrival_speed,
+             stats.now_queue_data_size, stats.now_total_bandwidth,
+             avg_arrival_time_sec);
+
+    // Handover
+    if (state == NSState::kNSStateRunning) {
+      this->check_and_handover(stats);
     }
 
     usleep(SLEEP_USECS);
@@ -155,62 +159,32 @@ void NetworkSwitcher::reconnect_control_adapter(void) {
 }
 
 void NetworkSwitcher::get_stats(Stats &stats) {
-  // TODO: consider peer's request_speed, queue_data_size
-  /* Monitor metrics */
-  int queue_arrival_speed;
-  int send_queue_data_size;
-  int total_bandwidth_now = 0;
-
-  SegmentManager *segment_manager = SegmentManager::get_instance();
-  queue_arrival_speed = segment_manager->get_send_request_per_sec();
-  send_queue_data_size = segment_manager->get_queue_data_size(kSegSend);
-  send_queue_data_size += segment_manager->get_failed_sending_queue_data_size();
-
+  // TODO: consider peer's request_speed, now_queue_data_size
   Core *core = Core::get_instance();
-  int i = 0;
-  {
-    ServerAdapter *adapter = core->get_control_adapter();
-    int bandwidth_up = adapter->get_bandwidth_up();
-    int bandwidth_down = adapter->get_bandwidth_down();
-    total_bandwidth_now += (bandwidth_up + bandwidth_down);
-#if PRINT_DETAILS == 1
-    LOG_VERB("- A%d (Ctrl: %s): Up=%d B/s Down=%d B/s", i,
-             adapter->get_dev_name(), bandwidth_up, bandwidth_down);
-#endif
-    i++;
-  }
+  SegmentManager *sm = SegmentManager::get_instance();
 
-  int data_adapter_count = core->get_data_adapter_count();
-  for (int i = 0; i < data_adapter_count; i++) {
-    ServerAdapter *adapter = core->get_data_adapter(i);
-    if (adapter == NULL)
-      continue;
-    int bandwidth_up = adapter->get_bandwidth_up();
-    int bandwidth_down = adapter->get_bandwidth_down();
-    total_bandwidth_now += (bandwidth_up + bandwidth_down);
-#if PRINT_DETAILS == 1
-    LOG_VERB("- A%d (Data: %s): Up=%d B/s Down=%d B/s", i,
-             adapter->get_dev_name(), bandwidth_up, bandwidth_down);
-#endif
-    i++;
-  }
+  /* Statistics used to print present status */
+  this->mQueueArrivalSpeed.set_value(sm->get_send_request_per_sec());
+  stats.ema_queue_arrival_speed = this->mQueueArrivalSpeed.get_em_average();
 
-  /* Get average */
-  put_values(queue_arrival_speed, send_queue_data_size, total_bandwidth_now);
+  /* Statistics used in CoolSpots Policy */
+  stats.now_total_bandwidth = Core::get_instance()->get_total_bandwidth();
 
-  stats.avg_send_request_speed = get_average_send_request_speed();
-  stats.avg_send_queue_data_size = get_average_send_queue_data_size();
-  stats.avg_total_bandwidth_now = get_average_total_bandwidth_now();
-  stats.avg_arrival_time_us = segment_manager->get_average_arrival_time(
-      AVERAGE_ARRIVAL_TIME_WINDOW_SIZE_US);
+  /* Statistics used in Energy-aware & Latency-aware Policy */
+  stats.ema_send_request_size = core->get_ema_send_request_size();
+  stats.now_queue_data_size = sm->get_queue_data_size(kSegSend) +
+                              sm->get_failed_sending_queue_data_size();
+  stats.ema_arrival_time_us = sm->get_average_arrival_time(
+      AVERAGE_ARRIVAL_TIME_WINDOW_SIZE_US); // TODO: remake it with Counter
+      // TODO: move it to Core
 }
 
-void NetworkSwitcher::check_and_handover(Stats& stats) {
+void NetworkSwitcher::check_and_handover(Stats &stats) {
   /* Determine Increasing/Decreasing adapter */
-  if (this->check_increase_adapter(stats.avg_send_request_speed,
-                                   stats.avg_send_queue_data_size)) {
+  if (this->check_increase_adapter(stats.ema_queue_arrival_speed,
+                                   stats.now_queue_data_size)) {
     /* Maintain bandwidth when increasing */
-    this->mBandwidthWhenIncreasing = stats.avg_total_bandwidth_now;
+    this->mBandwidthWhenIncreasing = stats.now_total_bandwidth;
 
     /* Increase Adapter */
     this->set_state(NSState::kNSStateSwitching);
@@ -218,8 +192,8 @@ void NetworkSwitcher::check_and_handover(Stats& stats) {
     if (!res) {
       this->done_switch();
     }
-  } else if (this->check_decrease_adapter(stats.avg_send_request_speed,
-                                          stats.avg_arrival_time_us)) {
+  } else if (this->check_decrease_adapter(stats.ema_queue_arrival_speed,
+                                          stats.ema_arrival_time_us)) {
     /* Decrease Adapter */
     this->set_state(NSState::kNSStateSwitching);
     bool res = this->decrease_adapter();
@@ -242,26 +216,19 @@ int NetworkSwitcher::get_init_energy_payoff_point(void) {
   return (int)((WFD_INIT_ENERGY) /
                (BT_TX_ENERGY_PER_1B - WFD_TX_ENERGY_PER_1B));
 }
-int NetworkSwitcher::get_idle_energy_payoff_point(int avg_arrival_time_us) {
+int NetworkSwitcher::get_idle_energy_payoff_point(int ema_arrival_time_us) {
   /*
    * 224B at 1sec
    * 6726B at 30sec
    */
-  return (int)((WFD_IDLE_ENERGY_PER_1SEC * avg_arrival_time_us / 1000000) /
+  return (int)((WFD_IDLE_ENERGY_PER_1SEC * ema_arrival_time_us / 1000000) /
                (BT_TX_ENERGY_PER_1B - WFD_TX_ENERGY_PER_1B));
-}
-
-int NetworkSwitcher::get_predicted_queue_arrival_speed(
-    int queue_arrival_speed, int avg_arrival_time_us) {
-  // TODO:
-  // Assume that the arrival speed does not change in the future
-  return queue_arrival_speed;
 }
 
 #define AVERAGE_WFD_ON_LATENCY_SEC 8.04f /* 8.04 sec */
 #define MAX_BANDWIDTH 90000              /* 90000B/s */
 bool NetworkSwitcher::check_increase_adapter(int queue_arrival_speed,
-                                             int send_queue_data_size) {
+                                             int now_queue_data_size) {
   /*
    * Increase condition:
    *   send queue data size + queue arrival speed > energy payoff point
@@ -270,7 +237,7 @@ bool NetworkSwitcher::check_increase_adapter(int queue_arrival_speed,
     return false;
   } else if (Core::get_instance()->get_state() != kCMStateReady) {
     return false;
-  } else if (queue_arrival_speed + send_queue_data_size >
+  } else if (queue_arrival_speed + now_queue_data_size >
              this->get_init_energy_payoff_point()) {
     return true;
   } else {
@@ -280,7 +247,7 @@ bool NetworkSwitcher::check_increase_adapter(int queue_arrival_speed,
 
 #define CHECK_DECREASING_OK_COUNT 2
 bool NetworkSwitcher::check_decrease_adapter(int queue_arrival_speed,
-                                             int avg_arrival_time_us) {
+                                             int ema_arrival_time_us) {
   /*
    * Decrease condition: LHS < RHS (6 times)
    * LHS: (b(t): total bandwidth)
@@ -293,13 +260,12 @@ bool NetworkSwitcher::check_decrease_adapter(int queue_arrival_speed,
   } else {
     bool wfd_off;
     if (WFD_INIT_ENERGY <
-        (WFD_IDLE_ENERGY_PER_1SEC * avg_arrival_time_us / 1000000)) {
+        (WFD_IDLE_ENERGY_PER_1SEC * ema_arrival_time_us / 1000000)) {
       wfd_off = true;
     } else {
-      int next_arrival_speed = get_predicted_queue_arrival_speed(
-          queue_arrival_speed, avg_arrival_time_us);
+      //int next_arrival_speed = ;
       int idle_energy_payoff_point =
-          get_idle_energy_payoff_point(avg_arrival_time_us);
+          get_idle_energy_payoff_point(ema_arrival_time_us);
       if (next_arrival_speed > idle_energy_payoff_point) {
         wfd_off = true;
       } else {
@@ -309,7 +275,7 @@ bool NetworkSwitcher::check_decrease_adapter(int queue_arrival_speed,
 
     if (wfd_off) {
       if (queue_arrival_speed <
-          this->get_idle_energy_payoff_point(avg_arrival_time_us)) {
+          this->get_idle_energy_payoff_point(ema_arrival_time_us)) {
         this->mDecreasingCheckCount++;
         if (this->mDecreasingCheckCount >= CHECK_DECREASING_OK_COUNT) {
           this->mDecreasingCheckCount = 0;
