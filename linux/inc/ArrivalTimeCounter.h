@@ -30,13 +30,6 @@
 namespace sc {
 class ArrivalTimeCounter : public Counter {
 public:
-  ArrivalTimeCounter(int simple_moving_average_length,
-                     float exponential_moving_average_weight)
-      : Counter(simple_moving_average_length,
-                exponential_moving_average_weight) {
-    this->mLastAccessedTS.tv_sec = 0;
-    this->mLastAccessedTS.tv_usec = 0;
-  }
   ArrivalTimeCounter(void) : Counter() {
     this->mLastAccessedTS.tv_sec = 0;
     this->mLastAccessedTS.tv_usec = 0;

@@ -27,8 +27,14 @@
 namespace sc {
 class Counter {
 public:
-  Counter(int simple_moving_average_length,
-          float exponential_moving_average_weight) {
+#define DEFAULT_SIMPLE_MOVING_AVERAGE_LENGTH 10
+#define DEFAULT_EXPONENTIAL_MOVING_AVERAGE_WEIGHT 0.9
+
+  Counter() {
+    int simple_moving_average_length = DEFAULT_SIMPLE_MOVING_AVERAGE_LENGTH;
+    int exponential_moving_average_weight =
+        DEFAULT_EXPONENTIAL_MOVING_AVERAGE_WEIGHT;
+
     this->mValue = 0;
     this->mPrevValue = 0;
     this->mLastAccessedTS.tv_sec = 0;
@@ -49,12 +55,6 @@ public:
     assert(exponential_moving_average_weight >= 0 &&
            exponential_moving_average_weight <= 1);
   }
-
-#define DEFAULT_SIMPLE_MOVING_AVERAGE_LENGTH 10
-#define DEFAULT_EXPONENTIAL_MOVING_AVERAGE_WEIGHT 0.9
-  Counter()
-      : Counter(DEFAULT_SIMPLE_MOVING_AVERAGE_LENGTH,
-                DEFAULT_EXPONENTIAL_MOVING_AVERAGE_WEIGHT) {}
 
   ~Counter() { delete this->mHistoryValues; }
 
