@@ -214,6 +214,7 @@ private:
 
   int get_init_energy_payoff_point(void);
   int get_idle_energy_payoff_point(int avg_arrival_time_us);
+  int get_init_latency_payoff_point(void);
   bool check_increase_adapter(const Stats &stats);
   bool check_decrease_adapter(const Stats &stats);
 

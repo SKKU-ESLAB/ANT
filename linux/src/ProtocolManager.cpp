@@ -30,7 +30,6 @@
 
 namespace sc {
 uint16_t ProtocolManager::sPacketId = 1;
-Counter ProtocolManager::sSendRequestSize;
 
 void ProtocolManager::data_to_protocol_data(const uint8_t *dat, uint32_t size,
                                             ProtocolData *ret_pd) {
