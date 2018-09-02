@@ -95,14 +95,14 @@ public:
 
   void notify_queue(void);
 
-  int get_queue_length(int type) { return this->mQueueLength[type].get_size(); }
+  int get_queue_length(int type) { return this->mQueueLength[type].get_value(); }
 
   int get_queue_data_size(int type) {
-    return this->mQueueLength[type].get_size() * SEGMENT_DATA_SIZE;
+    return this->mQueueLength[type].get_value() * SEGMENT_DATA_SIZE;
   }
 
   int get_failed_sending_queue_data_size() {
-    return this->mFailedSendingQueueLength.get_size() * SEGMENT_DATA_SIZE;
+    return this->mFailedSendingQueueLength.get_value() * SEGMENT_DATA_SIZE;
   }
 
   int get_send_request_per_sec() { return this->mSendRequest.get_speed(); }

@@ -59,28 +59,52 @@ public:
   ~Counter() { delete this->mHistoryValues; }
 
   void add(int diff) {
-    std::unique_lock<std::mutex> lock(this->mLock);
-    this->set_value(this->mValue + diff);
+    std::unique_lock<std::mutex> lock(this->mValueLock);
+    this->set_value_locked(this->get_value_locked() + diff);
   }
 
   void sub(int diff) {
-    std::unique_lock<std::mutex> lock(this->mLock);
-    this->set_value(this->mValue - diff);
+    std::unique_lock<std::mutex> lock(this->mValueLock);
+    this->set_value_locked(this->get_value_locked() - diff);
   }
 
   void increase(void) {
-    std::unique_lock<std::mutex> lock(this->mLock);
-    this->set_value(this->mValue + 1);
+    std::unique_lock<std::mutex> lock(this->mValueLock);
+    this->set_value_locked(this->get_value_locked() + 1);
   }
 
   void decrease(void) {
-    std::unique_lock<std::mutex> lock(this->mLock);
-    this->set_value(this->mValue - 1);
+    std::unique_lock<std::mutex> lock(this->mValueLock);
+    this->set_value_locked(this->get_value_locked() - 1);
   }
 
   void set_value(int new_value) {
-    std::unique_lock<std::mutex> lock(this->mLock);
+    std::unique_lock<std::mutex> lock(this->mValueLock);
+    this->set_value_locked(new_value);
+  }
 
+  int get_value() {
+    std::unique_lock<std::mutex> lock(this->mValueLock);
+    return this->get_value_locked();
+  }
+
+  int get_speed() {
+    std::unique_lock<std::mutex> lock(this->mValueLock);
+    return this->get_speed_locked();
+  };
+
+  int get_sm_average(void) {
+    std::unique_lock<std::mutex> lock(this->mValueLock);
+    return this->get_sm_average_locked();
+  }
+
+  int get_em_average(void) {
+    std::unique_lock<std::mutex> lock(this->mValueLock);
+    return this->get_em_average_locked();
+  }
+
+private:
+  void set_value_locked(int new_value) {
     /* Update new value */
     this->mValue = new_value;
 
@@ -93,13 +117,9 @@ public:
                  (this->mValue * this->mEmaWeight);
   }
 
-  int get_size() {
-    std::unique_lock<std::mutex> lock(this->mLock);
-    return this->mValue;
-  }
+  int get_value_locked() { return this->mValue; }
 
-  int get_speed() {
-    std::unique_lock<std::mutex> lock(this->mLock);
+  int get_speed_locked() {
     int speed;
     struct timeval startTS, endTS;
     startTS = this->mLastAccessedTS;
@@ -122,9 +142,9 @@ public:
     this->mPrevValue = this->mValue;
     this->mLastAccessedTS = endTS;
     return speed;
-  };
+  }
 
-  int get_sm_average(void) {
+  int get_sm_average_locked(void) {
     int simple_mavg = 0;
     for (int i = 0; i < this->mSmaLength; i++) {
       simple_mavg += this->mHistoryValues[i];
@@ -133,12 +153,14 @@ public:
     return simple_mavg;
   }
 
-  int get_em_average(void) { return this->mEma; }
+  int get_em_average_locked(void) { return this->mEma; }
 
 private:
-  std::mutex mLock;
-
+  /* Value */
+  std::mutex mValueLock;
   int mValue;
+
+  /* Speed */
   int mPrevValue;
   struct timeval mLastAccessedTS;
 
