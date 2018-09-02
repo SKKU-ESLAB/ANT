@@ -27,6 +27,8 @@
         "bitset": "cpp",
         "list": "cpp",
         "chrono": "cpp",
-        "ios": "cpp"
+        "ios": "cpp",
+        "__mutex_base": "cpp",
+        "mutex": "cpp"
     }
 }
