@@ -36,7 +36,7 @@ public:
   }
 
   void arrive(void) {
-    std::unique_lock<std::mutex> lock(this->mLock);
+    std::unique_lock<std::mutex> lock(this->mArriveLock);
     struct timeval startTS, endTS;
     startTS = this->mLastAccessedTS;
     gettimeofday(&endTS, NULL);
@@ -55,7 +55,7 @@ public:
   }
 
 private:
-  std::mutex mLock;
+  std::mutex mArriveLock;
 
   struct timeval mLastAccessedTS;
 };
