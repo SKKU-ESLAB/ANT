@@ -214,7 +214,7 @@ Segment *SegmentManager::dequeue(SegQueueType type) {
   std::unique_lock<std::mutex> lck(this->mQueueLock[type]);
 
   /* If queue is empty, wait until some segment is enqueued */
-  if (this->mQueueLength[type].get_size() == 0) {
+  if (this->mQueueLength[type].get_value() == 0) {
     if (type == kSegSend) {
       LOG_DEBUG("sending queue is empty. wait for another\n");
     } else {
