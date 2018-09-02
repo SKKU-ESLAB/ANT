@@ -26,6 +26,7 @@
 
 #include <thread>
 #include <unistd.h>
+#include <string.h>
 
 namespace sc {
 NetworkSwitcher *NetworkSwitcher::singleton = NULL;
@@ -235,25 +236,39 @@ void NetworkSwitcher::check_and_handover(Stats &stats) {
 }
 
 /* Energy constants (mJ) */
-#define BT_TX_ENERGY_1B_BASIS 5.0342f
-#define BT_TX_ENERGY_PER_1B 0.9018f
-#define WFD_TX_ENERGY_1B_BASIS 2.0554f
-#define WFD_TX_ENERGY_PER_1B 0.2054f
+#define BT_TX_ENERGY_1KB_BASIS 5.0342202f
+#define BT_TX_ENERGY_PER_1B 0.000882425f
+#define WFD_TX_ENERGY_1KB_BASIS 2.055363f
+#define WFD_TX_ENERGY_PER_1B 0.000200986f
 #define WFD_INIT_ENERGY 3157.8248f
 #define WFD_IDLE_ENERGY_PER_1SEC 156.13f
 
 int NetworkSwitcher::get_init_energy_payoff_point(void) {
-  /* 4534B */
+  /* 4634053B (4525KB) */
   return (int)((WFD_INIT_ENERGY) /
                (BT_TX_ENERGY_PER_1B - WFD_TX_ENERGY_PER_1B));
 }
 int NetworkSwitcher::get_idle_energy_payoff_point(int ema_arrival_time_us) {
   /*
-   * 224B at 1sec
-   * 6726B at 30sec
+   * 229118B(224KB) at 1sec
+   * 6873542B(6712KB) at 30sec
    */
   return (int)((WFD_IDLE_ENERGY_PER_1SEC * ema_arrival_time_us / 1000000) /
                (BT_TX_ENERGY_PER_1B - WFD_TX_ENERGY_PER_1B));
+}
+
+/* Latency constants (us) */
+#define BT_TX_LATENCY_1KB_BASIS 26970.0f
+#define BT_TX_LATENCY_PER_1B 11.21951941f
+#define WFD_TX_LATENCY_1KB_BASIS 10110.0f
+#define WFD_TX_LATENCY_PER_1B 0.248092696f
+#define WFD_INIT_LATENCY 6740000.0f
+
+int NetworkSwitcher::get_init_latency_payoff_point(void) {
+  /* 612787B (598KB) */
+  return (int)((WFD_INIT_LATENCY + WFD_TX_LATENCY_1KB_BASIS -
+                BT_TX_LATENCY_1KB_BASIS) /
+               (BT_TX_LATENCY_PER_1B - WFD_TX_LATENCY_PER_1B));
 }
 
 #define AVERAGE_WFD_ON_LATENCY_SEC 8.04f /* 8.04 sec */
@@ -277,26 +292,34 @@ bool NetworkSwitcher::check_increase_adapter(const Stats &stats) {
         return false;
       }
       break;
-    }
+    } /* case NSMode::kNSModeEnergyAware */
     case NSMode::kNSModeLatencyAware: {
       /*
        * Latency-aware Policy:
        *  - queue data size + EMA(send_request_size) > init latency payoff point
        */
+      if (stats.ema_send_request_size + stats.now_queue_data_size >
+          this->get_init_latency_payoff_point()) {
+        return true;
+      } else {
+        return false;
+      }
       break;
-    }
+    } /* case NSMode::kNSModeLatencyAware */
     case NSMode::kNSModeCapDynamic: {
       /*
        * Cap-dynamic Policy:
        */
+      LOG_ERR("Unsupported mode!: %d", this->get_mode());
+      return false;
       break;
-    }
+    } /* case NSMode::kNSModeCapDynamic */
     default: {
       LOG_ERR("Unsupported mode!: %d", this->get_mode());
       return false;
       break;
-    }
-    }
+    } /* default */
+    } /* switch(this->get_mode()) */
   }
 }
 
@@ -315,7 +338,6 @@ bool NetworkSwitcher::check_decrease_adapter(const Stats &stats) {
        *      > idle energy payoff point
        *  - if(wfd_idle_energy > wfd_init_energy) always false
        */
-
       bool wfd_off;
       int wfd_idle_energy =
           WFD_IDLE_ENERGY_PER_1SEC * stats.ema_arrival_time_us / 1000000;
@@ -349,7 +371,7 @@ bool NetworkSwitcher::check_decrease_adapter(const Stats &stats) {
         return false;
       }
       break;
-    }
+    } /* case NSMode::kNSModeEnergyAware */
     case NSMode::kNSModeLatencyAware: {
       /*
        * Latency-aware Policy:
@@ -357,19 +379,20 @@ bool NetworkSwitcher::check_decrease_adapter(const Stats &stats) {
        */
       return false;
       break;
-    }
+    } /* case NSMode::kNSModeLatencyAware */
     case NSMode::kNSModeCapDynamic: {
       /*
        * Cap-dynamic Policy:
        */
+      LOG_ERR("Unsupported mode!: %d", this->get_mode());
       break;
-    }
+    } /* case NSMode::kNSModeCapDynamic */
     default: {
       LOG_ERR("Unsupported mode!: %d", this->get_mode());
       return false;
       break;
     }
-    }
+    } /* switch(this->get_mode()) */
   }
 } // namespace sc
 
