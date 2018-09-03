@@ -28,6 +28,8 @@
 #include <sys/socket.h>
 #include <unistd.h>
 
+#define VERBOSE_WFD_MSG 0
+
 using namespace sc;
 
 bool TcpServerSocket::open_impl(void) {
@@ -68,15 +70,15 @@ bool TcpServerSocket::open_impl(void) {
   memset(&client_address, 0, sizeof(client_address));
   int client_address_len = sizeof(client_address);
   const int kMaxTries = 10;
-  for(int tries = 0; tries < kMaxTries; tries++) {
+  for (int tries = 0; tries < kMaxTries; tries++) {
     LOG_VERB("Accepting client... (%d)", tries);
     this->mClientSocket =
         ::accept(this->mServerSocket, (struct sockaddr *)&client_address,
                  (socklen_t *)&client_address_len);
-    if(this->mClientSocket >= 0) {
+    if (this->mClientSocket >= 0) {
       return true;
     } else {
-      if(errno == EINTR) {
+      if (errno == EINTR) {
         LOG_WARN("Interrupted system call: Retry to accept...");
       } else {
         LOG_ERR("Accept failed %s", strerror(errno));
@@ -94,7 +96,7 @@ bool TcpServerSocket::close_impl(void) {
   this->mServerSocket = 0;
 
   LOG_VERB("Socket closed");
-  
+
   return true;
 }
 
@@ -111,7 +113,9 @@ int TcpServerSocket::send_impl(const void *data_buffer, size_t data_length) {
       LOG_WARN("Cli sock closed");
       return -1;
     }
+#if VERBOSE_WFD_MSG != 0
     LOG_DEBUG("WFD %d] send: %d", this->mPort, once_sent_bytes);
+#endif
     sent_bytes += once_sent_bytes;
   }
 
@@ -133,7 +137,9 @@ int TcpServerSocket::receive_impl(void *data_buffer, size_t data_length) {
     }
 
     received_bytes += once_received_bytes;
+#if VERBOSE_WFD_MSG != 0
     LOG_DEBUG("WFD %d] receive : %d", this->mPort, once_received_bytes);
+#endif
   }
 
   return received_bytes;
