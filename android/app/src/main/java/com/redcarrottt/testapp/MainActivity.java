@@ -257,8 +257,8 @@ public class MainActivity extends AppCompatActivity implements LogReceiver.Callb
             while (this.mIsAlive) {
                 int receivedLength = API.receive(buf);
                 Logger.VERB(kTag, "Received: Size=" + receivedLength);
-                int sentLength = API.send(sending_buf.getBytes(), sending_buf.length());
-                Logger.VERB(kTag, "Sent: Size=" + sentLength);
+//                int sentLength = API.send(sending_buf.getBytes(), sending_buf.length());
+//                Logger.VERB(kTag, "Sent: Size=" + sentLength);
             }
         }
 

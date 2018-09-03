@@ -233,7 +233,7 @@ public class Core {
                     if (res <= 0) break;
                     ByteBuffer buffer = ByteBuffer.allocate(2);
                     buffer.put(dataBuffer, 0, 2);
-                    short adapterId = buffer.getShort();
+                    short adapterId = buffer.getShort(0);
 
                     if (reqCode == CtrlReq.kConnect) {
                         Logger.DEBUG(kTag, "Control Request: 'Connect Adapter Request' (" +

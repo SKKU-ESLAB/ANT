@@ -70,6 +70,10 @@ void NetworkSwitcher::switcher_thread(void) {
 }
 
 void NetworkSwitcher::print_stats(Stats &stats) {
+  if(Core::get_instance()->get_state() != CMState::kCMStateReady) {
+    return;
+  }
+  
   const int k_state_str_length = 20;
   char state_str[k_state_str_length];
   switch (this->get_state()) {

@@ -389,10 +389,13 @@ void ServerAdapter::__sender_thread(void) {
     const void *data = segment_to_send->data;
 
     int res = this->send(data, len);
-    if (res < 0) {
+    if (errno == EAGAIN) {
+      LOG_VERB("Kernel I/O buffer is full at %s", this->get_name());
+      sm->failed_sending(segment_to_send);
+      continue;
+    } else if (res < 0) {
       LOG_WARN("Sending failed at %s (%d; %s)", this->get_name(), errno,
                strerror(errno));
-
       sm->failed_sending(segment_to_send);
       break;
     }
