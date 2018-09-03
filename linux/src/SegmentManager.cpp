@@ -30,6 +30,8 @@
 
 #include <list>
 
+#define VERBOSE_SEGMENT_QUEUE_WAITING 0
+
 namespace sc {
 /* Singleton */
 SegmentManager *SegmentManager::singleton = NULL;
@@ -215,11 +217,13 @@ Segment *SegmentManager::dequeue(SegQueueType type) {
 
   /* If queue is empty, wait until some segment is enqueued */
   if (this->mQueueLength[type].get_value() == 0) {
+#if VERBOSE_SEGMENT_QUEUE_WAITING != 0
     if (type == kSegSend) {
-      LOG_DEBUG("sending queue is empty. wait for another\n");
+      LOG_DEBUG("sending queue is empty. wait for another");
     } else {
-      LOG_DEBUG("receiving queue is empty. wait for another\n");
+      LOG_DEBUG("receiving queue is empty. wait for another");
     }
+#endif
 
     this->mCondEnqueued[type].wait(lck);
   }

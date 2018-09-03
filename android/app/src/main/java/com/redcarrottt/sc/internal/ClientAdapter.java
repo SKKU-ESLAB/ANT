@@ -120,10 +120,7 @@ public class ClientAdapter {
             Logger.VERB(kTag, "Turn on success: " + self.getName());
 
             // Discover and connect to server
-            int p2pClientState = self.mP2PClient.getState();
-            if (p2pClientState != P2PClient.State.kConnected) {
-                self.mP2PClient.holdAndDiscoverAndConnect(this);
-            }
+            self.mP2PClient.holdAndDiscoverAndConnect(this);
         }
 
         @Override
@@ -237,10 +234,7 @@ public class ClientAdapter {
             }
 
             // P2P Disconnect
-            int p2pClientState = self.mClientSocket.getState();
-            if (p2pClientState != P2PClient.State.kDisconnected) {
-                self.mP2PClient.releaseAndDisconnect(this);
-            }
+            self.mP2PClient.releaseAndDisconnect(this);
         }
 
         @Override
@@ -255,10 +249,7 @@ public class ClientAdapter {
             }
 
             // Turn off device
-            int deviceState = self.mDevice.getState();
-            if (deviceState != Device.State.kOff) {
-                self.mDevice.releaseAndTurnOff(this);
-            }
+            self.mDevice.releaseAndTurnOff(this);
         }
 
         @Override

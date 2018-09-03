@@ -21,6 +21,7 @@
 #define INC_NETWORK_SWITCHER_H_
 
 #include <Core.h>
+#include <DebugLog.h>
 
 #include <mutex>
 #include <thread>
@@ -172,6 +173,7 @@ public:
 
   /* Notification of switch done event */
   void done_switch() {
+    LOG_VERB("Switch adapter end!");
     NSState state = this->get_state();
     switch (state) {
     case NSState::kNSStateSwitching:

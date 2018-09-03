@@ -24,9 +24,9 @@
 #include <SegmentManager.h>
 #include <ServerAdapter.h>
 
+#include <string.h>
 #include <thread>
 #include <unistd.h>
-#include <string.h>
 
 namespace sc {
 NetworkSwitcher *NetworkSwitcher::singleton = NULL;
@@ -70,8 +70,6 @@ void NetworkSwitcher::switcher_thread(void) {
 }
 
 void NetworkSwitcher::print_stats(Stats &stats) {
-  float ema_arrival_time_sec = stats.ema_arrival_time_us / 1000000;
-
   const int k_state_str_length = 20;
   char state_str[k_state_str_length];
   switch (this->get_state()) {
@@ -115,10 +113,10 @@ void NetworkSwitcher::print_stats(Stats &stats) {
    *  - Total Bandwidth
    *  - EMA(Arrival Time (sec))
    */
-  LOG_VERB("%d ( %d ) => [ %d ] => %d %0.4f // %s %s",
-           stats.ema_send_request_size, stats.ema_queue_arrival_speed,
-           stats.now_queue_data_size, stats.now_total_bandwidth,
-           ema_arrival_time_sec, mode_str, state_str);
+  LOG_VERB("%d ( %d ) => [ %d ] => %d %d // %s %s", stats.ema_send_request_size,
+           stats.ema_queue_arrival_speed, stats.now_queue_data_size,
+           stats.now_total_bandwidth, stats.ema_arrival_time_us, mode_str,
+           state_str);
 }
 
 void NetworkSwitcher::connect_adapter(int adapter_id) {
@@ -221,6 +219,7 @@ void NetworkSwitcher::check_and_handover(Stats &stats) {
 
     /* Increase Adapter */
     this->set_state(NSState::kNSStateSwitching);
+    LOG_VERB("Increase adapter start!");
     bool res = this->increase_adapter();
     if (!res) {
       this->done_switch();
@@ -228,6 +227,7 @@ void NetworkSwitcher::check_and_handover(Stats &stats) {
   } else if (this->check_decrease_adapter(stats)) {
     /* Decrease Adapter */
     this->set_state(NSState::kNSStateSwitching);
+    LOG_VERB("Decrease adapter start!");
     bool res = this->decrease_adapter();
     if (!res) {
       this->done_switch();
@@ -274,6 +274,7 @@ int NetworkSwitcher::get_init_latency_payoff_point(void) {
 #define AVERAGE_WFD_ON_LATENCY_SEC 8.04f /* 8.04 sec */
 #define MAX_BANDWIDTH 90000              /* 90000B/s */
 bool NetworkSwitcher::check_increase_adapter(const Stats &stats) {
+  /* Check the condition of adapter increase based on switching policy */
   if (!this->is_increaseable()) {
     return false;
   } else if (Core::get_instance()->get_state() != kCMStateReady) {
@@ -325,6 +326,7 @@ bool NetworkSwitcher::check_increase_adapter(const Stats &stats) {
 
 #define CHECK_DECREASING_OK_COUNT 2
 bool NetworkSwitcher::check_decrease_adapter(const Stats &stats) {
+  /* Check the condition of adapter decrease based on switching policy */
   if (!this->is_decreaseable()) {
     return false;
   } else if (Core::get_instance()->get_state() != kCMStateReady) {
@@ -397,15 +399,7 @@ bool NetworkSwitcher::check_decrease_adapter(const Stats &stats) {
 } // namespace sc
 
 bool NetworkSwitcher::increase_adapter(void) {
-  NSState state = this->get_state();
-  if (state != NSState::kNSStateRunning) {
-    if (state == NSState::kNSStateSwitching) {
-      LOG_ERR("It's already connecting or disconnecting an adapter!");
-    } else {
-      LOG_ERR("Core is not started.");
-    }
-    return false;
-  } else if (Core::get_instance()->get_data_adapter_count() == 0) {
+  if (Core::get_instance()->get_data_adapter_count() == 0) {
     LOG_ERR("No data adapter is registered!");
     return false;
   } else if (!this->is_increaseable()) {
@@ -420,15 +414,7 @@ bool NetworkSwitcher::increase_adapter(void) {
 }
 
 bool NetworkSwitcher::decrease_adapter(void) {
-  NSState state = this->get_state();
-  if (state != NSState::kNSStateRunning) {
-    if (state == NSState::kNSStateSwitching) {
-      LOG_ERR("It's already connecting or disconnecting an adapter!");
-    } else {
-      LOG_ERR("Core is not started.");
-    }
-    return false;
-  } else if (Core::get_instance()->get_data_adapter_count() == 0) {
+  if (Core::get_instance()->get_data_adapter_count() == 0) {
     LOG_ERR("No data adapter is registered!");
     return false;
   } else if (!this->is_decreaseable()) {
@@ -443,15 +429,6 @@ bool NetworkSwitcher::decrease_adapter(void) {
 }
 
 bool NetworkSwitcher::switch_adapters(int prev_index, int next_index) {
-  NSState state = this->get_state();
-  if (state != NSState::kNSStateRunning) {
-    if (state == NSState::kNSStateSwitching) {
-      LOG_ERR("It's already connecting or disconnecting an adapter!");
-    } else {
-      LOG_ERR("Core is not started.");
-    }
-    return false;
-  }
   // Switch Step 1/4
   // Increase/decrease active data adapter index
   this->mActiveDataAdapterIndex = next_index;
@@ -460,12 +437,14 @@ bool NetworkSwitcher::switch_adapters(int prev_index, int next_index) {
 }
 
 bool NetworkSwitcher::is_increaseable(void) {
+  /* Check the minimum condition of adapter increase such as adapters' count */
   int data_adapter_count = Core::get_instance()->get_data_adapter_count();
   int active_data_adapter_index = this->get_active_data_adapter_index();
   return ((data_adapter_count > 1) &&
           (active_data_adapter_index < (data_adapter_count - 1)));
 }
 bool NetworkSwitcher::is_decreaseable(void) {
+  /* Check the minimum condition of adapter decrease such as adapters' count */
   int data_adapter_count = Core::get_instance()->get_data_adapter_count();
   int active_data_adapter_index = this->get_active_data_adapter_index();
   return ((data_adapter_count > 1) && (active_data_adapter_index > 0));

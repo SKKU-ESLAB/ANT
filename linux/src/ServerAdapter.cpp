@@ -27,6 +27,8 @@
 #include <string.h>
 #include <thread>
 
+#define VERBOSE_SERVER_ADAPTER_RECEIVING 0
+
 using namespace sc;
 
 bool ServerAdapter::connect(ConnectCallback callback, bool is_send_request) {
@@ -111,22 +113,23 @@ bool ServerAdapter::__connect_thread(void) {
   }
 
   // Turn on device
-  DeviceState deviceState = this->mDevice->get_state();
-  bool res = this->mDevice->hold_and_turn_on();
+  {
+    DeviceState deviceState = this->mDevice->get_state();
+    bool res = this->mDevice->hold_and_turn_on();
 
-  deviceState = this->mDevice->get_state();
-  if (!res || deviceState != DeviceState::kOn) {
-    LOG_ERR("Cannot connect the server adapter - turn-on fail: %s",
-            this->get_name());
-    return false;
+    deviceState = this->mDevice->get_state();
+    if (!res || deviceState != DeviceState::kOn) {
+      LOG_ERR("Cannot connect the server adapter - turn-on fail: %s",
+              this->get_name());
+      return false;
+    }
   }
 
   // Allow client's connection
-  P2PServerState p2pServerState = this->mP2PServer->get_state();
-  if (p2pServerState != P2PServerState::kAllowed) {
+  {
     bool res = this->mP2PServer->hold_and_allow_discover();
 
-    p2pServerState = this->mP2PServer->get_state();
+    P2PServerState p2pServerState = this->mP2PServer->get_state();
     if (!res || p2pServerState != P2PServerState::kAllowed) {
       LOG_ERR("Cannot connect the server adapter - allow discover fail: %s",
               this->get_name());
@@ -136,17 +139,19 @@ bool ServerAdapter::__connect_thread(void) {
   }
 
   // Open server socket
-  ServerSocketState socketState = this->mServerSocket->get_state();
-  if (socketState != ServerSocketState::kOpened) {
-    bool res = this->mServerSocket->open();
+  {
+    ServerSocketState socketState = this->mServerSocket->get_state();
+    if (socketState != ServerSocketState::kOpened) {
+      bool res = this->mServerSocket->open();
 
-    socketState = this->mServerSocket->get_state();
-    if (!res || socketState != ServerSocketState::kOpened) {
-      LOG_ERR("Cannot connect the server adapter - socket open fail: %s",
-              this->get_name());
-      this->mP2PServer->release_and_disallow_discover();
-      this->mDevice->release_and_turn_off();
-      return false;
+      socketState = this->mServerSocket->get_state();
+      if (!res || socketState != ServerSocketState::kOpened) {
+        LOG_ERR("Cannot connect the server adapter - socket open fail: %s",
+                this->get_name());
+        this->mP2PServer->release_and_disallow_discover();
+        this->mDevice->release_and_turn_off();
+        return false;
+      }
     }
   }
 
@@ -213,15 +218,17 @@ bool ServerAdapter::__disconnect_thread(void) {
     return false;
   }
 
-  ServerSocketState socketState = this->mServerSocket->get_state();
-  if (socketState != ServerSocketState::kClosed) {
-    bool res = this->mServerSocket->close();
+  {
+    ServerSocketState socketState = this->mServerSocket->get_state();
+    if (socketState != ServerSocketState::kClosed) {
+      bool res = this->mServerSocket->close();
 
-    socketState = this->mServerSocket->get_state();
-    if (!res || socketState != ServerSocketState::kClosed) {
-      LOG_ERR("Cannot disconnect the server adapter - socket close fail: %s",
-              this->get_name());
-      return false;
+      socketState = this->mServerSocket->get_state();
+      if (!res || socketState != ServerSocketState::kClosed) {
+        LOG_ERR("Cannot disconnect the server adapter - socket close fail: %s",
+                this->get_name());
+        return false;
+      }
     }
   }
 
@@ -231,11 +238,10 @@ bool ServerAdapter::__disconnect_thread(void) {
     return false;
   }
 
-  P2PServerState p2pServerState = this->mP2PServer->get_state();
-  if (p2pServerState != P2PServerState::kAllowed) {
+  {
     bool res = this->mP2PServer->release_and_disallow_discover();
 
-    p2pServerState = this->mP2PServer->get_state();
+    P2PServerState p2pServerState = this->mP2PServer->get_state();
     if (!res || p2pServerState != P2PServerState::kDisallowed) {
       LOG_ERR(
           "Cannot disconnect the server adapter - disallow discover fail: %s",
@@ -249,11 +255,11 @@ bool ServerAdapter::__disconnect_thread(void) {
     LOG_ERR("Cannot find device: %s", this->get_name());
     return false;
   }
-  DeviceState deviceState = this->mDevice->get_state();
-  if (deviceState != DeviceState::kOff) {
+
+  {
     bool res = this->mDevice->release_and_turn_off();
 
-    deviceState = this->mDevice->get_state();
+    DeviceState deviceState = this->mDevice->get_state();
     if (!res || deviceState != DeviceState::kOff) {
       LOG_ERR("Cannot disconnect the server adapter - turn-off fail: %s",
               this->get_name());
@@ -420,7 +426,9 @@ void ServerAdapter::receive_data_loop(ServerAdapter *adapter) {
     void *buf = reinterpret_cast<void *>(segment_to_receive->data);
     int len = kSegSize + kSegHeaderSize;
 
+#if VERBOSE_SERVER_ADAPTER_RECEIVING != 0
     LOG_DEBUG("%s: Receiving...", adapter->get_name());
+#endif
     int res = adapter->receive(buf, len);
     if (res < len) {
       LOG_WARN("Receiving failed at %s (%s)", adapter->get_name(),
@@ -438,7 +446,9 @@ void ServerAdapter::receive_data_loop(ServerAdapter *adapter) {
     sm->enqueue(kSegRecv, segment_to_receive);
     segment_to_receive = sm->get_free_segment();
 
+#if VERBOSE_SERVER_ADAPTER_RECEIVING != 0
     LOG_DEBUG("%s: Received: %d", adapter->get_name(), res);
+#endif
   }
 
   adapter->disconnect(NULL);

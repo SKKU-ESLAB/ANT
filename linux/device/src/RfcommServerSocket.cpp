@@ -1,6 +1,6 @@
 /* Copyright 2017-2018 All Rights Reserved.
  *  Gyeonghwan Hong (redcarrottt@gmail.com)
- *  
+ *
  * [Contact]
  *  Gyeonghwan Hong (redcarrottt@gmail.com)
  *
@@ -20,15 +20,17 @@
 
 #include <DebugLog.h>
 
-#include <thread>
 #include <mutex>
+#include <thread>
 
+#include <arpa/inet.h>
+#include <errno.h>
 #include <stdio.h>
 #include <string.h>
-#include <errno.h>
 #include <sys/socket.h>
-#include <arpa/inet.h>
 #include <unistd.h>
+
+#define VERBOSE_BT_MSG 0
 
 using namespace sc;
 
@@ -60,17 +62,21 @@ bool RfcommServerSocket::open_impl(void) {
     return false;
   }
 
-  if (this->mServerSocket < 0) return false;
-  
-  struct sockaddr_rc client_addr = {0, };
+  if (this->mServerSocket < 0)
+    return false;
+
+  struct sockaddr_rc client_addr = {
+      0,
+  };
   socklen_t opt = sizeof(client_addr);
   LOG_VERB("Bluetooth accept...");
-  this->mClientSocket = ::accept(this->mServerSocket, (struct sockaddr *)&client_addr, &opt);
+  this->mClientSocket =
+      ::accept(this->mServerSocket, (struct sockaddr *)&client_addr, &opt);
   if (this->mClientSocket < 0) {
     LOG_ERR("Bluetooth accept failed(%s)", strerror(errno));
     return false;
   }
-  
+
   return true;
 }
 
@@ -82,20 +88,23 @@ int RfcommServerSocket::bt_dynamic_bind_rc(void) {
   bdaddr_t my_bdaddr_any = {0, 0, 0, 0, 0, 0};
   sockaddr.rc_family = AF_BLUETOOTH;
   sockaddr.rc_bdaddr = my_bdaddr_any;
-  sockaddr.rc_channel = (unsigned char) 0;
+  sockaddr.rc_channel = (unsigned char)0;
 
   for (port = 1; port < 31; port++) {
     sockaddr.rc_channel = port;
-    err = ::bind(this->mServerSocket, (struct sockaddr *)&sockaddr, sizeof(struct sockaddr_rc));
+    err = ::bind(this->mServerSocket, (struct sockaddr *)&sockaddr,
+                 sizeof(struct sockaddr_rc));
     if (!err) {
       LOG_VERB("BT port binded : %d", port);
       return port;
     }
 
-    if (errno == EINVAL) break;
+    if (errno == EINVAL)
+      break;
   }
 
-  if (port == 31) err = -1;
+  if (port == 31)
+    err = -1;
 
   return err;
 }
@@ -106,17 +115,14 @@ int RfcommServerSocket::bt_register_service() {
   char service_prov[256];
   sdp_session_t *sdp_session = 0;
   uuid_t root_uuid, l2cap_uuid, rfcomm_uuid;
-  sdp_list_t *l2cap_list = 0,
-             *rfcomm_list = 0,
-             *root_list = 0,
-             *proto_list = 0,
+  sdp_list_t *l2cap_list = 0, *rfcomm_list = 0, *root_list = 0, *proto_list = 0,
              *access_proto_list = 0;
   sdp_data_t *channel = 0;
   sdp_record_t *record = sdp_record_alloc();
 
   int res = 0;
   do {
-    //Set the general service ID
+    // Set the general service ID
     sdp_set_service_id(record, this->mServiceUUID);
 
     // make the service record publicly browsable
@@ -147,7 +153,8 @@ int RfcommServerSocket::bt_register_service() {
     // disconnect
     bdaddr_t my_bdaddr_any = {0, 0, 0, 0, 0, 0};
     bdaddr_t my_bdaddr_local = {0, 0, 0, 0xff, 0xff, 0xff};
-    sdp_session = sdp_connect(&my_bdaddr_any, &my_bdaddr_local, SDP_RETRY_IF_BUSY);
+    sdp_session =
+        sdp_connect(&my_bdaddr_any, &my_bdaddr_local, SDP_RETRY_IF_BUSY);
     if (NULL == sdp_session) {
       LOG_ERR("Cannot connect to bluetooth sdp server");
       res = -1;
@@ -187,12 +194,15 @@ int RfcommServerSocket::send_impl(const void *data_buffer, size_t data_length) {
   }
 
   while (sent_bytes < data_length) {
-    int once_sent_bytes = ::write(this->mClientSocket, data_buffer, data_length);
+    int once_sent_bytes =
+        ::write(this->mClientSocket, data_buffer, data_length);
     if (once_sent_bytes <= 0) {
       LOG_WARN("Cli sock closed");
       return -1;
     }
+#if VERBOSE_BT_MSG != 0
     LOG_DEBUG("BT %d] send: %d", this->mPort, once_sent_bytes);
+#endif
     sent_bytes += once_sent_bytes;
   }
 
@@ -206,14 +216,17 @@ int RfcommServerSocket::receive_impl(void *data_buffer, size_t data_length) {
     return -1;
 
   while (received_bytes < data_length) {
-    int once_received_bytes = ::read(this->mClientSocket, data_buffer, data_length);
+    int once_received_bytes =
+        ::read(this->mClientSocket, data_buffer, data_length);
     if (once_received_bytes <= 0) {
       LOG_WARN("Cli sock closed");
       return -1;
     }
 
     received_bytes += once_received_bytes;
+#if VERBOSE_BT_MSG != 0
     LOG_DEBUG("BT %d] receive : %d", this->mPort, once_received_bytes);
+#endif
   }
 
   return received_bytes;
@@ -222,18 +235,20 @@ int RfcommServerSocket::receive_impl(void *data_buffer, size_t data_length) {
 int RfcommServerSocket::str2uuid(char *str, uuid_t *uuid) {
   if (strlen(str) != 36)
     return -1;
-  
+
   uint8_t adv_data[16];
 
   int strCounter = 0;
   int hexCounter = 0;
-  while (strCounter<strlen(str)) {
+  while (strCounter < strlen(str)) {
     if (str[strCounter] == '-') {
       strCounter++;
       continue;
     }
 
-    char hex[3] = {0,};
+    char hex[3] = {
+        0,
+    };
     hex[0] = str[strCounter++];
     hex[1] = str[strCounter++];
 
