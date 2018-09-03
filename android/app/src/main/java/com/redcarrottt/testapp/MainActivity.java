@@ -33,6 +33,9 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.BaseAdapter;
+import android.widget.Button;
+import android.widget.CheckBox;
+import android.widget.CompoundButton;
 import android.widget.ListView;
 import android.widget.TextView;
 
@@ -55,6 +58,22 @@ public class MainActivity extends AppCompatActivity implements LogReceiver.Callb
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+        // Initialize SwitchProfileButton
+        Button switchProfileButton = (Button) findViewById(R.id.switchProfileButton);
+        switchProfileButton.setOnClickListener(onClickSwitchProfileButton);
+        this.updateSwitchProfileButton();
+
+        // Initialize StartButton
+        Button startButton = (Button) findViewById(R.id.startButton);
+        startButton.setOnClickListener(onClickStartButton);
+
+        // Initialize BtDataCheckBox
+        CheckBox btDataCheckBox = (CheckBox) findViewById(R.id.btDataCheckbox);
+        btDataCheckBox.setOnCheckedChangeListener(onChangeBtDataCheckBox);
+
+        // Initialize WfdDataCheckBox
+        CheckBox wfdDataCheckBox = (CheckBox) findViewById(R.id.wfdDataCheckbox);
+        wfdDataCheckBox.setOnCheckedChangeListener(onChangeWfdDataCheckBox);
 
         // Initialize LogListView
         this.mLogListViewAdapter = new LogListViewAdapter(this, this.mLogListViewData);
@@ -68,10 +87,59 @@ public class MainActivity extends AppCompatActivity implements LogReceiver.Callb
         broadcastIntentFilter.addAction(LogReceiver.kAction);
         this.registerReceiver(logReceiver, broadcastIntentFilter);
 
-        // Initialize SC
+        // Require permissions for SC
         this.requestPermissions();
-        this.initializeCommunication();
     }
+
+    private View.OnClickListener onClickStartButton = new View.OnClickListener() {
+        @Override
+        public void onClick(View view) {
+            // Initialize SC
+            initializeCommunication();
+        }
+    };
+
+    private String[] mProfiles = {"Lab", "Home"};
+    private int mPresentProfile = 0;
+    private View.OnClickListener onClickSwitchProfileButton = new View.OnClickListener() {
+        @Override
+        public void onClick(View view) {
+            final int kMaxProfiles = mProfiles.length;
+            mPresentProfile = (mPresentProfile + 1) % kMaxProfiles;
+            updateSwitchProfileButton();
+        }
+    };
+
+    private void updateSwitchProfileButton() {
+        Button switchProfileButton = (Button) findViewById(R.id.switchProfileButton);
+        switchProfileButton.setText(this.mProfiles[this.mPresentProfile] + " Profile");
+    }
+
+    private boolean mIsBtDataChecked = true;
+    private CheckBox.OnCheckedChangeListener onChangeBtDataCheckBox = new CheckBox
+            .OnCheckedChangeListener() {
+        @Override
+        public void onCheckedChanged(CompoundButton self, boolean isChecked) {
+            mIsBtDataChecked = isChecked;
+            if(!mIsBtDataChecked && !mIsWfdDataChecked) {
+                mIsBtDataChecked = true;
+                self.setChecked(true);
+            }
+        }
+    };
+
+    private boolean mIsWfdDataChecked = true;
+    private CheckBox.OnCheckedChangeListener onChangeWfdDataCheckBox = new CheckBox
+            .OnCheckedChangeListener() {
+        @Override
+        public void onCheckedChanged(CompoundButton self, boolean isChecked) {
+            mIsWfdDataChecked = isChecked;
+            if(!mIsBtDataChecked && !mIsWfdDataChecked) {
+                mIsWfdDataChecked = true;
+                self.setChecked(true);
+            }
+        }
+    };
 
     private void requestPermissions() {
         if (ContextCompat.checkSelfPermission(MainActivity.this, Manifest.permission.INTERNET) !=
@@ -85,23 +153,39 @@ public class MainActivity extends AppCompatActivity implements LogReceiver.Callb
     }
 
     private void initializeCommunication() {
+        String btAddress = "";
+        switch (this.mPresentProfile) {
+            case 0:
+                btAddress = "B8:27:EB:D9:FA:85";
+                break;
+            case 1:
+                btAddress = "B8:27:EB:77:C3:4A";
+                break;
+        }
+
+        if(!this.mIsBtDataChecked && !this.mIsWfdDataChecked) {
+            Logger.ERR(kTag, "No data adapter is selected!");
+            return;
+        } else if(btAddress == "") {
+            Logger.ERR(kTag, "No bluetooth address is defined!");
+            return;
+        }
+
         // Setting adapters
-        BtClientAdapter btControl = new BtClientAdapter(2345, "Control", "B8:27:EB:D9:FA:85",
+        BtClientAdapter btControl = new BtClientAdapter(2345, "Control", btAddress,
                 "150e8400-1234-41d4-a716-446655440000", this);
-//        BtClientAdapter btData = new BtClientAdapter(3333, "Data/BT", "B8:27:EB:D9:FA:85",
-//                "150e8400-1234-41d4-a716-446655440001", this);
-        WfdClientAdapter wfdData = new WfdClientAdapter(3456, "Data/WFD", 3456, this);
-
-//        BtClientAdapter btControl = new BtClientAdapter(2345, "Control", "B8:27:EB:77:C3:4A",
-//                "150e8400-1234-41d4-a716-446655440000", this);
-//        BtClientAdapter btData = new BtClientAdapter(3333, "Data/BT", "B8:27:EB:77:C3:4A",
-//                "150e8400-1234-41d4-a716-446655440001", this);
-//        WfdClientAdapter wfdData = new WfdClientAdapter(3456, "Data/WFD", "76:ae:ce:9f:b8:c5",
-//                "192.168.49.1", 3456, this);
-
         API.registerControlAdapter(btControl);
-//        API.registerDataAdapter(btData);
-        API.registerDataAdapter(wfdData);
+
+        if(this.mIsBtDataChecked) {
+            BtClientAdapter btData = new BtClientAdapter(3333, "Data/BT", btAddress,
+                    "150e8400-1234-41d4-a716-446655440001", this);
+            API.registerDataAdapter(btData);
+        }
+        if(this.mIsWfdDataChecked) {
+            WfdClientAdapter wfdData = new WfdClientAdapter(3456, "Data/WFD", 3456, this);
+            API.registerDataAdapter(wfdData);
+        }
+        Logger.VERB(kTag, "BT Address: " + btAddress);
 
         // Start the selective connection
         API.startSC(onStartSCResult);
