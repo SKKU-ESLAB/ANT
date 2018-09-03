@@ -1,6 +1,5 @@
 /* Copyright 2017-2018 All Rights Reserved.
  *  Gyeonghwan Hong (redcarrottt@gmail.com)
- *  Injung Hwang (sinban04@gmail.com)
  *  
  * [Contact]
  *  Gyeonghwan Hong (redcarrottt@gmail.com)
@@ -85,8 +84,8 @@ sc::WfdServerAdapter* wfdData;
 int main(int argc, char** argv) {
 
   //EthServerAdapter ethAdapter(2345, "Eth", 2345);
-  btControl = new sc::BtServerAdapter(2345, "BtCt", "150e8400-1234-41d4-a716-446655440000");
-  wfdData = new sc::WfdServerAdapter(3456, "WfdDt", 3456, "SelCon");
+  btControl = new sc::BtServerAdapter(1, "BtCt", "150e8400-1234-41d4-a716-446655440000");
+  wfdData = new sc::WfdServerAdapter(12, "WfdDt", 3456, "SelCon");
 
   printf("Step 1. Initializing Network Adapters\n");
 

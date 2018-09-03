@@ -172,17 +172,17 @@ public class MainActivity extends AppCompatActivity implements LogReceiver.Callb
         }
 
         // Setting adapters
-        BtClientAdapter btControl = new BtClientAdapter(2345, "Control", btAddress,
+        BtClientAdapter btControl = new BtClientAdapter(1, "Control", btAddress,
                 "150e8400-1234-41d4-a716-446655440000", this);
         API.registerControlAdapter(btControl);
 
         if(this.mIsBtDataChecked) {
-            BtClientAdapter btData = new BtClientAdapter(3333, "Data/BT", btAddress,
+            BtClientAdapter btData = new BtClientAdapter(11, "Data/BT", btAddress,
                     "150e8400-1234-41d4-a716-446655440001", this);
             API.registerDataAdapter(btData);
         }
         if(this.mIsWfdDataChecked) {
-            WfdClientAdapter wfdData = new WfdClientAdapter(3456, "Data/WFD", 3456, this);
+            WfdClientAdapter wfdData = new WfdClientAdapter(12, "Data/WFD", 3456, this);
             API.registerDataAdapter(wfdData);
         }
         Logger.VERB(kTag, "BT Address: " + btAddress);
