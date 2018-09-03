@@ -185,6 +185,7 @@ public class MainActivity extends AppCompatActivity implements LogReceiver.Callb
             WfdClientAdapter wfdData = new WfdClientAdapter(3456, "Data/WFD", 3456, this);
             API.registerDataAdapter(wfdData);
         }
+        Logger.VERB(kTag, "BT Address: " + btAddress);
 
         // Start the selective connection
         API.startSC(onStartSCResult);
