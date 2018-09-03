@@ -197,8 +197,11 @@ void ServerAdapter::disconnect_thread(void) {
 bool ServerAdapter::__disconnect_thread(void) {
   // Finish sender & receiver threads
   if (this->mSenderThread != NULL) {
-    this->wake_up(false);
+    // If this adapter is already sleeping, wake up and finish the sender thread
     this->mSenderLoopOn = false;
+    if (this->get_state() == ServerAdapterState::kSleeping) {
+      this->wake_up(false);
+    }
   }
   if (this->mReceiverThread != NULL) {
     this->mReceiverLoopOn = false;

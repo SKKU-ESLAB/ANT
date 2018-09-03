@@ -1,6 +1,5 @@
 /* Copyright 2017-2018 All Rights Reserved.
  *  Gyeonghwan Hong (redcarrottt@gmail.com)
- *  Injung Hwang (sinban04@gmail.com)
  *  
  * [Contact]
  *  Gyeonghwan Hong (redcarrottt@gmail.com)
@@ -85,8 +84,8 @@ sc::BtServerAdapter* btData;
 int main(int argc, char** argv) {
 
   //EthServerAdapter ethAdapter(2345, "Eth", 2345);
-  btControl = new sc::BtServerAdapter(2345, "BtCt", "150e8400-1234-41d4-a716-446655440000");
-  btData = new sc::BtServerAdapter(3333, "BtDt", "150e8400-1234-41d4-a716-446655440001");
+  btControl = new sc::BtServerAdapter(1, "BtCt", "150e8400-1234-41d4-a716-446655440000");
+  btData = new sc::BtServerAdapter(11, "BtDt", "150e8400-1234-41d4-a716-446655440001");
 
   printf("Step 1. Initializing Network Adapters\n");
 
