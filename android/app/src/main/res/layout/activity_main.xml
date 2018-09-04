@@ -41,6 +41,14 @@
             android:text="Start"/>
     </LinearLayout>
 
+    <TextView
+        android:id="@+id/bandwidthTextView"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Bandwidth: "
+        android:textSize="24sp"
+        android:textStyle="bold"/>
+
     <ListView
         android:id="@+id/logListView"
         android:layout_width="match_parent"
