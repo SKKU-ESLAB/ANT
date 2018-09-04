@@ -18,7 +18,7 @@ class TcpClientSocket extends ClientSocket {
                 .mTargetPort);
 
         // Try to open socket
-        final int kMaxTries = 2;
+        final int kMaxTries = 5;
         for (int tries = 0; tries < kMaxTries; tries++) {
             try {
                 this.mSocket = new Socket();
@@ -37,7 +37,7 @@ class TcpClientSocket extends ClientSocket {
             }
         }
 
-        if (this.mSocket.isConnected()) {
+        if (this.mSocket != null && this.mSocket.isConnected()) {
             Logger.VERB(kTag, "Socket open success");
             return true;
         } else {

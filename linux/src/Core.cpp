@@ -30,6 +30,7 @@
 #include <errno.h>
 #include <stdio.h>
 #include <string.h>
+#include <locale.h>
 
 /**
  * < When to Free Buffer >
@@ -52,6 +53,8 @@ StopCoreTransaction *StopCoreTransaction::sOngoing = NULL;
 
 // Start core: connect initial adapters
 void Core::start() {
+  setlocale(LC_ALL,"");
+  
   if (this->get_state() != CMState::kCMStateIdle) {
     LOG_ERR("Core has already started.");
     this->done_start(false);

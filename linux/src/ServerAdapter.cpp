@@ -242,7 +242,7 @@ bool ServerAdapter::__disconnect_thread(void) {
     bool res = this->mP2PServer->release_and_disallow_discover();
 
     P2PServerState p2pServerState = this->mP2PServer->get_state();
-    if (!res || p2pServerState != P2PServerState::kDisallowed) {
+    if (!res) {
       LOG_ERR(
           "Cannot disconnect the server adapter - disallow discover fail: %s",
           this->get_name());
@@ -260,7 +260,7 @@ bool ServerAdapter::__disconnect_thread(void) {
     bool res = this->mDevice->release_and_turn_off();
 
     DeviceState deviceState = this->mDevice->get_state();
-    if (!res || deviceState != DeviceState::kOff) {
+    if (!res) {
       LOG_ERR("Cannot disconnect the server adapter - turn-off fail: %s",
               this->get_name());
       return false;
