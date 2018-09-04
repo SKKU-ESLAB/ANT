@@ -390,12 +390,13 @@ void ServerAdapter::__sender_thread(void) {
 
     int res = this->send(data, len);
     if (errno == EAGAIN) {
-      LOG_VERB("Kernel I/O buffer is full at %s", this->get_name());
+      LOG_VERB("Sending %dB: Kernel I/O buffer is full at %s", len,
+               this->get_name());
       sm->failed_sending(segment_to_send);
       continue;
     } else if (res < 0) {
-      LOG_WARN("Sending failed at %s (%d; %s)", this->get_name(), errno,
-               strerror(errno));
+      LOG_WARN("Sending %dB failed at %s (%d; %s)", len, this->get_name(),
+               errno, strerror(errno));
       sm->failed_sending(segment_to_send);
       break;
     }
@@ -433,7 +434,10 @@ void ServerAdapter::receive_data_loop(ServerAdapter *adapter) {
     LOG_DEBUG("%s: Receiving...", adapter->get_name());
 #endif
     int res = adapter->receive(buf, len);
-    if (res < len) {
+    if (errno == EAGAIN) {
+      LOG_WARN("Kernel I/O buffer is full at %s", adapter->get_name());
+      continue;
+    } else if (res < len) {
       LOG_WARN("Receiving failed at %s (%s)", adapter->get_name(),
                strerror(errno));
       break;

@@ -25,7 +25,7 @@ public class NetworkSwitcher {
     // It is called by peer through Core.
     void connectAdapter(int adapterId) {
         int state = this.getState();
-        if (state != State.kSwitching) {
+        if (state == State.kSwitching) {
             Logger.VERB(kTag, "It's now switching. Cannot connect to adapter " + adapterId);
             return;
         }
@@ -37,7 +37,7 @@ public class NetworkSwitcher {
     // It is called by peer through Core.
     void sleepAdapter(int adapterId) {
         int state = this.getState();
-        if (state != State.kSwitching) {
+        if (state == State.kSwitching) {
             Logger.VERB(kTag, "It's now switching. Cannot sleep to adapter " + adapterId);
             return;
         }
@@ -51,7 +51,7 @@ public class NetworkSwitcher {
     // It is called by peer through Core.
     void wakeUpAdapter(int adapterId) {
         int state = this.getState();
-        if (state != State.kSwitching) {
+        if (state == State.kSwitching) {
             Logger.VERB(kTag, "It's now switching. Cannot sleep to adapter " + adapterId);
             return;
         }
@@ -65,7 +65,7 @@ public class NetworkSwitcher {
     // It is called by Core.
     void reconnectControlAdapter() {
         int state = this.getState();
-        if (state != State.kSwitching) {
+        if (state == State.kSwitching) {
             Logger.VERB(kTag, "It's now switching. Cannot reconnect control adapter.");
             return;
         }

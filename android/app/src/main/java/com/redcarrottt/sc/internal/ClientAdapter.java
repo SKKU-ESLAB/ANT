@@ -29,6 +29,7 @@ import static com.redcarrottt.sc.internal.SegmentManager.kSegSize;
 public class ClientAdapter {
     private final String kTag = "ClientAdapter";
     private final ClientAdapter self = this;
+    private final boolean kVerboseClientAdapter = false;
 
     // Main Functions: connect, releaseAndDisconnect, send, receive
     public void connect(ConnectResultListener listener, boolean isSendRequest) {
@@ -451,7 +452,9 @@ public class ClientAdapter {
                 Segment segmentToReceive = sm.get_free_segment();
                 int len = kSegSize + kSegHeaderSize;
 
-                Logger.DEBUG(kTag, adapter.getName() + ": Receiving...");
+                if (kVerboseClientAdapter) {
+                    Logger.DEBUG(kTag, adapter.getName() + ": Receiving...");
+                }
                 int res = adapter.receive(segmentToReceive.data, len);
                 if (res < len) {
                     Logger.WARN(kTag, "Receiving failed at " + adapter.getName());
@@ -493,8 +496,10 @@ public class ClientAdapter {
                 Logger.ERR(kTag, "Sender has already been suspended!: " + this.getName());
                 return false;
             } else {
-                // Send Request
-                Core.getInstance().sendRequestSleep((short) this.getId());
+                if (isSendRequest) {
+                    // Send Request
+                    Core.getInstance().sendRequestSleep((short) this.getId());
+                }
 
                 // Sleep
                 this.setState(State.kGoingSleep);
