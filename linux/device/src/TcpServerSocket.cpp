@@ -100,7 +100,7 @@ bool TcpServerSocket::close_impl(void) {
   return true;
 }
 
-int TcpServerSocket::send_impl(const void *data_buffer, size_t data_length) {
+int TcpServerSocket:: send_impl(const void *data_buffer, size_t data_length) {
   int sent_bytes = 0;
 
   if (this->mClientSocket <= 0)
@@ -110,7 +110,9 @@ int TcpServerSocket::send_impl(const void *data_buffer, size_t data_length) {
     int once_sent_bytes =
         ::write(this->mClientSocket, data_buffer, data_length);
     if (once_sent_bytes <= 0) {
-      LOG_WARN("Cli sock closed");
+      if (errno != EAGAIN) {
+        LOG_WARN("Cli sock closed");
+      }
       return -1;
     }
 #if VERBOSE_WFD_MSG != 0
@@ -132,7 +134,9 @@ int TcpServerSocket::receive_impl(void *data_buffer, size_t data_length) {
     int once_received_bytes =
         ::read(this->mClientSocket, data_buffer, data_length);
     if (once_received_bytes <= 0) {
-      LOG_WARN("Cli sock closed");
+      if (errno != EAGAIN) {
+        LOG_WARN("Cli sock closed");
+      }
       return -1;
     }
 

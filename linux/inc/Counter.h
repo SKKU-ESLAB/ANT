@@ -20,6 +20,9 @@
 #ifndef INC_COUNTER_H_
 #define INC_COUNTER_H_
 
+#include <Counter.h>
+#include <DebugLog.h>
+
 #include <assert.h>
 #include <mutex>
 #include <sys/time.h>
@@ -28,11 +31,11 @@ namespace sc {
 class Counter {
 public:
 #define DEFAULT_SIMPLE_MOVING_AVERAGE_LENGTH 10
-#define DEFAULT_EXPONENTIAL_MOVING_AVERAGE_WEIGHT 0.9
+#define DEFAULT_EXPONENTIAL_MOVING_AVERAGE_WEIGHT 0.9f
 
   Counter() {
     int simple_moving_average_length = DEFAULT_SIMPLE_MOVING_AVERAGE_LENGTH;
-    int exponential_moving_average_weight =
+    float exponential_moving_average_weight =
         DEFAULT_EXPONENTIAL_MOVING_AVERAGE_WEIGHT;
 
     this->mValue = 0;
@@ -50,7 +53,7 @@ public:
     this->mHistoryCursor = 0;
 
     /* Exponential moving average */
-    this->mEma = 0;
+    this->mEma = 0.0f;
     this->mEmaWeight = exponential_moving_average_weight;
     assert(exponential_moving_average_weight >= 0 &&
            exponential_moving_average_weight <= 1);
@@ -98,7 +101,7 @@ public:
     return this->get_sm_average_locked();
   }
 
-  int get_em_average(void) {
+  float get_em_average(void) {
     std::unique_lock<std::mutex> lock(this->mValueLock);
     return this->get_em_average_locked();
   }
@@ -113,8 +116,8 @@ private:
     this->mHistoryCursor = (this->mHistoryCursor + 1) % this->mSmaLength;
 
     /* Update exponential moving average */
-    this->mEma = (this->mEma * (1 - this->mEmaWeight)) +
-                 (this->mValue * this->mEmaWeight);
+    this->mEma = ((float)this->mEma * (1.0f - this->mEmaWeight)) +
+                 ((float)this->mValue * this->mEmaWeight);
   }
 
   int get_value_locked() { return this->mValue; }
@@ -153,7 +156,7 @@ private:
     return simple_mavg;
   }
 
-  int get_em_average_locked(void) { return this->mEma; }
+  float get_em_average_locked(void) { return this->mEma; }
 
 private:
   /* Value */
@@ -170,7 +173,7 @@ private:
   int mSmaLength;      /* Length for simple moving average */
 
   /* Exponential moving average (EMA) */
-  int mEma;         /* Exponential moving average */
+  float mEma;       /* Exponential moving average */
   float mEmaWeight; /* Weight for Exponential moving average */
 };
 } /* namespace sc */

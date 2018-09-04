@@ -111,14 +111,14 @@ protected:
 class Stats {
 public:
   /* Statistics used to print present status */
-  int ema_queue_arrival_speed = 0;
+  float ema_queue_arrival_speed = 0;
 
   /* Statistics used in CoolSpots Policy */
   int now_total_bandwidth = 0;
 
   /* Statistics used in Energy-aware & Latency-aware Policy */
-  int ema_send_request_size = 0;
-  int ema_arrival_time_us = 0;
+  float ema_send_request_size = 0;
+  float ema_arrival_time_us = 0;
   int now_queue_data_size = 0;
 };
 

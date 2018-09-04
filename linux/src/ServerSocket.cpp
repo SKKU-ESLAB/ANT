@@ -75,7 +75,7 @@ int ServerSocket::receive(void *data_buffer, size_t data_length) {
   }
   
   int res = this->receive_impl(data_buffer, data_length);
-  if(res < 0) {
+  if(errno != EAGAIN && res < 0) {
     this->set_state(ServerSocketState::kClosed);
   }
   return res;

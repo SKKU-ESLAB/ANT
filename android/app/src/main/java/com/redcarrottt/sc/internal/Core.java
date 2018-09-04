@@ -179,14 +179,10 @@ public class Core {
         }
 
         {
-            ByteBuffer buffer = ByteBuffer.allocate(1);
-            buffer.putChar(requestCode);
-            this.sendControlMessage(buffer.array(), 1);
-        }
-        {
-            ByteBuffer buffer = ByteBuffer.allocate(2);
+            ByteBuffer buffer = ByteBuffer.allocate(3);
+            buffer.put((byte)requestCode);
             buffer.putShort(adapterId);
-            this.sendControlMessage(buffer.array(), 2);
+            this.sendControlMessage(buffer.array(), 3);
         }
     }
 

@@ -121,7 +121,7 @@ public class MainActivity extends AppCompatActivity implements LogReceiver.Callb
         @Override
         public void onCheckedChanged(CompoundButton self, boolean isChecked) {
             mIsBtDataChecked = isChecked;
-            if(!mIsBtDataChecked && !mIsWfdDataChecked) {
+            if (!mIsBtDataChecked && !mIsWfdDataChecked) {
                 mIsBtDataChecked = true;
                 self.setChecked(true);
             }
@@ -134,7 +134,7 @@ public class MainActivity extends AppCompatActivity implements LogReceiver.Callb
         @Override
         public void onCheckedChanged(CompoundButton self, boolean isChecked) {
             mIsWfdDataChecked = isChecked;
-            if(!mIsBtDataChecked && !mIsWfdDataChecked) {
+            if (!mIsBtDataChecked && !mIsWfdDataChecked) {
                 mIsWfdDataChecked = true;
                 self.setChecked(true);
             }
@@ -163,10 +163,10 @@ public class MainActivity extends AppCompatActivity implements LogReceiver.Callb
                 break;
         }
 
-        if(!this.mIsBtDataChecked && !this.mIsWfdDataChecked) {
+        if (!this.mIsBtDataChecked && !this.mIsWfdDataChecked) {
             Logger.ERR(kTag, "No data adapter is selected!");
             return;
-        } else if(btAddress == "") {
+        } else if (btAddress == "") {
             Logger.ERR(kTag, "No bluetooth address is defined!");
             return;
         }
@@ -176,12 +176,12 @@ public class MainActivity extends AppCompatActivity implements LogReceiver.Callb
                 "150e8400-1234-41d4-a716-446655440000", this);
         API.registerControlAdapter(btControl);
 
-        if(this.mIsBtDataChecked) {
+        if (this.mIsBtDataChecked) {
             BtClientAdapter btData = new BtClientAdapter(11, "Data/BT", btAddress,
                     "150e8400-1234-41d4-a716-446655440001", this);
             API.registerDataAdapter(btData);
         }
-        if(this.mIsWfdDataChecked) {
+        if (this.mIsWfdDataChecked) {
             WfdClientAdapter wfdData = new WfdClientAdapter(12, "Data/WFD", 3456, this);
             API.registerDataAdapter(wfdData);
         }
@@ -244,6 +244,7 @@ public class MainActivity extends AppCompatActivity implements LogReceiver.Callb
     private class ReceivingThread extends Thread {
         private static final String kTag = "Recv";
         private boolean mIsAlive;
+        private final boolean kVerboseReceivingThread = false;
 
         ReceivingThread() {
             this.mIsAlive = false;
@@ -256,9 +257,9 @@ public class MainActivity extends AppCompatActivity implements LogReceiver.Callb
 
             while (this.mIsAlive) {
                 int receivedLength = API.receive(buf);
-                Logger.VERB(kTag, "Received: Size=" + receivedLength);
-//                int sentLength = API.send(sending_buf.getBytes(), sending_buf.length());
-//                Logger.VERB(kTag, "Sent: Size=" + sentLength);
+                if (kVerboseReceivingThread) {
+                    Logger.DEBUG(kTag, "Received: Size=" + receivedLength);
+                }
             }
         }
 
