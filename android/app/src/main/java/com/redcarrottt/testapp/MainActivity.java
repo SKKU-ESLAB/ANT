@@ -45,6 +45,7 @@ import com.redcarrottt.sc.api.OnStopSCResult;
 import com.redcarrottt.sc.internal.bt.BtClientAdapter;
 import com.redcarrottt.sc.internal.wfd.WfdClientAdapter;
 
+import java.text.NumberFormat;
 import java.util.ArrayList;
 import java.util.Date;
 
@@ -250,29 +251,26 @@ public class MainActivity extends AppCompatActivity implements LogReceiver.Callb
     private class SpeedWatcherThread extends Thread {
         private Date mLastAccessedTS;
         private int mPrevValue;
-        private Integer mTotalDataSize; // Bytes
+        private int mTotalDataSize; // Bytes
         private final int kSleepMS = 1000;
 
         public void arrive(int dataSize) {
-            synchronized (this.mTotalDataSize) {
-                this.mTotalDataSize += dataSize;
-            }
+            this.mTotalDataSize += dataSize;
         }
 
         private int getSpeed() {
             int speed;
-            synchronized (this.mTotalDataSize) {
-                Date startTS = this.mLastAccessedTS;
-                Date endTS = new Date();
-                int prevValue = this.mPrevValue;
-                int presentValue = this.mTotalDataSize;
 
-                speed = (int) ((float) (presentValue - prevValue) / ((float) (endTS.getTime() -
-                        startTS.getTime()) / 1000));
+            Date startTS = this.mLastAccessedTS;
+            Date endTS = new Date();
+            int prevValue = this.mPrevValue;
+            int presentValue = this.mTotalDataSize;
 
-                this.mLastAccessedTS = endTS;
-                this.mPrevValue = presentValue;
-            }
+            speed = (int) ((float) (presentValue - prevValue) / ((float) (endTS.getTime() -
+                    startTS.getTime()) / 1000));
+
+            this.mLastAccessedTS = endTS;
+            this.mPrevValue = presentValue;
 
             return speed;
         }
@@ -291,7 +289,8 @@ public class MainActivity extends AppCompatActivity implements LogReceiver.Callb
                     public void run() {
                         TextView bandwidthTextView = (TextView) findViewById(R.id
                                 .bandwidthTextView);
-                        bandwidthTextView.setText("Bandwidth: " + speed + "B/s");
+                        NumberFormat format = NumberFormat.getNumberInstance();
+                        bandwidthTextView.setText("Bandwidth: " + format.format(speed) + "B/s");
                     }
                 });
                 try {
@@ -306,7 +305,7 @@ public class MainActivity extends AppCompatActivity implements LogReceiver.Callb
     private class ReceivingThread extends Thread {
         private static final String kTag = "Recv";
         private boolean mIsAlive;
-        private final boolean kVerboseReceivingThread = false;
+        private final boolean kVerboseReceivingThread = true;
 
         ReceivingThread() {
             this.mIsAlive = false;

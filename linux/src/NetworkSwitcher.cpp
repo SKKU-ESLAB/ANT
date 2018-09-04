@@ -117,13 +117,13 @@ void NetworkSwitcher::print_stats(Stats &stats) {
    *  - Total Bandwidth
    *  - EMA(Arrival Time (sec))
    */
-  printf("%3.3fB/s (R: %3.3fB, T_IA: %3.3fms) => [Q: %dB ] => %dB/s // ON: %dB "
-         "OFF: %dB // %s %s\n",
-         stats.ema_queue_arrival_speed, stats.ema_send_request_size,
-         (stats.ema_arrival_time_us / 1000), stats.now_queue_data_size,
-         stats.now_total_bandwidth, this->get_init_energy_payoff_point(),
-         this->get_idle_energy_payoff_point(stats.ema_arrival_time_us),
-         mode_str, state_str);
+  // printf("%3.3fB/s (R: %3.3fB, T_IA: %3.3fms) => [Q: %'dB ] => %'dB/s // ON: %'dB "
+  //        "OFF: %dB // %s %s\n",
+  //        stats.ema_queue_arrival_speed, stats.ema_send_request_size,
+  //        (stats.ema_arrival_time_us / 1000), stats.now_queue_data_size,
+  //        stats.now_total_bandwidth, this->get_init_energy_payoff_point(),
+  //        this->get_idle_energy_payoff_point(stats.ema_arrival_time_us),
+  //        mode_str, state_str);
 }
 
 void NetworkSwitcher::connect_adapter(int adapter_id) {

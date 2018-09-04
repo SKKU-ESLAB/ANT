@@ -242,7 +242,7 @@ public class ClientAdapter {
         public void onDisconnectResult(boolean isSuccess) {
             // Check the result of "P2P Disconnect"
             int p2pClientState = self.mP2PClient.getState();
-            if (!isSuccess || p2pClientState != P2PClient.State.kDisconnected) {
+            if (!isSuccess) {
                 Logger.ERR(kTag, "Cannot releaseAndDisconnect the server adapter - " +
                         "releaseAndDisconnect P2P " + "client fail: " + self.getName());
                 this.onFail();
@@ -256,7 +256,7 @@ public class ClientAdapter {
         @Override
         public void onTurnOffResult(boolean isSuccess) {
             int deviceState = self.mDevice.getState();
-            if (!isSuccess || deviceState != Device.State.kOff) {
+            if (!isSuccess) {
                 Logger.ERR(kTag, "Cannot releaseAndDisconnect the server adapter - turn-off " +
                         "fail:" + " " + self.getName());
                 this.onFail();
