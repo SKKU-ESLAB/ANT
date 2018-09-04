@@ -46,6 +46,7 @@ import com.redcarrottt.sc.internal.bt.BtClientAdapter;
 import com.redcarrottt.sc.internal.wfd.WfdClientAdapter;
 
 import java.util.ArrayList;
+import java.util.Date;
 
 public class MainActivity extends AppCompatActivity implements LogReceiver.Callback {
     private static final String kTag = "MainActivity";
@@ -53,6 +54,7 @@ public class MainActivity extends AppCompatActivity implements LogReceiver.Callb
     // Components
     private ArrayList<LogListViewItem> mLogListViewData = new ArrayList<>();
     private LogListViewAdapter mLogListViewAdapter;
+    private SpeedWatcherThread mSpeedWatcherThread;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -74,6 +76,10 @@ public class MainActivity extends AppCompatActivity implements LogReceiver.Callb
         // Initialize WfdDataCheckBox
         CheckBox wfdDataCheckBox = (CheckBox) findViewById(R.id.wfdDataCheckbox);
         wfdDataCheckBox.setOnCheckedChangeListener(onChangeWfdDataCheckBox);
+
+        // Initialize SpeedWatcherThread for BandwidthTextView
+        this.mSpeedWatcherThread = new SpeedWatcherThread();
+        this.mSpeedWatcherThread.start();
 
         // Initialize LogListView
         this.mLogListViewAdapter = new LogListViewAdapter(this, this.mLogListViewData);
@@ -241,6 +247,62 @@ public class MainActivity extends AppCompatActivity implements LogReceiver.Callb
         }
     };
 
+    private class SpeedWatcherThread extends Thread {
+        private Date mLastAccessedTS;
+        private int mPrevValue;
+        private Integer mTotalDataSize; // Bytes
+        private final int kSleepMS = 1000;
+
+        public void arrive(int dataSize) {
+            synchronized (this.mTotalDataSize) {
+                this.mTotalDataSize += dataSize;
+            }
+        }
+
+        private int getSpeed() {
+            int speed;
+            synchronized (this.mTotalDataSize) {
+                Date startTS = this.mLastAccessedTS;
+                Date endTS = new Date();
+                int prevValue = this.mPrevValue;
+                int presentValue = this.mTotalDataSize;
+
+                speed = (int) ((float) (presentValue - prevValue) / ((float) (endTS.getTime() -
+                        startTS.getTime()) / 1000));
+
+                this.mLastAccessedTS = endTS;
+                this.mPrevValue = presentValue;
+            }
+
+            return speed;
+        }
+
+        @SuppressLint("SetTextI18n")
+        @SuppressWarnings("InfiniteLoopStatement")
+        @Override
+        public void run() {
+            this.mPrevValue = 0;
+            this.mTotalDataSize = 0;
+            this.mLastAccessedTS = new Date();
+            while (true) {
+                final int speed = this.getSpeed();
+                runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        TextView bandwidthTextView = (TextView) findViewById(R.id
+                                .bandwidthTextView);
+                        bandwidthTextView.setText("Bandwidth: " + speed + "B/s");
+                    }
+                });
+                try {
+                    Thread.sleep(kSleepMS);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+    }
+
     private class ReceivingThread extends Thread {
         private static final String kTag = "Recv";
         private boolean mIsAlive;
@@ -250,6 +312,7 @@ public class MainActivity extends AppCompatActivity implements LogReceiver.Callb
             this.mIsAlive = false;
         }
 
+        @Override
         public void run() {
             this.mIsAlive = true;
             byte[] buf = new byte[100 * 1024 * 1024];
@@ -257,6 +320,7 @@ public class MainActivity extends AppCompatActivity implements LogReceiver.Callb
 
             while (this.mIsAlive) {
                 int receivedLength = API.receive(buf);
+                mSpeedWatcherThread.arrive(receivedLength);
                 if (kVerboseReceivingThread) {
                     Logger.DEBUG(kTag, "Received: Size=" + receivedLength);
                 }

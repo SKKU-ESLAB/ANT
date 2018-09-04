@@ -46,11 +46,11 @@ public:
     /* Simple moving average */
     assert(simple_moving_average_length > 0);
     this->mSmaLength = simple_moving_average_length;
-    this->mHistoryValues = new int[this->mSmaLength];
+    this->mSimpleHistoryValues = new int[this->mSmaLength];
     for (int i = 0; i < this->mSmaLength; i++) {
-      this->mHistoryValues[i] = 0;
+      this->mSimpleHistoryValues[i] = 0;
     }
-    this->mHistoryCursor = 0;
+    this->mSimpleHistoryCursor = 0;
 
     /* Exponential moving average */
     this->mEma = 0.0f;
@@ -59,7 +59,7 @@ public:
            exponential_moving_average_weight <= 1);
   }
 
-  ~Counter() { delete this->mHistoryValues; }
+  ~Counter() { delete this->mSimpleHistoryValues; }
 
   void add(int diff) {
     std::unique_lock<std::mutex> lock(this->mValueLock);
@@ -112,8 +112,9 @@ private:
     this->mValue = new_value;
 
     /* Update history for simple moving average */
-    this->mHistoryValues[this->mHistoryCursor] = new_value;
-    this->mHistoryCursor = (this->mHistoryCursor + 1) % this->mSmaLength;
+    this->mSimpleHistoryValues[this->mSimpleHistoryCursor] = new_value;
+    this->mSimpleHistoryCursor =
+        (this->mSimpleHistoryCursor + 1) % this->mSmaLength;
 
     /* Update exponential moving average */
     this->mEma = ((float)this->mEma * (1.0f - this->mEmaWeight)) +
@@ -150,7 +151,7 @@ private:
   int get_sm_average_locked(void) {
     int simple_mavg = 0;
     for (int i = 0; i < this->mSmaLength; i++) {
-      simple_mavg += this->mHistoryValues[i];
+      simple_mavg += this->mSimpleHistoryValues[i];
     }
     simple_mavg /= this->mSmaLength;
     return simple_mavg;
@@ -168,9 +169,9 @@ private:
   struct timeval mLastAccessedTS;
 
   /* Simple moving average (SMA) */
-  int *mHistoryValues; /* History values for simple moving average */
-  int mHistoryCursor;  /* Cursor on history values */
-  int mSmaLength;      /* Length for simple moving average */
+  int *mSimpleHistoryValues; /* History values for simple moving average */
+  int mSimpleHistoryCursor;  /* Cursor on history values */
+  int mSmaLength;            /* Length for simple moving average */
 
   /* Exponential moving average (EMA) */
   float mEma;       /* Exponential moving average */
