@@ -305,7 +305,7 @@ public class MainActivity extends AppCompatActivity implements LogReceiver.Callb
     private class ReceivingThread extends Thread {
         private static final String kTag = "Recv";
         private boolean mIsAlive;
-        private final boolean kVerboseReceivingThread = true;
+        private final boolean kVerboseReceivingThread = false;
 
         ReceivingThread() {
             this.mIsAlive = false;

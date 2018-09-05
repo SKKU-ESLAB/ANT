@@ -81,6 +81,7 @@ private:
   int set_wps_device_name(char *wfd_device_name, char ret[], size_t len);
   int wfd_add_p2p_group(char ret[], size_t len);
   int wfd_remove_p2p_group(char ret[], size_t len);
+  bool retrieve_wpa_interface_name(void);
   int ping_wpa_cli(char ret[], size_t len);
   int set_wfd_ip_addr(char *ip_addr);
   int set_dhcpd_config(void);

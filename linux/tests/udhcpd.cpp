@@ -18,6 +18,7 @@
  */
 
 #include <Util.h>
+#include <WfdConfig.h>
 
 #include <assert.h>
 #include <fcntl.h>
@@ -90,10 +91,10 @@ int set_dhcpd_config(const char *intfName) {
 
 int main(int argc, char **argv) {
   if (argc != 2) {
-    printf("arguments: <p2p-wlan0-*>\n");
+    printf("arguments: <p2p-%s-*>\n", DEFAULT_WFD_DEVICE_NAME);
   }
   char intfName[100];
-  snprintf(intfName, 100, "p2p-wlan0-%s", argv[1]);
+  snprintf(intfName, 100, "p2p-%s-%s", DEFAULT_WFD_DEVICE_NAME, argv[1]);
   set_dhcpd_config(intfName);
 
   while(1) {
