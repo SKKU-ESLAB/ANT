@@ -16,6 +16,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#include <WfdConfig.h>
 #include <WfdP2PServer.h>
 
 #include <Core.h>
@@ -36,12 +37,9 @@
 #include <sys/wait.h>
 #include <unistd.h>
 
-#define DEFAULT_WFD_IP_ADDRESS "192.168.49.1"
-#define UDHCPD_CONFIG_PATH "dhcpd.conf"
-
 using namespace sc;
 
-WfdP2PServer* WfdP2PServer::sSingleton;
+WfdP2PServer *WfdP2PServer::sSingleton;
 struct sigaction WfdP2PServer::sSigaction;
 struct sigaction WfdP2PServer::sSigactionOld;
 bool WfdP2PServer::sDhcpdMonitoring = false;
@@ -52,6 +50,7 @@ bool WfdP2PServer::sDhcpdEnabled = false;
 bool WfdP2PServer::allow_discover_impl(void) {
   char buf[1024];
   int ret;
+  int ret_bool;
 
   // Set Wi-fi WPS Device Name
   ret = this->set_wps_device_name(this->mWfdDeviceName, buf, 1024);
@@ -63,7 +62,7 @@ bool WfdP2PServer::allow_discover_impl(void) {
   if (ret < 0)
     return false;
 
-  // Get WPA Device Name from wpa-cli
+  // Check if Adding P2P Group is Successful
   {
     char *ptrptr;
     char *ptr = strtok_r(buf, "\t \n\'", &ptrptr);
@@ -73,31 +72,18 @@ bool WfdP2PServer::allow_discover_impl(void) {
         return false;
       } else if (strstr(ptr, "OK")) {
         LOG_VERB("P2P Group added");
+        break;
       }
 
       ptr = strtok_r(NULL, "\t \n\'", &ptrptr);
     }
   }
 
-  // Get WPA Interface Name from wpa-cli
-  ret = this->ping_wpa_cli(buf, 1024);
-  if (ret < 0)
+  // Retrieve WPA Interface Name from wpa-cli
+  ret_bool = this->retrieve_wpa_interface_name();
+  if (!ret_bool) {
+    LOG_ERR("Could not WPA Interface name!");
     return false;
-  else {
-    char *ptrptr;
-    char *ptr = strtok_r(buf, "\t \n\'", &ptrptr);
-    while (ptr != NULL) {
-      if (strstr(ptr, "p2p-wlan")) {
-        snprintf(this->mWpaIntfName, sizeof(this->mWpaIntfName), "%s", ptr);
-      } else if (strstr(ptr, "PONG")) {
-        LOG_VERB("Added interface: %s", this->mWpaIntfName);
-      } else if (strstr(ptr, "FAIL")) {
-        LOG_WARN("P2P Group add failed");
-        this->mWpaIntfName[0] = '\0';
-        return false;
-      }
-      ptr = strtok_r(NULL, "\t \n\'", &ptrptr);
-    }
   }
 
   // Set Wi-fi Direct IP
@@ -179,9 +165,38 @@ int WfdP2PServer::set_wps_device_name(char *wfd_device_name, char ret[],
 }
 
 int WfdP2PServer::wfd_add_p2p_group(char ret[], size_t len) {
-  char *const params[] = {"wpa_cli", "p2p_group_add", NULL};
+  char *const params[] = {"wpa_cli", "-i", DEFAULT_WFD_DEVICE_NAME,
+                          "p2p_group_add", NULL};
 
   return Util::run_client(WPA_CLI_PATH, params, ret, len);
+}
+
+bool WfdP2PServer::retrieve_wpa_interface_name(void) {
+  char buf[1024];
+
+  // In the case of Wi-fi USB Dongle, it uses 'wlanX'.
+  snprintf(this->mWpaIntfName, sizeof(this->mWpaIntfName),
+           DEFAULT_WFD_DEVICE_NAME, strlen(DEFAULT_WFD_DEVICE_NAME));
+
+  // In the case of Raspberry Pi 3 Internal Wi-fi Module, it uses 'p2p-wlanX-Y'.
+  int ret = this->ping_wpa_cli(buf, 1024);
+  if (ret < 0)
+    return false;
+  else {
+    char *ptrptr;
+    char *ptr = strtok_r(buf, "\t \n\'", &ptrptr);
+    while (ptr != NULL) {
+      if (strstr(ptr, "p2p-wlan")) {
+        snprintf(this->mWpaIntfName, sizeof(this->mWpaIntfName), "%s", ptr);
+      } else if (strstr(ptr, "FAIL")) {
+        LOG_WARN("P2P ping failed");
+        this->mWpaIntfName[0] = '\0';
+        return false;
+      }
+      ptr = strtok_r(NULL, "\t \n\'", &ptrptr);
+    }
+  }
+  return true;
 }
 
 int WfdP2PServer::ping_wpa_cli(char ret[], size_t len) {
@@ -191,10 +206,10 @@ int WfdP2PServer::ping_wpa_cli(char ret[], size_t len) {
 }
 
 int WfdP2PServer::set_wfd_ip_addr(char *ip_addr) {
+  assert(this->mWpaIntfName[0] != '\0');
+
   char *const params[] = {"ifconfig", this->mWpaIntfName, ip_addr, NULL};
   char buf[256];
-
-  assert(this->mWpaIntfName[0] != '\0');
 
   return Util::run_client(IFCONFIG_PATH, params, buf, 256);
 }
@@ -216,20 +231,30 @@ int WfdP2PServer::set_dhcpd_config(void) {
 
   // Generate dhcp configuration
   int config_fd = open(UDHCPD_CONFIG_PATH, O_CREAT | O_WRONLY | O_TRUNC, 0644);
-  char script[512];
+#define LINEBUF_SIZE 128
+#define SCRIPT_SIZE 512
+  char linebuf[LINEBUF_SIZE];
+  char script[SCRIPT_SIZE];
 
   assert(this->mWpaIntfName[0] != '\0');
 
-  sprintf(script,
-          "start 192.168.49.20\n"
-          "end 192.168.49.40\n"
-          "interface %s\n"
-          "max_leases 20\n"
-          "option subnet 255.255.255.0\n"
-          "option router 192.168.49.1\n"
-          "option lease 864000\n"
-          "option broadcast 192.168.49.255",
-          this->mWpaIntfName);
+  snprintf(linebuf, LINEBUF_SIZE, "start %s\n", WFD_DHCPD_LEASES_START_ADDRESS);
+  strncpy(script, linebuf, SCRIPT_SIZE);
+  snprintf(linebuf, LINEBUF_SIZE, "end %s\n", WFD_DHCPD_LEASES_END_ADDRESS);
+  strncat(script, linebuf, SCRIPT_SIZE);
+  snprintf(linebuf, LINEBUF_SIZE, "interface %s\n", this->mWpaIntfName);
+  strncat(script, linebuf, SCRIPT_SIZE);
+  snprintf(linebuf, LINEBUF_SIZE, "max_leases %d\n", WFD_DHCPD_MAX_LEASES);
+  strncat(script, linebuf, SCRIPT_SIZE);
+  snprintf(linebuf, LINEBUF_SIZE, "option subnet %s\n", WFD_DHCPD_SUBNET_MASK);
+  strncat(script, linebuf, SCRIPT_SIZE);
+  snprintf(linebuf, LINEBUF_SIZE, "option router %s\n", DEFAULT_WFD_IP_ADDRESS);
+  strncat(script, linebuf, SCRIPT_SIZE);
+  snprintf(linebuf, LINEBUF_SIZE, "option lease %d\n", WFD_DHCPD_LEASE);
+  strncat(script, linebuf, SCRIPT_SIZE);
+  snprintf(linebuf, LINEBUF_SIZE, "option broadcast %s\n",
+           WFD_DHCPD_BROADCAST_ADDRESS);
+  strncat(script, linebuf, SCRIPT_SIZE);
 
   write(config_fd, script, strlen(script) + 1);
   close(config_fd);
@@ -271,8 +296,6 @@ int WfdP2PServer::get_wfd_p2p_device_addr(char *dev_addr, size_t len) {
 int WfdP2PServer::get_wfd_status(char ret[], size_t len) {
   char *const params[] = {"wpa_cli", "status", NULL};
 
-  assert(this->mWpaIntfName[0] != '\0');
-
   return Util::run_client(WPA_CLI_PATH, params, ret, len);
 }
 
@@ -290,12 +313,12 @@ int WfdP2PServer::reset_wfd_server(char *pin, size_t len) {
   if (ret < 0)
     return ret;
 
-  // Selected interface 'p2p-wlan0-9' 33996608
+  // Selected interface 'p2p-wlanx-y' 33996608
   LOG_VERB("Pin parsing %s", buf);
   char *ptrptr;
   char *ptr = strtok_r(buf, "\t \n\'", &ptrptr); // Selected
   ptr = strtok_r(NULL, "\t \n\'", &ptrptr);      // interface
-  ptr = strtok_r(NULL, "\t \n\'", &ptrptr);      // p2p-wlan0-9
+  ptr = strtok_r(NULL, "\t \n\'", &ptrptr);      // p2p-wlanx-y
   ptr = strtok_r(NULL, "\t \n\'", &ptrptr);      // 33996608
 
   snprintf(pin, len, "%s", ptr);
@@ -325,7 +348,7 @@ int WfdP2PServer::get_wfd_ip_address(char *buf, size_t len) {
   char *ptrptr;
   char *ptr = strtok_r(buf, "\t \n\'", &ptrptr);
   while (ptr != NULL) {
-    if (strstr(ptr, "ip_address")) {
+    if (strstr(ptr, "ip_address") || strstr(ptr, "p2p_device_address")) {
       sscanf(ptr, "%*[^=]=%s", buf);
       LOG_VERB("IP_Device_Addrress = %s", buf);
       return 0;
