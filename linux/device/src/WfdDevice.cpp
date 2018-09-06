@@ -17,6 +17,7 @@
  * limitations under the License.
  */
 #include <WfdDevice.h>
+#include <WfdConfig.h>
 #include <Util.h>
 
 #include <Counter.h>
@@ -27,8 +28,6 @@
 #include <stdio.h>
 
 using namespace sc;
-
-#define DEFAULT_WFD_DEVICE_NAME "wlan0"
 
 WfdDevice* WfdDevice::sSingleton = NULL;
 
