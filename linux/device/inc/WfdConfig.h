@@ -16,25 +16,23 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#ifndef _WFD_CONFIG_H_
+#define _WFD_CONFIG_H_
 
-#ifndef _UTIL_H_
-#define _UTIL_H_
+/* WLAN device configuration */
+#define DEFAULT_WFD_DEVICE_NAME "wlan0"
 
-#include <stdio.h>
+/* Server IP configuration */
+#define DEFAULT_WFD_IP_ADDRESS "192.168.49.1"
 
-#define HCICONFIG_PATH "/usr/sbin/hciconfig"
-#define WPA_CLI_PATH "/sbin/wpa_cli"
-#define IFCONFIG_PATH "/sbin/ifconfig"
-#define UDHCPD_PATH "/usr/sbin/udhcpd"
+/* DHCPD configuration */
+#define WFD_DHCPD_LEASES_START_ADDRESS "192.168.49.20"
+#define WFD_DHCPD_LEASES_END_ADDRESS "192.168.49.40"
+#define WFD_DHCPD_MAX_LEASES 20
+#define WFD_DHCPD_LEASE 864000
+#define WFD_DHCPD_SUBNET_MASK "255.255.255.0"
+#define WFD_DHCPD_BROADCAST_ADDRESS "192.168.49.255"
+#define UDHCPD_CONFIG_PATH "dhcpd.conf"
 
-namespace sc {
-class Util {
-public:
-  static int run_client(const char *path, char *const params[], char *res_buf,
-                        size_t len);
-  static int run_client(const char *path, char *const params[]);
-}; /* class Util */
 
-} /* namespace sc */
-
-#endif /* !defined(_UTIL_H_) */
+#endif /* !defined(_WFD_CONFIG_H_) */

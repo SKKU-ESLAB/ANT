@@ -131,13 +131,14 @@ void on_connect(bool is_success) {
 #define TEST_DATA_SIZE (5*1024)
   printf("Step 2. Send Test Data (%dB)\n", TEST_DATA_SIZE);
   int i;
-  for(i=0; i<1; i++) {
-    sleep(2);
-    temp_buf = (char*)calloc(TEST_DATA_SIZE, sizeof(char));
-    sc::send(temp_buf, TEST_DATA_SIZE);
-    sleep(10);
-    free(temp_buf);
-  }
+  printf("Wait for 2 seconds...\n");
+  sleep(2);
+  
+  temp_buf = (char*)calloc(TEST_DATA_SIZE, sizeof(char));
+  printf("Wait for 10 seconds...\n");
+  sc::send(temp_buf, TEST_DATA_SIZE);
+  sleep(10);
+  free(temp_buf);
 
   printf("Wait for 3 seconds...\n");
   sleep(3);
