@@ -29,6 +29,8 @@
 #include <thread>
 #include <unistd.h>
 
+#define PRINT_STATS_ON 0
+
 namespace sc {
 NetworkSwitcher *NetworkSwitcher::singleton = NULL;
 
