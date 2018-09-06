@@ -1,6 +1,6 @@
 /* Copyright 2017-2018 All Rights Reserved.
  *  Gyeonghwan Hong (redcarrottt@gmail.com)
- *
+ *  
  * [Contact]
  *  Gyeonghwan Hong (redcarrottt@gmail.com)
  *
@@ -17,24 +17,16 @@
  * limitations under the License.
  */
 
-#ifndef _UTIL_H_
-#define _UTIL_H_
+#ifndef EXP_CONFIG_H_
+#define EXP_CONFIG_H_
 
-#include <stdio.h>
+/* Adapter Switching */
+#define EXP_NO_CONTROL_ADAPTER_AFTER_SWITCHING 0
+#define PREVENT_RECONNECT_CONTROL_ADAPTER 1
 
-#define HCICONFIG_PATH "/bin/hciconfig"
-#define WPA_CLI_PATH "/sbin/wpa_cli"
-#define IFCONFIG_PATH "/sbin/ifconfig"
-#define UDHCPD_PATH "/usr/sbin/udhcpd"
+/* Printing */
+#define PRINT_STATS_ON 0
+#define EXP_MEASURE_INTERVAL_SENDER 0
+#define EXP_MEASURE_INTERVAL_SEND_QUEUE 0
 
-namespace sc {
-class Util {
-public:
-  static int run_client(const char *path, char *const params[], char *res_buf,
-                        size_t len);
-  static int run_client(const char *path, char *const params[]);
-}; /* class Util */
-
-} /* namespace sc */
-
-#endif /* !defined(_UTIL_H_) */
+#endif /* !defined(EXP_CONFIG_H_) */

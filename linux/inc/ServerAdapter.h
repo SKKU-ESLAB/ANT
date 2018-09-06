@@ -1,6 +1,6 @@
 /* Copyright 2017-2018 All Rights Reserved.
  *  Gyeonghwan Hong (redcarrottt@gmail.com)
- *  
+ *
  * [Contact]
  *  Gyeonghwan Hong (redcarrottt@gmail.com)
  *
@@ -21,17 +21,18 @@
 #define _SERVER_ADAPTER_H_
 
 #include <Counter.h>
+#include <ExpConfig.h>
 
-#include <vector>
-#include <thread>
-#include <mutex>
 #include <condition_variable>
+#include <mutex>
+#include <thread>
+#include <vector>
 
 #include <stdio.h>
 
-#include <ServerSocket.h>
-#include <P2PServer.h>
 #include <Device.h>
+#include <P2PServer.h>
+#include <ServerSocket.h>
 
 namespace sc {
 
@@ -48,14 +49,15 @@ typedef enum {
 class ServerAdapter;
 class ServerAdapterStateListener {
 public:
-  virtual void onUpdateServerAdapterState(ServerAdapter* adapter,
-      ServerAdapterState old_state, ServerAdapterState new_state) = 0;
+  virtual void onUpdateServerAdapterState(ServerAdapter *adapter,
+                                          ServerAdapterState old_state,
+                                          ServerAdapterState new_state) = 0;
 };
 
 typedef void (*ConnectCallback)(bool is_success);
 typedef void (*DisconnectCallback)(bool is_success);
 
-typedef void (*ReceiveLoop)(ServerAdapter* adapter);
+typedef void (*ReceiveLoop)(ServerAdapter *adapter);
 
 class ServerAdapter {
 public:
@@ -72,7 +74,7 @@ public:
   }
 
   void enable_receiver_thread(ReceiveLoop receive_loop) {
-    if(receive_loop == NULL) {
+    if (receive_loop == NULL) {
       this->mReceiveLoop = ServerAdapter::receive_data_loop;
     } else {
       this->mReceiveLoop = receive_loop;
@@ -81,13 +83,9 @@ public:
     return;
   }
 
-  int get_bandwidth_up(void) {
-    this->mSendDataSize.get_speed();
-  }
+  int get_bandwidth_up(void) { this->mSendDataSize.get_speed(); }
 
-  int get_bandwidth_down(void) {
-    this->mReceiveDataSize.get_speed();
-  }
+  int get_bandwidth_down(void) { this->mReceiveDataSize.get_speed(); }
 
   ServerAdapterState get_state(void) {
     std::unique_lock<std::mutex> lck(this->mStateLock);
@@ -95,38 +93,27 @@ public:
     return this->mState;
   }
 
-  char* get_name(void) {
-    return this->mName;
-  }
+  char *get_name(void) { return this->mName; }
 
-  int get_id(void) {
-    return this->mId;
-  }
+  int get_id(void) { return this->mId; }
 
-  Device* get_device(void) {
-    return this->mDevice;
-  }
+  Device *get_device(void) { return this->mDevice; }
 
-  P2PServer* get_p2p_server(void) {
-    return this->mP2PServer;
-  }
+  P2PServer *get_p2p_server(void) { return this->mP2PServer; }
 
-  ServerSocket* get_server_socket(void) {
-    return this->mServerSocket;
-  }
+  ServerSocket *get_server_socket(void) { return this->mServerSocket; }
 
-  bool is_sleeping_allowed(void) {
-    return this->mIsSleepingAllowed;
-  }
+  bool is_sleeping_allowed(void) { return this->mIsSleepingAllowed; }
 
-  void listen_state(ServerAdapterStateListener* listener) {
+  void listen_state(ServerAdapterStateListener *listener) {
     std::unique_lock<std::mutex> lck(this->mStateLock);
 
-    if(listener == NULL) return;
+    if (listener == NULL)
+      return;
     this->mStateListeners.push_back(listener);
   }
 
-  ServerAdapter(int id, const char* name) {
+  ServerAdapter(int id, const char *name) {
     this->mState = ServerAdapterState::kDisconnected;
     snprintf(this->mName, sizeof(this->mName), name);
     this->mId = id;
@@ -134,16 +121,17 @@ public:
   }
 
   ~ServerAdapter() {
-    if(this->mP2PServer != NULL) {
+    if (this->mP2PServer != NULL) {
       delete this->mP2PServer;
     }
-    if(this->mServerSocket != NULL) {
+    if (this->mServerSocket != NULL) {
       delete this->mServerSocket;
     }
   }
 
 protected:
-  void initialize(Device* device, P2PServer* p2pServer, ServerSocket* serverSocket, bool is_sleeping_allowed) {
+  void initialize(Device *device, P2PServer *p2pServer,
+                  ServerSocket *serverSocket, bool is_sleeping_allowed) {
     this->mDevice = device;
     this->mP2PServer = p2pServer;
     this->mServerSocket = serverSocket;
@@ -159,10 +147,10 @@ protected:
       this->mState = new_state;
     }
 
-    for(std::vector<ServerAdapterStateListener*>::iterator it = this->mStateListeners.begin();
-        it != this->mStateListeners.end();
-        it++) {
-      ServerAdapterStateListener* listener = (*it);
+    for (std::vector<ServerAdapterStateListener *>::iterator it =
+             this->mStateListeners.begin();
+         it != this->mStateListeners.end(); it++) {
+      ServerAdapterStateListener *listener = (*it);
       listener->onUpdateServerAdapterState(this, old_state, new_state);
     }
   }
@@ -171,21 +159,22 @@ protected:
   ServerAdapterState mState;
   std::mutex mStateLock;
   char mName[256];
-  // TODO: ID is now defined by user. However, the ID should be maintained by system finally.
+  // TODO: ID is now defined by user. However, the ID should be maintained by
+  // system finally.
   int mId;
   bool mIsSleepingAllowed;
 
   /* Components */
-  Device* mDevice = NULL;
-  P2PServer* mP2PServer = NULL;
-  ServerSocket* mServerSocket = NULL;
+  Device *mDevice = NULL;
+  P2PServer *mP2PServer = NULL;
+  ServerSocket *mServerSocket = NULL;
 
   /* Statistics */
   Counter mSendDataSize;
   Counter mReceiveDataSize;
 
   /* State Listeners */
-  std::vector<ServerAdapterStateListener*> mStateListeners;
+  std::vector<ServerAdapterStateListener *> mStateListeners;
 
   /* Callback */
   ConnectCallback mConnectCallback = NULL;
@@ -202,7 +191,7 @@ private:
   void __sender_thread(void);
 
   void receiver_thread(void);
-  static void receive_data_loop(ServerAdapter* adapter);
+  static void receive_data_loop(ServerAdapter *adapter);
 
   std::thread *mConnectThread = NULL;
   std::thread *mDisconnectThread = NULL;
@@ -218,6 +207,15 @@ private:
   std::condition_variable mSenderSuspendedCond;
 
   ReceiveLoop mReceiveLoop = NULL;
+
+#if EXP_MEASURE_INTERVAL_SENDER != 0
+private:
+  int mSendCount = 0;
+  /* Milliseconds */
+  int mIntervals[4] = {
+      0,
+  };
+#endif
 }; /* class ServerAdapter */
 
 } /* namespace sc */

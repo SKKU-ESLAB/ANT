@@ -23,6 +23,7 @@
 #define INC_SEGMENT_MANAGER_H_
 
 #include <Counter.h>
+#include <ExpConfig.h>
 
 #include <condition_variable>
 #include <list>
@@ -162,6 +163,14 @@ private:
 
   void reset_send_queue(void);
   void reset_recv_queue(void);
+
+#if EXP_MEASURE_INTERVAL_SEND_QUEUE != 0
+  int mSendCount = 0;
+  /* Milliseconds */
+  int mIntervals[3] = {
+      0,
+  };
+#endif
 };
 } /* namespace sc */
 #endif // INC_SEGMENT_MANAGER_H_

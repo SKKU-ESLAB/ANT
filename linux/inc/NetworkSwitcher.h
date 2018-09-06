@@ -22,6 +22,7 @@
 
 #include <Core.h>
 #include <DebugLog.h>
+#include <ExpConfig.h>
 
 #include <mutex>
 #include <thread>
@@ -41,9 +42,9 @@ typedef enum {
 } NSState;
 
 typedef enum {
-  kNSModeEnergyAware = 0, /* WearDrive-like */
+  kNSModeEnergyAware = 0,  /* WearDrive-like */
   kNSModeLatencyAware = 1, /* Selective Connection Unique */
-  kNSModeCapDynamic = 2 /* CoolSpots */
+  kNSModeCapDynamic = 2    /* CoolSpots */
 } NSMode;
 
 class SwitchAdapterTransaction {
@@ -64,6 +65,9 @@ public:
   void start(void);
   static void connect_callback(bool is_success);
   static void disconnect_callback(bool is_success);
+#if EXP_NO_CONTROL_ADAPTER_AFTER_SWITCHING != 0
+  static void disconnect_control_callback(bool is_success);
+#endif
 
 protected:
   void done(bool is_success);

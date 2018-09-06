@@ -212,11 +212,27 @@ void SegmentManager::enqueue(SegQueueType type, Segment *seg) {
  * Note that this function is used for sending & receiving queue.
  */
 Segment *SegmentManager::dequeue(SegQueueType type) {
+#if EXP_MEASURE_INTERVAL_SEND_QUEUE != 0
+  struct timeval times[4];
+  if (type == kSegSend)
+    gettimeofday(&times[0], NULL);
+#endif
   assert(type < kSegMaxQueueType);
   std::unique_lock<std::mutex> lck(this->mQueueLock[type]);
 
   /* If queue is empty, wait until some segment is enqueued */
-  if (this->mQueueLength[type].get_value() == 0) {
+  int queueLength = this->mQueueLength[type].get_value();
+
+#if EXP_MEASURE_INTERVAL_SEND_QUEUE != 0
+  if (type == kSegSend) {
+    gettimeofday(&times[1], NULL);
+    if(this->mSendCount % 500 == 0) {
+      LOG_DEBUG("Try %d: Queue Length %d", this->mSendCount, queueLength);
+    }
+  }
+#endif
+
+  if (queueLength == 0) {
 #if VERBOSE_SEGMENT_QUEUE_WAITING != 0
     if (type == kSegSend) {
       LOG_DEBUG("sending queue is empty. wait for another");
@@ -225,8 +241,18 @@ Segment *SegmentManager::dequeue(SegQueueType type) {
     }
 #endif
 
+#if EXP_MEASURE_INTERVAL_SEND_QUEUE != 0
+  if (type == kSegSend)
+    LOG_DEBUG("Try %d: Queue Length 0 %d %d %d", this->mSendCount, queueLength, this->mQueueLength[kSegSend].get_value(), this->mQueues[type].size());
+#endif
+
     this->mCondEnqueued[type].wait(lck);
   }
+
+#if EXP_MEASURE_INTERVAL_SEND_QUEUE != 0
+  if (type == kSegSend)
+    gettimeofday(&times[2], NULL);
+#endif
 
   /* Dequeue from queue */
   Segment *ret = this->mQueues[type].front();
@@ -236,6 +262,29 @@ Segment *SegmentManager::dequeue(SegQueueType type) {
   }
   this->mQueues[type].pop_front();
   this->mQueueLength[type].decrease();
+
+#if EXP_MEASURE_INTERVAL_SEND_QUEUE != 0
+  if (type == kSegSend)
+    gettimeofday(&times[3], NULL);
+#endif
+
+#if EXP_MEASURE_INTERVAL_SEND_QUEUE != 0
+  if (type == kSegSend) {
+    for (int i = 0; i < 3; i++) {
+      this->mIntervals[i] += (times[i + 1].tv_sec - times[i].tv_sec) * 1000 +
+                             (times[i + 1].tv_usec - times[i].tv_usec) / 1000;
+    }
+    this->mSendCount++;
+    if (this->mSendCount % 500 == 0) {
+      LOG_DEBUG("Send Queue: %d / %d / %d", this->mIntervals[0],
+                this->mIntervals[1], this->mIntervals[2]);
+      for (int i = 0; i < 3; i++) {
+        this->mIntervals[i] = 0;
+      }
+    }
+  }
+#endif
+
   return ret;
 }
 

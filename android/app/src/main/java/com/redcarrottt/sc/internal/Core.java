@@ -217,7 +217,7 @@ public class Core {
                     } catch (InterruptedException e) {
                         e.printStackTrace();
                     }
-                    continue;
+                    break;
                 }
 
                 Byte reqCode = dataBuffer[0];
@@ -285,7 +285,9 @@ public class Core {
             }
             Logger.DEBUG(kTag, "Control adapter has been closed");
 
-            NetworkSwitcher.getInstance().reconnectControlAdapter();
+            if(!ExpConfig.EXP_NO_CONTROL_ADAPTER_AFTER_SWITCHING) {
+                NetworkSwitcher.getInstance().reconnectControlAdapter();
+            }
         }
     }
 
