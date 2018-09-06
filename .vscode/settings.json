@@ -29,6 +29,7 @@
         "chrono": "cpp",
         "ios": "cpp",
         "__mutex_base": "cpp",
-        "mutex": "cpp"
+        "mutex": "cpp",
+        "map": "cpp"
     }
 }

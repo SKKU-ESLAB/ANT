@@ -20,6 +20,7 @@
  */
 
 #include <Core.h>
+#include <ExpConfig.h>
 
 #include <DebugLog.h>
 #include <NetworkSwitcher.h>
@@ -28,9 +29,9 @@
 
 #include <arpa/inet.h>
 #include <errno.h>
+#include <locale.h>
 #include <stdio.h>
 #include <string.h>
-#include <locale.h>
 
 /**
  * < When to Free Buffer >
@@ -53,8 +54,8 @@ StopCoreTransaction *StopCoreTransaction::sOngoing = NULL;
 
 // Start core: connect initial adapters
 void Core::start() {
-  setlocale(LC_ALL,"");
-  
+  setlocale(LC_ALL, "");
+
   if (this->get_state() != CMState::kCMStateIdle) {
     LOG_ERR("Core has already started.");
     this->done_start(false);
@@ -172,9 +173,10 @@ int Core::send(const void *dataBuffer, uint32_t dataLength) {
   /* Attach the protocol header to the payload */
   ProtocolManager::data_to_protocol_data((const uint8_t *)dataBuffer,
                                          dataLength, &pd);
-                                         
+
   /* The serialized_vector buffer is allocated in here */
-  packet_size = ProtocolManager::serialize(&pd, (const uint8_t *)dataBuffer, curr_offset,
+  packet_size =
+      ProtocolManager::serialize(&pd, (const uint8_t *)dataBuffer, curr_offset,
                                  dataLength, &serialized_vector);
   assert(serialized_vector != NULL && packet_size > 0);
 
@@ -206,7 +208,7 @@ int Core::receive(void **pDataBuffer) {
 void Core::send_control_message(const void *dataBuffer, size_t dataLength) {
   ServerAdapter *control_adapter = this->get_control_adapter();
   ServerAdapterState controlAdapterState = control_adapter->get_state();
-  if(controlAdapterState != ServerAdapterState::kActive) {
+  if (controlAdapterState != ServerAdapterState::kActive) {
     LOG_ERR("Control adapter is not started yet, so you cannot send the data");
     return;
   }
@@ -217,7 +219,7 @@ void Core::send_control_message(const void *dataBuffer, size_t dataLength) {
 void Core::send_request(CtrlReq request_code, uint16_t adapter_id) {
   ServerAdapter *control_adapter = this->get_control_adapter();
   ServerAdapterState controlAdapterState = control_adapter->get_state();
-  if(controlAdapterState != ServerAdapterState::kActive) {
+  if (controlAdapterState != ServerAdapterState::kActive) {
     LOG_ERR("Control adapter is not started yet, so you cannot send the data");
     return;
   }
@@ -245,11 +247,11 @@ void Core::send_noti_private_data(uint16_t adapter_id, char *private_data_buf,
                                   uint32_t private_data_len) {
   ServerAdapter *control_adapter = this->get_control_adapter();
   ServerAdapterState controlAdapterState = control_adapter->get_state();
-  if(controlAdapterState != ServerAdapterState::kActive) {
+  if (controlAdapterState != ServerAdapterState::kActive) {
     LOG_ERR("Control adapter is not started yet, so you cannot send the data");
     return;
   }
-  
+
   uint8_t request_code = kCtrlReqPriv;
   uint16_t net_adapter_id = htons(adapter_id);
   uint32_t net_private_data_len = htonl(private_data_len);
@@ -276,12 +278,14 @@ void Core::receive_control_message_loop(ServerAdapter *adapter) {
     if (res <= 0) {
       LOG_VERB("Control adapter could be closed");
       sleep(1);
-      continue;
+      break;
     }
 
     char req_code = data[0];
     /*  If the control message is 'connect adapter', */
-    if (req_code == CtrlReq::kCtrlReqConnect || req_code == CtrlReq::kCtrlReqSleep || req_code == CtrlReq::kCtrlReqWakeUp) {
+    if (req_code == CtrlReq::kCtrlReqConnect ||
+        req_code == CtrlReq::kCtrlReqSleep ||
+        req_code == CtrlReq::kCtrlReqWakeUp) {
       // Receive 2Byte: Adapter ID
       res = adapter->receive(data, 2);
       if (res <= 0) {
@@ -296,16 +300,19 @@ void Core::receive_control_message_loop(ServerAdapter *adapter) {
       memcpy(&n_adapter_id, data, 2);
       adapter_id = ntohs(n_adapter_id);
 
-      if(req_code == CtrlReq::kCtrlReqConnect) {
-        LOG_DEBUG("Control Request: 'Connect Adapter Request' (%d)", (int)adapter_id);
+      if (req_code == CtrlReq::kCtrlReqConnect) {
+        LOG_DEBUG("Control Request: 'Connect Adapter Request' (%d)",
+                  (int)adapter_id);
         NetworkSwitcher::get_instance()->connect_adapter(adapter_id);
-      } else if(req_code == CtrlReq::kCtrlReqSleep) {
-        LOG_DEBUG("Control Request: 'Sleep Adapter Request' (%d)", (int)adapter_id);
+      } else if (req_code == CtrlReq::kCtrlReqSleep) {
+        LOG_DEBUG("Control Request: 'Sleep Adapter Request' (%d)",
+                  (int)adapter_id);
         NetworkSwitcher::get_instance()->sleep_adapter(adapter_id);
-      } else if(req_code == CtrlReq::kCtrlReqWakeUp) {
-        LOG_DEBUG("Control Request: 'Wake Up Adapter Request' (%d)", (int)adapter_id);
+      } else if (req_code == CtrlReq::kCtrlReqWakeUp) {
+        LOG_DEBUG("Control Request: 'Wake Up Adapter Request' (%d)",
+                  (int)adapter_id);
         NetworkSwitcher::get_instance()->wake_up_adapter(adapter_id);
-      } 
+      }
     } else if (req_code == CtrlReq::kCtrlReqPriv) {
       LOG_VERB("Private data arrived");
       uint16_t n_adapter_id;
@@ -342,8 +349,11 @@ void Core::receive_control_message_loop(ServerAdapter *adapter) {
     }
   } // End while
 
-  // If control message loop is crashed, reconnect control adapter.
+// If control message loop is crashed, reconnect control adapter.
+  LOG_DEBUG("Control message loop is finished");
+#if EXP_NO_CONTROL_ADAPTER_AFTER_SWITCHING == 0 && PREVENT_RECONNECT_CONTROL_ADAPTER == 0
   NetworkSwitcher::get_instance()->reconnect_control_adapter();
+#endif
 }
 
 // Transactions
@@ -383,7 +393,7 @@ void StartCoreTransaction::connect_control_adapter_callback(bool is_success) {
   // Connect first data adapter
   std::unique_lock<std::mutex> lck(sOngoing->mCaller->mDataAdaptersLock);
   bool res = true;
-  if(sOngoing->mCaller->mDataAdapters.empty()) {
+  if (sOngoing->mCaller->mDataAdapters.empty()) {
     res = false;
   } else {
     res = sOngoing->mCaller->mDataAdapters.front()->connect(
@@ -408,9 +418,9 @@ void StartCoreTransaction::connect_first_data_adapter_callback(
 }
 
 void StartCoreTransaction::done(bool is_success) {
-    this->mCaller->done_start(is_success);
-    sOngoing = NULL;
-  }
+  this->mCaller->done_start(is_success);
+  sOngoing = NULL;
+}
 
 // Stop Core
 bool StopCoreTransaction::run(Core *caller) {
@@ -493,8 +503,8 @@ void StopCoreTransaction::disconnect_data_adapter_callback(bool is_success) {
 }
 
 void StopCoreTransaction::done(bool is_success) {
-    this->mCaller->done_stop(is_success);
-    sOngoing = NULL;
-  }
+  this->mCaller->done_stop(is_success);
+  sOngoing = NULL;
+}
 
 } /* namespace sc */

@@ -16,10 +16,13 @@ package com.redcarrottt.sc.internal;
  * limitations under the License.
  */
 
+import android.util.Log;
+
 import com.redcarrottt.testapp.Logger;
 
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
+import java.util.Date;
 
 import static com.redcarrottt.sc.internal.SegmentManager.kSegHeaderSize;
 import static com.redcarrottt.sc.internal.SegmentManager.kSegRecv;
@@ -445,12 +448,21 @@ public class ClientAdapter {
     }
 
     class ReceiveDataLoop implements ReceiveLoop {
+        private final boolean kMeasureInterval = true;
+        private int mReceiveCount = 0;
+        private Date mDates[] = new Date[5];
+        private long mIntervals[] = new long[4];
+
         @Override
         public void receiveLoop(ClientAdapter adapter) {
             while (adapter.mReceiverThread.isOn()) {
+                if (kMeasureInterval) this.mDates[0] = new Date();
+
                 SegmentManager sm = SegmentManager.getInstance();
                 Segment segmentToReceive = sm.get_free_segment();
                 int len = kSegSize + kSegHeaderSize;
+
+                if (kMeasureInterval) this.mDates[1] = new Date();
 
                 if (kVerboseClientAdapter) {
                     Logger.DEBUG(kTag, adapter.getName() + ": Receiving...");
@@ -461,6 +473,8 @@ public class ClientAdapter {
                     break;
                 }
 
+                if (kMeasureInterval) this.mDates[2] = new Date();
+
                 // Read segment metadata
                 ByteBuffer buffer = ByteBuffer.allocate(4);
                 buffer.put(segmentToReceive.data, 0, 4);
@@ -470,7 +484,27 @@ public class ClientAdapter {
                 buffer.put(segmentToReceive.data, 4, 4);
                 segmentToReceive.flag_len = buffer.getInt(0);
 
+                if (kMeasureInterval) this.mDates[3] = new Date();
+
                 sm.enqueue(kSegRecv, segmentToReceive);
+
+                if (kMeasureInterval) this.mDates[4] = new Date();
+
+                if (kMeasureInterval) {
+                    this.mReceiveCount++;
+                    for (int i = 0; i < 4; i++) {
+                        this.mIntervals[i] += this.mDates[i + 1].getTime() - this.mDates[i]
+                                .getTime();
+                    }
+                    if (this.mReceiveCount % 500 == 0) {
+                        Log.d(kTag, "Receive Time " + this.mIntervals[0] + " / " + this
+                                .mIntervals[1] + " / " + this.mIntervals[2] + " / " + this
+                                .mIntervals[3]);
+                        for (int i = 0; i < 4; i++) {
+                            this.mIntervals[i] = 0;
+                        }
+                    }
+                }
             }
 
             disconnect(null);

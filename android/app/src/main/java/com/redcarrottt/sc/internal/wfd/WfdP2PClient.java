@@ -133,49 +133,59 @@ class WfdP2PClient extends P2PClient {
 
             @Override
             public void onPeersAvailable(WifiP2pDeviceList peers) {
-                if (this.mCallbackLock.tryLock()) {
-                    try {
-                        synchronized (this.mIsPeerFound) {
-                            if (!this.mIsPeerFound) {
-                                Logger.DEBUG(kTag, "Got peer list");
-                                for (WifiP2pDevice p2pDevice : peers.getDeviceList()) {
-                                    Logger.DEBUG(kTag, "Peer: " + p2pDevice.deviceAddress + " / "
-                                            + p2pDevice.deviceName + " / " + p2pDevice.status);
+                final WifiP2pDeviceList kPeers = peers;
+                // Since getting peer device address requires locks, it should run on child thread.
+                Thread childThread = new Thread() {
+                    @Override
+                    public void run() {
+                        if (mCallbackLock.tryLock()) {
+                            try {
+                                synchronized (mIsPeerFound) {
+                                    if (!mIsPeerFound) {
+                                        Logger.DEBUG(kTag, "Got peer list");
+                                        for (WifiP2pDevice p2pDevice : kPeers.getDeviceList()) {
+                                            Logger.DEBUG(kTag, "Peer: " + p2pDevice.deviceAddress
+                                                    + " / " + p2pDevice.deviceName + " / " +
+                                                    p2pDevice.status);
 
-                                    if (p2pDevice.deviceAddress.equals(getTargetMacAddress()) &&
-                                            p2pDevice.status == WifiP2pDevice.AVAILABLE) {
-                                        mFoundWFDDevice = p2pDevice;
-                                        Logger.DEBUG(kTag, "Peer found");
-                                        this.mIsPeerFound = true;
-                                        break;
+                                            if (p2pDevice.deviceAddress.equals
+                                                    (getTargetMacAddress()) && p2pDevice.status
+                                                    == WifiP2pDevice.AVAILABLE) {
+                                                mFoundWFDDevice = p2pDevice;
+                                                Logger.DEBUG(kTag, "Peer found");
+                                                mIsPeerFound = true;
+                                                break;
+                                            }
+                                        }
                                     }
                                 }
+
+                                // Unregister PeersChangedReceiver
+                                if (mPeerListListener != null) {
+                                    mOwnerActivity.getApplicationContext().unregisterReceiver
+                                            (mPeersChangedReceiver);
+                                    mPeerListListener = null;
+                                }
+
+                                synchronized (mIsPeerFound) {
+                                    if (mIsPeerFound) {
+                                        doneDiscoverTx(mOnDiscoverResult, true);
+                                    } else {
+                                        mTries++;
+                                        if (mTries < kMaxTries) {
+                                            retry();
+                                        } else {
+                                            doneDiscoverTx(mOnDiscoverResult, false);
+                                        }
+                                    }
+                                }
+                            } finally {
+                                mCallbackLock.unlock();
                             }
                         }
-                    } finally {
-                        this.mCallbackLock.unlock();
                     }
-                }
-
-                // Unregister PeersChangedReceiver
-                if (mPeerListListener != null) {
-                    mOwnerActivity.getApplicationContext().unregisterReceiver
-                            (mPeersChangedReceiver);
-                    mPeerListListener = null;
-                }
-
-                synchronized (this.mIsPeerFound) {
-                    if (this.mIsPeerFound) {
-                        doneDiscoverTx(mOnDiscoverResult, true);
-                    } else {
-                        mTries++;
-                        if (mTries < kMaxTries) {
-                            retry();
-                        } else {
-                            doneDiscoverTx(mOnDiscoverResult, false);
-                        }
-                    }
-                }
+                };
+                childThread.start();
             }
         }
     }
@@ -336,7 +346,7 @@ class WfdP2PClient extends P2PClient {
 
     //Singleton
     public static WfdP2PClient getSingleton(Activity ownerActivity) {
-        if(sSingleton == null) {
+        if (sSingleton == null) {
             sSingleton = new WfdP2PClient(ownerActivity);
         }
         return sSingleton;

@@ -47,14 +47,17 @@ bool Device::release_and_turn_off(void) {
     bool res = this->turn_off_impl();
 
     if(!res) {
+      LOG_DEBUG("%s: Failed to turn off", this->mName);
       this->mRefCount.increase();
       this->set_state(DeviceState::kOn);
     } else {
+      LOG_DEBUG("%s: Successfully turned off", this->mName);
       this->set_state(DeviceState::kOff);
     }
     return res;
   } else {
     // Not yet turn off
+    LOG_DEBUG("%s: Not yet turn off", this->mName);
     return true;
   }
 }

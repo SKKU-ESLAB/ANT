@@ -1,6 +1,6 @@
 /* Copyright 2017-2018 All Rights Reserved.
  *  Gyeonghwan Hong (redcarrottt@gmail.com)
- *  
+ *
  * [Contact]
  *  Gyeonghwan Hong (redcarrottt@gmail.com)
  *
@@ -20,13 +20,14 @@
 #ifndef _BT_SERVER_ADAPTER_H_
 #define _BT_SERVER_ADAPTER_H_
 
-#include <ServerAdapter.h>
 #include <BtDevice.h>
 #include <BtP2PServer.h>
+#include <ExpConfig.h>
 #include <RfcommServerSocket.h>
+#include <ServerAdapter.h>
 
-#include <thread>
 #include <mutex>
+#include <thread>
 
 #include <stdio.h>
 
@@ -34,11 +35,16 @@ namespace sc {
 
 class BtServerAdapter : public ServerAdapter {
 public:
-  BtServerAdapter(int id, const char* name, const char* service_uuid) : ServerAdapter(id, name) { 
-    BtDevice* device = BtDevice::getSingleton();
-    BtP2PServer* p2pServer = BtP2PServer::getSingleton();
-    RfcommServerSocket* serverSocket = new RfcommServerSocket(service_uuid);
+  BtServerAdapter(int id, const char *name, const char *service_uuid)
+      : ServerAdapter(id, name) {
+    BtDevice *device = BtDevice::getSingleton();
+    BtP2PServer *p2pServer = BtP2PServer::getSingleton();
+    RfcommServerSocket *serverSocket = new RfcommServerSocket(service_uuid);
+#if EXP_NO_CONTROL_ADAPTER_AFTER_SWITCHING != 0
+    this->initialize(device, p2pServer, serverSocket, false);
+#else
     this->initialize(device, p2pServer, serverSocket, true);
+#endif
   }
 
   ~BtServerAdapter(void) {

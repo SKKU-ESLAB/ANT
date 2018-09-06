@@ -27,6 +27,10 @@
 #include <string.h>
 #include <thread>
 
+#if EXP_MEASURE_INTERVAL_SENDER != 0
+#include <sys/time.h>
+#endif
+
 #define VERBOSE_SERVER_ADAPTER_RECEIVING 0
 
 using namespace sc;
@@ -295,7 +299,7 @@ int ServerAdapter::receive(void *buf, size_t len) {
       state != ServerAdapterState::kGoingSleeping &&
       state != ServerAdapterState::kSleeping &&
       state != ServerAdapterState::kWakingUp) {
-    LOG_ERR("It is not int active state.");
+    LOG_ERR("It is not in active state.");
     return false;
   }
 
@@ -337,6 +341,11 @@ void ServerAdapter::__sender_thread(void) {
     this->mSenderSuspended = false;
   }
   while (this->mSenderLoopOn) {
+#if EXP_MEASURE_INTERVAL_SENDER != 0
+    struct timeval times[5];
+    gettimeofday(&times[0], NULL);
+#endif
+
     SegmentManager *sm = SegmentManager::get_instance();
     Segment *segment_to_send = NULL;
 
@@ -364,10 +373,18 @@ void ServerAdapter::__sender_thread(void) {
     // At first, dequeue a segment from failed sending queue
     segment_to_send = sm->get_failed_sending();
 
+#if EXP_MEASURE_INTERVAL_SENDER != 0
+    gettimeofday(&times[1], NULL);
+#endif
+
     // If there is no failed segment, dequeue from send queue
     if (likely(segment_to_send == NULL)) {
       segment_to_send = sm->dequeue(kSegSend);
     }
+
+#if EXP_MEASURE_INTERVAL_SENDER != 0
+    gettimeofday(&times[2], NULL);
+#endif
 
     // If it is suspended, push the segment to the send-fail queue
     {
@@ -385,10 +402,19 @@ void ServerAdapter::__sender_thread(void) {
       }
     }
 
+#if EXP_MEASURE_INTERVAL_SENDER != 0
+    gettimeofday(&times[3], NULL);
+#endif
+
     int len = kSegHeaderSize + kSegSize;
     const void *data = segment_to_send->data;
 
     int res = this->send(data, len);
+
+#if EXP_MEASURE_INTERVAL_SENDER != 0
+    gettimeofday(&times[4], NULL);
+#endif
+
     if (errno == EAGAIN) {
       LOG_VERB("Sending %dB: Kernel I/O buffer is full at %s", len,
                this->get_name());
@@ -402,6 +428,23 @@ void ServerAdapter::__sender_thread(void) {
     }
 
     sm->free_segment(segment_to_send);
+
+#if EXP_MEASURE_INTERVAL_SENDER != 0
+    gettimeofday(&times[5], NULL);
+
+    for (int i = 0; i < 4; i++) {
+      this->mIntervals[i] += (times[i + 1].tv_sec - times[i].tv_sec) * 1000 +
+                             (times[i + 1].tv_usec - times[i].tv_usec) / 1000;
+    }
+    this->mSendCount++;
+    if (this->mSendCount % 500 == 0) {
+      LOG_DEBUG("Send Time: %d / %d / %d / %d", this->mIntervals[0],
+                this->mIntervals[1], this->mIntervals[2], this->mIntervals[3]);
+      for (int i = 0; i < 4; i++) {
+        this->mIntervals[i] = 0;
+      }
+    }
+#endif
   }
 }
 

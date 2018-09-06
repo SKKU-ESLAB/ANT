@@ -17,6 +17,7 @@
  * limitations under the License.
  */
 
+#include <ExpConfig.h>
 #include <NetworkSwitcher.h>
 
 #include <Core.h>
@@ -27,8 +28,6 @@
 #include <string.h>
 #include <thread>
 #include <unistd.h>
-
-#define PRINT_STATS_ON 0
 
 namespace sc {
 NetworkSwitcher *NetworkSwitcher::singleton = NULL;
@@ -195,10 +194,12 @@ void NetworkSwitcher::reconnect_control_adapter(void) {
   NSState state = this->get_state();
   if (state == NSState::kNSStateSwitching) {
     LOG_VERB("It's now switching. Cannot reconnect control adapter.");
+    sleep(1);
     this->reconnect_control_adapter();
     return;
   } else if (state != NSState::kNSStateRunning) {
     LOG_VERB("Switcher is not running. Cannot reconnect control adapter.");
+    sleep(1);
     this->reconnect_control_adapter();
     return;
   }
@@ -577,12 +578,31 @@ void SwitchAdapterTransaction::disconnect_callback(bool is_success) {
   NetworkSwitcher *switcher = NetworkSwitcher::get_instance();
   if (is_success) {
     // Success!
+#if EXP_NO_CONTROL_ADAPTER_AFTER_SWITCHING == 0
     sOngoing->done(true);
+#else
+    ServerAdapter *control_adapter =
+        Core::get_instance()->get_control_adapter();
+    control_adapter->disconnect(
+        SwitchAdapterTransaction::disconnect_control_callback);
+#endif
   } else {
     LOG_ERR("Disconnecting previous data adapter is failed");
     sOngoing->done(false);
   }
 }
+
+#if EXP_NO_CONTROL_ADAPTER_AFTER_SWITCHING != 0
+void SwitchAdapterTransaction::disconnect_control_callback(bool is_success) {
+  if (!is_success) {
+    LOG_ERR("Failed to disconnect control_callback");
+    sOngoing->done(false);
+  }
+
+  LOG_VERB("Additionally, disconnected control adapter");
+  sOngoing->done(true);
+}
+#endif
 
 bool ConnectRequestTransaction::run(int adapter_id) {
   if (sOngoing == NULL) {
