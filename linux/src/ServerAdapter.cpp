@@ -17,6 +17,7 @@
  * limitations under the License.
  */
 
+#include <ExpConfig.h>
 #include <ServerAdapter.h>
 
 #include <Core.h>
@@ -31,20 +32,20 @@
 #include <sys/time.h>
 #endif
 
-#define VERBOSE_SERVER_ADAPTER_RECEIVING 0
-
 using namespace sc;
 
-bool ServerAdapter::connect(ConnectCallback callback, bool is_send_request) {
+void ServerAdapter::connect(ConnectCallback callback, bool is_send_request) {
   if (this->get_state() != ServerAdapterState::kDisconnected) {
     LOG_ERR(
         "It is already connected or connection/disconnection is in progress.");
-    return false;
+    callback(false);
+    return;
   }
 
   if (this->mConnectThread != NULL) {
     LOG_ERR("Connect thread not finished!");
-    return false;
+    callback(false);
+    return;
   }
 
   // Send request
@@ -57,21 +58,22 @@ bool ServerAdapter::connect(ConnectCallback callback, bool is_send_request) {
   this->mConnectThread =
       new std::thread(std::bind(&ServerAdapter::connect_thread, this));
   this->mConnectThread->detach();
-  return true;
 }
 
-bool ServerAdapter::disconnect(DisconnectCallback callback) {
+void ServerAdapter::disconnect(DisconnectCallback callback) {
   ServerAdapterState state = this->get_state();
   if (state == ServerAdapterState::kDisconnected ||
       state == ServerAdapterState::kDisconnecting) {
     LOG_ERR("It is already disconnected or connection/disconnection is in "
             "progress.");
-    return false;
+    callback(false);
+    return;
   }
 
   if (this->mDisconnectThread != NULL) {
     LOG_ERR("Disconnect thread not finished!");
-    return false;
+    callback(false);
+    return;
   }
 
   // Disconnect
@@ -79,7 +81,6 @@ bool ServerAdapter::disconnect(DisconnectCallback callback) {
   this->mDisconnectThread =
       new std::thread(std::bind(&ServerAdapter::disconnect_thread, this));
   this->mDisconnectThread->detach();
-  return true;
 }
 
 void ServerAdapter::connect_thread(void) {
@@ -209,7 +210,7 @@ bool ServerAdapter::__disconnect_thread(void) {
     // If this adapter is already sleeping, wake up and finish the sender thread
     this->mSenderLoopOn = false;
     if (this->get_state() == ServerAdapterState::kSleeping) {
-      this->wake_up(false);
+      this->wake_up(NULL, false);
     }
   }
   if (this->mReceiverThread != NULL) {
@@ -321,7 +322,8 @@ void ServerAdapter::sender_thread(void) {
   LOG_DEBUG("%s's Sender thread spawned(tid: %d)", this->get_name(),
             (unsigned int)syscall(224));
 
-  this->__sender_thread();
+  this->mSenderLoopOn = true;
+  this->data_adapter_send_loop();
 
   this->disconnect(NULL);
   LOG_DEBUG("%s's Sender thread ends(tid: %d)", this->get_name(),
@@ -334,8 +336,7 @@ void ServerAdapter::sender_thread(void) {
   this->mSenderThread = NULL;
 }
 
-void ServerAdapter::__sender_thread(void) {
-  this->mSenderLoopOn = true;
+void ServerAdapter::data_adapter_send_loop(void) {
   {
     std::unique_lock<std::mutex> lck(this->mSenderSuspendedMutex);
     this->mSenderSuspended = false;
@@ -454,20 +455,20 @@ void ServerAdapter::receiver_thread(void) {
     return;
   }
 
-  LOG_DEBUG("%s's Receiver thread spawned(tid: %d)", this->get_name(),
+  LOG_DEBUG("%s: Receiver thread spawned(tid: %d)", this->get_name(),
             (unsigned int)syscall(224));
 
+  this->mReceiverLoopOn = true;
   this->mReceiveLoop(this);
 
-  LOG_DEBUG("%s's Receiver thread ends(tid: %d)", this->get_name(),
+  LOG_DEBUG("%s: Receiver thread ends(tid: %d)", this->get_name(),
             (unsigned int)syscall(224));
   this->mReceiverLoopOn = false;
   this->mReceiverThread = NULL;
 }
 
-void ServerAdapter::receive_data_loop(ServerAdapter *adapter) {
-  adapter->mReceiverLoopOn = true;
-  while (adapter->mReceiverLoopOn) {
+void ServerAdapter::data_adapter_receive_loop(ServerAdapter *adapter) {
+  while (adapter->is_receiver_loop_on()) {
     SegmentManager *sm = SegmentManager::get_instance();
     Segment *segment_to_receive = sm->get_free_segment();
     void *buf = reinterpret_cast<void *>(segment_to_receive->data);
@@ -501,24 +502,25 @@ void ServerAdapter::receive_data_loop(ServerAdapter *adapter) {
 #endif
   }
 
+  // TODO: refine it
   adapter->disconnect(NULL);
-
-  LOG_DEBUG("%s's Receiver thread ends(tid: %d)", adapter->get_name(),
-            (unsigned int)syscall(224));
 }
 
-bool ServerAdapter::sleep(bool is_send_request) {
+void ServerAdapter::sleep(DisconnectCallback callback, bool is_send_request) {
   ServerAdapterState state = this->get_state();
   if (state != ServerAdapterState::kActive) {
     LOG_ERR("Failed to sleep: %s (state: %d)", this->get_name(), state);
-    return false;
+    if (callback != NULL)
+      callback(false);
+    return;
   }
 
   {
     std::unique_lock<std::mutex> lck(this->mSenderSuspendedMutex);
     if (this->mSenderSuspended) {
       LOG_ERR("Sender has already been suspended!: %s", this->get_name());
-      return false;
+      if (callback != NULL)
+        callback(false);
     } else {
       // Send Request
       if (is_send_request) {
@@ -528,16 +530,19 @@ bool ServerAdapter::sleep(bool is_send_request) {
       // Sleep
       this->set_state(ServerAdapterState::kGoingSleeping);
       this->mSenderSuspended = true;
-      return true;
+      if (callback != NULL)
+        callback(true);
     }
   }
 }
 
-bool ServerAdapter::wake_up(bool is_send_request) {
+void ServerAdapter::wake_up(DisconnectCallback callback, bool is_send_request) {
   ServerAdapterState state = this->get_state();
   if (state != ServerAdapterState::kSleeping) {
     LOG_ERR("Failed to wake up: %s (state: %d)", this->get_name(), state);
-    return false;
+    if (callback != NULL)
+      callback(false);
+    return;
   }
 
   bool sender_suspended;
@@ -558,9 +563,30 @@ bool ServerAdapter::wake_up(bool is_send_request) {
       this->mSenderSuspended = false;
     }
     this->mSenderSuspendedCond.notify_all();
-    return true;
+    if (callback != NULL)
+      callback(true);
   } else {
     LOG_ERR("Sender has not been suspended!: %s", this->get_name());
-    return false;
+    if (callback != NULL)
+      callback(false);
+  }
+}
+
+void ServerAdapter::connect_or_wake_up(ConnectCallback callback,
+                                       bool is_send_request) {
+  ServerAdapterState state = this->get_state();
+  if (state == ServerAdapterState::kDisconnected) {
+    this->connect(callback, is_send_request);
+  } else if (state == ServerAdapterState::kSleeping) {
+    this->wake_up(callback, is_send_request);
+  }
+}
+void ServerAdapter::disconnect_or_sleep(DisconnectCallback callback,
+                                        bool is_send_request) {
+  if (this->is_sleeping_allowed()) {
+    this->sleep(callback, is_send_request);
+  } else {
+    // TODO: add is_send_request
+    this->disconnect(callback);
   }
 }

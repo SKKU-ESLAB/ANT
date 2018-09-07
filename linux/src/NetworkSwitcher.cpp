@@ -17,8 +17,10 @@
  * limitations under the License.
  */
 
-#include <ExpConfig.h>
 #include <NetworkSwitcher.h>
+
+#include <ExpConfig.h>
+#include <NetworkSwitcherConfig.h>
 
 #include <Core.h>
 #include <DebugLog.h>
@@ -28,8 +30,6 @@
 #include <string.h>
 #include <thread>
 #include <unistd.h>
-
-#define PRINT_STATS_ON 0
 
 namespace sc {
 NetworkSwitcher *NetworkSwitcher::singleton = NULL;
@@ -63,17 +63,17 @@ void NetworkSwitcher::switcher_thread(void) {
     // Handover
     NSState state = this->get_state();
     if (state == NSState::kNSStateRunning) {
-      this->check_and_handover(stats);
+      this->check_and_decide_switching(stats);
     }
 
-    usleep(SLEEP_USECS);
+    usleep(NETWORK_SWITCHER_SLEEP_USECS);
   }
 
   this->set_state(NSState::kNSStateInitialized);
 }
 
 void NetworkSwitcher::print_stats(Stats &stats) {
-#if PRINT_STATS_ON == 0
+#if PRINT_NETWORK_SWITCHER_STATISTICS == 0
   return;
 #else
   if (Core::get_instance()->get_state() != CMState::kCMStateReady) {
@@ -148,47 +148,41 @@ void NetworkSwitcher::connect_adapter(int adapter_id) {
   ConnectRequestTransaction::run(adapter_id);
 }
 
-bool NetworkSwitcher::sleep_adapter(int adapter_id) {
+void NetworkSwitcher::sleep_adapter(int adapter_id) {
   NSState state = this->get_state();
   if (state == NSState::kNSStateSwitching) {
     LOG_VERB("It's now switching. Cannot connect to adapter %d.", adapter_id);
-    return false;
+    return;
   } else if (state != NSState::kNSStateRunning) {
     LOG_VERB("Switcher is not running. Cannot connect to adapter %d.",
              adapter_id);
-    return false;
+    return;
   }
 
   ServerAdapter *adapter = Core::get_instance()->get_data_adapter(adapter_id);
   if (adapter != NULL) {
     this->set_state(NSState::kNSStateSwitching);
-    bool res = adapter->sleep(false);
+    adapter->sleep(NULL, false);
     this->set_state(NSState::kNSStateRunning);
-    return res;
-  } else {
-    return false;
   }
 }
 
-bool NetworkSwitcher::wake_up_adapter(int adapter_id) {
+void NetworkSwitcher::wake_up_adapter(int adapter_id) {
   NSState state = this->get_state();
   if (state == NSState::kNSStateSwitching) {
     LOG_VERB("It's now switching. Cannot connect to adapter %d.", adapter_id);
-    return false;
+    return;
   } else if (state != NSState::kNSStateRunning) {
     LOG_VERB("Switcher is not running. Cannot connect to adapter %d.",
              adapter_id);
-    return false;
+    return;
   }
 
   ServerAdapter *adapter = Core::get_instance()->get_data_adapter(adapter_id);
   if (adapter != NULL) {
     this->set_state(NSState::kNSStateSwitching);
-    bool res = adapter->wake_up(false);
+    adapter->wake_up(NULL, false);
     this->set_state(NSState::kNSStateRunning);
-    return res;
-  } else {
-    return false;
   }
 }
 
@@ -228,7 +222,7 @@ void NetworkSwitcher::get_stats(Stats &stats) {
                               sm->get_failed_sending_queue_data_size();
 }
 
-void NetworkSwitcher::check_and_handover(Stats &stats) {
+void NetworkSwitcher::check_and_decide_switching(Stats &stats) {
   /* Determine Increasing/Decreasing adapter */
   if (this->check_increase_adapter(stats)) {
     /* Maintain bandwidth when increasing */
@@ -252,14 +246,6 @@ void NetworkSwitcher::check_and_handover(Stats &stats) {
   }
 }
 
-/* Energy constants (mJ) */
-#define BT_TX_ENERGY_1KB_BASIS 5.0342202f
-#define BT_TX_ENERGY_PER_1B 0.000882425f
-#define WFD_TX_ENERGY_1KB_BASIS 2.055363f
-#define WFD_TX_ENERGY_PER_1B 0.000200986f
-#define WFD_INIT_ENERGY 3157.8248f
-#define WFD_IDLE_ENERGY_PER_1SEC 156.13f
-
 int NetworkSwitcher::get_init_energy_payoff_point(void) {
   /* 4634053B (4525KB) */
   return (int)((WFD_INIT_ENERGY) /
@@ -274,13 +260,6 @@ int NetworkSwitcher::get_idle_energy_payoff_point(int ema_arrival_time_us) {
                (BT_TX_ENERGY_PER_1B - WFD_TX_ENERGY_PER_1B));
 }
 
-/* Latency constants (us) */
-#define BT_TX_LATENCY_1KB_BASIS 26970.0f
-#define BT_TX_LATENCY_PER_1B 11.21951941f
-#define WFD_TX_LATENCY_1KB_BASIS 10110.0f
-#define WFD_TX_LATENCY_PER_1B 0.248092696f
-#define WFD_INIT_LATENCY 6740000.0f
-
 int NetworkSwitcher::get_init_latency_payoff_point(void) {
   /* 612787B (598KB) */
   return (int)((WFD_INIT_LATENCY + WFD_TX_LATENCY_1KB_BASIS -
@@ -288,8 +267,6 @@ int NetworkSwitcher::get_init_latency_payoff_point(void) {
                (BT_TX_LATENCY_PER_1B - WFD_TX_LATENCY_PER_1B));
 }
 
-#define AVERAGE_WFD_ON_LATENCY_SEC 8.04f /* 8.04 sec */
-#define MAX_BANDWIDTH 90000              /* 90000B/s */
 bool NetworkSwitcher::check_increase_adapter(const Stats &stats) {
   /* Check the condition of adapter increase based on switching policy */
   if (!this->is_increaseable()) {
@@ -416,7 +393,8 @@ bool NetworkSwitcher::check_decrease_adapter(const Stats &stats) {
 } // namespace sc
 
 bool NetworkSwitcher::increase_adapter(void) {
-  if (Core::get_instance()->get_data_adapter_count() == 0) {
+  Core *core = Core::get_instance();
+  if (core->get_data_adapter_count() == 0) {
     LOG_ERR("No data adapter is registered!");
     return false;
   } else if (!this->is_increaseable()) {
@@ -424,14 +402,15 @@ bool NetworkSwitcher::increase_adapter(void) {
     return false;
   }
 
-  int prev_index = this->mActiveDataAdapterIndex;
-  int next_index = this->mActiveDataAdapterIndex + 1;
+  int prev_index = core->get_active_adapter_index();
+  int next_index = prev_index + 1;
 
   return this->switch_adapters(prev_index, next_index);
 }
 
 bool NetworkSwitcher::decrease_adapter(void) {
-  if (Core::get_instance()->get_data_adapter_count() == 0) {
+  Core *core = Core::get_instance();
+  if (core->get_data_adapter_count() == 0) {
     LOG_ERR("No data adapter is registered!");
     return false;
   } else if (!this->is_decreaseable()) {
@@ -439,31 +418,33 @@ bool NetworkSwitcher::decrease_adapter(void) {
     return false;
   }
 
-  int prev_index = this->mActiveDataAdapterIndex;
-  int next_index = this->mActiveDataAdapterIndex - 1;
+  int prev_index = core->get_active_adapter_index();
+  int next_index = prev_index - 1;
 
   return this->switch_adapters(prev_index, next_index);
 }
 
 bool NetworkSwitcher::switch_adapters(int prev_index, int next_index) {
-  // Switch Step 1/4
+  // Switch Step 1
   // Increase/decrease active data adapter index
-  this->mActiveDataAdapterIndex = next_index;
+  Core::get_instance()->set_active_adapter_index(next_index);
 
   return SwitchAdapterTransaction::run(prev_index, next_index);
 }
 
 bool NetworkSwitcher::is_increaseable(void) {
   /* Check the minimum condition of adapter increase such as adapters' count */
-  int data_adapter_count = Core::get_instance()->get_data_adapter_count();
-  int active_data_adapter_index = this->get_active_data_adapter_index();
+  Core *core = Core::get_instance();
+  int data_adapter_count = core->get_data_adapter_count();
+  int active_data_adapter_index = core->get_active_adapter_index();
   return ((data_adapter_count > 1) &&
           (active_data_adapter_index < (data_adapter_count - 1)));
 }
 bool NetworkSwitcher::is_decreaseable(void) {
   /* Check the minimum condition of adapter decrease such as adapters' count */
-  int data_adapter_count = Core::get_instance()->get_data_adapter_count();
-  int active_data_adapter_index = this->get_active_data_adapter_index();
+  Core *core = Core::get_instance();
+  int data_adapter_count = core->get_data_adapter_count();
+  int active_data_adapter_index = core->get_active_adapter_index();
   return ((data_adapter_count > 1) && (active_data_adapter_index > 0));
 }
 
@@ -481,63 +462,50 @@ bool SwitchAdapterTransaction::run(int prev_index, int next_index) {
 }
 
 void SwitchAdapterTransaction::done(bool is_success) {
-  NetworkSwitcher *switcher = NetworkSwitcher::get_instance();
   if (is_success) {
     LOG_DEBUG("Switch from %d to %d done.", sOngoing->mPrevIndex,
               sOngoing->mNextIndex);
-    switcher->set_active_data_adapter_index(sOngoing->mNextIndex);
+    Core::get_instance()->set_active_adapter_index(sOngoing->mNextIndex);
   } else {
     LOG_DEBUG("Switch from %d to %d failed.", sOngoing->mPrevIndex,
               sOngoing->mNextIndex);
   }
-  switcher->done_switch();
+  NetworkSwitcher::get_instance()->done_switch();
   sOngoing = NULL;
 }
 
 void SwitchAdapterTransaction::start(void) {
-  // Switch Step 2/4
+  // Switch Step 1, 2-a
   Core *core = Core::get_instance();
 
-  ServerAdapter *next_adapter = core->get_data_adapter(this->mNextIndex);
-  if (next_adapter == NULL) {
+  ServerAdapter *next_data_adapter = core->get_data_adapter(this->mNextIndex);
+  if (next_data_adapter == NULL) {
     LOG_ERR("Connecting next data adapter is failed");
     this->done(false);
     return;
   }
 
-  ServerAdapterState adapter_state = next_adapter->get_state();
-  if (adapter_state == ServerAdapterState::kDisconnected) {
-    // If next active adapter is disconnected now, connect the adapter
-    bool res =
-        next_adapter->connect(SwitchAdapterTransaction::connect_callback, true);
-    if (!res) {
-      LOG_ERR("Connecting next data adapter is failed");
-      this->done(false);
-      return;
-    }
-  } else if (adapter_state == ServerAdapterState::kSleeping) {
-    // If next active adapter is sleeping now, wake up the adapter
-    bool res = next_adapter->wake_up(true);
-    if (res) {
-      sOngoing->connect_callback(true);
-    } else {
-      LOG_ERR("Waking up next data adapter is failed");
-      this->done(false);
-      return;
-    }
-  } else if (adapter_state == ServerAdapterState::kActive) {
+  ServerAdapterState adapter_state = next_data_adapter->get_state();
+  if (adapter_state == ServerAdapterState::kActive) {
     LOG_ERR("Next data adapter is already active");
     this->done(false);
     return;
-  } else {
+  } else if (adapter_state == ServerAdapterState::kConnecting ||
+             adapter_state == ServerAdapterState::kDisconnecting ||
+             adapter_state == ServerAdapterState::kGoingSleeping ||
+             adapter_state == ServerAdapterState::kWakingUp) {
     LOG_ERR("Switching is already in progress");
     this->done(false);
     return;
   }
+
+  // Connect or wake up the next data adapter
+  next_data_adapter->connect_or_wake_up(
+      SwitchAdapterTransaction::connect_next_data_callback, true);
 }
 
-void SwitchAdapterTransaction::connect_callback(bool is_success) {
-  // Switch Step 3/4
+void SwitchAdapterTransaction::connect_next_data_callback(bool is_success) {
+  // Switch Step 2-b, 3-a
   Core *core = Core::get_instance();
   NetworkSwitcher *switcher = NetworkSwitcher::get_instance();
   if (!is_success) {
@@ -546,65 +514,117 @@ void SwitchAdapterTransaction::connect_callback(bool is_success) {
     return;
   }
 
-  ServerAdapter *prev_adapter = core->get_data_adapter(sOngoing->mPrevIndex);
-  if (prev_adapter == NULL) {
+  ServerAdapter *prev_data_adapter =
+      core->get_data_adapter(sOngoing->mPrevIndex);
+  if (prev_data_adapter == NULL) {
     LOG_ERR("Disconnecting previous data adapter is failed");
     sOngoing->done(false);
     return;
   }
-  if (prev_adapter->is_sleeping_allowed()) {
-    // Sleep previous active adapter
-    bool res = prev_adapter->sleep(true);
-    if (res) {
-      sOngoing->disconnect_callback(true);
-    } else {
-      LOG_ERR("Disconnecting previous data adapter is failed");
-      sOngoing->done(false);
-      return;
-    }
-  } else {
-    // Disconnect previous active adapter
-    bool res =
-        prev_adapter->disconnect(SwitchAdapterTransaction::disconnect_callback);
-    if (!res) {
-      LOG_ERR("Disconnecting previous data adapter is failed");
-      sOngoing->done(false);
-      return;
-    }
+
+  ServerAdapterState adapter_state = prev_data_adapter->get_state();
+  if (adapter_state == ServerAdapterState::kDisconnected) {
+    LOG_ERR("Prev data adapter is already disconnected");
+    sOngoing->done(false);
+    return;
+  } else if (adapter_state == ServerAdapterState::kConnecting ||
+             adapter_state == ServerAdapterState::kDisconnecting ||
+             adapter_state == ServerAdapterState::kGoingSleeping ||
+             adapter_state == ServerAdapterState::kWakingUp) {
+    LOG_ERR("Switching is already in progress");
+    sOngoing->done(false);
+    return;
   }
+
+  // Disconnect or sleep previous data adapter
+  prev_data_adapter->disconnect_or_sleep(
+      SwitchAdapterTransaction::disconnect_prev_data_callback, true);
 }
 
-void SwitchAdapterTransaction::disconnect_callback(bool is_success) {
-  // Switch Step 4/4
+void SwitchAdapterTransaction::disconnect_prev_data_callback(bool is_success) {
+  // Switch Step 3-b, 4-a
   Core *core = Core::get_instance();
   NetworkSwitcher *switcher = NetworkSwitcher::get_instance();
-  if (is_success) {
-    // Success!
-#if EXP_NO_CONTROL_ADAPTER_AFTER_SWITCHING == 0
-    sOngoing->done(true);
-#else
-    ServerAdapter *control_adapter =
-        Core::get_instance()->get_control_adapter();
-    control_adapter->disconnect(
-        SwitchAdapterTransaction::disconnect_control_callback);
-#endif
-  } else {
+  if (!is_success) {
     LOG_ERR("Disconnecting previous data adapter is failed");
     sOngoing->done(false);
+    return;
   }
+
+  ServerAdapter *next_control_adapter =
+      core->get_control_adapter(sOngoing->mNextIndex);
+  if (next_control_adapter == NULL) {
+    LOG_ERR("Connecting next control adpater is failed");
+    sOngoing->done(false);
+    return;
+  }
+
+  ServerAdapterState adapter_state = next_control_adapter->get_state();
+  if (adapter_state == ServerAdapterState::kActive) {
+    LOG_ERR("Next control adapter is already active");
+    sOngoing->done(false);
+    return;
+  } else if (adapter_state == ServerAdapterState::kConnecting ||
+             adapter_state == ServerAdapterState::kDisconnecting ||
+             adapter_state == ServerAdapterState::kGoingSleeping ||
+             adapter_state == ServerAdapterState::kWakingUp) {
+    LOG_ERR("Switching is already in progress");
+    sOngoing->done(false);
+    return;
+  }
+
+  next_control_adapter->connect_or_wake_up(
+      SwitchAdapterTransaction::connect_next_control_callback, true);
 }
 
-#if EXP_NO_CONTROL_ADAPTER_AFTER_SWITCHING != 0
-void SwitchAdapterTransaction::disconnect_control_callback(bool is_success) {
+void SwitchAdapterTransaction::connect_next_control_callback(bool is_success) {
+  // Switch Step 4-b, 5-a
+  Core *core = Core::get_instance();
+  NetworkSwitcher *switcher = NetworkSwitcher::get_instance();
   if (!is_success) {
-    LOG_ERR("Failed to disconnect control_callback");
+    LOG_ERR("Connecting next control adapter is failed");
     sOngoing->done(false);
+    return;
   }
 
-  LOG_VERB("Additionally, disconnected control adapter");
+  ServerAdapter *prev_control_adapter =
+      core->get_control_adapter(sOngoing->mPrevIndex);
+  if (prev_control_adapter == NULL) {
+    LOG_ERR("Disconnecting prev control adapter is failed");
+    sOngoing->done(false);
+    return;
+  }
+
+  ServerAdapterState adapter_state = prev_control_adapter->get_state();
+  if (adapter_state == ServerAdapterState::kDisconnected) {
+    LOG_ERR("Next control adapter is already disconnected");
+    sOngoing->done(false);
+    return;
+  } else if (adapter_state == ServerAdapterState::kConnecting ||
+             adapter_state == ServerAdapterState::kDisconnecting ||
+             adapter_state == ServerAdapterState::kGoingSleeping ||
+             adapter_state == ServerAdapterState::kWakingUp) {
+    LOG_ERR("Switching is already in progress");
+    sOngoing->done(false);
+    return;
+  }
+
+  prev_control_adapter->disconnect_or_sleep(
+      SwitchAdapterTransaction::disconnect_prev_control_callback, true);
+}
+
+void SwitchAdapterTransaction::disconnect_prev_control_callback(
+    bool is_success) {
+  // Switch Step 5-b, 6
+  if (!is_success) {
+    LOG_ERR("Disconnecting prev control adapter is failed");
+    sOngoing->done(false);
+    return;
+  }
+
+  // Switching adapter is successfully done!
   sOngoing->done(true);
 }
-#endif
 
 bool ConnectRequestTransaction::run(int adapter_id) {
   if (sOngoing == NULL) {
@@ -635,13 +655,7 @@ bool ConnectRequestTransaction::start() {
     this->done();
     return false;
   }
-  bool res =
-      adapter->connect(ConnectRequestTransaction::connect_callback, false);
-  if (!res) {
-    LOG_ERR("Connecting requested data adapter is failed");
-    this->done();
-    return false;
-  }
+  adapter->connect(ConnectRequestTransaction::connect_callback, false);
   return true;
 }
 
@@ -681,19 +695,15 @@ void ReconnectControlAdapterTransaction::done(bool require_restart) {
 // Reconnect Control Adapter
 bool ReconnectControlAdapterTransaction::start() {
   // disconnect control adapter
-  ServerAdapter *control_adapter = Core::get_instance()->get_control_adapter();
+  ServerAdapter *control_adapter =
+      Core::get_instance()->get_active_control_adapter();
   if (control_adapter == NULL) {
     LOG_ERR("Reconnecting control adapter is failed: retry");
     this->done(true);
     return false;
   }
-  bool res = control_adapter->disconnect(
+  control_adapter->disconnect(
       ReconnectControlAdapterTransaction::disconnect_callback);
-  if (!res) {
-    LOG_ERR("Reconnecting control adapter is failed: retry");
-    this->done(true);
-    return false;
-  }
   return true;
 }
 
@@ -704,19 +714,15 @@ void ReconnectControlAdapterTransaction::disconnect_callback(bool is_success) {
     return;
   }
   // connect control adapter
-  ServerAdapter *control_adapter = Core::get_instance()->get_control_adapter();
+  ServerAdapter *control_adapter =
+      Core::get_instance()->get_active_control_adapter();
   if (control_adapter == NULL) {
     LOG_ERR("Reconnecting control adapter is failed: retry");
     sOngoing->done(true);
     return;
   }
-  bool res = control_adapter->connect(
+  control_adapter->connect(
       ReconnectControlAdapterTransaction::disconnect_callback, false);
-  if (!res) {
-    LOG_ERR("Disconnecting control adapter is failed: retry");
-    sOngoing->done(true);
-    return;
-  }
 }
 
 void ReconnectControlAdapterTransaction::connect_callback(bool is_success) {

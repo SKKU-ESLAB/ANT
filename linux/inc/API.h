@@ -1,6 +1,6 @@
 /* Copyright 2017-2018 All Rights Reserved.
  *  Gyeonghwan Hong (redcarrottt@gmail.com)
- *  
+ *
  * [Contact]
  *  Gyeonghwan Hong (redcarrottt@gmail.com)
  *
@@ -21,8 +21,8 @@
 #define INC_API_H_
 
 #include <Core.h>
-#include <ServerAdapter.h>
 #include <NetworkSwitcher.h>
+#include <ServerAdapter.h>
 
 namespace sc {
 
@@ -32,15 +32,15 @@ void start_sc(StartCallback startCallback);
 typedef void (*StopCallback)(bool is_success);
 void stop_sc(StopCallback stopCallback);
 
-inline void register_control_adapter(ServerAdapter* adapter) {
+inline void register_control_adapter(ServerAdapter *adapter) {
   Core::get_instance()->register_control_adapter(adapter);
 }
 
-inline void register_data_adapter(ServerAdapter* adapter) {
+inline void register_data_adapter(ServerAdapter *adapter) {
   Core::get_instance()->register_data_adapter(adapter);
 }
 
-/**
+/*
  * If data size is big, it is recommanded to use following
  * libraries in a thread
  */
@@ -48,7 +48,7 @@ inline int send(const void *dataBuffer, uint32_t dataLength) {
   Core::get_instance()->send(dataBuffer, dataLength);
 }
 
-/**
+/*
  * @param len: IN buffer length
  * @param buf: OUT buffer read
  * @return: Received bytes(<0 if error)
@@ -58,4 +58,4 @@ inline int receive(void **dataBuffer) {
 }
 
 } /* namespace sc */
-#endif  /* INC_API_H_ */
+#endif /* INC_API_H_ */

@@ -20,6 +20,7 @@
  */
 
 #include <SegmentManager.h>
+#include <ExpConfig.h>
 
 #include <DebugLog.h>
 #include <ProtocolManager.h>
@@ -29,8 +30,6 @@
 #include <string.h>
 
 #include <list>
-
-#define VERBOSE_SEGMENT_QUEUE_WAITING 0
 
 namespace sc {
 /* Singleton */
