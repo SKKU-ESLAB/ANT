@@ -34,7 +34,6 @@
 #include <sys/time.h>
 #include <unistd.h>
 
-#define kSegMaxQueueSize 104857600 // Maximum 100MB Queue
 #define kSegSize 512
 
 #define kSegFreeThreshold 256

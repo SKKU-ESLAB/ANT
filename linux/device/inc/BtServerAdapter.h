@@ -40,11 +40,7 @@ public:
     BtDevice *device = BtDevice::getSingleton();
     BtP2PServer *p2pServer = BtP2PServer::getSingleton();
     RfcommServerSocket *serverSocket = new RfcommServerSocket(service_uuid);
-#if EXP_NO_CONTROL_ADAPTER_AFTER_SWITCHING != 0
     this->initialize(device, p2pServer, serverSocket, false);
-#else
-    this->initialize(device, p2pServer, serverSocket, true);
-#endif
   }
 
   ~BtServerAdapter(void) {

@@ -30,6 +30,7 @@
         "ios": "cpp",
         "__mutex_base": "cpp",
         "mutex": "cpp",
-        "map": "cpp"
+        "map": "cpp",
+        "system_error": "cpp"
     }
 }

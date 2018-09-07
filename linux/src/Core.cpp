@@ -60,7 +60,7 @@ void Core::start() {
     LOG_ERR("Core has already started.");
     this->done_start(false);
     return;
-  } else if (this->mControlAdapter == NULL) {
+  } else if (this->mControlAdapters.empty()) {
     LOG_ERR("No control adapter is registered!");
     this->done_start(false);
     return;
@@ -100,7 +100,7 @@ void Core::stop() {
     LOG_ERR("Core is already idle state!");
     this->done_stop(false);
     return;
-  } else if (this->mControlAdapter == NULL) {
+  } else if (this->mControlAdapters.empty()) {
     LOG_ERR("No control adapter is registered!");
     this->done_stop(false);
     return;
@@ -133,13 +133,9 @@ void Core::register_control_adapter(ServerAdapter *control_adapter) {
     LOG_ERR("You can register control adapter on only idle state!");
     return;
   }
-  std::unique_lock<std::mutex> lck(this->mControlAdapterLock);
-  if (this->mControlAdapter != NULL) {
-    LOG_ERR("Another control adapter has already been registered!");
-    return;
-  }
-  control_adapter->enable_receiver_thread(Core::receive_control_message_loop);
-  this->mControlAdapter = control_adapter;
+  std::unique_lock<std::mutex> lck(this->mControlAdaptersLock);
+  control_adapter->enable_receiver_thread(Core::control_adapter_receive_loop);
+  this->mControlAdapters.push_back(control_adapter);
 }
 
 // Register data adpater
@@ -206,22 +202,20 @@ int Core::receive(void **pDataBuffer) {
 }
 
 void Core::send_control_message(const void *dataBuffer, size_t dataLength) {
-  ServerAdapter *control_adapter = this->get_control_adapter();
-  ServerAdapterState controlAdapterState = control_adapter->get_state();
-  if (controlAdapterState != ServerAdapterState::kActive) {
-    LOG_ERR("Control adapter is not started yet, so you cannot send the data");
-    return;
-  }
-
+  ServerAdapter *control_adapter = this->get_active_control_adapter();
   control_adapter->send(dataBuffer, dataLength);
 }
 
 void Core::send_request(CtrlReq request_code, uint16_t adapter_id) {
-  ServerAdapter *control_adapter = this->get_control_adapter();
-  ServerAdapterState controlAdapterState = control_adapter->get_state();
-  if (controlAdapterState != ServerAdapterState::kActive) {
-    LOG_ERR("Control adapter is not started yet, so you cannot send the data");
-    return;
+  bool retry_check = true;
+  while (retry_check) {
+    ServerAdapter *control_adapter = this->get_active_control_adapter();
+    ServerAdapterState controlAdapterState = control_adapter->get_state();
+    if (controlAdapterState != ServerAdapterState::kActive) {
+      LOG_WARN("Now switching control adapter...");
+    } else {
+      retry_check = false;
+    }
   }
 
   uint8_t net_request_code = (uint8_t)request_code;
@@ -245,11 +239,15 @@ void Core::send_request_wake_up(uint16_t adapter_id) {
 
 void Core::send_noti_private_data(uint16_t adapter_id, char *private_data_buf,
                                   uint32_t private_data_len) {
-  ServerAdapter *control_adapter = this->get_control_adapter();
-  ServerAdapterState controlAdapterState = control_adapter->get_state();
-  if (controlAdapterState != ServerAdapterState::kActive) {
-    LOG_ERR("Control adapter is not started yet, so you cannot send the data");
-    return;
+  bool retry_check = true;
+  while (retry_check) {
+    ServerAdapter *control_adapter = this->get_active_control_adapter();
+    ServerAdapterState controlAdapterState = control_adapter->get_state();
+    if (controlAdapterState != ServerAdapterState::kActive) {
+      LOG_WARN("Now switching control adapter...");
+    } else {
+      retry_check = false;
+    }
   }
 
   uint8_t request_code = kCtrlReqPriv;
@@ -262,9 +260,8 @@ void Core::send_noti_private_data(uint16_t adapter_id, char *private_data_buf,
   this->send_control_message(private_data_buf, private_data_len);
 }
 
-void Core::receive_control_message_loop(ServerAdapter *adapter) {
+void Core::control_adapter_receive_loop(ServerAdapter *adapter) {
   assert(adapter != NULL);
-  LOG_VERB("Ready to receive control message");
 
   char data[512] = {
       0,
@@ -272,12 +269,11 @@ void Core::receive_control_message_loop(ServerAdapter *adapter) {
   int res = 0;
 
   Core *core = Core::get_instance();
-  while (true) {
+  while (adapter->is_receiver_loop_on()) {
     // Receive 1Byte: Control Request Code
     res = adapter->receive(data, 1);
     if (res <= 0) {
-      LOG_VERB("Control adapter could be closed");
-      sleep(1);
+      LOG_DEBUG("Control adapter has been closed");
       break;
     }
 
@@ -322,36 +318,43 @@ void Core::receive_control_message_loop(ServerAdapter *adapter) {
 
       // Receive 2Byte: Adapter ID
       res = adapter->receive(&n_adapter_id, 2);
-      if (res <= 0)
+      if (res <= 0) {
+        LOG_DEBUG("Control adapter has been closed");
         break;
+      }
       adapter_id = ntohs(n_adapter_id);
 
       // Receive 4Byte: Private Data Length
       res = adapter->receive(&nlen, 4);
-      if (res <= 0)
+      if (res <= 0) {
+        LOG_DEBUG("Control adapter has been closed");
         break;
+      }
       len = ntohl(nlen);
       assert(len <= 512);
 
       // Receive nByte: Private Data
       res = adapter->receive(data, len);
-      if (res > 0) {
-        for (std::vector<ControlMessageListener *>::iterator it =
-                 core->mControlMessageListeners.begin();
-             it != core->mControlMessageListeners.end(); it++) {
-          ControlMessageListener *listener = *it;
-          listener->on_receive_control_message(adapter_id, data, len);
-        }
-      } else {
-        LOG_DEBUG("Control adapter closed");
+      if (res <= 0) {
+        LOG_DEBUG("Control adapter has been closed");
         break;
+      }
+
+      for (std::vector<ControlMessageListener *>::iterator it =
+               core->mControlMessageListeners.begin();
+           it != core->mControlMessageListeners.end(); it++) {
+        ControlMessageListener *listener = *it;
+        listener->on_receive_control_message(adapter_id, data, len);
       }
     }
   } // End while
 
-// If control message loop is crashed, reconnect control adapter.
+  // If control message loop is crashed, reconnect control adapter.
   LOG_DEBUG("Control message loop is finished");
-#if EXP_NO_CONTROL_ADAPTER_AFTER_SWITCHING == 0 && PREVENT_RECONNECT_CONTROL_ADAPTER == 0
+
+  // TODO: refine it
+#if EXP_NO_CONTROL_ADAPTER_AFTER_SWITCHING == 0 &&                             \
+    PREVENT_RECONNECT_CONTROL_ADAPTER == 0
   NetworkSwitcher::get_instance()->reconnect_control_adapter();
 #endif
 }
@@ -371,19 +374,22 @@ bool StartCoreTransaction::run(Core *caller) {
     return false;
   }
 }
-bool StartCoreTransaction::start() {
-  // Connect control adpater
-  std::unique_lock<std::mutex> lck(this->mCaller->mControlAdapterLock);
-  bool res = this->mCaller->mControlAdapter->connect(
-      StartCoreTransaction::connect_control_adapter_callback, false);
-  if (!res) {
+void StartCoreTransaction::start() {
+  // Connect first control adpater
+  std::unique_lock<std::mutex> lck(this->mCaller->mControlAdaptersLock);
+
+  if (this->mCaller->mControlAdapters.empty()) {
     LOG_ERR("Connecting control adapter is failed");
     this->done(false);
+    return;
   }
-  return res;
+
+  this->mCaller->mControlAdapters.front()->connect(
+      StartCoreTransaction::connect_first_control_adapter_callback, false);
 }
 
-void StartCoreTransaction::connect_control_adapter_callback(bool is_success) {
+void StartCoreTransaction::connect_first_control_adapter_callback(
+    bool is_success) {
   if (!is_success) {
     LOG_ERR("Connecting control adapter is failed");
     sOngoing->done(false);
@@ -392,18 +398,15 @@ void StartCoreTransaction::connect_control_adapter_callback(bool is_success) {
 
   // Connect first data adapter
   std::unique_lock<std::mutex> lck(sOngoing->mCaller->mDataAdaptersLock);
-  bool res = true;
-  if (sOngoing->mCaller->mDataAdapters.empty()) {
-    res = false;
-  } else {
-    res = sOngoing->mCaller->mDataAdapters.front()->connect(
-        StartCoreTransaction::connect_first_data_adapter_callback, false);
-  }
 
-  if (!res) {
+  if (sOngoing->mCaller->mDataAdapters.empty()) {
     LOG_ERR("Connecting first data adapter is failed");
     sOngoing->done(false);
+    return;
   }
+
+  sOngoing->mCaller->mDataAdapters.front()->connect(
+      StartCoreTransaction::connect_first_data_adapter_callback, false);
 }
 
 void StartCoreTransaction::connect_first_data_adapter_callback(
@@ -434,45 +437,84 @@ bool StopCoreTransaction::run(Core *caller) {
     return false;
   }
 }
-bool StopCoreTransaction::start() {
-  {
-    std::unique_lock<std::mutex> lck(this->mDataAdaptersCountLock);
-    this->mDataAdaptersCount = this->mCaller->get_data_adapter_count();
+void StopCoreTransaction::start() {
+  /* Disconnect all control adapters */
+  std::unique_lock<std::mutex> lck(this->mCaller->mControlAdaptersLock);
+
+  /* Get active control adapter count */
+  this->mControlAdaptersCount = 0;
+  for (std::vector<ServerAdapter *>::iterator it =
+           this->mCaller->mControlAdapters.begin();
+       it != this->mCaller->mControlAdapters.end(); it++) {
+    ServerAdapter *control_adapter = *it;
+    ServerAdapterState state = control_adapter->get_state();
+    if (state != ServerAdapterState::kDisconnected &&
+        state != ServerAdapterState::kDisconnecting) {
+      this->mControlAdaptersCount++;
+    }
   }
 
-  // Disconnect control adpater
-  bool res;
-  {
-    std::unique_lock<std::mutex> lck(this->mCaller->mControlAdapterLock);
-    res = this->mCaller->mControlAdapter->disconnect(
-        StopCoreTransaction::disconnect_control_adapter_callback);
+  /* Disconnect only active control adapters */
+  for (std::vector<ServerAdapter *>::iterator it =
+           this->mCaller->mControlAdapters.begin();
+       it != this->mCaller->mControlAdapters.end(); it++) {
+    ServerAdapter *control_adapter = *it;
+    ServerAdapterState state = control_adapter->get_state();
+    if (state != ServerAdapterState::kDisconnected &&
+        state != ServerAdapterState::kDisconnecting) {
+      control_adapter->disconnect(
+          StopCoreTransaction::disconnect_control_adapter_callback);
+    }
   }
-
-  if (!res) {
-    LOG_ERR("Disconnecting control adapter is failed");
-    this->done(false);
-  }
-  return res;
 }
 
 void StopCoreTransaction::disconnect_control_adapter_callback(bool is_success) {
   if (!is_success) {
-    LOG_ERR("Disconnecting control adapter is failed");
-    sOngoing->done(false);
+    if (sOngoing != NULL) {
+      LOG_ERR("Disconnecting control adapter is failed");
+      sOngoing->done(false);
+    }
     return;
   }
 
-  // Disconnect all data adapters
+  /* check if all the data adapters are disconnected */
+  bool done_disconnect_all = false;
   {
+    std::unique_lock<std::mutex> lck(sOngoing->mControlAdaptersCountLock);
+    sOngoing->mControlAdaptersCount--;
+    if (sOngoing->mControlAdaptersCount == 0) {
+      done_disconnect_all = true;
+    }
+  }
+
+  /* Done transaction */
+  if (done_disconnect_all) {
+    /* Disconnect all data adapters */
     std::unique_lock<std::mutex> lck(sOngoing->mCaller->mDataAdaptersLock);
+
+    /* Get active data adapter count */
+    sOngoing->mDataAdaptersCount = 0;
     for (std::vector<ServerAdapter *>::iterator it =
              sOngoing->mCaller->mDataAdapters.begin();
          it != sOngoing->mCaller->mDataAdapters.end(); it++) {
       ServerAdapter *data_adapter = *it;
-      bool res = data_adapter->disconnect(
-          StopCoreTransaction::disconnect_data_adapter_callback);
-      if (!res) {
-        LOG_ERR("Disconnecting data adapter is failed");
+      ServerAdapterState state = data_adapter->get_state();
+      if (state != ServerAdapterState::kDisconnected &&
+          state != ServerAdapterState::kDisconnecting) {
+        sOngoing->mDataAdaptersCount++;
+      }
+    }
+
+    /* Disconnect only active data adapters */
+    for (std::vector<ServerAdapter *>::iterator it =
+             sOngoing->mCaller->mDataAdapters.begin();
+         it != sOngoing->mCaller->mDataAdapters.end(); it++) {
+      ServerAdapter *data_adapter = *it;
+      ServerAdapterState state = data_adapter->get_state();
+      if (state != ServerAdapterState::kDisconnected &&
+          state != ServerAdapterState::kDisconnecting) {
+        data_adapter->disconnect(
+            StopCoreTransaction::disconnect_data_adapter_callback);
       }
     }
   }
@@ -480,11 +522,14 @@ void StopCoreTransaction::disconnect_control_adapter_callback(bool is_success) {
 
 void StopCoreTransaction::disconnect_data_adapter_callback(bool is_success) {
   if (!is_success) {
-    LOG_ERR("Disconnecting data adapter is failed 2");
-    sOngoing->done(false);
+    if (sOngoing != NULL) {
+      LOG_ERR("Disconnecting data adapter is failed 2");
+      sOngoing->done(false);
+    }
     return;
   }
 
+  /* check if all the data adapters are disconnected */
   bool done_disconnect_all = false;
   {
     std::unique_lock<std::mutex> lck(sOngoing->mDataAdaptersCountLock);
@@ -494,11 +539,9 @@ void StopCoreTransaction::disconnect_data_adapter_callback(bool is_success) {
     }
   }
 
-  // Done transaction
+  /* Done transaction */
   if (done_disconnect_all) {
     sOngoing->done(true);
-  } else {
-    sOngoing->done(false);
   }
 }
 

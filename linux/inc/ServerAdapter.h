@@ -61,12 +61,15 @@ typedef void (*ReceiveLoop)(ServerAdapter *adapter);
 
 class ServerAdapter {
 public:
-  bool connect(ConnectCallback callback, bool is_send_request);
-  bool disconnect(DisconnectCallback callback);
+  void connect(ConnectCallback callback, bool is_send_request);
+  void disconnect(DisconnectCallback callback);
   int send(const void *buf, size_t len);
   int receive(void *buf, size_t len);
-  bool sleep(bool is_send_request);
-  bool wake_up(bool is_send_request);
+  void sleep(DisconnectCallback callback, bool is_send_request);
+  void wake_up(ConnectCallback callback, bool is_send_request);
+
+  void connect_or_wake_up(ConnectCallback callback, bool is_send_request);
+  void disconnect_or_sleep(DisconnectCallback callback, bool is_send_request);
 
   void enable_sender_thread() {
     this->mSenderThreadEnabled = true;
@@ -75,7 +78,7 @@ public:
 
   void enable_receiver_thread(ReceiveLoop receive_loop) {
     if (receive_loop == NULL) {
-      this->mReceiveLoop = ServerAdapter::receive_data_loop;
+      this->mReceiveLoop = ServerAdapter::data_adapter_receive_loop;
     } else {
       this->mReceiveLoop = receive_loop;
     }
@@ -83,24 +86,21 @@ public:
     return;
   }
 
-  int get_bandwidth_up(void) { this->mSendDataSize.get_speed(); }
+  bool is_receiver_loop_on(void) { return mReceiverLoopOn; }
 
+  int get_bandwidth_up(void) { this->mSendDataSize.get_speed(); }
   int get_bandwidth_down(void) { this->mReceiveDataSize.get_speed(); }
 
   ServerAdapterState get_state(void) {
     std::unique_lock<std::mutex> lck(this->mStateLock);
-
     return this->mState;
   }
 
   char *get_name(void) { return this->mName; }
-
   int get_id(void) { return this->mId; }
 
   Device *get_device(void) { return this->mDevice; }
-
   P2PServer *get_p2p_server(void) { return this->mP2PServer; }
-
   ServerSocket *get_server_socket(void) { return this->mServerSocket; }
 
   bool is_sleeping_allowed(void) { return this->mIsSleepingAllowed; }
@@ -188,10 +188,10 @@ private:
   bool __disconnect_thread(void);
 
   void sender_thread(void);
-  void __sender_thread(void);
+  void data_adapter_send_loop(void);
 
   void receiver_thread(void);
-  static void receive_data_loop(ServerAdapter *adapter);
+  static void data_adapter_receive_loop(ServerAdapter *adapter);
 
   std::thread *mConnectThread = NULL;
   std::thread *mDisconnectThread = NULL;

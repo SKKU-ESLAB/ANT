@@ -46,8 +46,6 @@ class SegmentManager {
 
     static public final int kSegMxQueueSize = 104857600;
     static public final int kSegSize = 512;
-    private static final int kSegThreshold = 1024;
-    static public final int kSegQueueThreshold = kSegThreshold / 512;
     private static final int kSegFreeThreshold = 256;
 
     static public final int kSegHeaderSize = 8;

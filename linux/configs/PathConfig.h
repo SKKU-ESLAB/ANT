@@ -17,21 +17,12 @@
  * limitations under the License.
  */
 
-#ifndef _UTIL_H_
-#define _UTIL_H_
+#ifndef _PATH_CONFIG_H_
+#define _PATH_CONFIG_H_
 
-#include <PathConfig.h>
+#define HCICONFIG_PATH "/bin/hciconfig"
+#define WPA_CLI_PATH "/sbin/wpa_cli"
+#define IFCONFIG_PATH "/sbin/ifconfig"
+#define UDHCPD_PATH "/usr/sbin/udhcpd"
 
-#include <stdio.h>
-
-namespace sc {
-class Util {
-public:
-  static int run_client(const char *path, char *const params[], char *res_buf,
-                        size_t len);
-  static int run_client(const char *path, char *const params[]);
-}; /* class Util */
-
-} /* namespace sc */
-
-#endif /* !defined(_UTIL_H_) */
+#endif /* !defined(_PATH_CONFIG_H_) */

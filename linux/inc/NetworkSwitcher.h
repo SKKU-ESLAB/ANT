@@ -27,13 +27,6 @@
 #include <mutex>
 #include <thread>
 
-#define kSegThreshold 512
-#define kSegQueueThreshold 50 * (kSegThreshold / 512)
-
-// Network Switcher Configs
-#define METRIC_WINDOW_LENGTH 8
-#define SLEEP_USECS (250 * 1000)
-
 namespace sc {
 typedef enum {
   kNSStateInitialized = 0,
@@ -50,24 +43,36 @@ typedef enum {
 class SwitchAdapterTransaction {
   /*
    * Switch Adapter Transaction: Order
-   * 1. NetworkSwitcher.switch_adapters()
-   * 2. SwitchAdapterTransaction.start()
-   * 3. next_adapter.connect() or next_adapter.wake_up()
-   * 4. SwitchAdapterTransaction.connect_callback() or
-   * SwitchAdapterTransaction.wakeup_callback()
-   * 5. prev_adapter.disconnect() or prev_adapter.sleep()
-   * 6. SwitchAdapterTransaction.disconnect_callback() or
-   * SwitchAdapterTransaction.sleep_callback()
-   * 7. NetworkSwitcher.done_switch()
+   * 1. Entry
+   *    - NetworkSwitcher.switch_adapters()
+   *    - SwitchAdapterTransaction.start()
+   * 2-a. Connect/WakeUp Next Data Adapter
+   *    - next_data_adapter.connect()
+   *       or next_data_adapter.wake_up()
+   * 2-b. Callback (for connect request)
+   *    - SwitchAdapterTransaction.connect_data_callback()
+   * 3-a. Disconnect/Sleep Prev Data Adapter
+   *    - prev_adapter.disconnect()
+   * 3-b. Callback (for disconnect request)
+   *    - SwitchAdapterTransaction.disconnect_callback()
+   * 4-a. Connect/WakeUp Next Control Adapter
+   *    - next_adapter.connect()
+   * 4-b. Callback (for connect request)
+   *    - SwitchAdapterTransaction.connect_callback()
+   * 5-a. Disconnect/Sleep Prev Control Adapter
+   *    - prev_adapter.disconnect()
+   *      or prev_adapter.sleep()
+   * 5-b. Callback (for disconnect request)
+   *    - SwitchAdapterTransaction.disconnect_callback()
+   * 6. NetworkSwitcher.done_switch()
    */
 public:
   static bool run(int prev_index, int next_index);
   void start(void);
-  static void connect_callback(bool is_success);
-  static void disconnect_callback(bool is_success);
-#if EXP_NO_CONTROL_ADAPTER_AFTER_SWITCHING != 0
-  static void disconnect_control_callback(bool is_success);
-#endif
+  static void connect_next_data_callback(bool is_success);
+  static void disconnect_prev_data_callback(bool is_success);
+  static void connect_next_control_callback(bool is_success);
+  static void disconnect_prev_control_callback(bool is_success);
 
 protected:
   void done(bool is_success);
@@ -133,48 +138,14 @@ public:
   void start(void);
   void stop(void);
 
-  /* Get state */
-  NSState get_state(void) {
-    std::unique_lock<std::mutex> lck(this->mStateLock);
-    return this->mState;
-  }
-
-  /* Get or set mode */
-  NSMode get_mode(void) {
-    std::unique_lock<std::mutex> lck(this->mModeLock);
-    NSMode mode = this->mMode;
-    return mode;
-  }
-
-  void set_mode(NSMode new_mode) {
-    std::unique_lock<std::mutex> lck(this->mModeLock);
-    this->mMode = new_mode;
-  }
-
-  /*
-   * Connect adapter command.
-   * It is called by peer through Core.
-   */
+public:
+  /* APIs called by peer through Core */
   void connect_adapter(int adapter_id);
-
-  /*
-   * Sleep adapter command.
-   * It is called by peer through Core.
-   */
-  bool sleep_adapter(int adapter_id);
-
-  /*
-   * Wake up adapter command.
-   * It is called by peer through Core.
-   */
-  bool wake_up_adapter(int adapter_id);
-
-  /*
-   * Reconnect control adapter command.
-   * It is called by Core.
-   */
+  void sleep_adapter(int adapter_id);
+  void wake_up_adapter(int adapter_id);
   void reconnect_control_adapter(void);
 
+private:
   /* Notification of switch done event */
   void done_switch() {
     LOG_VERB("Switch adapter end!");
@@ -189,6 +160,83 @@ public:
     }
   }
 
+private:
+  /* Network switcher thread */
+  void switcher_thread(void);
+  std::thread *mThread;
+  bool mSwitcherThreadOn;
+
+  /* Checking statistics and decide switching */
+  void get_stats(Stats &stats);
+  void print_stats(Stats &stats);
+  void check_and_decide_switching(Stats &stats);
+
+private:
+  /* Switch adapters */
+  bool increase_adapter(void);
+  bool decrease_adapter(void);
+  bool switch_adapters(int prev_index, int next_index);
+
+private:
+  /* Check policy-driven condition of increase/decrease */
+  bool check_increase_adapter(const Stats &stats);
+  bool check_decrease_adapter(const Stats &stats);
+
+  /* Check condition of increase/decrease */
+  bool is_increaseable(void);
+  bool is_decreaseable(void);
+
+  /* Get payoff points */
+  int get_init_energy_payoff_point(void);
+  int get_idle_energy_payoff_point(int avg_arrival_time_us);
+  int get_init_latency_payoff_point(void);
+
+  /* Policy-related */
+  /* CoolSpots Policy */
+  int mBandwidthWhenIncreasing;
+  int mDecreasingCheckCount;
+
+  /* Auxiliary member variable for statistics */
+  Counter mQueueArrivalSpeed; /* to achieve the ema of queue arrival speed */
+
+public:
+  /* State getter */
+  NSState get_state(void) {
+    std::unique_lock<std::mutex> lck(this->mStateLock);
+    return this->mState;
+  }
+
+private:
+  /* State setter */
+  void set_state(NSState new_state) {
+    std::unique_lock<std::mutex> lck(this->mStateLock);
+    this->mState = new_state;
+  }
+
+  /* State */
+  NSState mState;
+  std::mutex mStateLock;
+
+public:
+  /* Mode getter */
+  NSMode get_mode(void) {
+    std::unique_lock<std::mutex> lck(this->mModeLock);
+    NSMode mode = this->mMode;
+    return mode;
+  }
+
+  /* Mode setter */
+  void set_mode(NSMode new_mode) {
+    std::unique_lock<std::mutex> lck(this->mModeLock);
+    this->mMode = new_mode;
+  }
+
+private:
+  /* Mode */
+  NSMode mMode;
+  std::mutex mModeLock;
+
+public:
   /* Singleton */
   static NetworkSwitcher *get_instance(void) {
     if (NetworkSwitcher::singleton == NULL) {
@@ -206,68 +254,16 @@ private:
     this->set_state(NSState::kNSStateInitialized);
     this->mBandwidthWhenIncreasing = 0;
     this->mDecreasingCheckCount = 0;
-    this->mActiveDataAdapterIndex = 0;
     this->set_mode(NSMode::kNSModeEnergyAware);
   }
 
-  /* Network switcher thread */
-  void switcher_thread(void);
-
-  /* Monitoring */
-  void get_stats(Stats &stats);
-  void print_stats(Stats &stats);
-  void check_and_handover(Stats &stats);
-
-  int get_init_energy_payoff_point(void);
-  int get_idle_energy_payoff_point(int avg_arrival_time_us);
-  int get_init_latency_payoff_point(void);
-  bool check_increase_adapter(const Stats &stats);
-  bool check_decrease_adapter(const Stats &stats);
-
-  /* Switch adapters */
-  bool increase_adapter(void);
-  bool decrease_adapter(void);
-  bool switch_adapters(int prev_index, int next_index);
-  bool is_increaseable(void);
-  bool is_decreaseable(void);
-
-private:
-  /*
-   * Active Data Adapter Index means the index value indicating
-   * 'conencted' or 'connecting' data adapter currently.
-   * Only "the current data adapter" is 'connected' or 'connecting',
-   * but the others are 'connected(but to-be-disconnected)', 'disconnected' or
-   * 'disconnecting'. This index is changed right before increasing or
-   * decreasing starts.
-   */
-  int mActiveDataAdapterIndex;
-
 public:
-  int get_active_data_adapter_index(void) {
-    return this->mActiveDataAdapterIndex;
-  }
-
-  void set_active_data_adapter_index(int active_data_adapter_index) {
-    this->mActiveDataAdapterIndex = active_data_adapter_index;
-  }
-
-private:
-  void set_state(NSState new_state) {
-    std::unique_lock<std::mutex> lck(this->mStateLock);
-    this->mState = new_state;
-  }
-
-  std::thread *mThread;
-
-  bool mSwitcherThreadOn;
-  NSState mState;
-  std::mutex mStateLock;
-  NSMode mMode;
-  std::mutex mModeLock;
-  int mBandwidthWhenIncreasing;
-  int mDecreasingCheckCount;
-
-  Counter mQueueArrivalSpeed; /* to achieve the ema of queue arrival speed */
+  /*
+   * Its private members can be accessed by auxiliary classes
+   */
+  friend SwitchAdapterTransaction;
+  friend ConnectRequestTransaction;
+  friend ReconnectControlAdapterTransaction;
 };
 } /* namespace sc */
 
