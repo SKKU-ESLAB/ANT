@@ -23,16 +23,17 @@
 #include <Core.h>
 #include <DebugLog.h>
 #include <ExpConfig.h>
+#include <ServerAdapter.h>
 
 #include <mutex>
 #include <thread>
+#include <vector>
 
 namespace sc {
-typedef enum {
-  kNSStateReady = 0,
-  kNSStateSwitching = 1,
-} NSState;
+class Core;
+class NetworkSwitcher;
 
+/* Transctions in NetworkSwitcher */
 class SwitchAdapterTransaction {
   /*
    * Switch Adapter Transaction: Order
@@ -78,7 +79,7 @@ protected:
 
   int mPrevIndex;
   int mNextIndex;
-};
+}; /* class SwitchAdapterTransaction */
 
 class ConnectRequestTransaction {
 public:
@@ -93,11 +94,11 @@ protected:
   static ConnectRequestTransaction *sOngoing;
 
   int mAdapterId;
-};
+}; /* class ConnectRequestTransaction */
 
-class ReconnectControlAdapterTransaction {
+class ReconnectAdapterTransaction {
 public:
-  static bool run();
+  static bool run(ServerAdapter *targetAdapter);
   bool start();
   static void disconnect_callback(bool is_success);
   static void connect_callback(bool is_success);
@@ -105,18 +106,32 @@ public:
 protected:
   void done(bool require_restart);
 
-  ReconnectControlAdapterTransaction() {}
-  static ReconnectControlAdapterTransaction *sOngoing;
-};
+  ReconnectAdapterTransaction(ServerAdapter *targetAdapter) {
+    this->mTargetAdapter = targetAdapter;
+  }
+  static ReconnectAdapterTransaction *sOngoing;
 
-class Core;
+  ServerAdapter *mTargetAdapter;
+}; /* class ReconnectAdapterTransaction */
+
+/* Netweork Switcher State */
+typedef enum {
+  kNSStateReady = 0,
+  kNSStateSwitching = 1,
+} NSState;
+
+/* Network Switcher */
 class NetworkSwitcher {
 public:
   /* APIs called by peer through Core */
-  void connect_adapter(int adapter_id);
-  void sleep_adapter(int adapter_id);
-  void wake_up_adapter(int adapter_id);
-  void reconnect_control_adapter(void);
+  void connect_adapter_by_peer(int adapter_id);
+  void disconnect_adapter_by_peer(int adapter_id);
+  void sleep_adapter_by_peer(int adapter_id);
+  void wake_up_adapter_by_peer(int adapter_id);
+
+  /* APIs called by receiver/sender loop */
+  void reconnect_adapter(ServerAdapter *adapter,
+                         bool retry_if_already_switching);
 
   /* APIs called by NetworkMonitor */
   bool switch_adapters(int prev_index, int next_index);
@@ -134,6 +149,39 @@ private:
       break;
     }
   }
+
+public:
+  /* Attribute getters */
+  bool is_disconnecting_adapter(int adapter_id) {
+    for (std::vector<int>::iterator it = this->mDisconnectingAdapterIds.begin();
+         it != this->mDisconnectingAdapterIds.end(); it++) {
+      int disconnectingAdapterId = *it;
+      if (disconnectingAdapterId == adapter_id) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  /* Attribute handlers */
+  void add_disconnecting_adapter_id(int adapter_id) {
+    this->mDisconnectingAdapterIds.push_back(adapter_id);
+  }
+  void remove_disconnecting_adapter_id(int adapter_id) {
+    std::vector<int>::iterator it = this->mDisconnectingAdapterIds.begin();
+    while (it != this->mDisconnectingAdapterIds.end()) {
+      int disconnectingAdapterId = *it;
+      if (disconnectingAdapterId == adapter_id) {
+        this->mDisconnectingAdapterIds.erase(it);
+      } else {
+        it++;
+      }
+    }
+  }
+
+private:
+  /* Attributes */
+  std::vector<int> mDisconnectingAdapterIds;
 
 public:
   /* State getter */
@@ -165,13 +213,13 @@ public:
 private:
   /* Singleton */
   static NetworkSwitcher *singleton;
-  NetworkSwitcher(void) { this->set_state(NSState::kNSStateReady); }
+  NetworkSwitcher() { this->set_state(NSState::kNSStateReady); }
 
 public:
   /* Its private members can be accessed by auxiliary classes */
   friend SwitchAdapterTransaction;
   friend ConnectRequestTransaction;
-  friend ReconnectControlAdapterTransaction;
+  friend ReconnectAdapterTransaction;
 }; /* class NetworkSwitcher */
 } /* namespace sc */
 

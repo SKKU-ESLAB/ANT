@@ -36,10 +36,9 @@ NetworkSwitcher *NetworkSwitcher::singleton = NULL;
 
 SwitchAdapterTransaction *SwitchAdapterTransaction::sOngoing = NULL;
 ConnectRequestTransaction *ConnectRequestTransaction::sOngoing = NULL;
-ReconnectControlAdapterTransaction
-    *ReconnectControlAdapterTransaction::sOngoing = NULL;
+ReconnectAdapterTransaction *ReconnectAdapterTransaction::sOngoing = NULL;
 
-void NetworkSwitcher::connect_adapter(int adapter_id) {
+void NetworkSwitcher::connect_adapter_by_peer(int adapter_id) {
   NSState state = this->get_state();
   if (state == NSState::kNSStateSwitching) {
     LOG_VERB("It's now switching. Cannot connect to adapter %d.", adapter_id);
@@ -50,7 +49,11 @@ void NetworkSwitcher::connect_adapter(int adapter_id) {
   ConnectRequestTransaction::run(adapter_id);
 }
 
-void NetworkSwitcher::sleep_adapter(int adapter_id) {
+void NetworkSwitcher::disconnect_adapter_by_peer(int adapter_id) {
+  
+}
+
+void NetworkSwitcher::sleep_adapter_by_peer(int adapter_id) {
   NSState state = this->get_state();
   if (state == NSState::kNSStateSwitching) {
     LOG_VERB("It's now switching. Cannot connect to adapter %d.", adapter_id);
@@ -65,7 +68,7 @@ void NetworkSwitcher::sleep_adapter(int adapter_id) {
   }
 }
 
-void NetworkSwitcher::wake_up_adapter(int adapter_id) {
+void NetworkSwitcher::wake_up_adapter_by_peer(int adapter_id) {
   NSState state = this->get_state();
   if (state == NSState::kNSStateSwitching) {
     LOG_VERB("It's now switching. Cannot connect to adapter %d.", adapter_id);
@@ -80,16 +83,25 @@ void NetworkSwitcher::wake_up_adapter(int adapter_id) {
   }
 }
 
-void NetworkSwitcher::reconnect_control_adapter(void) {
-  NSState state = this->get_state();
-  if (state == NSState::kNSStateSwitching) {
-    LOG_VERB("It's now switching. Cannot reconnect control adapter.");
-    sleep(1);
-    this->reconnect_control_adapter();
+void NetworkSwitcher::reconnect_adapter(ServerAdapter *adapter,
+                                        bool retry_if_already_switching) {
+  /* If it is disconnecting on purpose, do not reconnect it. */
+  if (this->is_disconnecting_adapter(adapter->get_id())) {
     return;
   }
+
+  /* Wait until other adapter is disconnected */
+  NSState state = this->get_state();
+  if (retry_if_already_switching && state == NSState::kNSStateSwitching) {
+    LOG_VERB("It's now switching. Cannot reconnect control adapter.");
+    sleep(1);
+    this->reconnect_adapter(adapter, retry_if_already_switching);
+    return;
+  }
+
+  /* Start to reconnect the adapter */
   this->set_state(NSState::kNSStateSwitching);
-  ReconnectControlAdapterTransaction::run();
+  ReconnectAdapterTransaction::run(adapter);
 }
 
 bool NetworkSwitcher::switch_adapters(int prev_index, int next_index) {
@@ -321,9 +333,9 @@ void ConnectRequestTransaction::connect_callback(bool is_success) {
   sOngoing->done();
 }
 
-bool ReconnectControlAdapterTransaction::run() {
+bool ReconnectAdapterTransaction::run(ServerAdapter *targetAdapter) {
   if (sOngoing == NULL) {
-    sOngoing = new ReconnectControlAdapterTransaction();
+    sOngoing = new ReconnectAdapterTransaction(targetAdapter);
     sOngoing->start();
     return true;
   } else {
@@ -334,56 +346,52 @@ bool ReconnectControlAdapterTransaction::run() {
   }
 }
 
-void ReconnectControlAdapterTransaction::done(bool require_restart) {
+void ReconnectAdapterTransaction::done(bool require_restart) {
   sOngoing = NULL;
   if (require_restart) {
-    ReconnectControlAdapterTransaction::start();
+    ReconnectAdapterTransaction::start();
   } else {
     NetworkSwitcher *switcher = NetworkSwitcher::get_instance();
     switcher->done_switch();
   }
 }
 
-// Reconnect Control Adapter
-bool ReconnectControlAdapterTransaction::start() {
-  // disconnect control adapter
-  ServerAdapter *control_adapter =
-      Core::get_instance()->get_active_control_adapter();
-  if (control_adapter == NULL) {
-    LOG_ERR("Reconnecting control adapter is failed: retry");
+// Reconnect Adapter
+bool ReconnectAdapterTransaction::start() {
+  // disconnect adapter
+  if (this->mTargetAdapter == NULL) {
+    LOG_ERR("Reconnecting adapter is failed: retry");
     this->done(true);
     return false;
   }
-  control_adapter->disconnect(
-      ReconnectControlAdapterTransaction::disconnect_callback);
+  this->mTargetAdapter->disconnect(
+      ReconnectAdapterTransaction::disconnect_callback);
   return true;
 }
 
-void ReconnectControlAdapterTransaction::disconnect_callback(bool is_success) {
+void ReconnectAdapterTransaction::disconnect_callback(bool is_success) {
   if (!is_success) {
-    LOG_ERR("Reconnecting control adapter is failed: retry");
+    LOG_ERR("Reconnecting adapter is failed: retry");
     sOngoing->done(true);
     return;
   }
-  // connect control adapter
-  ServerAdapter *control_adapter =
-      Core::get_instance()->get_active_control_adapter();
-  if (control_adapter == NULL) {
-    LOG_ERR("Reconnecting control adapter is failed: retry");
+  // connect adapter
+  if (sOngoing->mTargetAdapter == NULL) {
+    LOG_ERR("Reconnecting adapter is failed: retry");
     sOngoing->done(true);
     return;
   }
-  control_adapter->connect(
-      ReconnectControlAdapterTransaction::disconnect_callback, false);
+  sOngoing->mTargetAdapter->connect(
+      ReconnectAdapterTransaction::disconnect_callback, false);
 }
 
-void ReconnectControlAdapterTransaction::connect_callback(bool is_success) {
+void ReconnectAdapterTransaction::connect_callback(bool is_success) {
   if (!is_success) {
-    LOG_ERR("Reconnecting control adapter is failed 6: retry");
+    LOG_ERR("Reconnecting adapter is failed 6: retry");
     sOngoing->done(true);
     return;
   }
-  LOG_VERB("Reconnecting control adapter is done");
+  LOG_VERB("Reconnecting adapter is done");
   NetworkSwitcher::get_instance()->done_switch();
 }
 

@@ -33,46 +33,12 @@
 
 namespace sc {
 
-enum CommErr {
-  kProtOk = 0,
-  kProtErr = -1,
-};
-
-/*
- * Control Request Code
- * It is used to classify "control request message" that is transferred to the
- * peer.
- *  - Commands: "Connect", "Disconnect"
- *  - Acks: "Ok", "Fail"
- *  - Private Data: "Priv"
- */
-typedef enum {
-  kCtrlReqConnect = 1,
-  kCtrlReqSleep = 2,
-  kCtrlReqWakeUp = 3,
-  kCtrlReqPriv = 10,
-} CtrlReq;
-
-/*
- * Core State
- */
-typedef enum {
-  kCMStateIdle = 0,
-  kCMStateStarting = 1,
-  kCMStateReady = 2,
-  kCMStateConnecting =
-      3, // Deprecated: this state is managed by network switcher.
-  kCMStateDisconnecting =
-      4, // Deprecated: this state is managed by network switcher.
-  kCMStateStopping = 5
-} CMState;
-
+class Core;
 /*
  * Auxiliary Classes (Transactions)
  * Series of asynchronous callbacks, especially used for
  * connection/disconnection callbacks.
  */
-class Core;
 class StartCoreTransaction {
 public:
   static bool run(Core *caller);
@@ -110,6 +76,33 @@ private:
   int mDataAdaptersCount;
   std::mutex mDataAdaptersCountLock;
 };
+
+/*
+ * Control Request Code
+ * It is used to classify "control request message" that is transferred to the
+ * peer.
+ *  - Commands: "Connect", "Disconnect"
+ *  - Acks: "Ok", "Fail"
+ *  - Private Data: "Priv"
+ */
+typedef enum {
+  kCtrlReqConnect = 1,
+  kCtrlReqSleep = 2,
+  kCtrlReqWakeUp = 3,
+  kCtrlReqPriv = 10,
+} CtrlReq;
+
+/* Core State */
+typedef enum {
+  kCMStateIdle = 0,
+  kCMStateStarting = 1,
+  kCMStateReady = 2,
+  kCMStateConnecting =
+      3, // Deprecated: this state is managed by network switcher.
+  kCMStateDisconnecting =
+      4, // Deprecated: this state is managed by network switcher.
+  kCMStateStopping = 5
+} CMState;
 
 class ControlMessageListener {
 public:
@@ -331,6 +324,5 @@ public:
   friend StartCoreTransaction;
   friend StopCoreTransaction;
 };
-
 } /* namespace sc */
 #endif /* INC_COMMUNICATOR_H_ */
