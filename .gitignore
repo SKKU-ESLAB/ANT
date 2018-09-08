@@ -1,6 +1,7 @@
 tags
 cscope
 cscope.out
+.vscode
 *.o
 bin/*
 dhcpd.conf

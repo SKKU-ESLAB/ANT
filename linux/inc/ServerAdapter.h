@@ -61,21 +61,28 @@ typedef void (*ReceiveLoop)(ServerAdapter *adapter);
 
 class ServerAdapter {
 public:
+  /* Basic APIs
+   *  - connect, disconnect, sleep, wake up
+   *  - send, receive
+   *  - enable sender thread, enable receiver thread
+   */
+  /* Basic APIs related to connection/sleeping */
   void connect(ConnectCallback callback, bool is_send_request);
   void disconnect(DisconnectCallback callback);
-  int send(const void *buf, size_t len);
-  int receive(void *buf, size_t len);
   void sleep(DisconnectCallback callback, bool is_send_request);
   void wake_up(ConnectCallback callback, bool is_send_request);
-
   void connect_or_wake_up(ConnectCallback callback, bool is_send_request);
   void disconnect_or_sleep(DisconnectCallback callback, bool is_send_request);
 
+  /* Basic APIs related to data transmission */
+  int send(const void *buf, size_t len);
+  int receive(void *buf, size_t len);
+
+  /* Basic APIs related to handling sender/receiver threads */
   void enable_sender_thread() {
     this->mSenderThreadEnabled = true;
     return;
   }
-
   void enable_receiver_thread(ReceiveLoop receive_loop) {
     if (receive_loop == NULL) {
       this->mReceiveLoop = ServerAdapter::data_adapter_receive_loop;
@@ -86,25 +93,98 @@ public:
     return;
   }
 
+  /* Basic APIs called in receiver loops */
   bool is_receiver_loop_on(void) { return mReceiverLoopOn; }
 
+private:
+  /* Connect Thread */
+  void connect_thread(void);
+  bool __connect_thread(void);
+  std::thread *mConnectThread = NULL;
+  ConnectCallback mConnectCallback = NULL;
+
+  /* Disconnect Thread */
+  void disconnect_thread(void);
+  bool __disconnect_thread(void);
+  std::thread *mDisconnectThread = NULL;
+
+  /* Sender Thread */
+  void sender_thread(void);
+  void data_adapter_send_loop(void);
+  std::thread *mSenderThread = NULL;
+  bool mSenderThreadEnabled = false;
+  bool mSenderLoopOn = false;
+  bool mSenderSuspended = false;
+  std::mutex mSenderSuspendedMutex;
+  std::condition_variable mSenderSuspendedCond;
+
+  /* Receiver Thread */
+  void receiver_thread(void);
+  static void data_adapter_receive_loop(ServerAdapter *adapter);
+  std::thread *mReceiverThread = NULL;
+  ReceiveLoop mReceiveLoop = NULL;
+  bool mReceiverThreadEnabled = false;
+  bool mReceiverLoopOn = false;
+  DisconnectCallback mDisconnectCallback = NULL;
+
+public:
+  /* Statistics getters */
   int get_bandwidth_up(void) { this->mSendDataSize.get_speed(); }
   int get_bandwidth_down(void) { this->mReceiveDataSize.get_speed(); }
 
+private:
+  /* Statistics */
+  Counter mSendDataSize;
+  Counter mReceiveDataSize;
+
+public:
+  /* Attribute getters */
+  char *get_name(void) { return this->mName; }
+  int get_id(void) { return this->mId; }
+  bool is_sleeping_allowed(void) { return this->mIsSleepingAllowed; }
+
+  /* Component getters */
+  Device *get_device(void) { return this->mDevice; }
+  P2PServer *get_p2p_server(void) { return this->mP2PServer; }
+  ServerSocket *get_server_socket(void) { return this->mServerSocket; }
+
+private:
+  /* Attributes */
+  char mName[256];
+  /*
+   * TODO: ID is now defined by user. However, the ID should be maintained by
+   * system finally.
+   */
+  int mId;
+  bool mIsSleepingAllowed;
+
+  /* Components */
+  Device *mDevice = NULL;
+  P2PServer *mP2PServer = NULL;
+  ServerSocket *mServerSocket = NULL;
+
+  /* State Listeners */
+  std::vector<ServerAdapterStateListener *> mStateListeners;
+
+private:
+  /* EXP: Measure sender thread loop's time interval */
+#if EXP_MEASURE_INTERVAL_SENDER != 0
+private:
+  int mSendCount = 0;
+  /* Milliseconds */
+  int mIntervals[4] = {
+      0,
+  };
+#endif
+
+public:
+  /* State getter */
   ServerAdapterState get_state(void) {
     std::unique_lock<std::mutex> lck(this->mStateLock);
     return this->mState;
   }
 
-  char *get_name(void) { return this->mName; }
-  int get_id(void) { return this->mId; }
-
-  Device *get_device(void) { return this->mDevice; }
-  P2PServer *get_p2p_server(void) { return this->mP2PServer; }
-  ServerSocket *get_server_socket(void) { return this->mServerSocket; }
-
-  bool is_sleeping_allowed(void) { return this->mIsSleepingAllowed; }
-
+  /* Add state listener */
   void listen_state(ServerAdapterStateListener *listener) {
     std::unique_lock<std::mutex> lck(this->mStateLock);
 
@@ -113,31 +193,8 @@ public:
     this->mStateListeners.push_back(listener);
   }
 
-  ServerAdapter(int id, const char *name) {
-    this->mState = ServerAdapterState::kDisconnected;
-    snprintf(this->mName, sizeof(this->mName), name);
-    this->mId = id;
-    this->mIsSleepingAllowed = false;
-  }
-
-  ~ServerAdapter() {
-    if (this->mP2PServer != NULL) {
-      delete this->mP2PServer;
-    }
-    if (this->mServerSocket != NULL) {
-      delete this->mServerSocket;
-    }
-  }
-
-protected:
-  void initialize(Device *device, P2PServer *p2pServer,
-                  ServerSocket *serverSocket, bool is_sleeping_allowed) {
-    this->mDevice = device;
-    this->mP2PServer = p2pServer;
-    this->mServerSocket = serverSocket;
-    this->mIsSleepingAllowed = is_sleeping_allowed;
-  }
-
+private:
+  /* State setter */
   void set_state(ServerAdapterState new_state) {
     ServerAdapterState old_state;
 
@@ -155,69 +212,38 @@ protected:
     }
   }
 
-  /* Attributes */
+  /* State */
   ServerAdapterState mState;
   std::mutex mStateLock;
-  char mName[256];
-  // TODO: ID is now defined by user. However, the ID should be maintained by
-  // system finally.
-  int mId;
-  bool mIsSleepingAllowed;
 
-  /* Components */
-  Device *mDevice = NULL;
-  P2PServer *mP2PServer = NULL;
-  ServerSocket *mServerSocket = NULL;
+public:
+  /* Constructor */
+  ServerAdapter(int id, const char *name) {
+    this->mState = ServerAdapterState::kDisconnected;
+    snprintf(this->mName, sizeof(this->mName), name);
+    this->mId = id;
+    this->mIsSleepingAllowed = false;
+  }
 
-  /* Statistics */
-  Counter mSendDataSize;
-  Counter mReceiveDataSize;
+  ~ServerAdapter() {
+    if (this->mP2PServer != NULL) {
+      delete this->mP2PServer;
+    }
+    if (this->mServerSocket != NULL) {
+      delete this->mServerSocket;
+    }
+  }
 
-  /* State Listeners */
-  std::vector<ServerAdapterStateListener *> mStateListeners;
-
-  /* Callback */
-  ConnectCallback mConnectCallback = NULL;
-  DisconnectCallback mDisconnectCallback = NULL;
-
-private:
-  void connect_thread(void);
-  bool __connect_thread(void);
-
-  void disconnect_thread(void);
-  bool __disconnect_thread(void);
-
-  void sender_thread(void);
-  void data_adapter_send_loop(void);
-
-  void receiver_thread(void);
-  static void data_adapter_receive_loop(ServerAdapter *adapter);
-
-  std::thread *mConnectThread = NULL;
-  std::thread *mDisconnectThread = NULL;
-
-  std::thread *mSenderThread = NULL;
-  std::thread *mReceiverThread = NULL;
-  bool mSenderThreadEnabled = false;
-  bool mReceiverThreadEnabled = false;
-  bool mSenderLoopOn = false;
-  bool mReceiverLoopOn = false;
-  bool mSenderSuspended = false;
-  std::mutex mSenderSuspendedMutex;
-  std::condition_variable mSenderSuspendedCond;
-
-  ReceiveLoop mReceiveLoop = NULL;
-
-#if EXP_MEASURE_INTERVAL_SENDER != 0
-private:
-  int mSendCount = 0;
-  /* Milliseconds */
-  int mIntervals[4] = {
-      0,
-  };
-#endif
+protected:
+  /* Initializer called by child classes */
+  void initialize(Device *device, P2PServer *p2pServer,
+                  ServerSocket *serverSocket, bool is_sleeping_allowed) {
+    this->mDevice = device;
+    this->mP2PServer = p2pServer;
+    this->mServerSocket = serverSocket;
+    this->mIsSleepingAllowed = is_sleeping_allowed;
+  }
 }; /* class ServerAdapter */
 
-} /* namespace sc */
-
+}     /* namespace sc */
 #endif /* !defined(_SERVER_ADAPTER_H_) */
