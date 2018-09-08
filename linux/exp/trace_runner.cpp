@@ -84,6 +84,7 @@ char g_trace_file_name[512];
 
 sc::BtServerAdapter* btControl;
 sc::BtServerAdapter* btData;
+sc::WfdServerAdapter* wfdControl;
 sc::WfdServerAdapter* wfdData;
 
 int main(int argc, char** argv) {
@@ -99,7 +100,8 @@ int main(int argc, char** argv) {
   //EthServerAdapter ethAdapter(2345, "Eth", 2345);
   btControl = new sc::BtServerAdapter(1, "BtCt", "150e8400-1234-41d4-a716-446655440000");
   btData = new sc::BtServerAdapter(11, "BtDt", "150e8400-1234-41d4-a716-446655440001");
-  wfdData = new sc::WfdServerAdapter(12, "WfdDt", 3456, "SelCon");
+  wfdControl = new sc::WfdServerAdapter(12, "WfdDt", 3455, "SelCon");
+  wfdData = new sc::WfdServerAdapter(2, "WfdDt", 3456, "SelCon");
 
   printf("Step 1. Initializing Network Adapters\n");
 
@@ -109,6 +111,8 @@ int main(int argc, char** argv) {
   sc::register_control_adapter(btControl);
   printf("  b) Data Adapter: RFCOMM over Bluetooth\n");
   sc::register_data_adapter(btData);
+  printf("  c) Control Adapter: TCP over Wi-fi Direct\n");
+  sc::register_control_adapter(wfdControl);
   printf("  c) Data Adapter: TCP over Wi-fi Direct\n");
   sc::register_data_adapter(wfdData);
 
