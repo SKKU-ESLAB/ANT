@@ -39,7 +39,7 @@ void sc::start_sc(StartCallback startCallback) {
   Core::get_instance()->start();
   NetworkMonitor::get_instance()->start();
 
-  // Wait until connect thread ends
+  // Wait until core start thread ends
   std::unique_lock<std::mutex> lck(g_wait_lock_start_sc);
   g_wait_cond_start_sc.wait(lck);
 
@@ -57,7 +57,7 @@ void sc::stop_sc(StopCallback stopCallback) {
   NetworkMonitor::get_instance()->stop();
   Core::get_instance()->stop();
   
-  // Wait until connect thread ends
+  // Wait until core stop thread ends
   std::unique_lock<std::mutex> lck(g_wait_lock_stop_sc);
   g_wait_cond_stop_sc.wait(lck);
 

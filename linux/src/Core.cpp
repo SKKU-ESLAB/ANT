@@ -278,7 +278,7 @@ void Core::control_adapter_receive_loop(ServerAdapter *adapter) {
     }
 
     char req_code = data[0];
-    /*  If the control message is 'connect adapter', */
+    /* If the control message is 'connect adapter', */
     if (req_code == CtrlReq::kCtrlReqConnect ||
         req_code == CtrlReq::kCtrlReqSleep ||
         req_code == CtrlReq::kCtrlReqWakeUp) {
@@ -299,15 +299,15 @@ void Core::control_adapter_receive_loop(ServerAdapter *adapter) {
       if (req_code == CtrlReq::kCtrlReqConnect) {
         LOG_DEBUG("Control Request: 'Connect Adapter Request' (%d)",
                   (int)adapter_id);
-        NetworkSwitcher::get_instance()->connect_adapter(adapter_id);
+        NetworkSwitcher::get_instance()->connect_adapter_by_peer(adapter_id);
       } else if (req_code == CtrlReq::kCtrlReqSleep) {
         LOG_DEBUG("Control Request: 'Sleep Adapter Request' (%d)",
                   (int)adapter_id);
-        NetworkSwitcher::get_instance()->sleep_adapter(adapter_id);
+        NetworkSwitcher::get_instance()->sleep_adapter_by_peer(adapter_id);
       } else if (req_code == CtrlReq::kCtrlReqWakeUp) {
         LOG_DEBUG("Control Request: 'Wake Up Adapter Request' (%d)",
                   (int)adapter_id);
-        NetworkSwitcher::get_instance()->wake_up_adapter(adapter_id);
+        NetworkSwitcher::get_instance()->wake_up_adapter_by_peer(adapter_id);
       }
     } else if (req_code == CtrlReq::kCtrlReqPriv) {
       LOG_VERB("Private data arrived");
@@ -352,11 +352,8 @@ void Core::control_adapter_receive_loop(ServerAdapter *adapter) {
   // If control message loop is crashed, reconnect control adapter.
   LOG_DEBUG("Control message loop is finished");
 
-  // TODO: refine it
-#if EXP_NO_CONTROL_ADAPTER_AFTER_SWITCHING == 0 &&                             \
-    PREVENT_RECONNECT_CONTROL_ADAPTER == 0
-  NetworkSwitcher::get_instance()->reconnect_control_adapter();
-#endif
+  // Reconnect the adapter
+  NetworkSwitcher::get_instance()->reconnect_adapter(adapter, true);
 }
 
 // Transactions
