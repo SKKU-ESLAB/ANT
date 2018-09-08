@@ -29,16 +29,9 @@
 
 namespace sc {
 typedef enum {
-  kNSStateInitialized = 0,
-  kNSStateRunning = 1,
-  kNSStateSwitching = 2,
+  kNSStateReady = 0,
+  kNSStateSwitching = 1,
 } NSState;
-
-typedef enum {
-  kNSModeEnergyAware = 0,  /* WearDrive-like */
-  kNSModeLatencyAware = 1, /* Selective Connection Unique */
-  kNSModeCapDynamic = 2    /* CoolSpots */
-} NSMode;
 
 class SwitchAdapterTransaction {
   /*
@@ -111,39 +104,22 @@ public:
 
 protected:
   void done(bool require_restart);
-  // static void on_fail(bool is_restart);
 
   ReconnectControlAdapterTransaction() {}
   static ReconnectControlAdapterTransaction *sOngoing;
 };
 
-class Stats {
-public:
-  /* Statistics used to print present status */
-  float ema_queue_arrival_speed = 0;
-
-  /* Statistics used in CoolSpots Policy */
-  int now_total_bandwidth = 0;
-
-  /* Statistics used in Energy-aware & Latency-aware Policy */
-  float ema_send_request_size = 0;
-  float ema_arrival_time_us = 0;
-  int now_queue_data_size = 0;
-};
-
 class Core;
 class NetworkSwitcher {
-public:
-  /* Control netwowrk switcher thread */
-  void start(void);
-  void stop(void);
-
 public:
   /* APIs called by peer through Core */
   void connect_adapter(int adapter_id);
   void sleep_adapter(int adapter_id);
   void wake_up_adapter(int adapter_id);
   void reconnect_control_adapter(void);
+
+  /* APIs called by NetworkMonitor */
+  bool switch_adapters(int prev_index, int next_index);
 
 private:
   /* Notification of switch done event */
@@ -152,52 +128,12 @@ private:
     NSState state = this->get_state();
     switch (state) {
     case NSState::kNSStateSwitching:
-      this->set_state(NSState::kNSStateRunning);
+      this->set_state(NSState::kNSStateReady);
       break;
-    case NSState::kNSStateInitialized:
-    case NSState::kNSStateRunning:
+    case NSState::kNSStateReady:
       break;
     }
   }
-
-private:
-  /* Network switcher thread */
-  void switcher_thread(void);
-  std::thread *mThread;
-  bool mSwitcherThreadOn;
-
-  /* Checking statistics and decide switching */
-  void get_stats(Stats &stats);
-  void print_stats(Stats &stats);
-  void check_and_decide_switching(Stats &stats);
-
-private:
-  /* Switch adapters */
-  bool increase_adapter(void);
-  bool decrease_adapter(void);
-  bool switch_adapters(int prev_index, int next_index);
-
-private:
-  /* Check policy-driven condition of increase/decrease */
-  bool check_increase_adapter(const Stats &stats);
-  bool check_decrease_adapter(const Stats &stats);
-
-  /* Check condition of increase/decrease */
-  bool is_increaseable(void);
-  bool is_decreaseable(void);
-
-  /* Get payoff points */
-  int get_init_energy_payoff_point(void);
-  int get_idle_energy_payoff_point(int avg_arrival_time_us);
-  int get_init_latency_payoff_point(void);
-
-  /* Policy-related */
-  /* CoolSpots Policy */
-  int mBandwidthWhenIncreasing;
-  int mDecreasingCheckCount;
-
-  /* Auxiliary member variable for statistics */
-  Counter mQueueArrivalSpeed; /* to achieve the ema of queue arrival speed */
 
 public:
   /* State getter */
@@ -218,25 +154,6 @@ private:
   std::mutex mStateLock;
 
 public:
-  /* Mode getter */
-  NSMode get_mode(void) {
-    std::unique_lock<std::mutex> lck(this->mModeLock);
-    NSMode mode = this->mMode;
-    return mode;
-  }
-
-  /* Mode setter */
-  void set_mode(NSMode new_mode) {
-    std::unique_lock<std::mutex> lck(this->mModeLock);
-    this->mMode = new_mode;
-  }
-
-private:
-  /* Mode */
-  NSMode mMode;
-  std::mutex mModeLock;
-
-public:
   /* Singleton */
   static NetworkSwitcher *get_instance(void) {
     if (NetworkSwitcher::singleton == NULL) {
@@ -248,23 +165,14 @@ public:
 private:
   /* Singleton */
   static NetworkSwitcher *singleton;
-  NetworkSwitcher(void) {
-    this->mSwitcherThreadOn = false;
-    this->mThread = NULL;
-    this->set_state(NSState::kNSStateInitialized);
-    this->mBandwidthWhenIncreasing = 0;
-    this->mDecreasingCheckCount = 0;
-    this->set_mode(NSMode::kNSModeEnergyAware);
-  }
+  NetworkSwitcher(void) { this->set_state(NSState::kNSStateReady); }
 
 public:
-  /*
-   * Its private members can be accessed by auxiliary classes
-   */
+  /* Its private members can be accessed by auxiliary classes */
   friend SwitchAdapterTransaction;
   friend ConnectRequestTransaction;
   friend ReconnectControlAdapterTransaction;
-};
+}; /* class NetworkSwitcher */
 } /* namespace sc */
 
 #endif /* INC_NETWORK_SWITCHER_H_ */

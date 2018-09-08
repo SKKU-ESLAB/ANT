@@ -19,6 +19,7 @@
 
 #include <API.h>
 #include <APIInternal.h>
+#include <NetworkMonitor.h>
 
 #include <mutex>
 #include <condition_variable>
@@ -36,7 +37,7 @@ bool g_stop_sc_success;
 void sc::start_sc(StartCallback startCallback) {
   // Core start procedure
   Core::get_instance()->start();
-  NetworkSwitcher::get_instance()->start();
+  NetworkMonitor::get_instance()->start();
 
   // Wait until connect thread ends
   std::unique_lock<std::mutex> lck(g_wait_lock_start_sc);
@@ -53,7 +54,7 @@ void sc::start_sc_done(bool is_success) {
 
 void sc::stop_sc(StopCallback stopCallback) {
   // Core stop procedure
-  NetworkSwitcher::get_instance()->stop();
+  NetworkMonitor::get_instance()->stop();
   Core::get_instance()->stop();
   
   // Wait until connect thread ends

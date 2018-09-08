@@ -21,7 +21,6 @@
 #define INC_API_H_
 
 #include <Core.h>
-#include <NetworkSwitcher.h>
 #include <ServerAdapter.h>
 
 namespace sc {
