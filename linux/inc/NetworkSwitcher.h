@@ -151,39 +151,6 @@ private:
   }
 
 public:
-  /* Attribute getters */
-  bool is_disconnecting_adapter(int adapter_id) {
-    for (std::vector<int>::iterator it = this->mDisconnectingAdapterIds.begin();
-         it != this->mDisconnectingAdapterIds.end(); it++) {
-      int disconnectingAdapterId = *it;
-      if (disconnectingAdapterId == adapter_id) {
-        return true;
-      }
-    }
-    return false;
-  }
-
-  /* Attribute handlers */
-  void add_disconnecting_adapter_id(int adapter_id) {
-    this->mDisconnectingAdapterIds.push_back(adapter_id);
-  }
-  void remove_disconnecting_adapter_id(int adapter_id) {
-    std::vector<int>::iterator it = this->mDisconnectingAdapterIds.begin();
-    while (it != this->mDisconnectingAdapterIds.end()) {
-      int disconnectingAdapterId = *it;
-      if (disconnectingAdapterId == adapter_id) {
-        this->mDisconnectingAdapterIds.erase(it);
-      } else {
-        it++;
-      }
-    }
-  }
-
-private:
-  /* Attributes */
-  std::vector<int> mDisconnectingAdapterIds;
-
-public:
   /* State getter */
   NSState get_state(void) {
     std::unique_lock<std::mutex> lck(this->mStateLock);

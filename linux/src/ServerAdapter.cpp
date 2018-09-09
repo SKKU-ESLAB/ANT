@@ -19,6 +19,7 @@
 
 #include <ExpConfig.h>
 #include <ServerAdapter.h>
+#include <NetworkSwitcher.h>
 
 #include <Core.h>
 #include <DebugLog.h>
@@ -60,7 +61,8 @@ void ServerAdapter::connect(ConnectCallback callback, bool is_send_request) {
   this->mConnectThread->detach();
 }
 
-void ServerAdapter::disconnect(DisconnectCallback callback) {
+void ServerAdapter::disconnect(DisconnectCallback callback,
+                               bool is_send_request) {
   ServerAdapterState state = this->get_state();
   if (state == ServerAdapterState::kDisconnected ||
       state == ServerAdapterState::kDisconnecting) {
@@ -74,6 +76,12 @@ void ServerAdapter::disconnect(DisconnectCallback callback) {
     LOG_ERR("Disconnect thread not finished!");
     callback(false);
     return;
+  }
+
+  // Send request
+  if (is_send_request) {
+    this->start_disconnecting_on_purpose();
+    Core::get_instance()->send_request_disconnect(this->get_id());
   }
 
   // Disconnect
@@ -181,6 +189,11 @@ void ServerAdapter::disconnect_thread(void) {
 
   ServerAdapterState oldState = this->get_state();
   this->set_state(ServerAdapterState::kDisconnecting);
+
+  if (this->is_disconnecting_on_purpose() &&
+      !this->is_disconnecting_on_purpose_peer()) {
+    this->wait_for_disconnecting_on_purpose_peer();
+  }
 
   bool res = this->__disconnect_thread();
 
@@ -325,7 +338,6 @@ void ServerAdapter::sender_thread(void) {
   this->mSenderLoopOn = true;
   this->data_adapter_send_loop();
 
-  this->disconnect(NULL);
   LOG_DEBUG("%s's Sender thread ends(tid: %d)", this->get_name(),
             (unsigned int)syscall(224));
   this->mSenderLoopOn = false;
@@ -334,6 +346,9 @@ void ServerAdapter::sender_thread(void) {
     this->mSenderSuspended = false;
   }
   this->mSenderThread = NULL;
+
+  // Reconnect the adapter
+  NetworkSwitcher::get_instance()->reconnect_adapter(this, true);
 }
 
 void ServerAdapter::data_adapter_send_loop(void) {
@@ -465,6 +480,9 @@ void ServerAdapter::receiver_thread(void) {
             (unsigned int)syscall(224));
   this->mReceiverLoopOn = false;
   this->mReceiverThread = NULL;
+
+  // Reconnect the adapter
+  NetworkSwitcher::get_instance()->reconnect_adapter(this, true);
 }
 
 void ServerAdapter::data_adapter_receive_loop(ServerAdapter *adapter) {

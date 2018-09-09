@@ -50,7 +50,17 @@ void NetworkSwitcher::connect_adapter_by_peer(int adapter_id) {
 }
 
 void NetworkSwitcher::disconnect_adapter_by_peer(int adapter_id) {
-  
+  Core *core = Core::get_instance();
+  ServerAdapter *adapter = core->find_adapter_by_id(adapter_id);
+  if (adapter == NULL) {
+    LOG_WARN("Cannot find adapter %d", (int)adapter_id);
+    return;
+  }
+
+  this->set_state(NSState::kNSStateSwitching);
+
+  core->send_request_disconnect_ack(adapter_id);
+  adapter->disconnect(NULL, false);
 }
 
 void NetworkSwitcher::sleep_adapter_by_peer(int adapter_id) {
@@ -86,7 +96,7 @@ void NetworkSwitcher::wake_up_adapter_by_peer(int adapter_id) {
 void NetworkSwitcher::reconnect_adapter(ServerAdapter *adapter,
                                         bool retry_if_already_switching) {
   /* If it is disconnecting on purpose, do not reconnect it. */
-  if (this->is_disconnecting_adapter(adapter->get_id())) {
+  if (adapter->is_disconnecting_on_purpose()) {
     return;
   }
 
