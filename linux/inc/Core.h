@@ -81,15 +81,17 @@ private:
  * Control Request Code
  * It is used to classify "control request message" that is transferred to the
  * peer.
- *  - Commands: "Connect", "Disconnect"
- *  - Acks: "Ok", "Fail"
+ *  - Commands: "Connect", "Sleep", "WakeUp", "Disconnect"
+ *  - Acks: "Disconnect"
  *  - Private Data: "Priv"
  */
 typedef enum {
   kCtrlReqConnect = 1,
   kCtrlReqSleep = 2,
   kCtrlReqWakeUp = 3,
+  kCtrlReqDisconnect = 4,
   kCtrlReqPriv = 10,
+  kCtrlReqDisconnectAck = 24
 } CtrlReq;
 
 /* Core State */
@@ -135,6 +137,14 @@ public:
 public:
   // TODO: Add AdapterPair class
   // data adapter & control adapter need to be tied in pair(couple).
+
+  ServerAdapter *find_adapter_by_id(int adapter_id) {
+    ServerAdapter *adapter = NULL;
+    adapter = this->find_data_adapter_by_id(adapter_id);
+    if (adapter == NULL)
+      adapter = this->find_control_adapter_by_id(adapter_id);
+    return adapter;
+  }
 
   /* Handling data adapters */
   ServerAdapter *get_data_adapter(int index) {
@@ -199,6 +209,8 @@ public:
 public:
   /* Control message handling (External) */
   void send_request_connect(uint16_t adapter_id);
+  void send_request_disconnect(uint16_t adapter_id);
+  void send_request_disconnect_ack(uint16_t adapter_id);
   void send_request_sleep(uint16_t adapter_id);
   void send_request_wake_up(uint16_t adapter_id);
   void send_noti_private_data(uint16_t adapter_id, char *private_data_buf,

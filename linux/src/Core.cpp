@@ -229,6 +229,14 @@ void Core::send_request_connect(uint16_t adapter_id) {
   this->send_request(kCtrlReqConnect, adapter_id);
 }
 
+void Core::send_request_disconnect(uint16_t adapter_id) {
+  this->send_request(kCtrlReqDisconnect, adapter_id);
+}
+
+void Core::send_request_disconnect_ack(uint16_t adapter_id) {
+  this->send_request(kCtrlReqDisconnectAck, adapter_id);
+}
+
 void Core::send_request_sleep(uint16_t adapter_id) {
   this->send_request(kCtrlReqSleep, adapter_id);
 }
@@ -281,7 +289,9 @@ void Core::control_adapter_receive_loop(ServerAdapter *adapter) {
     /* If the control message is 'connect adapter', */
     if (req_code == CtrlReq::kCtrlReqConnect ||
         req_code == CtrlReq::kCtrlReqSleep ||
-        req_code == CtrlReq::kCtrlReqWakeUp) {
+        req_code == CtrlReq::kCtrlReqWakeUp ||
+        req_code == CtrlReq::kCtrlReqDisconnect ||
+        req_code == CtrlReq::kCtrlReqDisconnectAck) {
       // Receive 2Byte: Adapter ID
       res = adapter->receive(data, 2);
       if (res <= 0) {
@@ -308,6 +318,20 @@ void Core::control_adapter_receive_loop(ServerAdapter *adapter) {
         LOG_DEBUG("Control Request: 'Wake Up Adapter Request' (%d)",
                   (int)adapter_id);
         NetworkSwitcher::get_instance()->wake_up_adapter_by_peer(adapter_id);
+      } else if (req_code == CtrlReq::kCtrlReqDisconnect) {
+        LOG_DEBUG("Control Request: 'Disconnect Adapter Request' (%d)",
+                  (int)adapter_id);
+        NetworkSwitcher::get_instance()->disconnect_adapter_by_peer(adapter_id);
+      } else if (req_code == CtrlReq::kCtrlReqDisconnectAck) {
+        LOG_DEBUG("Control Request: 'Disconnect Adapter Request Ack (%d)",
+                  (int)adapter_id);
+        ServerAdapter *adapter =
+            Core::get_instance()->find_adapter_by_id((int)adapter_id);
+        if (adapter == NULL) {
+          LOG_WARN("Cannot find adapter %d", (int)adapter_id);
+        } else {
+          adapter->peer_knows_disconnecting_on_purpose();
+        }
       }
     } else if (req_code == CtrlReq::kCtrlReqPriv) {
       LOG_VERB("Private data arrived");
@@ -351,9 +375,6 @@ void Core::control_adapter_receive_loop(ServerAdapter *adapter) {
 
   // If control message loop is crashed, reconnect control adapter.
   LOG_DEBUG("Control message loop is finished");
-
-  // Reconnect the adapter
-  NetworkSwitcher::get_instance()->reconnect_adapter(adapter, true);
 }
 
 // Transactions

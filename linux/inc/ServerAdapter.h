@@ -68,7 +68,7 @@ public:
    */
   /* Basic APIs related to connection/sleeping */
   void connect(ConnectCallback callback, bool is_send_request);
-  void disconnect(DisconnectCallback callback);
+  void disconnect(DisconnectCallback callback, bool is_send_request);
   void sleep(DisconnectCallback callback, bool is_send_request);
   void wake_up(ConnectCallback callback, bool is_send_request);
   void connect_or_wake_up(ConnectCallback callback, bool is_send_request);
@@ -142,11 +142,39 @@ public:
   char *get_name(void) { return this->mName; }
   int get_id(void) { return this->mId; }
   bool is_sleeping_allowed(void) { return this->mIsSleepingAllowed; }
+  bool is_disconnecting_on_purpose(void) {
+    return this->mIsDisconnectingOnPurpose;
+  }
+  bool is_disconnecting_on_purpose_peer(void) {
+    return this->mIsDisconnectingOnPurposePeer;
+  }
 
   /* Component getters */
   Device *get_device(void) { return this->mDevice; }
   P2PServer *get_p2p_server(void) { return this->mP2PServer; }
   ServerSocket *get_server_socket(void) { return this->mServerSocket; }
+
+  /* Attribute setters */
+  void start_disconnecting_on_purpose() {
+    this->mIsDisconnectingOnPurpose = true;
+  }
+
+  void wait_for_disconnecting_on_purpose_peer(void) {
+    std::unique_lock<std::mutex> lck(this->mWaitForDisconnectAckLock);
+    this->mWaitForDisconnectAckCond.wait(lck);
+  }
+
+  void peer_knows_disconnecting_on_purpose() {
+    this->mIsDisconnectingOnPurposePeer = true;
+    this->mWaitForDisconnectAckCond.notify_all();
+  }
+
+private:
+  /* Attribute setters */
+  void finish_disconnecting_on_purpose() {
+    this->mIsDisconnectingOnPurpose = false;
+    this->mIsDisconnectingOnPurposePeer = false;
+  }
 
 private:
   /* Attributes */
@@ -157,6 +185,10 @@ private:
    */
   int mId;
   bool mIsSleepingAllowed;
+  bool mIsDisconnectingOnPurpose;     /* Disconnecting on purpose by a device */
+  bool mIsDisconnectingOnPurposePeer; /* Peer knows disconnecting on purpose */
+  std::mutex mWaitForDisconnectAckLock;
+  std::condition_variable mWaitForDisconnectAckCond;
 
   /* Components */
   Device *mDevice = NULL;
@@ -223,6 +255,8 @@ public:
     snprintf(this->mName, sizeof(this->mName), name);
     this->mId = id;
     this->mIsSleepingAllowed = false;
+    this->mIsDisconnectingOnPurpose = false;
+    this->mIsDisconnectingOnPurposePeer = false;
   }
 
   ~ServerAdapter() {
@@ -245,5 +279,5 @@ protected:
   }
 }; /* class ServerAdapter */
 
-}     /* namespace sc */
+} /* namespace sc */
 #endif /* !defined(_SERVER_ADAPTER_H_) */
