@@ -17,5 +17,5 @@ package com.redcarrottt.sc.internal;
  * limitations under the License.
  */
 public class ExpConfig {
-    public static final boolean EXP_NO_CONTROL_ADAPTER_AFTER_SWITCHING = true;
+    // Empty. Reserved for future use
 }

@@ -50,11 +50,16 @@ public class ClientAdapter {
         thread.start();
     }
 
-    public void disconnect(DisconnectResultListener listener) {
+    public void disconnect(DisconnectResultListener listener, boolean isSendRequest) {
         if (this.getState() == State.kDisconnected || this.getState() == State.kDisconnected) {
             Logger.ERR(kTag, "It's already disconnected or connection/disconnection is in " +
                     "progress");
             listener.onDisconnectResult(false);
+        }
+
+        if (isSendRequest) {
+            this.startDisconnectingOnPurpose();
+            Core.getInstance().sendRequestDisconnect((short) this.getId());
         }
 
         DisconnectThread thread = new DisconnectThread(listener);
@@ -211,6 +216,20 @@ public class ClientAdapter {
                     () + ")");
             setState(ClientAdapter.State.kDisconnecting);
 
+            if(isDisconnectingOnPurpose() && !isDisconnectingOnPurposePeer()) {
+                waitForDisconnectingOnPurposePeer();
+            }
+
+            boolean res = this.__disconnect_thread();
+
+            finishDisconnectingOnPurpose();
+
+            if (!res) {
+                this.onFail();
+            }
+        }
+
+        private boolean __disconnect_thread() {
             // Finish sender & receiver threads
             if (self.mSenderThread != null) {
                 self.mSenderThread.finish();
@@ -221,8 +240,7 @@ public class ClientAdapter {
 
             // Close client socket
             if (self.mClientSocket == null) {
-                this.onFail();
-                return;
+                return false;
             }
             int socketState = self.mClientSocket.getState();
             if (socketState != ClientSocket.State.kClosed) {
@@ -232,13 +250,13 @@ public class ClientAdapter {
                 if (!res || socketState != ClientSocket.State.kClosed) {
                     Logger.ERR(kTag, "Cannot releaseAndDisconnect the server adapter - socket " +
                             "close fail: " + "" + "" + self.getName());
-                    this.onFail();
-                    return;
+                    return false;
                 }
             }
 
             // P2P Disconnect
             self.mP2PClient.releaseAndDisconnect(this);
+            return true;
         }
 
         @Override
@@ -394,7 +412,7 @@ public class ClientAdapter {
                 sm.free_segment(segmentToSend);
             }
 
-            disconnect(null);
+            NetworkSwitcher.getInstance().reconnectAdapter(ClientAdapter.this);
             Logger.VERB(kTag, ClientAdapter.this.getName() + "'s Sender thread ends");
         }
 
@@ -507,7 +525,7 @@ public class ClientAdapter {
                 }
             }
 
-            disconnect(null);
+            NetworkSwitcher.getInstance().reconnectAdapter(ClientAdapter.this);
             Logger.VERB(kTag, ClientAdapter.this.getName() + "'s Receiver thread ends");
         }
     }
@@ -578,6 +596,8 @@ public class ClientAdapter {
         this.mState = State.kDisconnected;
         this.mListeners = new ArrayList<>();
         this.mSenderSuspended = false;
+        this.mIsDisconnectingOnPurpose = false;
+        this.mIsDisconnectingOnPurposePeer = false;
     }
 
     protected void initialize(Device device, P2PClient p2pClient, ClientSocket clientSocket) {
@@ -586,13 +606,46 @@ public class ClientAdapter {
         this.mClientSocket = clientSocket;
     }
 
-    // Attribute Getters
+    // Attribute getters
     public int getId() {
         return this.mId;
     }
 
     public String getName() {
         return this.mName;
+    }
+
+    public boolean isDisconnectingOnPurpose() {
+        return this.mIsDisconnectingOnPurpose;
+    }
+
+    public boolean isDisconnectingOnPurposePeer() {
+        return this.mIsDisconnectingOnPurposePeer;
+    }
+
+    // Attribute setters
+    public void startDisconnectingOnPurpose() {
+        this.mIsDisconnectingOnPurpose = true;
+    }
+
+    public void waitForDisconnectingOnPurposePeer() {
+        synchronized (mWaitForDisconnectAck) {
+            try {
+                mWaitForDisconnectAck.wait();
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
+    public void peerKnowsDisconnectingOnPurpose() {
+        this.mIsDisconnectingOnPurposePeer = true;
+        this.mWaitForDisconnectAck.notifyAll();
+    }
+
+    private void finishDisconnectingOnPurpose() {
+        this.mIsDisconnectingOnPurpose = false;
+        this.mIsDisconnectingOnPurposePeer = false;
     }
 
     // State
@@ -607,7 +660,7 @@ public class ClientAdapter {
     }
 
     @SuppressWarnings("SynchronizeOnNonFinalField")
-    private int getState() {
+    public int getState() {
         int state;
         synchronized (this.mState) {
             state = this.mState;
@@ -642,6 +695,11 @@ public class ClientAdapter {
     // Attributes
     private int mId;
     private String mName;
+
+    // Disconnecting on purpose by a device
+    private boolean mIsDisconnectingOnPurpose;
+    private boolean mIsDisconnectingOnPurposePeer;
+    private Object mWaitForDisconnectAck;
 
     // State
     private Integer mState;

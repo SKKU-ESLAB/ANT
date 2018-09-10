@@ -197,6 +197,8 @@ void ServerAdapter::disconnect_thread(void) {
 
   bool res = this->__disconnect_thread();
 
+  this->finish_disconnecting_on_purpose();
+  
   if (res) {
     this->set_state(ServerAdapterState::kDisconnected);
     if (this->mDisconnectCallback != NULL) {

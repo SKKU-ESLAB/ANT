@@ -99,11 +99,7 @@ typedef enum {
   kCMStateIdle = 0,
   kCMStateStarting = 1,
   kCMStateReady = 2,
-  kCMStateConnecting =
-      3, // Deprecated: this state is managed by network switcher.
-  kCMStateDisconnecting =
-      4, // Deprecated: this state is managed by network switcher.
-  kCMStateStopping = 5
+  kCMStateStopping = 3
 } CMState;
 
 class ControlMessageListener {

@@ -127,7 +127,7 @@ void Core::done_stop(bool is_success) {
   stop_sc_done(is_success);
 }
 
-// Register control adpater
+// Register control adapter
 void Core::register_control_adapter(ServerAdapter *control_adapter) {
   if (this->get_state() != CMState::kCMStateIdle) {
     LOG_ERR("You can register control adapter on only idle state!");
@@ -138,7 +138,7 @@ void Core::register_control_adapter(ServerAdapter *control_adapter) {
   this->mControlAdapters.push_back(control_adapter);
 }
 
-// Register data adpater
+// Register data adapter
 void Core::register_data_adapter(ServerAdapter *data_adapter) {
   if (this->get_state() != CMState::kCMStateIdle) {
     LOG_ERR("You can register data adapter on only idle state!");
@@ -325,12 +325,12 @@ void Core::control_adapter_receive_loop(ServerAdapter *adapter) {
       } else if (req_code == CtrlReq::kCtrlReqDisconnectAck) {
         LOG_DEBUG("Control Request: 'Disconnect Adapter Request Ack (%d)",
                   (int)adapter_id);
-        ServerAdapter *adapter =
+        ServerAdapter *disconnect_adapter =
             Core::get_instance()->find_adapter_by_id((int)adapter_id);
-        if (adapter == NULL) {
+        if (disconnect_adapter == NULL) {
           LOG_WARN("Cannot find adapter %d", (int)adapter_id);
         } else {
-          adapter->peer_knows_disconnecting_on_purpose();
+          disconnect_adapter->peer_knows_disconnecting_on_purpose();
         }
       }
     } else if (req_code == CtrlReq::kCtrlReqPriv) {
@@ -393,7 +393,7 @@ bool StartCoreTransaction::run(Core *caller) {
   }
 }
 void StartCoreTransaction::start() {
-  // Connect first control adpater
+  // Connect first control adapter
   std::unique_lock<std::mutex> lck(this->mCaller->mControlAdaptersLock);
 
   if (this->mCaller->mControlAdapters.empty()) {
