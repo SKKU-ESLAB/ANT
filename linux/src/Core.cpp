@@ -481,7 +481,7 @@ void StopCoreTransaction::start() {
     if (state != ServerAdapterState::kDisconnected &&
         state != ServerAdapterState::kDisconnecting) {
       control_adapter->disconnect(
-          StopCoreTransaction::disconnect_control_adapter_callback);
+          StopCoreTransaction::disconnect_control_adapter_callback, true);
     }
   }
 }
@@ -532,7 +532,7 @@ void StopCoreTransaction::disconnect_control_adapter_callback(bool is_success) {
       if (state != ServerAdapterState::kDisconnected &&
           state != ServerAdapterState::kDisconnecting) {
         data_adapter->disconnect(
-            StopCoreTransaction::disconnect_data_adapter_callback);
+            StopCoreTransaction::disconnect_data_adapter_callback, true);
       }
     }
   }
