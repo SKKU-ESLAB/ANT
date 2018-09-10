@@ -375,7 +375,7 @@ bool ReconnectAdapterTransaction::start() {
     return false;
   }
   this->mTargetAdapter->disconnect(
-      ReconnectAdapterTransaction::disconnect_callback);
+      ReconnectAdapterTransaction::disconnect_callback, false);
   return true;
 }
 

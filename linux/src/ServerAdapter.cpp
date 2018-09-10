@@ -519,9 +519,6 @@ void ServerAdapter::data_adapter_receive_loop(ServerAdapter *adapter) {
     LOG_DEBUG("%s: Received: %d", adapter->get_name(), res);
 #endif
   }
-
-  // TODO: refine it
-  adapter->disconnect(NULL);
 }
 
 void ServerAdapter::sleep(DisconnectCallback callback, bool is_send_request) {
@@ -604,7 +601,6 @@ void ServerAdapter::disconnect_or_sleep(DisconnectCallback callback,
   if (this->is_sleeping_allowed()) {
     this->sleep(callback, is_send_request);
   } else {
-    // TODO: add is_send_request
-    this->disconnect(callback);
+    this->disconnect(callback, is_send_request);
   }
 }
