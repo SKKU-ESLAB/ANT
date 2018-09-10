@@ -50,6 +50,12 @@ void NetworkSwitcher::connect_adapter_by_peer(int adapter_id) {
 }
 
 void NetworkSwitcher::disconnect_adapter_by_peer(int adapter_id) {
+  NSState state = this->get_state();
+  if (state == NSState::kNSStateSwitching) {
+    LOG_VERB("It's now switching. Cannot connect to adapter %d.", adapter_id);
+    return;
+  }
+
   Core *core = Core::get_instance();
   ServerAdapter *adapter = core->find_adapter_by_id(adapter_id);
   if (adapter == NULL) {
@@ -228,7 +234,7 @@ void SwitchAdapterTransaction::disconnect_prev_data_callback(bool is_success) {
   ServerAdapter *next_control_adapter =
       core->get_control_adapter(sOngoing->mNextIndex);
   if (next_control_adapter == NULL) {
-    LOG_ERR("Connecting next control adpater is failed");
+    LOG_ERR("Connecting next control adapter is failed");
     sOngoing->done(false);
     return;
   }
@@ -361,6 +367,8 @@ void ReconnectAdapterTransaction::done(bool require_restart) {
   if (require_restart) {
     ReconnectAdapterTransaction::start();
   } else {
+    sleep(1);
+
     NetworkSwitcher *switcher = NetworkSwitcher::get_instance();
     switcher->done_switch();
   }

@@ -32,7 +32,7 @@ public class Core {
             Logger.ERR(kTag, "Core has already started");
             doneStart(false, resultListener);
             return;
-        } else if (this.mControlAdapter == null) {
+        } else if (this.mControlAdapters.isEmpty()) {
             Logger.ERR(kTag, "No control adapter is registered!");
             doneStart(false, resultListener);
             return;
@@ -66,7 +66,7 @@ public class Core {
             Logger.ERR(kTag, "Core is already idle state!");
             doneStop(false, resultListener);
             return;
-        } else if (this.mControlAdapter == null) {
+        } else if (this.mControlAdapters.isEmpty()) {
             Logger.ERR(kTag, "No control adapter is registered!");
             doneStop(false, resultListener);
             return;
@@ -97,13 +97,11 @@ public class Core {
             return;
         }
 
-        if (this.mControlAdapter != null) {
-            Logger.ERR(kTag, "Another control adapter has already been registered!");
-            return;
-        }
-        controlAdapter.enableReceiverThread(new ReceiveControlMessageLoop());
+        synchronized (this.mControlAdapters) {
+            controlAdapter.enableReceiverThread(new ReceiveControlMessageLoop());
 
-        this.mControlAdapter = controlAdapter;
+            this.mControlAdapters.add(controlAdapter);
+        }
     }
 
     public void registerDataAdapter(ClientAdapter dataAdapter) {
@@ -167,7 +165,13 @@ public class Core {
             Logger.ERR(kTag, "Core is not started yet, so you cannot send the data");
             return;
         }
-        ClientAdapter controlAdapter = this.mControlAdapter;
+
+        ClientAdapter controlAdapter = this.getActiveControlAdapter();
+        if (controlAdapter == null) {
+            Logger.ERR(kTag, "Failed to send control message: no active control adapter");
+            return;
+        }
+
         controlAdapter.send(dataBuffer, dataLength);
     }
 
@@ -180,7 +184,7 @@ public class Core {
 
         {
             ByteBuffer buffer = ByteBuffer.allocate(3);
-            buffer.put((byte)requestCode);
+            buffer.put((byte) requestCode);
             buffer.putShort(adapterId);
             this.sendControlMessage(buffer.array(), 3);
         }
@@ -188,6 +192,14 @@ public class Core {
 
     public void sendRequestConnect(short adapterId) {
         this.sendRequest(CtrlReq.kConnect, adapterId);
+    }
+
+    public void sendRequestDisconnect(short adapterId) {
+        this.sendRequest(CtrlReq.kDisconnect, adapterId);
+    }
+
+    public void sendRequestDisconnectAck(short adapterId) {
+        this.sendRequest(CtrlReq.kDisconnectAck, adapterId);
     }
 
     public void sendRequestSleep(short adapterId) {
@@ -222,7 +234,8 @@ public class Core {
 
                 Byte reqCode = dataBuffer[0];
                 if (reqCode == CtrlReq.kConnect || reqCode == CtrlReq.kSleep || reqCode ==
-                        CtrlReq.kWakeup) {
+                        CtrlReq.kWakeup || reqCode == CtrlReq.kDisconnect || reqCode == CtrlReq
+                        .kDisconnectAck) {
                     // "Connect Adapter" Request
                     // Receive 2Byte: Adapter ID
                     res = adapter.receive(dataBuffer, 2);
@@ -232,17 +245,30 @@ public class Core {
                     short adapterId = buffer.getShort(0);
 
                     if (reqCode == CtrlReq.kConnect) {
-                        Logger.DEBUG(kTag, "Control Request: 'Connect Adapter Request' (" +
-                                adapterId + ")");
-                        NetworkSwitcher.getInstance().connectAdapter(adapterId);
+                        Logger.DEBUG(kTag, "Control Request: 'Connect Adapter' (" + adapterId +
+                                ")");
+                        NetworkSwitcher.getInstance().connectAdapterByPeer(adapterId);
                     } else if (reqCode == CtrlReq.kSleep) {
-                        Logger.DEBUG(kTag, "Sleep Request: 'Connect Adapter Request' (" +
-                                adapterId + ")");
-                        NetworkSwitcher.getInstance().sleepAdapter(adapterId);
+                        Logger.DEBUG(kTag, "Control Request: 'Connect Adapter' (" + adapterId +
+                                ")");
+                        NetworkSwitcher.getInstance().sleepAdapterByPeer(adapterId);
                     } else if (reqCode == CtrlReq.kWakeup) {
-                        Logger.DEBUG(kTag, "Wake Up Request: 'Connect Adapter Request' (" +
+                        Logger.DEBUG(kTag, "Control Request: 'Connect Adapter' (" + adapterId +
+                                ")");
+                        NetworkSwitcher.getInstance().wakeUpAdapterByPeer(adapterId);
+                    } else if (reqCode == CtrlReq.kDisconnect) {
+                        Logger.DEBUG(kTag, "Control Request: 'Disconnect Adapter' (" + adapterId
+                                + ")");
+                        NetworkSwitcher.getInstance().disconnectAdapterByPeer(adapterId);
+                    } else if (reqCode == CtrlReq.kDisconnectAck) {
+                        Logger.DEBUG(kTag, "Control Request: 'Disconnect Adapter ACK' (" +
                                 adapterId + ")");
-                        NetworkSwitcher.getInstance().wakeUpAdapter(adapterId);
+                        ClientAdapter disconnect_adapter = findAdapterById(adapterId);
+                        if (disconnect_adapter == null) {
+                            Logger.WARN(kTag, "Cannot find adapter " + adapterId);
+                        } else {
+                            disconnect_adapter.peerKnowsDisconnectingOnPurpose();
+                        }
                     }
                 } else if (reqCode == CtrlReq.kPriv) {
                     // "Priv" Request
@@ -285,9 +311,7 @@ public class Core {
             }
             Logger.DEBUG(kTag, "Control adapter has been closed");
 
-            if(!ExpConfig.EXP_NO_CONTROL_ADAPTER_AFTER_SWITCHING) {
-                NetworkSwitcher.getInstance().reconnectControlAdapter();
-            }
+            NetworkSwitcher.getInstance().reconnectAdapter(adapter);
         }
     }
 
@@ -296,7 +320,9 @@ public class Core {
         public static final char kConnect = 1;
         public static final char kSleep = 2;
         public static final char kWakeup = 3;
+        public static final char kDisconnect = 4;
         public static final char kPriv = 10;
+        public static final char kDisconnectAck = 24;
     }
 
     // State
@@ -304,11 +330,7 @@ public class Core {
         public static final int kIdle = 0;
         public static final int kStarting = 1;
         public static final int kReady = 2;
-        public static final int kConnecting = 3; // Deprecated: this state is managed by network
-        // switcher.
-        public static final int kDisconnecting = 4; // Deprecated: this state is managed by
-        // network switcher.
-        public static final int kStopping = 5;
+        public static final int kStopping = 3;
     }
 
     @SuppressWarnings("SynchronizeOnNonFinalField")
@@ -341,13 +363,37 @@ public class Core {
         return null;
     }
 
-    public ClientAdapter getControlAdapter() {
-        return this.mControlAdapter;
+    public ClientAdapter findControlAdapterById(int adapterId) {
+        for (ClientAdapter adapter : this.mControlAdapters) {
+            if (adapter.getId() == adapterId) {
+                return adapter;
+            }
+        }
+        return null;
+    }
+
+    public ClientAdapter findAdapterById(int adapterId) {
+        ClientAdapter adapter = findDataAdapterById(adapterId);
+        if (adapter == null) {
+            adapter = findControlAdapterById(adapterId);
+        }
+        return adapter;
+    }
+
+    public ClientAdapter getActiveControlAdapter() {
+        synchronized (this.mControlAdapters) {
+            for (ClientAdapter controlAdapter : this.mControlAdapters) {
+                if (controlAdapter.getState() == ClientAdapter.State.kActive) {
+                    return controlAdapter;
+                }
+            }
+        }
+        return null;
     }
 
     // Attributes
     private final ArrayList<ClientAdapter> mDataAdapters;
-    private ClientAdapter mControlAdapter;
+    private final ArrayList<ClientAdapter> mControlAdapters;
     private ArrayList<ControlMessageListener> mControlMessageListeners;
 
     // State
@@ -367,7 +413,7 @@ public class Core {
     private Core() {
         this.mState = State.kIdle;
         this.mDataAdapters = new ArrayList<>();
-        this.mControlAdapter = null;
+        this.mControlAdapters = new ArrayList<>();
         this.mControlMessageListeners = new ArrayList<>();
     }
 
@@ -421,10 +467,14 @@ public class Core {
 
         @SuppressWarnings("SynchronizeOnNonFinalField")
         private void start() {
-            synchronized (this.mCaller.mControlAdapter) {
-                ClientAdapter controlAdapter = this.mCaller.mControlAdapter;
-                controlAdapter.connect(this.onConnectControlAdapter, false);
+            // Connect first control adapter
+            ClientAdapter controlAdapter = this.mCaller.mControlAdapters.get(0);
+            if (controlAdapter == null) {
+                Logger.ERR(kTag, "Cannot find first control adapter");
+                doneStartCoreTx(mCaller, false, mResultListener);
+                return;
             }
+            controlAdapter.connect(this.onConnectControlAdapter, false);
         }
 
         private OnConnectControlAdapter onConnectControlAdapter;
@@ -480,6 +530,7 @@ public class Core {
             this.mResultListener = resultListener;
             this.onDisconnectControlAdapter = new OnDisconnectControlAdapter();
             this.onDisconnectDataAdapter = new OnDisconnectDataAdapter();
+            this.mControlAdaptersCount = 0;
             this.mDataAdaptersCount = 0;
         }
 
@@ -489,9 +540,26 @@ public class Core {
                 this.mDataAdaptersCount = this.mCaller.mDataAdapters.size();
             }
 
-            // Disconnect control adapter
-            synchronized (this.mCaller.mControlAdapter) {
-                this.mCaller.mControlAdapter.disconnect(onDisconnectControlAdapter);
+            // Get active control adapter count
+            synchronized (this.mCaller.mControlAdapters) {
+                for (ClientAdapter controlAdapter : this.mCaller.mControlAdapters) {
+                    int adapterState = controlAdapter.getState();
+                    if (adapterState != ClientAdapter.State.kDisconnected && adapterState !=
+                            ClientAdapter.State.kDisconnecting) {
+                        this.mControlAdaptersCount++;
+                    }
+                }
+            }
+
+            // Disconnect only active control adapters
+            synchronized (this.mCaller.mControlAdapters) {
+                for (ClientAdapter controlAdapter : this.mCaller.mControlAdapters) {
+                    int adapterState = controlAdapter.getState();
+                    if (adapterState != ClientAdapter.State.kDisconnected && adapterState !=
+                            ClientAdapter.State.kDisconnecting) {
+                        controlAdapter.disconnect(onDisconnectControlAdapter, true);
+                    }
+                }
             }
         }
 
@@ -506,9 +574,32 @@ public class Core {
                     return;
                 }
 
-                synchronized (mCaller.mDataAdapters) {
-                    for (ClientAdapter dataAdapter : mCaller.mDataAdapters) {
-                        dataAdapter.disconnect(onDisconnectDataAdapter);
+                // Check if all the active control adapters are disconnected
+                boolean doneDisconnectAll = false;
+                synchronized (mControlAdaptersCount) {
+                    mControlAdaptersCount--;
+                    if (mControlAdaptersCount == 0) {
+                        doneDisconnectAll = true;
+                    }
+                }
+
+                if (doneDisconnectAll) {
+                    // Get active data adapter count
+                    synchronized (mCaller.mDataAdapters) {
+                        for (ClientAdapter dataAdapter : mCaller.mDataAdapters) {
+                            int adapterState = dataAdapter.getState();
+                            if (adapterState != ClientAdapter.State.kDisconnected && adapterState
+                                    != ClientAdapter.State.kDisconnecting) {
+                                mDataAdaptersCount++;
+                            }
+                        }
+                    }
+
+                    // Disconnect only active control adapters
+                    synchronized (mCaller.mDataAdapters) {
+                        for (ClientAdapter dataAdapter : mCaller.mDataAdapters) {
+                            dataAdapter.disconnect(onDisconnectDataAdapter, true);
+                        }
                     }
                 }
             }
@@ -526,6 +617,7 @@ public class Core {
                     return;
                 }
 
+                // Check if all the data control adapters are disconnected
                 boolean doneDisconnectAll = false;
                 synchronized (mDataAdaptersCount) {
                     mDataAdaptersCount--;
@@ -536,8 +628,6 @@ public class Core {
 
                 if (doneDisconnectAll) {
                     doneStopCoreTx(mCaller, true, mResultListener);
-                } else {
-                    doneStopCoreTx(mCaller, false, mResultListener);
                 }
             }
         }
@@ -545,6 +635,7 @@ public class Core {
         // Attributes
         private Core mCaller;
         private Integer mDataAdaptersCount;
+        private Integer mControlAdaptersCount;
         private OnStopSCResult mResultListener;
     }
 }

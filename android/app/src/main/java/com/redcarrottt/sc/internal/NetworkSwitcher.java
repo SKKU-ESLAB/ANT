@@ -23,7 +23,7 @@ public class NetworkSwitcher {
 
     // Connect adapter command.
     // It is called by peer through Core.
-    void connectAdapter(int adapterId) {
+    void connectAdapterByPeer(int adapterId) {
         int state = this.getState();
         if (state == State.kSwitching) {
             Logger.VERB(kTag, "It's now switching. Cannot connect to adapter " + adapterId);
@@ -33,9 +33,31 @@ public class NetworkSwitcher {
         runConnectRequestTx(adapterId);
     }
 
+    // Disconnect adapter command.
+    // It is called by peer through Core.
+    void disconnectAdapterByPeer(int adapterId) {
+        int state = this.getState();
+        if (state == State.kSwitching) {
+            Logger.VERB(kTag, "It's now switching. Cannot disconnect to adapter " + adapterId);
+            return;
+        }
+
+        Core core = Core.getInstance();
+        ClientAdapter adapter = core.findAdapterById(adapterId);
+        if (adapter == null) {
+            Logger.WARN(kTag, "Cannot find adapter " + adapterId);
+            return;
+        }
+
+        this.setState(State.kSwitching);
+
+        core.sendRequestDisconnectAck((short) adapterId);
+        adapter.disconnect(null, false);
+    }
+
     // Sleep adapter command.
     // It is called by peer through Core.
-    void sleepAdapter(int adapterId) {
+    void sleepAdapterByPeer(int adapterId) {
         int state = this.getState();
         if (state == State.kSwitching) {
             Logger.VERB(kTag, "It's now switching. Cannot sleep to adapter " + adapterId);
@@ -44,12 +66,12 @@ public class NetworkSwitcher {
         this.setState(State.kSwitching);
         ClientAdapter adapter = Core.getInstance().findDataAdapterById(adapterId);
         adapter.sleep(false);
-        this.setState(State.kRunning);
+        this.setState(State.kReady);
     }
 
     // Wake up adapter command.
     // It is called by peer through Core.
-    void wakeUpAdapter(int adapterId) {
+    void wakeUpAdapterByPeer(int adapterId) {
         int state = this.getState();
         if (state == State.kSwitching) {
             Logger.VERB(kTag, "It's now switching. Cannot sleep to adapter " + adapterId);
@@ -58,19 +80,30 @@ public class NetworkSwitcher {
         this.setState(State.kSwitching);
         ClientAdapter adapter = Core.getInstance().findDataAdapterById(adapterId);
         adapter.wakeUp(false);
-        this.setState(State.kRunning);
+        this.setState(State.kReady);
     }
 
     // Reconnect control adapter command.
     // It is called by Core.
-    void reconnectControlAdapter() {
+    void reconnectAdapter(ClientAdapter adapter) {
+        // If it is disconnecting on purpose, do not reconnect it.
+        if(adapter.isDisconnectingOnPurpose()) {
+            return;
+        }
+
         int state = this.getState();
         if (state == State.kSwitching) {
             Logger.VERB(kTag, "It's now switching. Cannot reconnect control adapter.");
+            try {
+                Thread.sleep(1000);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+            this.reconnectAdapter(adapter);
             return;
         }
         this.setState(State.kSwitching);
-        runReconnectControlAdapterTx();
+        runReconnectControlAdapterTx(adapter);
     }
 
     // Notification of switch done event
@@ -78,10 +111,9 @@ public class NetworkSwitcher {
         int state = this.getState();
         switch (state) {
             case State.kSwitching:
-                this.setState(State.kRunning);
+                this.setState(State.kReady);
                 break;
-            case State.kInitialized:
-            case State.kRunning:
+            case State.kReady:
                 break;
         }
     }
@@ -104,9 +136,8 @@ public class NetworkSwitcher {
     }
 
     class State {
-        public static final int kInitialized = 0;
-        public static final int kRunning = 1;
-        public static final int kSwitching = 2;
+        public static final int kReady = 0;
+        public static final int kSwitching = 1;
     }
 
     // State
@@ -126,7 +157,7 @@ public class NetworkSwitcher {
     private NetworkSwitcher() {
         // Since there is no NetworkSwitcher for Android implementation,
         // NetworkSwitcher's initial state goes to Running at beginning.
-        this.mState = State.kRunning;
+        this.mState = State.kReady;
     }
 
     // Transactions
@@ -145,29 +176,35 @@ public class NetworkSwitcher {
 
     private static void doneConnectRequestTx(boolean isSuccess) {
         sOngoingConnectRequest = null;
-        if(!isSuccess) {
+        if (!isSuccess) {
             Logger.WARN(kTag, "Connection request failed");
         }
         NetworkSwitcher.getInstance().doneSwitch();
-                    sOngoingConnectRequest = null;
+        sOngoingConnectRequest = null;
     }
 
-    private static void runReconnectControlAdapterTx() {
+    private static void runReconnectControlAdapterTx(ClientAdapter adapter) {
         if (sOngoingReconnectControlAdapter == null) {
-            sOngoingReconnectControlAdapter = new ReconnectControlAdapterTransaction();
+            sOngoingReconnectControlAdapter = new ReconnectAdapterTransaction(adapter);
             sOngoingReconnectControlAdapter.start();
         } else {
             Logger.WARN(kTag, "Already stopping core");
         }
     }
 
-    private static void restartReconnectControlAdapterTx() {
+    private static void restartReconnectAdapterTx(ClientAdapter adapter) {
+        try {
+            Thread.sleep(1000);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+
         sOngoingReconnectControlAdapter = null;
-        runReconnectControlAdapterTx();
+        runReconnectControlAdapterTx(adapter);
     }
 
     private static ConnectRequestTransaction sOngoingConnectRequest = null;
-    private static ReconnectControlAdapterTransaction sOngoingReconnectControlAdapter = null;
+    private static ReconnectAdapterTransaction sOngoingReconnectControlAdapter = null;
 
     private static class ConnectRequestTransaction {
         private ConnectRequestTransaction(int adapterId) {
@@ -201,54 +238,55 @@ public class NetworkSwitcher {
         private int mAdapterId;
     }
 
-    private static class ReconnectControlAdapterTransaction {
-        private ReconnectControlAdapterTransaction() {
-            this.onConnectControlAdapter = new OnConnectControlAdapter();
-            this.onDisconnectControlAdapter = new OnDisconnectControlAdapter();
+    private static class ReconnectAdapterTransaction {
+        private ReconnectAdapterTransaction(ClientAdapter targetAdapter) {
+            this.onConnectAdapter = new OnConnectAdapter();
+            this.onDisconnectAdapter = new OnDisconnectAdapter();
+            this.mTargetAdapter = targetAdapter;
         }
+
+        private ClientAdapter mTargetAdapter;
 
         void start() {
-            ClientAdapter controlAdapter = Core.getInstance().getControlAdapter();
-            if (controlAdapter == null) {
-                Logger.ERR(kTag, "Reconnecting control adapter is failed: retry");
-                restartReconnectControlAdapterTx();
+            if (this.mTargetAdapter == null) {
+                Logger.ERR(kTag, "Reconnecting adapter is failed: retry");
+                restartReconnectAdapterTx(mTargetAdapter);
             }
-            controlAdapter.disconnect(onDisconnectControlAdapter);
+            this.mTargetAdapter.disconnect(onDisconnectAdapter, false);
         }
 
-        private OnDisconnectControlAdapter onDisconnectControlAdapter;
+        private OnDisconnectAdapter onDisconnectAdapter;
 
-        class OnDisconnectControlAdapter implements ClientAdapter.DisconnectResultListener {
+        class OnDisconnectAdapter implements ClientAdapter.DisconnectResultListener {
             @Override
             public void onDisconnectResult(boolean isSuccess) {
                 if (!isSuccess) {
-                    Logger.ERR(kTag, "Reconnecting control adapter is failed: retry");
-                    restartReconnectControlAdapterTx();
+                    Logger.ERR(kTag, "Reconnecting adapter is failed: retry");
+                    restartReconnectAdapterTx(mTargetAdapter);
                     return;
                 }
-                ClientAdapter controlAdapter = Core.getInstance().getControlAdapter();
-                if (controlAdapter == null) {
-                    Logger.ERR(kTag, "Reconnecting control adapter is failed: retry");
-                    restartReconnectControlAdapterTx();
+                if (mTargetAdapter == null) {
+                    Logger.ERR(kTag, "Reconnecting adapter is failed: retry");
+                    restartReconnectAdapterTx(mTargetAdapter);
                     return;
                 }
 
-                controlAdapter.connect(onConnectControlAdapter, false);
+                mTargetAdapter.connect(onConnectAdapter, false);
             }
         }
 
-        private OnConnectControlAdapter onConnectControlAdapter;
+        private OnConnectAdapter onConnectAdapter;
 
-        class OnConnectControlAdapter implements ClientAdapter.ConnectResultListener {
+        class OnConnectAdapter implements ClientAdapter.ConnectResultListener {
             @Override
             public void onConnectResult(boolean isSuccess) {
                 if (!isSuccess) {
-                    Logger.ERR(kTag, "Reconnecting control adapter is failed: retry");
-                    restartReconnectControlAdapterTx();
+                    Logger.ERR(kTag, "Reconnecting adapter is failed: retry");
+                    restartReconnectAdapterTx(mTargetAdapter);
                     return;
                 }
 
-                Logger.VERB(kTag, "Reconnecting control adapter is done");
+                Logger.VERB(kTag, "Reconnecting adapter is done");
                 NetworkSwitcher.getInstance().doneSwitch();
             }
         }

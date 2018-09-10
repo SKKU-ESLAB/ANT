@@ -191,6 +191,9 @@ public class MainActivity extends AppCompatActivity implements LogReceiver.Callb
         if (this.mIsWfdDataChecked) {
             WfdClientAdapter wfdData = new WfdClientAdapter(12, "Data/WFD", 3456, this);
             API.registerDataAdapter(wfdData);
+
+            WfdClientAdapter wfdControl = new WfdClientAdapter(2, "Control/WFD", 3455, this);
+            API.registerControlAdapter(wfdControl);
         }
         Logger.VERB(kTag, "BT Address: " + btAddress);
 
