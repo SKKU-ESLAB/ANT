@@ -182,6 +182,8 @@ bool RfcommServerSocket::close_impl(void) {
   this->mClientSocket = 0;
   this->mServerSocket = 0;
 
+  LOG_VERB("RFCOMM Socket closed");
+
   return true;
 }
 

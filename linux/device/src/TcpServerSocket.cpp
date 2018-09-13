@@ -95,7 +95,7 @@ bool TcpServerSocket::close_impl(void) {
   this->mClientSocket = 0;
   this->mServerSocket = 0;
 
-  LOG_VERB("Socket closed");
+  LOG_VERB("TCP Socket closed");
 
   return true;
 }
