@@ -321,6 +321,7 @@ class WfdP2PClient extends P2PClient {
                     }
                 }
             }
+            Logger.DEBUG(kTag, "Got: mTargetMacAddress");
             return this.mTargetMacAddress;
         }
     }
@@ -340,6 +341,7 @@ class WfdP2PClient extends P2PClient {
                     }
                 }
             }
+            Logger.DEBUG(kTag, "Got: mWpsPin");
             return this.mWpsPin;
         }
     }

@@ -122,15 +122,26 @@ void NetworkSwitcher::reconnect_adapter(ServerAdapter *adapter,
 
 bool NetworkSwitcher::switch_adapters(int prev_index, int next_index) {
   // Switch Step 1
-  // Increase/decrease active data adapter index
-  Core::get_instance()->set_active_adapter_index(next_index);
-
+  this->set_state(NSState::kNSStateSwitching);
   return SwitchAdapterTransaction::run(prev_index, next_index);
+}
+
+void NetworkSwitcher::done_switch() {
+  LOG_VERB("Switch adapter end!");
+  NSState state = this->get_state();
+  switch (state) {
+  case NSState::kNSStateSwitching:
+    this->set_state(NSState::kNSStateReady);
+    break;
+  case NSState::kNSStateReady:
+    break;
+  }
 }
 
 bool SwitchAdapterTransaction::run(int prev_index, int next_index) {
   if (sOngoing == NULL) {
     sOngoing = new SwitchAdapterTransaction(prev_index, next_index);
+    LOG_VERB("Switch (%d->%d): Start", prev_index, next_index);
     sOngoing->start();
     return true;
   } else {
@@ -143,11 +154,11 @@ bool SwitchAdapterTransaction::run(int prev_index, int next_index) {
 
 void SwitchAdapterTransaction::done(bool is_success) {
   if (is_success) {
-    LOG_DEBUG("Switch from %d to %d done.", sOngoing->mPrevIndex,
+    LOG_VERB("Switch (%d->%d): Success", sOngoing->mPrevIndex,
               sOngoing->mNextIndex);
     Core::get_instance()->set_active_adapter_index(sOngoing->mNextIndex);
   } else {
-    LOG_DEBUG("Switch from %d to %d failed.", sOngoing->mPrevIndex,
+    LOG_VERB("Switch (%d->%d): Failed", sOngoing->mPrevIndex,
               sOngoing->mNextIndex);
   }
   NetworkSwitcher::get_instance()->done_switch();
@@ -178,6 +189,9 @@ void SwitchAdapterTransaction::start(void) {
     this->done(false);
     return;
   }
+
+  LOG_VERB("Switch (%d->%d): Step 1. Connect/WakeUp Next Data (%s)", sOngoing->mPrevIndex,
+              sOngoing->mNextIndex, next_data_adapter->get_name());
 
   // Connect or wake up the next data adapter
   next_data_adapter->connect_or_wake_up(
@@ -216,6 +230,9 @@ void SwitchAdapterTransaction::connect_next_data_callback(bool is_success) {
     return;
   }
 
+  LOG_VERB("Switch (%d->%d): Step 2. Disconnect/sleep Prev Data (%s)", sOngoing->mPrevIndex,
+              sOngoing->mNextIndex, prev_data_adapter->get_name());
+
   // Disconnect or sleep previous data adapter
   prev_data_adapter->disconnect_or_sleep(
       SwitchAdapterTransaction::disconnect_prev_data_callback, true);
@@ -253,6 +270,9 @@ void SwitchAdapterTransaction::disconnect_prev_data_callback(bool is_success) {
     return;
   }
 
+  LOG_VERB("Switch (%d->%d): Step 3. Conenct/wakeup Next Control (%s)", sOngoing->mPrevIndex,
+              sOngoing->mNextIndex, next_control_adapter->get_name());
+
   next_control_adapter->connect_or_wake_up(
       SwitchAdapterTransaction::connect_next_control_callback, true);
 }
@@ -288,6 +308,9 @@ void SwitchAdapterTransaction::connect_next_control_callback(bool is_success) {
     sOngoing->done(false);
     return;
   }
+
+  LOG_VERB("Switch (%d->%d): Step 4. Disconnect/sleep Prev Control (%s)", sOngoing->mPrevIndex,
+              sOngoing->mNextIndex, prev_control_adapter->get_name());
 
   prev_control_adapter->disconnect_or_sleep(
       SwitchAdapterTransaction::disconnect_prev_control_callback, true);

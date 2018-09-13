@@ -34,8 +34,8 @@ public class WfdClientAdapter extends ClientAdapter implements ControlMessageLis
     }
 
     @Override
-    public void onReceiveControlMessage(int adapterId, byte[] dataBuffer, int dataLength) {
-        if (adapterId == this.getId()) {
+    public void onReceiveControlMessage(int privType, byte[] dataBuffer, int dataLength) {
+        if (privType == Core.PrivType.kWFDInfo) {
             String message = new String(Arrays.copyOfRange(dataBuffer, 0, dataLength));
             Logger.DEBUG(kTag, "Received WFD info message: " + message);
             String wfdInfoLines[] = message.split("\\r?\\n");

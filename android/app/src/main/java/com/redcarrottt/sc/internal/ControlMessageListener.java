@@ -19,5 +19,5 @@ package com.redcarrottt.sc.internal;
 
 // Control Message Listener
 public interface ControlMessageListener {
-    void onReceiveControlMessage(int adapterId, byte[] dataBuffer, int dataLength);
+    void onReceiveControlMessage(int privType, byte[] dataBuffer, int dataLength);
 }

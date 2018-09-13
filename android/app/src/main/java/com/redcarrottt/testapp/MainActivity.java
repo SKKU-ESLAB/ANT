@@ -179,7 +179,7 @@ public class MainActivity extends AppCompatActivity implements LogReceiver.Callb
         }
 
         // Setting adapters
-        BtClientAdapter btControl = new BtClientAdapter(1, "Control", btAddress,
+        BtClientAdapter btControl = new BtClientAdapter(1, "Control/BT", btAddress,
                 "150e8400-1234-41d4-a716-446655440000", this);
         API.registerControlAdapter(btControl);
 
@@ -293,6 +293,7 @@ public class MainActivity extends AppCompatActivity implements LogReceiver.Callb
                         TextView bandwidthTextView = (TextView) findViewById(R.id
                                 .bandwidthTextView);
                         NumberFormat format = NumberFormat.getNumberInstance();
+                        Log.d(kTag, "Bandwidth update: " + format.format(speed) + "B/s");
                         bandwidthTextView.setText("Bandwidth: " + format.format(speed) + "B/s");
                     }
                 });

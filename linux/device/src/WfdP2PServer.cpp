@@ -141,8 +141,8 @@ bool WfdP2PServer::allow_discover_impl(void) {
      *  <Server IP Address>
      */
     LOG_DEBUG("Send WFD Info: %s", wfdInfo);
-    Core::get_instance()->send_noti_private_data(adapter_id, wfdInfo,
-                                                 strlen(wfdInfo));
+    Core::get_instance()->send_noti_private_data(PrivType::kPrivTypeWFDInfo,
+                                                 wfdInfo, strlen(wfdInfo));
 
     // Notify IP address to the listeners
     for (std::vector<WfdIpAddressListener *>::iterator it =

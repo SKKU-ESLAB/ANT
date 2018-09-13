@@ -94,6 +94,11 @@ typedef enum {
   kCtrlReqDisconnectAck = 24
 } CtrlReq;
 
+typedef enum {
+  kPrivTypeWFDInfo = 1,
+  kPrivTypeUnknown = 999
+} PrivType;
+
 /* Core State */
 typedef enum {
   kCMStateIdle = 0,
@@ -104,7 +109,7 @@ typedef enum {
 
 class ControlMessageListener {
 public:
-  virtual void on_receive_control_message(int adapter_id, void *data,
+  virtual void on_receive_control_message(PrivType priv_type, void *data,
                                           size_t len) = 0;
 };
 
@@ -209,7 +214,7 @@ public:
   void send_request_disconnect_ack(uint16_t adapter_id);
   void send_request_sleep(uint16_t adapter_id);
   void send_request_wake_up(uint16_t adapter_id);
-  void send_noti_private_data(uint16_t adapter_id, char *private_data_buf,
+  void send_noti_private_data(PrivType priv_type, char *private_data_buf,
                               uint32_t private_data_len);
 
 private:

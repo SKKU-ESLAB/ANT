@@ -117,6 +117,8 @@ private:
   bool mSenderSuspended = false;
   std::mutex mSenderSuspendedMutex;
   std::condition_variable mSenderSuspendedCond;
+  std::mutex mWaitSenderThreadMutex;
+  std::condition_variable mWaitSenderThreadCond;
 
   /* Receiver Thread */
   void receiver_thread(void);
@@ -126,6 +128,8 @@ private:
   bool mReceiverThreadEnabled = false;
   bool mReceiverLoopOn = false;
   DisconnectCallback mDisconnectCallback = NULL;
+  std::mutex mWaitReceiverThreadMutex;
+  std::condition_variable mWaitReceiverThreadCond;
 
 public:
   /* Statistics getters */

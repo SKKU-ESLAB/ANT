@@ -18,8 +18,8 @@
  */
 
 #include <ExpConfig.h>
-#include <ServerAdapter.h>
 #include <NetworkSwitcher.h>
+#include <ServerAdapter.h>
 
 #include <Core.h>
 #include <DebugLog.h>
@@ -198,7 +198,7 @@ void ServerAdapter::disconnect_thread(void) {
   bool res = this->__disconnect_thread();
 
   this->finish_disconnecting_on_purpose();
-  
+
   if (res) {
     this->set_state(ServerAdapterState::kDisconnected);
     if (this->mDisconnectCallback != NULL) {
@@ -286,12 +286,24 @@ bool ServerAdapter::__disconnect_thread(void) {
       return false;
     }
   }
+
+  // Wait for sender/receiver thread
+  if (this->mSenderThread != NULL) {
+    LOG_DEBUG("Waiting for sender thread: %s", this->get_name());
+    std::unique_lock<std::mutex> senderLock(this->mWaitSenderThreadMutex);
+    this->mWaitSenderThreadCond.wait(senderLock);
+  }
+  if (this->mReceiverThread != NULL) {
+    LOG_DEBUG("Waiting for receiver thread: %s", this->get_name());
+    std::unique_lock<std::mutex> receiverLock(this->mWaitReceiverThreadMutex);
+    this->mWaitReceiverThreadCond.wait(receiverLock);
+  }
+
   return true;
 }
 
 int ServerAdapter::send(const void *buf, size_t len) {
   if (this->get_state() != ServerAdapterState::kActive) {
-    LOG_ERR("It is not in active state.");
     return -1;
   }
 
@@ -315,7 +327,6 @@ int ServerAdapter::receive(void *buf, size_t len) {
       state != ServerAdapterState::kGoingSleeping &&
       state != ServerAdapterState::kSleeping &&
       state != ServerAdapterState::kWakingUp) {
-    LOG_ERR("It is not in active state.");
     return false;
   }
 
@@ -351,6 +362,8 @@ void ServerAdapter::sender_thread(void) {
 
   // Reconnect the adapter
   NetworkSwitcher::get_instance()->reconnect_adapter(this, true);
+
+  this->mWaitSenderThreadCond.notify_all();
 }
 
 void ServerAdapter::data_adapter_send_loop(void) {
@@ -439,8 +452,10 @@ void ServerAdapter::data_adapter_send_loop(void) {
       sm->failed_sending(segment_to_send);
       continue;
     } else if (res < 0) {
-      LOG_WARN("Sending %dB failed at %s (%d; %s)", len, this->get_name(),
-               errno, strerror(errno));
+      if (!is_disconnecting_on_purpose()) {
+        LOG_WARN("Sending %dB failed at %s (%d; %s)", len, this->get_name(),
+                 errno, strerror(errno));
+      }
       sm->failed_sending(segment_to_send);
       break;
     }
@@ -485,6 +500,8 @@ void ServerAdapter::receiver_thread(void) {
 
   // Reconnect the adapter
   NetworkSwitcher::get_instance()->reconnect_adapter(this, true);
+
+  this->mWaitReceiverThreadCond.notify_all();
 }
 
 void ServerAdapter::data_adapter_receive_loop(ServerAdapter *adapter) {
@@ -502,8 +519,13 @@ void ServerAdapter::data_adapter_receive_loop(ServerAdapter *adapter) {
       LOG_WARN("Kernel I/O buffer is full at %s", adapter->get_name());
       continue;
     } else if (res < len) {
-      LOG_WARN("Receiving failed at %s (%s)", adapter->get_name(),
-               strerror(errno));
+      if (!adapter->is_disconnecting_on_purpose()) {
+        LOG_WARN("Receiving failed at %s (%d; %s)", adapter->get_name(), errno,
+                 strerror(errno));
+      } else {
+        LOG_DEBUG("Receiving broken at %s (%d; %s)", adapter->get_name(), errno,
+                 strerror(errno));
+      }
       break;
     }
 
