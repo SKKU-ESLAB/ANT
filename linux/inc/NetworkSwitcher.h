@@ -138,17 +138,7 @@ public:
 
 private:
   /* Notification of switch done event */
-  void done_switch() {
-    LOG_VERB("Switch adapter end!");
-    NSState state = this->get_state();
-    switch (state) {
-    case NSState::kNSStateSwitching:
-      this->set_state(NSState::kNSStateReady);
-      break;
-    case NSState::kNSStateReady:
-      break;
-    }
-  }
+  void done_switch();
 
 public:
   /* State getter */

@@ -221,7 +221,9 @@ public class Core {
             int res;
             while (true) {
                 // Receive 1Byte: Control Request Code
+                Logger.DEBUG(kTag, "Control Receiver: receiving request code...");
                 res = adapter.receive(dataBuffer, 1);
+                Logger.DEBUG(kTag, "Control Receiver: RECEIVED request code!");
                 if (res <= 0) {
                     Logger.VERB(kTag, "Control adapter could be closed");
                     try {
@@ -272,17 +274,18 @@ public class Core {
                     }
                 } else if (reqCode == CtrlReq.kPriv) {
                     // "Priv" Request
-                    short adapterId;
+                    int privType;
                     int privDataLength;
-                    // Receive 2Byte: Adapter ID
-                    res = adapter.receive(dataBuffer, 2);
+                    // Receive 4Byte: Priv Type
+                    res = adapter.receive(dataBuffer, 4);
                     if (res <= 0) {
                         break;
                     } else {
-                        ByteBuffer tempBuffer = ByteBuffer.allocate(2);
+                        Logger.DEBUG(kTag, "Control Request: 'Priv Data Noti' - Start");
+                        ByteBuffer tempBuffer = ByteBuffer.allocate(4);
                         //Logger.DEBUG(kTag, "tempBuffer remaining: " + tempBuffer.remaining());
-                        tempBuffer.put(dataBuffer, 0, 2);
-                        adapterId = tempBuffer.getShort(0);
+                        tempBuffer.put(dataBuffer, 0, 4);
+                        privType = tempBuffer.getInt(0);
                     }
 
                     // Receive 4Byte: Private Data Length
@@ -294,15 +297,18 @@ public class Core {
                         //Logger.DEBUG(kTag, "tempBuffer2 remaining: " + tempBuffer2.remaining());
                         tempBuffer2.put(dataBuffer, 0, 4);
                         privDataLength = tempBuffer2.getInt(0);
+                        Logger.DEBUG(kTag, "Control Request: 'Priv Data Noti' - Get Length (" +
+                                privDataLength + ")");
                     }
                     if (privDataLength > 512) throw new AssertionError();
 
                     // Receive nByte: Private Data
                     res = adapter.receive(dataBuffer, privDataLength);
                     if (res > 0) {
-                        Logger.DEBUG(kTag, "Control Request: 'Priv Data Noti' (" + adapterId + ")");
+                        Logger.DEBUG(kTag, "Control Request: 'Priv Data Noti' - End (" + privType
+                                + "," + privDataLength + ")");
                         for (ControlMessageListener listener : mControlMessageListeners) {
-                            listener.onReceiveControlMessage(adapterId, dataBuffer, privDataLength);
+                            listener.onReceiveControlMessage(privType, dataBuffer, privDataLength);
                         }
                     } else {
                         break;
@@ -323,6 +329,12 @@ public class Core {
         public static final char kDisconnect = 4;
         public static final char kPriv = 10;
         public static final char kDisconnectAck = 24;
+    }
+
+    // Priv Type Code
+    public class PrivType {
+        public static final char kWFDInfo = 1;
+        public static final char kWFDUnknown = 999;
     }
 
     // State

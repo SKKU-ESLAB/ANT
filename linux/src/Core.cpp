@@ -212,7 +212,8 @@ void Core::send_request(CtrlReq request_code, uint16_t adapter_id) {
     ServerAdapter *control_adapter = this->get_active_control_adapter();
     ServerAdapterState controlAdapterState = control_adapter->get_state();
     if (controlAdapterState != ServerAdapterState::kActive) {
-      LOG_WARN("Now switching control adapter...");
+      LOG_WARN("Now switching control adapter... adapter_id=%d state=%d",
+               control_adapter->get_id(), controlAdapterState);
     } else {
       retry_check = false;
     }
@@ -245,7 +246,7 @@ void Core::send_request_wake_up(uint16_t adapter_id) {
   this->send_request(kCtrlReqWakeUp, adapter_id);
 }
 
-void Core::send_noti_private_data(uint16_t adapter_id, char *private_data_buf,
+void Core::send_noti_private_data(PrivType priv_type, char *private_data_buf,
                                   uint32_t private_data_len) {
   bool retry_check = true;
   while (retry_check) {
@@ -259,11 +260,11 @@ void Core::send_noti_private_data(uint16_t adapter_id, char *private_data_buf,
   }
 
   uint8_t request_code = kCtrlReqPriv;
-  uint16_t net_adapter_id = htons(adapter_id);
+  uint32_t net_priv_type = htonl((unsigned long)priv_type);
   uint32_t net_private_data_len = htonl(private_data_len);
 
   this->send_control_message(&request_code, 1);
-  this->send_control_message(&net_adapter_id, 2);
+  this->send_control_message(&net_priv_type, 4);
   this->send_control_message(&net_private_data_len, 4);
   this->send_control_message(private_data_buf, private_data_len);
 }
@@ -280,10 +281,8 @@ void Core::control_adapter_receive_loop(ServerAdapter *adapter) {
   while (adapter->is_receiver_loop_on()) {
     // Receive 1Byte: Control Request Code
     res = adapter->receive(data, 1);
-    if (res <= 0) {
-      LOG_DEBUG("Control adapter has been closed");
+    if (res <= 0)
       break;
-    }
 
     char req_code = data[0];
     /* If the control message is 'connect adapter', */
@@ -294,10 +293,8 @@ void Core::control_adapter_receive_loop(ServerAdapter *adapter) {
         req_code == CtrlReq::kCtrlReqDisconnectAck) {
       // Receive 2Byte: Adapter ID
       res = adapter->receive(data, 2);
-      if (res <= 0) {
-        LOG_DEBUG("Control adapter has been closed");
+      if (res <= 0)
         break;
-      }
 
       // convert adapter_id to n_adapter_id
       uint16_t n_adapter_id;
@@ -323,7 +320,7 @@ void Core::control_adapter_receive_loop(ServerAdapter *adapter) {
                   (int)adapter_id);
         NetworkSwitcher::get_instance()->disconnect_adapter_by_peer(adapter_id);
       } else if (req_code == CtrlReq::kCtrlReqDisconnectAck) {
-        LOG_DEBUG("Control Request: 'Disconnect Adapter Request Ack (%d)",
+        LOG_DEBUG("Control Request: 'Disconnect Adapter Request Ack' (%d)",
                   (int)adapter_id);
         ServerAdapter *disconnect_adapter =
             Core::get_instance()->find_adapter_by_id((int)adapter_id);
@@ -335,40 +332,38 @@ void Core::control_adapter_receive_loop(ServerAdapter *adapter) {
       }
     } else if (req_code == CtrlReq::kCtrlReqPriv) {
       LOG_VERB("Private data arrived");
-      uint16_t n_adapter_id;
-      uint16_t adapter_id;
-      uint32_t nlen;
+      uint16_t n_priv_type;
+      PrivType priv_type;
+      uint32_t n_len;
       uint32_t len;
 
-      // Receive 2Byte: Adapter ID
-      res = adapter->receive(&n_adapter_id, 2);
-      if (res <= 0) {
-        LOG_DEBUG("Control adapter has been closed");
+      // Receive 4Byte: Priv Type
+      res = adapter->receive(&n_priv_type, 4);
+      if (res <= 0)
         break;
-      }
-      adapter_id = ntohs(n_adapter_id);
+
+      priv_type = (ntohs(n_priv_type) == PrivType::kPrivTypeWFDInfo)
+                      ? PrivType::kPrivTypeWFDInfo
+                      : PrivType::kPrivTypeUnknown;
 
       // Receive 4Byte: Private Data Length
-      res = adapter->receive(&nlen, 4);
-      if (res <= 0) {
-        LOG_DEBUG("Control adapter has been closed");
+      res = adapter->receive(&n_len, 4);
+      if (res <= 0)
         break;
-      }
-      len = ntohl(nlen);
+
+      len = ntohl(n_len);
       assert(len <= 512);
 
       // Receive nByte: Private Data
       res = adapter->receive(data, len);
-      if (res <= 0) {
-        LOG_DEBUG("Control adapter has been closed");
+      if (res <= 0)
         break;
-      }
 
       for (std::vector<ControlMessageListener *>::iterator it =
                core->mControlMessageListeners.begin();
            it != core->mControlMessageListeners.end(); it++) {
         ControlMessageListener *listener = *it;
-        listener->on_receive_control_message(adapter_id, data, len);
+        listener->on_receive_control_message(priv_type, data, len);
       }
     }
   } // End while
