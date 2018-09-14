@@ -228,6 +228,7 @@ public:
     this->mControlMessageListeners.push_back(listener);
   }
   static void control_adapter_receive_loop(ServerAdapter *adapter);
+  static int __control_adapter_receive_loop(ServerAdapter* adapter);
 
 public:
   /* Get statistics */

@@ -137,12 +137,14 @@ public abstract class P2PClient {
 
     private void doneDisconnectTx(DisconnectResultListener resultListener, boolean isSuccess) {
         sOngoingDisconnectTx = null;
-        if (!isSuccess) {
+        if (isSuccess) {
+            this.setState(State.kDisconnected);
+        } else {
             synchronized (this.mRefCount) {
                 this.mRefCount++;
             }
+            this.setState(State.kConnected);
         }
-        this.setState(State.kDisconnected);
         if (resultListener != null) resultListener.onDisconnectResult(isSuccess);
     }
 

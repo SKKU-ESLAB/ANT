@@ -34,12 +34,14 @@ public class ClientAdapter {
     private final ClientAdapter self = this;
     private final boolean kVerboseClientAdapter = false;
 
-    // Main Functions: connect, releaseAndDisconnect, send, receive
+    // Main Functions: connect, disconnect, send, receive
     public void connect(ConnectResultListener listener, boolean isSendRequest) {
         int state = this.getState();
         if (state != State.kDisconnected) {
-            Logger.ERR(kTag, "It's already connected or connection/disconnection is in progress");
+            Logger.ERR(kTag, "Connect Failed: Already connected or connect/disconnection is in "
+                    + "progress: " + this.getName() + " / " + this.getState());
             listener.onConnectResult(false);
+            return;
         }
 
         if (isSendRequest) {
@@ -52,10 +54,11 @@ public class ClientAdapter {
 
     public void disconnect(DisconnectResultListener listener, boolean isSendRequest, boolean
             isSendAck, boolean isOnPurpose) {
-        if (this.getState() == State.kDisconnected || this.getState() == State.kDisconnected) {
-            Logger.ERR(kTag, "It's already disconnected or connection/disconnection is in " +
-                    "progress");
+        if (this.getState() == State.kDisconnected || this.getState() == State.kDisconnecting) {
+            Logger.ERR(kTag, "Disconnect Failed: Already disconnected or connect/disconnection "
+                    + "is" + " in progress: " + this.getName() + " / " + this.getState());
             listener.onDisconnectResult(false);
+            return;
         }
 
         if (isOnPurpose) {
@@ -73,9 +76,16 @@ public class ClientAdapter {
     }
 
     int send(byte[] dataBuffer, int dataLength) {
-        if (this.getState() != State.kActive) {
-            Logger.ERR(kTag, "It's already disconnected or connection/disconnection is in " +
-                    "progress");
+        int state = this.getState();
+        if (state == State.kSleeping || state == State.kGoingSleep || state == State.kWakingUp) {
+            if (!this.isDisconnectingOnPurpose()) {
+                Logger.ERR(kTag, "Send Failed: Already sleeping: " + this.getName() + " / " +
+                        this.getState());
+            }
+            return -1;
+        } else if (state != State.kActive) {
+            Logger.ERR(kTag, "Send Failed: Already disconnected or connect/disconnection is in "
+                    + "progress: " + this.getName() + " / " + this.getState());
             return -1;
         }
 
@@ -91,8 +101,10 @@ public class ClientAdapter {
         int state = this.getState();
         if (state != State.kActive && state != State.kGoingSleep && state != State.kSleeping &&
                 state != State.kWakingUp) {
-            Logger.ERR(kTag, "It's already disconnected or connection/disconnection is in " +
-                    "progress");
+            if (!this.isDisconnectingOnPurpose()) {
+                Logger.ERR(kTag, "Receive Failed: Already disconnected or connect/disconnection " +
+                        "is " + "in" + " progress: " + this.getName() + " / " + this.getState());
+            }
             return -1;
         }
 
@@ -113,7 +125,7 @@ public class ClientAdapter {
                     ")");
             setState(ClientAdapter.State.kConnecting);
 
-            if (self.mDevice == null || self.mP2PClient == null || self.mDevice == null) {
+            if (self.mDevice == null || self.mP2PClient == null || self.mClientSocket == null) {
                 this.onFail();
                 return;
             }
@@ -738,6 +750,8 @@ public class ClientAdapter {
             oldState = this.mState;
             this.mState = newState;
         }
+
+        Logger.DEBUG(this.getName(), "State(" + oldState + "->" + newState + ")");
 
         for (StateListener listener : this.mListeners) {
             listener.onUpdateClientAdapterState(this, oldState, newState);

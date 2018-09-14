@@ -91,7 +91,7 @@ class RfcommClientSocket extends ClientSocket {
             this.mOutputStream.flush();
             return dataLength;
         } catch (IOException e) {
-            Logger.ERR(kTag, "Send failed!");
+            Logger.ERR(kTag, "Send failed! / " + e.getMessage());
             return -2;
         }
     }
@@ -115,7 +115,7 @@ class RfcommClientSocket extends ClientSocket {
             }
             return dataLength;
         } catch (IOException e) {
-            Logger.ERR(kTag, "Receive failed! 2");
+            Logger.ERR(kTag, "Receive failed! 2 / " + e.getMessage());
             return -3;
         }
     }

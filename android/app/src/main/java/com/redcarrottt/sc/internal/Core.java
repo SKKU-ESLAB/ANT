@@ -192,22 +192,27 @@ public class Core {
 
     public void sendRequestConnect(short adapterId) {
         this.sendRequest(CtrlReq.kConnect, adapterId);
+        Logger.VERB(kTag, "Send(Control Msg): Request(Connect " + adapterId + ")");
     }
 
     public void sendRequestDisconnect(short adapterId) {
         this.sendRequest(CtrlReq.kDisconnect, adapterId);
+        Logger.VERB(kTag, "Send(Control Msg): Request(Disconnect " + adapterId + ")");
     }
 
     public void sendRequestDisconnectAck(short adapterId) {
         this.sendRequest(CtrlReq.kDisconnectAck, adapterId);
+        Logger.VERB(kTag, "Send(Control Msg): Request(DisconnectAck " + adapterId + ")");
     }
 
     public void sendRequestSleep(short adapterId) {
         this.sendRequest(CtrlReq.kSleep, adapterId);
+        Logger.VERB(kTag, "Send(Control Msg): Request(Sleep " + adapterId + ")");
     }
 
     public void sendRequestWakeup(short adapterId) {
         this.sendRequest(CtrlReq.kWakeup, adapterId);
+        Logger.VERB(kTag, "Send(Control Msg): Request(WakeUp " + adapterId + ")");
     }
 
     public void sendNotiPrivateData(short adapterId, byte[] privDataBuffer) {
@@ -247,23 +252,22 @@ public class Core {
                     short adapterId = buffer.getShort(0);
 
                     if (reqCode == CtrlReq.kConnect) {
-                        Logger.DEBUG(kTag, "Control Request: 'Connect Adapter' (" + adapterId +
+                        Logger.VERB(kTag, "Receive(Control Msg): Request(Connect " + adapterId +
                                 ")");
                         NetworkSwitcher.getInstance().connectAdapterByPeer(adapterId);
                     } else if (reqCode == CtrlReq.kSleep) {
-                        Logger.DEBUG(kTag, "Control Request: 'Connect Adapter' (" + adapterId +
-                                ")");
+                        Logger.VERB(kTag, "Receive(Control Msg): Request(Sleep " + adapterId + ")");
                         NetworkSwitcher.getInstance().sleepAdapterByPeer(adapterId);
                     } else if (reqCode == CtrlReq.kWakeup) {
-                        Logger.DEBUG(kTag, "Control Request: 'Connect Adapter' (" + adapterId +
+                        Logger.VERB(kTag, "Receive(Control Msg): Request(WakeUp " + adapterId +
                                 ")");
                         NetworkSwitcher.getInstance().wakeUpAdapterByPeer(adapterId);
                     } else if (reqCode == CtrlReq.kDisconnect) {
-                        Logger.DEBUG(kTag, "Control Request: 'Disconnect Adapter' (" + adapterId
+                        Logger.VERB(kTag, "Receive(Control Msg): Request(Disconnect " + adapterId
                                 + ")");
                         NetworkSwitcher.getInstance().disconnectAdapterByPeer(adapterId);
                     } else if (reqCode == CtrlReq.kDisconnectAck) {
-                        Logger.DEBUG(kTag, "Control Request: 'Disconnect Adapter ACK' (" +
+                        Logger.VERB(kTag, "Receive(Control Msg): Request(DisconnectAck " +
                                 adapterId + ")");
                         ClientAdapter disconnect_adapter = findAdapterById(adapterId);
                         if (disconnect_adapter == null) {
@@ -281,7 +285,7 @@ public class Core {
                     if (res <= 0) {
                         break;
                     } else {
-                        Logger.DEBUG(kTag, "Control Request: 'Priv Data Noti' - Start");
+                        Logger.VERB(kTag, "Receive(Control Msg): Request(Priv Noti--Start)");
                         ByteBuffer tempBuffer = ByteBuffer.allocate(4);
                         //Logger.DEBUG(kTag, "tempBuffer remaining: " + tempBuffer.remaining());
                         tempBuffer.put(dataBuffer, 0, 4);
@@ -297,16 +301,14 @@ public class Core {
                         //Logger.DEBUG(kTag, "tempBuffer2 remaining: " + tempBuffer2.remaining());
                         tempBuffer2.put(dataBuffer, 0, 4);
                         privDataLength = tempBuffer2.getInt(0);
-                        Logger.DEBUG(kTag, "Control Request: 'Priv Data Noti' - Get Length (" +
-                                privDataLength + ")");
                     }
                     if (privDataLength > 512) throw new AssertionError();
 
                     // Receive nByte: Private Data
                     res = adapter.receive(dataBuffer, privDataLength);
                     if (res > 0) {
-                        Logger.DEBUG(kTag, "Control Request: 'Priv Data Noti' - End (" + privType
-                                + "," + privDataLength + ")");
+                        Logger.VERB(kTag, "Receive(Control Msg): Request(Priv Noti '" +
+                                dataBuffer + "'; type=" + privType + ")");
                         for (ControlMessageListener listener : mControlMessageListeners) {
                             listener.onReceiveControlMessage(privType, dataBuffer, privDataLength);
                         }

@@ -62,7 +62,8 @@ void ServerAdapter::connect(ConnectCallback callback, bool is_send_request) {
 }
 
 void ServerAdapter::disconnect(DisconnectCallback callback,
-                               bool is_send_request, bool is_send_ack, bool is_on_purpose) {
+                               bool is_send_request, bool is_send_ack,
+                               bool is_on_purpose) {
   ServerAdapterState state = this->get_state();
   if (state == ServerAdapterState::kDisconnected ||
       state == ServerAdapterState::kDisconnecting) {
@@ -86,7 +87,7 @@ void ServerAdapter::disconnect(DisconnectCallback callback,
   // Send request
   if (is_send_request) {
     Core::get_instance()->send_request_disconnect(this->get_id());
-  } else if(is_send_ack) {
+  } else if (is_send_ack) {
     Core::get_instance()->send_request_disconnect_ack(this->get_id());
   }
 
@@ -452,7 +453,10 @@ void ServerAdapter::data_adapter_send_loop(void) {
     gettimeofday(&times[4], NULL);
 #endif
 
-    if (errno == EAGAIN) {
+    if (errno == EINTR) {
+      sm->failed_sending(segment_to_send);
+      continue;
+    } else if (errno == EAGAIN) {
       LOG_VERB("Sending %dB: Kernel I/O buffer is full at %s", len,
                this->get_name());
       sm->failed_sending(segment_to_send);
@@ -521,7 +525,9 @@ void ServerAdapter::data_adapter_receive_loop(ServerAdapter *adapter) {
     LOG_DEBUG("%s: Receiving...", adapter->get_name());
 #endif
     int res = adapter->receive(buf, len);
-    if (errno == EAGAIN) {
+    if (errno == EINTR) {
+      continue;
+    } else if (errno == EAGAIN) {
       LOG_WARN("Kernel I/O buffer is full at %s", adapter->get_name());
       continue;
     } else if (res < len) {
