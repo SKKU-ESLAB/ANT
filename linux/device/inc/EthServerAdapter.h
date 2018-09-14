@@ -1,6 +1,6 @@
 /* Copyright 2017-2018 All Rights Reserved.
  *  Gyeonghwan Hong (redcarrottt@gmail.com)
- *  
+ *
  * [Contact]
  *  Gyeonghwan Hong (redcarrottt@gmail.com)
  *
@@ -23,13 +23,13 @@
 #include <ServerAdapter.h>
 #include <TcpServerSocket.h>
 
-#include <unistd.h>
+#include <arpa/inet.h>
 #include <string.h>
 #include <sys/socket.h>
-#include <arpa/inet.h>
+#include <unistd.h>
 
-#include <thread>
 #include <mutex>
+#include <thread>
 
 #include <stdio.h>
 
@@ -37,48 +37,41 @@ namespace sc {
 
 class EthDevice : public Device {
 public:
-  virtual bool turn_on_impl(void) {
-    return true;
-  }
-  virtual bool turn_off_impl(void) {
-    return true;
-  }
+  virtual bool turn_on_impl(void) { return true; }
+  virtual bool turn_off_impl(void) { return true; }
 
-  static EthDevice* getSingleton(void) {
-    if(EthDevice::sSingleton == NULL) {
+  static EthDevice *getSingleton(void) {
+    if (EthDevice::sSingleton == NULL) {
       EthDevice::sSingleton = new EthDevice();
     }
     return EthDevice::sSingleton;
   }
 
 protected:
-  static EthDevice* sSingleton;
-  EthDevice() : Device("Ethernet") {
-  }
+  static EthDevice *sSingleton;
+  EthDevice() : Device("Eth") {}
 };
 
 class EthP2PServer : public P2PServer {
 public:
-  virtual bool allow_discover_impl(void) {
-    return true;
-  }
-  virtual bool disallow_discover_impl(void) {
-    return true;
-  }
+  virtual bool allow_discover_impl(void) { return true; }
+  virtual bool disallow_discover_impl(void) { return true; }
+
+  EthP2PServer() : P2PServer("Eth") {}
 };
 
 class EthServerAdapter : public ServerAdapter {
 public:
-  EthServerAdapter(int id, const char* name, int port) : ServerAdapter(id, name) { 
-    EthDevice* device = EthDevice::getSingleton();
-    EthP2PServer* p2pServer = new EthP2PServer();
-    TcpServerSocket* serverSocket = new TcpServerSocket(port);
+  EthServerAdapter(int id, const char *name, int port)
+      : ServerAdapter(id, name) {
+    EthDevice *device = EthDevice::getSingleton();
+    EthP2PServer *p2pServer = new EthP2PServer();
+    TcpServerSocket *serverSocket = new TcpServerSocket(name, port);
     serverSocket->set_ip_address_raw(htonl(INADDR_ANY));
     this->initialize(device, p2pServer, serverSocket, false);
   }
 
-  ~EthServerAdapter(void) {
-  }
+  ~EthServerAdapter(void) {}
 
 protected:
 }; /* class EthServerAdapter */

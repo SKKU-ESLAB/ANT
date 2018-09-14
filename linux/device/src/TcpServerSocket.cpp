@@ -49,20 +49,20 @@ bool TcpServerSocket::open_impl(void) {
 
   if (setsockopt(this->mServerSocket, SOL_SOCKET, SO_REUSEADDR, (char *)&reuse,
                  sizeof(int)) == -1) {
-    LOG_ERR("Socket setup failed");
+    LOG_ERR("%s: Socket setup failed", this->get_name());
     return false;
   }
 
   int err = ::bind(this->mServerSocket, (struct sockaddr *)&server_address,
                    sizeof(server_address));
   if (err < 0) {
-    LOG_ERR("Socket bind failed");
+    LOG_ERR("%s: Socket bind failed", this->get_name());
     return false;
   }
 
   err = ::listen(this->mServerSocket, 5);
   if (err < 0) {
-    LOG_ERR("Socket listen failed");
+    LOG_ERR("%s: Socket listen failed", this->get_name());
     return false;
   }
 
@@ -71,7 +71,7 @@ bool TcpServerSocket::open_impl(void) {
   int client_address_len = sizeof(client_address);
   const int kMaxTries = 10;
   for (int tries = 0; tries < kMaxTries; tries++) {
-    LOG_VERB("Accepting client... (%d)", tries);
+    LOG_VERB("%s: Accepting client... (%d)", this->get_name(), tries);
     this->mClientSocket =
         ::accept(this->mServerSocket, (struct sockaddr *)&client_address,
                  (socklen_t *)&client_address_len);
@@ -79,9 +79,9 @@ bool TcpServerSocket::open_impl(void) {
       return true;
     } else {
       if (errno == EINTR) {
-        LOG_WARN("Interrupted system call: Retry to accept...");
+        LOG_WARN("%s: Interrupted system call: Retry to accept...", this->get_name());
       } else {
-        LOG_ERR("Accept failed %s", strerror(errno));
+        LOG_ERR("%s: Accept failed %s", this->get_name(), strerror(errno));
         return false;
       }
     }
@@ -95,7 +95,7 @@ bool TcpServerSocket::close_impl(void) {
   this->mClientSocket = 0;
   this->mServerSocket = 0;
 
-  LOG_VERB("TCP Socket closed");
+  LOG_VERB("%s: TCP Socket closed", this->get_name());
 
   return true;
 }
@@ -110,13 +110,10 @@ int TcpServerSocket:: send_impl(const void *data_buffer, size_t data_length) {
     int once_sent_bytes =
         ::write(this->mClientSocket, data_buffer, data_length);
     if (once_sent_bytes <= 0) {
-      if (errno != EAGAIN) {
-        LOG_WARN("Cli sock closed");
-      }
       return -1;
     }
 #if VERBOSE_WFD_MSG != 0
-    LOG_DEBUG("WFD %d] send: %d", this->mPort, once_sent_bytes);
+    LOG_DEBUG("%s: Send: %d", this->get_name(), once_sent_bytes);
 #endif
     sent_bytes += once_sent_bytes;
   }
@@ -134,15 +131,12 @@ int TcpServerSocket::receive_impl(void *data_buffer, size_t data_length) {
     int once_received_bytes =
         ::read(this->mClientSocket, data_buffer, data_length);
     if (once_received_bytes <= 0) {
-      if (errno != EAGAIN) {
-        LOG_WARN("Cli sock closed");
-      }
       return -1;
     }
 
     received_bytes += once_received_bytes;
 #if VERBOSE_WFD_MSG != 0
-    LOG_DEBUG("WFD %d] receive : %d", this->mPort, once_received_bytes);
+    LOG_DEBUG("%s: Receive : %d", this->get_name(), once_received_bytes);
 #endif
   }
 

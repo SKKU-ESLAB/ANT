@@ -62,7 +62,7 @@ void ServerAdapter::connect(ConnectCallback callback, bool is_send_request) {
 }
 
 void ServerAdapter::disconnect(DisconnectCallback callback,
-                               bool is_send_request) {
+                               bool is_send_request, bool is_send_ack, bool is_on_purpose) {
   ServerAdapterState state = this->get_state();
   if (state == ServerAdapterState::kDisconnected ||
       state == ServerAdapterState::kDisconnecting) {
@@ -78,10 +78,16 @@ void ServerAdapter::disconnect(DisconnectCallback callback,
     return;
   }
 
+  // Check if the disconnection is on purpose
+  if (is_on_purpose) {
+    this->start_disconnecting_on_purpose();
+  }
+
   // Send request
   if (is_send_request) {
-    this->start_disconnecting_on_purpose();
     Core::get_instance()->send_request_disconnect(this->get_id());
+  } else if(is_send_ack) {
+    Core::get_instance()->send_request_disconnect_ack(this->get_id());
   }
 
   // Disconnect
@@ -524,7 +530,7 @@ void ServerAdapter::data_adapter_receive_loop(ServerAdapter *adapter) {
                  strerror(errno));
       } else {
         LOG_DEBUG("Receiving broken at %s (%d; %s)", adapter->get_name(), errno,
-                 strerror(errno));
+                  strerror(errno));
       }
       break;
     }
@@ -625,6 +631,6 @@ void ServerAdapter::disconnect_or_sleep(DisconnectCallback callback,
   if (this->is_sleeping_allowed()) {
     this->sleep(callback, is_send_request);
   } else {
-    this->disconnect(callback, is_send_request);
+    this->disconnect(callback, is_send_request, false, true);
   }
 }

@@ -51,8 +51,7 @@ public class NetworkSwitcher {
 
         this.setState(State.kSwitching);
 
-        core.sendRequestDisconnectAck((short) adapterId);
-        adapter.disconnect(null, false);
+        adapter.disconnect(null, false, true, true);
     }
 
     // Sleep adapter command.
@@ -87,7 +86,7 @@ public class NetworkSwitcher {
     // It is called by Core.
     void reconnectAdapter(ClientAdapter adapter) {
         // If it is disconnecting on purpose, do not reconnect it.
-        if(adapter.isDisconnectingOnPurpose()) {
+        if (adapter.isDisconnectingOnPurpose()) {
             return;
         }
 
@@ -252,7 +251,7 @@ public class NetworkSwitcher {
                 Logger.ERR(kTag, "Reconnecting adapter is failed: retry");
                 restartReconnectAdapterTx(mTargetAdapter);
             }
-            this.mTargetAdapter.disconnect(onDisconnectAdapter, false);
+            this.mTargetAdapter.disconnect(onDisconnectAdapter, false, false, false);
         }
 
         private OnDisconnectAdapter onDisconnectAdapter;

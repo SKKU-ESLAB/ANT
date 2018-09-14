@@ -65,8 +65,7 @@ void NetworkSwitcher::disconnect_adapter_by_peer(int adapter_id) {
 
   this->set_state(NSState::kNSStateSwitching);
 
-  core->send_request_disconnect_ack(adapter_id);
-  adapter->disconnect(NULL, false);
+  adapter->disconnect(NULL, false, true, true);
 }
 
 void NetworkSwitcher::sleep_adapter_by_peer(int adapter_id) {
@@ -406,7 +405,7 @@ bool ReconnectAdapterTransaction::start() {
     return false;
   }
   this->mTargetAdapter->disconnect(
-      ReconnectAdapterTransaction::disconnect_callback, false);
+      ReconnectAdapterTransaction::disconnect_callback, false, false, false);
   return true;
 }
 

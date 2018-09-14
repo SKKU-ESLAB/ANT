@@ -42,23 +42,23 @@ bool RfcommServerSocket::open_impl(void) {
 
   this->mServerSocket = ::socket(AF_BLUETOOTH, SOCK_STREAM, BTPROTO_RFCOMM);
   if (this->mServerSocket < 0) {
-    LOG_ERR("Bluetooth socket open failed(%s)", strerror(errno));
+    LOG_ERR("%s: Bluetooth socket open failed(%s)", this->get_name(), strerror(errno));
     return false;
   }
 
   this->mPort = this->bt_dynamic_bind_rc();
   if (this->mPort < 1 || this->mPort > 30) {
-    LOG_ERR("Bluetooth socket bind failed(%s)", strerror(errno));
+    LOG_ERR("%s: Bluetooth socket bind failed(%s)", this->get_name(), strerror(errno));
     return false;
   }
 
   if (this->bt_register_service() < 0) {
-    LOG_ERR("Bluetooth sdp session creation failed(%s)", strerror(errno));
+    LOG_ERR("%s: Bluetooth sdp session creation failed(%s)", this->get_name(), strerror(errno));
     return false;
   }
 
   if (::listen(this->mServerSocket, 1) < 0) {
-    LOG_ERR("Listening failed(%s)", strerror(errno));
+    LOG_ERR("%s: Listening failed(%s)", this->get_name(), strerror(errno));
     return false;
   }
 
@@ -69,11 +69,11 @@ bool RfcommServerSocket::open_impl(void) {
       0,
   };
   socklen_t opt = sizeof(client_addr);
-  LOG_VERB("Bluetooth accept...");
+  LOG_DEBUG("%s: Bluetooth accept...", this->get_name());
   this->mClientSocket =
       ::accept(this->mServerSocket, (struct sockaddr *)&client_addr, &opt);
   if (this->mClientSocket < 0) {
-    LOG_ERR("Bluetooth accept failed(%s)", strerror(errno));
+    LOG_ERR("%s: Bluetooth accept failed(%s)", this->get_name(), strerror(errno));
     return false;
   }
 
@@ -95,7 +95,7 @@ int RfcommServerSocket::bt_dynamic_bind_rc(void) {
     err = ::bind(this->mServerSocket, (struct sockaddr *)&sockaddr,
                  sizeof(struct sockaddr_rc));
     if (!err) {
-      LOG_VERB("BT port binded : %d", port);
+      LOG_VERB("%s: BT port binded: %d", this->get_name(), port);
       return port;
     }
 
@@ -156,7 +156,7 @@ int RfcommServerSocket::bt_register_service() {
     sdp_session =
         sdp_connect(&my_bdaddr_any, &my_bdaddr_local, SDP_RETRY_IF_BUSY);
     if (NULL == sdp_session) {
-      LOG_ERR("Cannot connect to bluetooth sdp server");
+      LOG_ERR("%s: Cannot connect to bluetooth sdp server", this->get_name());
       res = -1;
       break;
     }
@@ -182,7 +182,7 @@ bool RfcommServerSocket::close_impl(void) {
   this->mClientSocket = 0;
   this->mServerSocket = 0;
 
-  LOG_VERB("RFCOMM Socket closed");
+  LOG_VERB("%s: RFCOMM Socket closed", this->get_name());
 
   return true;
 }
@@ -191,7 +191,7 @@ int RfcommServerSocket::send_impl(const void *data_buffer, size_t data_length) {
   int sent_bytes = 0;
 
   if (this->mClientSocket <= 0) {
-    LOG_WARN("Socket closed");
+    LOG_WARN("%s: Socket closed", this->get_name());
     return -1;
   }
 
@@ -199,13 +199,10 @@ int RfcommServerSocket::send_impl(const void *data_buffer, size_t data_length) {
     int once_sent_bytes =
         ::write(this->mClientSocket, data_buffer, data_length);
     if (once_sent_bytes <= 0) {
-      if (errno != EAGAIN) {
-        LOG_WARN("Cli sock closed");
-      }
       return -1;
     }
 #if VERBOSE_BT_MSG != 0
-    LOG_DEBUG("BT %d] send: %d", this->mPort, once_sent_bytes);
+    LOG_DEBUG("%s: Send: %d", this->get_name(), once_sent_bytes);
 #endif
     sent_bytes += once_sent_bytes;
   }
@@ -223,15 +220,12 @@ int RfcommServerSocket::receive_impl(void *data_buffer, size_t data_length) {
     int once_received_bytes =
         ::read(this->mClientSocket, data_buffer, data_length);
     if (once_received_bytes <= 0) {
-      if (errno != EAGAIN) {
-        LOG_WARN("Cli sock closed");
-      }
       return -1;
     }
 
     received_bytes += once_received_bytes;
 #if VERBOSE_BT_MSG != 0
-    LOG_DEBUG("BT %d] receive : %d", this->mPort, once_received_bytes);
+    LOG_DEBUG("%s: Receive : %d", this->get_name(), once_received_bytes);
 #endif
   }
 

@@ -43,7 +43,7 @@ bool ServerSocket::open(void) {
 
 bool ServerSocket::close(void) {
   if(this->get_state() != ServerSocketState::kOpened) {
-    LOG_ERR("It is already closed or opening/closing is in progress.");
+    LOG_ERR("%s: It is already closed or opening/closing is in progress.", this->get_name());
     return false;
   }
 
@@ -57,7 +57,7 @@ bool ServerSocket::close(void) {
 
 int ServerSocket::send(const void *data_buffer, size_t data_length) {
   if(this->get_state() != ServerSocketState::kOpened) {
-    LOG_ERR("Socket is not opened");
+    LOG_ERR("%s: Socket is not opened", this->get_name());
     return -1;
   }
   
@@ -70,7 +70,7 @@ int ServerSocket::send(const void *data_buffer, size_t data_length) {
 
 int ServerSocket::receive(void *data_buffer, size_t data_length) {
   if(this->get_state() != ServerSocketState::kOpened) {
-    LOG_ERR("Socket is not opened");
+    LOG_ERR("%s: Socket is not opened", this->get_name());
     return -1;
   }
   

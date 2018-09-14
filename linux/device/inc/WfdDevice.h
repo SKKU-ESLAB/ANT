@@ -47,7 +47,7 @@ public:
   }
 
 protected:
-  WfdDevice() : Device("Wi-fi Direct") {
+  WfdDevice() : Device("WFD") {
   }
 
 }; /* class WfdDevice */

@@ -569,7 +569,7 @@ public class Core {
                     int adapterState = controlAdapter.getState();
                     if (adapterState != ClientAdapter.State.kDisconnected && adapterState !=
                             ClientAdapter.State.kDisconnecting) {
-                        controlAdapter.disconnect(onDisconnectControlAdapter, true);
+                        controlAdapter.disconnect(onDisconnectControlAdapter, true, false, true);
                     }
                 }
             }
@@ -610,7 +610,7 @@ public class Core {
                     // Disconnect only active control adapters
                     synchronized (mCaller.mDataAdapters) {
                         for (ClientAdapter dataAdapter : mCaller.mDataAdapters) {
-                            dataAdapter.disconnect(onDisconnectDataAdapter, true);
+                            dataAdapter.disconnect(onDisconnectDataAdapter, true, false, true);
                         }
                     }
                 }

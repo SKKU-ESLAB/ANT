@@ -228,22 +228,27 @@ void Core::send_request(CtrlReq request_code, uint16_t adapter_id) {
 
 void Core::send_request_connect(uint16_t adapter_id) {
   this->send_request(kCtrlReqConnect, adapter_id);
+  LOG_VERB("Send(Control Message): Request(Connect %d)", adapter_id);
 }
 
 void Core::send_request_disconnect(uint16_t adapter_id) {
   this->send_request(kCtrlReqDisconnect, adapter_id);
+  LOG_VERB("Send(Control Msg): Request(Disconnect %d)", adapter_id);
 }
 
 void Core::send_request_disconnect_ack(uint16_t adapter_id) {
   this->send_request(kCtrlReqDisconnectAck, adapter_id);
+  LOG_VERB("Send(Control Msg): Request(DisconnectAck %d)", adapter_id);
 }
 
 void Core::send_request_sleep(uint16_t adapter_id) {
   this->send_request(kCtrlReqSleep, adapter_id);
+  LOG_VERB("Send(Control Msg): Request(Sleep %d)", adapter_id);
 }
 
 void Core::send_request_wake_up(uint16_t adapter_id) {
   this->send_request(kCtrlReqWakeUp, adapter_id);
+  LOG_VERB("Send(Control Msg): Request(WakeUp %d)", adapter_id);
 }
 
 void Core::send_noti_private_data(PrivType priv_type, char *private_data_buf,
@@ -263,10 +268,12 @@ void Core::send_noti_private_data(PrivType priv_type, char *private_data_buf,
   uint32_t net_priv_type = htonl((unsigned long)priv_type);
   uint32_t net_private_data_len = htonl(private_data_len);
 
+  LOG_VERB("Send(Control Msg): Request(Priv Noti--Start)");
   this->send_control_message(&request_code, 1);
   this->send_control_message(&net_priv_type, 4);
   this->send_control_message(&net_private_data_len, 4);
   this->send_control_message(private_data_buf, private_data_len);
+  LOG_VERB("Send(Control Msg): Request(Priv Noti '%s'; type=%d)", private_data_buf, priv_type);
 }
 
 void Core::control_adapter_receive_loop(ServerAdapter *adapter) {
@@ -304,24 +311,19 @@ void Core::control_adapter_receive_loop(ServerAdapter *adapter) {
       adapter_id = ntohs(n_adapter_id);
 
       if (req_code == CtrlReq::kCtrlReqConnect) {
-        LOG_DEBUG("Control Request: 'Connect Adapter Request' (%d)",
-                  (int)adapter_id);
+        LOG_VERB("Receive(Control Msg): Request(Connect %d)", adapter_id);
         NetworkSwitcher::get_instance()->connect_adapter_by_peer(adapter_id);
       } else if (req_code == CtrlReq::kCtrlReqSleep) {
-        LOG_DEBUG("Control Request: 'Sleep Adapter Request' (%d)",
-                  (int)adapter_id);
+        LOG_VERB("Receive(Control Msg): Request(Sleep %d)", adapter_id);
         NetworkSwitcher::get_instance()->sleep_adapter_by_peer(adapter_id);
       } else if (req_code == CtrlReq::kCtrlReqWakeUp) {
-        LOG_DEBUG("Control Request: 'Wake Up Adapter Request' (%d)",
-                  (int)adapter_id);
+        LOG_VERB("Receive(Control Msg): Request(WakeUp %d)", adapter_id);
         NetworkSwitcher::get_instance()->wake_up_adapter_by_peer(adapter_id);
       } else if (req_code == CtrlReq::kCtrlReqDisconnect) {
-        LOG_DEBUG("Control Request: 'Disconnect Adapter Request' (%d)",
-                  (int)adapter_id);
+        LOG_VERB("Receive(Control Msg): Request(Disconnect %d)", adapter_id);
         NetworkSwitcher::get_instance()->disconnect_adapter_by_peer(adapter_id);
       } else if (req_code == CtrlReq::kCtrlReqDisconnectAck) {
-        LOG_DEBUG("Control Request: 'Disconnect Adapter Request Ack' (%d)",
-                  (int)adapter_id);
+        LOG_VERB("Receive(Control Msg): Request(DisconnectAck %d)", adapter_id);
         ServerAdapter *disconnect_adapter =
             Core::get_instance()->find_adapter_by_id((int)adapter_id);
         if (disconnect_adapter == NULL) {
@@ -331,7 +333,7 @@ void Core::control_adapter_receive_loop(ServerAdapter *adapter) {
         }
       }
     } else if (req_code == CtrlReq::kCtrlReqPriv) {
-      LOG_VERB("Private data arrived");
+      LOG_VERB("Receive(Control Msg): Request(Priv Noti--Start)");
       uint16_t n_priv_type;
       PrivType priv_type;
       uint32_t n_len;
@@ -358,6 +360,7 @@ void Core::control_adapter_receive_loop(ServerAdapter *adapter) {
       res = adapter->receive(data, len);
       if (res <= 0)
         break;
+      LOG_VERB("Receive(Control Msg): Request(Priv Noti '%s'; type=%d)", data, priv_type);
 
       for (std::vector<ControlMessageListener *>::iterator it =
                core->mControlMessageListeners.begin();
@@ -476,7 +479,7 @@ void StopCoreTransaction::start() {
     if (state != ServerAdapterState::kDisconnected &&
         state != ServerAdapterState::kDisconnecting) {
       control_adapter->disconnect(
-          StopCoreTransaction::disconnect_control_adapter_callback, true);
+          StopCoreTransaction::disconnect_control_adapter_callback, true, false, true);
     }
   }
 }
@@ -527,7 +530,7 @@ void StopCoreTransaction::disconnect_control_adapter_callback(bool is_success) {
       if (state != ServerAdapterState::kDisconnected &&
           state != ServerAdapterState::kDisconnecting) {
         data_adapter->disconnect(
-            StopCoreTransaction::disconnect_data_adapter_callback, true);
+            StopCoreTransaction::disconnect_data_adapter_callback, true, false, true);
       }
     }
   }

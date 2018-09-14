@@ -1,6 +1,6 @@
 /* Copyright 2017-2018 All Rights Reserved.
  *  Gyeonghwan Hong (redcarrottt@gmail.com)
- *  
+ *
  * [Contact]
  *  Gyeonghwan Hong (redcarrottt@gmail.com)
  *
@@ -24,14 +24,14 @@
 
 #include <WfdIpAddressListener.h>
 
-#include <thread>
 #include <mutex>
+#include <thread>
 
-#include <stdio.h>
-#include <sys/socket.h>
 #include <arpa/inet.h>
 #include <errno.h>
+#include <stdio.h>
 #include <string.h>
+#include <sys/socket.h>
 #include <unistd.h>
 
 namespace sc {
@@ -45,19 +45,18 @@ public:
   virtual int send_impl(const void *data_buffer, size_t data_length);
   virtual int receive_impl(void *data_buffer, size_t data_length);
 
-  virtual void on_change_ip_address(const char* ip_address);
+  virtual void on_change_ip_address(const char *ip_address);
 
   void set_ip_address_raw(unsigned long ip_address_raw) {
     this->mIpAddressRaw = ip_address_raw;
   }
 
-  TcpServerSocket(int port) {
+  TcpServerSocket(const char *name, int port) : ServerSocket(name) {
     this->mPort = port;
     this->mIpAddressRaw = 0;
   }
 
-  ~TcpServerSocket(void) {
-  }
+  ~TcpServerSocket(void) {}
 
 protected:
   int mPort;

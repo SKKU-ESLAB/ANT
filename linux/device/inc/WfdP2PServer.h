@@ -54,7 +54,7 @@ public:
   ~WfdP2PServer(void) {}
 
 protected:
-  WfdP2PServer(const char *wfd_device_name, void *owner) {
+  WfdP2PServer(const char *wfd_device_name, void *owner) : P2PServer("WFD") {
     snprintf(this->mWfdDeviceName, 100, "%s", wfd_device_name);
     this->mWfdDeviceName[0] = '\0';
     this->mWpaIntfName[0] = '\0';
