@@ -47,7 +47,7 @@ public:
   }
 
 protected:
-  BtP2PServer(void) {
+  BtP2PServer(void) : P2PServer("BT") {
   }
 }; /* class BtP2PServer */
 

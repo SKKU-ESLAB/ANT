@@ -1,6 +1,6 @@
 /* Copyright 2017-2018 All Rights Reserved.
  *  Gyeonghwan Hong (redcarrottt@gmail.com)
- *  
+ *
  * [Contact]
  *  Gyeonghwan Hong (redcarrottt@gmail.com)
  *
@@ -22,22 +22,22 @@
 
 #include <ServerSocket.h>
 
-#include <thread>
 #include <mutex>
+#include <thread>
 
-#include <stdio.h>
-#include <sys/socket.h>
 #include <arpa/inet.h>
 #include <errno.h>
+#include <stdio.h>
 #include <string.h>
+#include <sys/socket.h>
 #include <unistd.h>
 
-#include <bluetooth/sdp.h>
-#include <bluetooth/sdp_lib.h>
+#include <bluetooth/bluetooth.h>
 #include <bluetooth/hci.h>
 #include <bluetooth/hci_lib.h>
-#include <bluetooth/bluetooth.h>
 #include <bluetooth/rfcomm.h>
+#include <bluetooth/sdp.h>
+#include <bluetooth/sdp_lib.h>
 
 namespace sc {
 
@@ -48,24 +48,22 @@ public:
   virtual int send_impl(const void *data_buffer, size_t data_length);
   virtual int receive_impl(void *data_buffer, size_t data_length);
 
-  uuid_t get_service_uuid(void) {
-    return this->mServiceUUID;
-  }
+  uuid_t get_service_uuid(void) { return this->mServiceUUID; }
 
-  RfcommServerSocket(const char* service_uuid) {
+  RfcommServerSocket(const char *name, const char *service_uuid)
+      : ServerSocket(name) {
     char buffer[100];
     snprintf(buffer, 100, "%s", service_uuid);
     this->str2uuid(buffer, &(this->mServiceUUID));
   }
 
-  ~RfcommServerSocket(void) {
-  }
+  ~RfcommServerSocket(void) {}
 
 protected:
   uuid_t mServiceUUID;
   int mPort;
 
-  sdp_session_t* mSdpSession;
+  sdp_session_t *mSdpSession;
   int mServerSocket;
   int mClientSocket;
 

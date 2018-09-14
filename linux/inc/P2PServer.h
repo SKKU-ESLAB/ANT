@@ -46,8 +46,9 @@ public:
     return this->mState;
   }
 
-  P2PServer(void) {
+  P2PServer(const char* name) {
     this->mState = P2PServerState::kDisallowed;
+    snprintf(this->mName, sizeof(this->mName), name);
   }
   ~P2PServer(void) {
   }
@@ -57,8 +58,15 @@ protected:
     this->mState = new_state;
   }
 
-  P2PServerState mState;
+  char* get_name() {
+    return this->mName;
+  }
 
+private:
+  P2PServerState mState;
+  char mName[256];
+
+protected:
   /* Reference Count */
   RefCount mRefCount;
 }; /* class P2PServer */

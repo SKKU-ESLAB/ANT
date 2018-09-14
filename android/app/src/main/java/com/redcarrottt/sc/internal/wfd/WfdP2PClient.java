@@ -54,7 +54,7 @@ class WfdP2PClient extends P2PClient {
         // TODO: Adding timeout on this transaction would be good.
         private OnDiscoverResult mOnDiscoverResult;
         private int mTries = 0;
-        private final int kMaxTries = 5;
+        private final int kMaxTries = 100;
 
         void run(OnDiscoverResult onDiscoverResult) {
             this.mTries = 0;

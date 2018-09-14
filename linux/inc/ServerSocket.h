@@ -1,6 +1,6 @@
 /* Copyright 2017-2018 All Rights Reserved.
  *  Gyeonghwan Hong (redcarrottt@gmail.com)
- *  
+ *
  * [Contact]
  *  Gyeonghwan Hong (redcarrottt@gmail.com)
  *
@@ -20,17 +20,17 @@
 #ifndef _SERVER_SOCKET_H_
 #define _SERVER_SOCKET_H_
 
-#include <thread>
 #include <mutex>
+#include <thread>
 
 #include <stdio.h>
 
 namespace sc {
 
 typedef enum {
-  kClosed  = 0,
+  kClosed = 0,
   kOpening = 1,
-  kOpened  = 2,
+  kOpened = 2,
   kClosing = 3
 } ServerSocketState;
 
@@ -46,22 +46,23 @@ public:
   virtual int send_impl(const void *data_buffer, size_t data_length) = 0;
   virtual int receive_impl(void *data_buffer, size_t data_length) = 0;
 
-  ServerSocketState get_state(void) {
-    return this->mState;
-  }
+  ServerSocketState get_state(void) { return this->mState; }
 
-  ServerSocket(void) {
+  ServerSocket(const char *name) {
     this->mState = ServerSocketState::kClosed;
+    snprintf(this->mName, sizeof(this->mName), name);
   }
 
-  ~ServerSocket(void) {
-  }
+  ~ServerSocket(void) {}
 
 protected:
-  void set_state(ServerSocketState new_state) {
-    this->mState = new_state;
-  }
+  void set_state(ServerSocketState new_state) { this->mState = new_state; }
+
+  char *get_name() { return this->mName; }
+
+private:
   ServerSocketState mState;
+  char mName[256];
 }; /* class ServerSocket */
 
 } /* namespace sc */

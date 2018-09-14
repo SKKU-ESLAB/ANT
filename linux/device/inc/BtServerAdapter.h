@@ -39,7 +39,7 @@ public:
       : ServerAdapter(id, name) {
     BtDevice *device = BtDevice::getSingleton();
     BtP2PServer *p2pServer = BtP2PServer::getSingleton();
-    RfcommServerSocket *serverSocket = new RfcommServerSocket(service_uuid);
+    RfcommServerSocket *serverSocket = new RfcommServerSocket(name, service_uuid);
     this->initialize(device, p2pServer, serverSocket, false);
   }
 

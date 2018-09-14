@@ -68,7 +68,7 @@ public:
    */
   /* Basic APIs related to connection/sleeping */
   void connect(ConnectCallback callback, bool is_send_request);
-  void disconnect(DisconnectCallback callback, bool is_send_request);
+  void disconnect(DisconnectCallback callback, bool is_send_request, bool is_send_ack, bool is_on_purpose);
   void sleep(DisconnectCallback callback, bool is_send_request);
   void wake_up(ConnectCallback callback, bool is_send_request);
   void connect_or_wake_up(ConnectCallback callback, bool is_send_request);

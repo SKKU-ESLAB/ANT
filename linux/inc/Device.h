@@ -36,6 +36,7 @@ typedef enum {
   kTurningOff = 3
 } DeviceState;
 
+class ServerAdapter;
 class Device {
 public:
   bool hold_and_turn_on(void);
@@ -60,10 +61,16 @@ protected:
   void set_state(DeviceState new_state) {
     this->mState = new_state;
   }
+  
+  char* get_name() {
+    return this->mName;
+  }
 
+private:
   DeviceState mState;
   char mName[256];
 
+protected:
   /* Reference Count */
   RefCount mRefCount;
 }; /* class Device */

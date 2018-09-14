@@ -50,16 +50,22 @@ public class ClientAdapter {
         thread.start();
     }
 
-    public void disconnect(DisconnectResultListener listener, boolean isSendRequest) {
+    public void disconnect(DisconnectResultListener listener, boolean isSendRequest, boolean
+            isSendAck, boolean isOnPurpose) {
         if (this.getState() == State.kDisconnected || this.getState() == State.kDisconnected) {
             Logger.ERR(kTag, "It's already disconnected or connection/disconnection is in " +
                     "progress");
             listener.onDisconnectResult(false);
         }
 
-        if (isSendRequest) {
+        if (isOnPurpose) {
             this.startDisconnectingOnPurpose();
+        }
+
+        if (isSendRequest) {
             Core.getInstance().sendRequestDisconnect((short) this.getId());
+        } else if (isSendAck) {
+            Core.getInstance().sendRequestDisconnectAck((short) this.getId());
         }
 
         DisconnectThread thread = new DisconnectThread(listener);
@@ -227,8 +233,12 @@ public class ClientAdapter {
             if (!res) {
                 this.onFail();
             }
+
+            Logger.VERB(kTag, self.getName() + "'s Disconnect Thread Finished. (id:" + this.getId
+                    () + ")");
         }
 
+        @SuppressWarnings("SynchronizeOnNonFinalField")
         private boolean __disconnect_thread() {
             // Finish sender & receiver threads
             if (self.mSenderThread != null) {
@@ -260,14 +270,24 @@ public class ClientAdapter {
             // Wait for sender/receiver thread
             try {
                 synchronized (self.mWaitSenderThread) {
-                    if (self.mWaitSenderThread) {
+                    if (self.mSenderThread.isOn()) {
+                        Logger.DEBUG(kTag, "Waiting for sender thread... " + mName);
+                        synchronized (self.mIsWaitSenderThread) {
+                            self.mIsWaitSenderThread = true;
+                        }
                         self.mWaitSenderThread.wait();
                     }
+                    Logger.DEBUG(kTag, "Sender thread's end is detected... " + mName);
                 }
                 synchronized (self.mWaitReceiverThread) {
-                    if (self.mWaitReceiverThread) {
+                    if (self.mReceiverThread.isOn()) {
+                        Logger.DEBUG(kTag, "Waiting for receiver thread..." + mName);
+                        synchronized (self.mIsWaitReceiverThread) {
+                            self.mIsWaitReceiverThread = true;
+                        }
                         self.mWaitReceiverThread.wait();
                     }
+                    Logger.DEBUG(kTag, "Receiver thread's end is detected... " + mName);
                 }
             } catch (InterruptedException e) {
                 e.printStackTrace();
@@ -369,7 +389,10 @@ public class ClientAdapter {
             synchronized (this.mIsSuspended) {
                 this.mIsSuspended = false;
             }
-            self.mWaitSenderThread = true;
+
+            synchronized (self.mIsWaitSenderThread) {
+                self.mIsWaitSenderThread = false;
+            }
 
             while (this.mIsOn) {
                 SegmentManager sm = SegmentManager.getInstance();
@@ -432,8 +455,11 @@ public class ClientAdapter {
             NetworkSwitcher.getInstance().reconnectAdapter(ClientAdapter.this);
             Logger.VERB(kTag, ClientAdapter.this.getName() + "'s Sender thread ends");
 
-            self.mWaitSenderThread.notifyAll();
-            self.mWaitSenderThread = false;
+            synchronized (self.mIsWaitSenderThread) {
+                if (self.mIsWaitSenderThread) {
+                    self.mWaitSenderThread.notifyAll();
+                }
+            }
         }
 
         public void finish() {
@@ -465,14 +491,17 @@ public class ClientAdapter {
             synchronized (this.mIsOn) {
                 this.mIsOn = true;
             }
-
-            self.mWaitReceiverThread = true;
+            synchronized (self.mIsWaitReceiverThread) {
+                self.mIsWaitReceiverThread = false;
+            }
 
             mReceiveLoop.receiveLoop(self);
 
-
-            self.mWaitReceiverThread.notifyAll();
-            self.mWaitReceiverThread = false;
+            synchronized (self.mIsWaitReceiverThread) {
+                if (self.mIsWaitReceiverThread) {
+                    self.mWaitReceiverThread.notifyAll();
+                }
+            }
         }
 
         public void finish() {
@@ -561,8 +590,11 @@ public class ClientAdapter {
     private ReceiverThread mReceiverThread;
     private ReceiveLoop mReceiveLoop;
     private Boolean mSenderSuspended;
-    private Boolean mWaitSenderThread;
-    private Boolean mWaitReceiverThread;
+
+    private Boolean mIsWaitSenderThread;
+    private Boolean mIsWaitReceiverThread;
+    private Object mWaitSenderThread = new Object();
+    private Object mWaitReceiverThread = new Object();
 
     @SuppressWarnings("SynchronizeOnNonFinalField")
     public boolean sleep(boolean isSendRequest) {
@@ -627,8 +659,8 @@ public class ClientAdapter {
         this.mSenderSuspended = false;
         this.mIsDisconnectingOnPurpose = false;
         this.mIsDisconnectingOnPurposePeer = false;
-        this.mWaitReceiverThread = false;
-        this.mWaitSenderThread = false;
+        this.mIsWaitReceiverThread = false;
+        this.mIsWaitSenderThread = false;
     }
 
     protected void initialize(Device device, P2PClient p2pClient, ClientSocket clientSocket) {
@@ -730,7 +762,7 @@ public class ClientAdapter {
     // Disconnecting on purpose by a device
     private boolean mIsDisconnectingOnPurpose;
     private boolean mIsDisconnectingOnPurposePeer;
-    private Object mWaitForDisconnectAck;
+    private Object mWaitForDisconnectAck = new Object();
 
     // State
     private Integer mState;

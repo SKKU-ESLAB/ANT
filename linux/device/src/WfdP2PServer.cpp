@@ -68,10 +68,10 @@ bool WfdP2PServer::allow_discover_impl(void) {
     char *ptr = strtok_r(buf, "\t \n\'", &ptrptr);
     while (ptr != NULL) {
       if (strstr(ptr, "FAIL")) {
-        LOG_WARN("P2P Group add failed");
+        LOG_WARN("%s: P2P Group add failed", this->get_name());
         return false;
       } else if (strstr(ptr, "OK")) {
-        LOG_VERB("P2P Group added");
+        LOG_VERB("%s: P2P Group added", this->get_name());
         break;
       }
 
@@ -82,7 +82,7 @@ bool WfdP2PServer::allow_discover_impl(void) {
   // Retrieve WPA Interface Name from wpa-cli
   ret_bool = this->retrieve_wpa_interface_name();
   if (!ret_bool) {
-    LOG_ERR("Could not WPA Interface name!");
+    LOG_ERR("%s: Could not WPA Interface name!", this->get_name());
     return false;
   }
 
@@ -101,20 +101,20 @@ bool WfdP2PServer::allow_discover_impl(void) {
     // MAC Address
     ret = this->get_wfd_p2p_device_addr(buf, 256);
     if (ret < 0) {
-      LOG_ERR("Cannot retrieve WFD Server MAC Address");
+      LOG_ERR("%s: Cannot retrieve WFD Server MAC Address", this->get_name());
       return false;
     }
-    LOG_VERB("WFD Server MAC Address: %s", buf);
+    LOG_VERB("%s: WFD Server MAC Address: %s", this->get_name(), buf);
     int adapter_id = ((WfdServerAdapter *)this->mOwner)->get_id();
     snprintf(wfdInfo, 1024, "%s", buf);
 
     // WPS PIN
     ret = this->reset_wfd_server(buf, 256);
     if (ret < 0) {
-      LOG_ERR("Cannot set WFD WPS PIN");
+      LOG_ERR("%s: Cannot set WFD WPS PIN", this->get_name());
       return false;
     }
-    LOG_VERB("WFD WPS PIN: %s", buf);
+    LOG_VERB("%s: WFD WPS PIN: %s", this->get_name(), buf);
     strncat(wfdInfo, "\n", 1024);
     strncat(wfdInfo, buf, 1024);
 
@@ -127,11 +127,11 @@ bool WfdP2PServer::allow_discover_impl(void) {
       usleep(300000);
     }
     if (ret < 0) {
-      LOG_ERR("IP Address is not set");
+      LOG_ERR("%s: IP Address is not set", this->get_name());
       return false;
     }
     char *ip_address = buf;
-    LOG_VERB("IP Address: %s", buf);
+    LOG_VERB("%s: IP Address: %s", this->get_name(), buf);
     strncat(wfdInfo, "\n", 1024);
     strncat(wfdInfo, buf, 1024);
 
@@ -140,7 +140,7 @@ bool WfdP2PServer::allow_discover_impl(void) {
      *  <WPS PIN>
      *  <Server IP Address>
      */
-    LOG_DEBUG("Send WFD Info: %s", wfdInfo);
+    LOG_DEBUG("%s: Send WFD Info: %s", this->get_name(), wfdInfo);
     Core::get_instance()->send_noti_private_data(PrivType::kPrivTypeWFDInfo,
                                                  wfdInfo, strlen(wfdInfo));
 
@@ -189,7 +189,7 @@ bool WfdP2PServer::retrieve_wpa_interface_name(void) {
       if (strstr(ptr, "p2p-wlan")) {
         snprintf(this->mWpaIntfName, sizeof(this->mWpaIntfName), "%s", ptr);
       } else if (strstr(ptr, "FAIL")) {
-        LOG_WARN("P2P ping failed");
+        LOG_WARN("%s: P2P ping failed", this->get_name());
         this->mWpaIntfName[0] = '\0';
         return false;
       }
@@ -268,7 +268,7 @@ int WfdP2PServer::get_wfd_p2p_device_addr(char *dev_addr, size_t len) {
   char buf[1024];
   int ret;
   if (this->mWpaIntfName[0] == '\0') {
-    LOG_VERB("WFD is not up");
+    LOG_VERB("%s: WFD is not up", this->get_name());
     return -1;
   }
 
@@ -284,7 +284,7 @@ int WfdP2PServer::get_wfd_p2p_device_addr(char *dev_addr, size_t len) {
       sscanf(ptr, "%*[^=]=%s", dev_addr);
       break;
     } else if (strstr(ptr, "FAIL")) {
-      LOG_WARN("Get p2p device address failed");
+      LOG_WARN("%s: Get p2p device address failed", this->get_name());
       return -1;
     }
 
@@ -305,7 +305,7 @@ int WfdP2PServer::reset_wfd_server(char *pin, size_t len) {
   };
   int ret;
   if (this->mWpaIntfName[0] == '\0') {
-    LOG_VERB("WFD is not up");
+    LOG_VERB("%s: WFD is not up", this->get_name());
     return -1;
   }
 
@@ -314,7 +314,7 @@ int WfdP2PServer::reset_wfd_server(char *pin, size_t len) {
     return ret;
 
   // Selected interface 'p2p-wlanx-y' 33996608
-  LOG_VERB("Pin parsing %s", buf);
+  LOG_VERB("%s: Pin parsing %s", this->get_name(), buf);
   char *ptrptr;
   char *ptr = strtok_r(buf, "\t \n\'", &ptrptr); // Selected
   ptr = strtok_r(NULL, "\t \n\'", &ptrptr);      // interface
@@ -322,10 +322,10 @@ int WfdP2PServer::reset_wfd_server(char *pin, size_t len) {
   ptr = strtok_r(NULL, "\t \n\'", &ptrptr);      // 33996608
 
   snprintf(pin, len, "%s", ptr);
-  LOG_VERB("Pin:%s", ptr);
+  LOG_VERB("%s: Pin:%s", this->get_name(), ptr);
 
   if (WfdP2PServer::sDhcpdPid == 0) {
-    LOG_VERB("UDHCP is off > turn it up");
+    LOG_VERB("%s: UDHCP is off > turn it up", this->get_name());
     WfdP2PServer::sDhcpdPid = this->set_dhcpd_config();
   }
 
@@ -350,14 +350,14 @@ int WfdP2PServer::get_wfd_ip_address(char *buf, size_t len) {
   while (ptr != NULL) {
     if (strstr(ptr, "ip_address") || strstr(ptr, "p2p_device_address")) {
       sscanf(ptr, "%*[^=]=%s", buf);
-      LOG_VERB("IP_Device_Addrress = %s", buf);
+      LOG_VERB("%s: IP_Device_Addrress = %s", this->get_name(), buf);
       return 0;
     }
 
     ptr = strtok_r(NULL, "\t \n\'", &ptrptr);
   }
 
-  LOG_WARN("Get IP address failed");
+  LOG_WARN("%s: Get IP address failed", this->get_name());
   return -1;
 }
 
@@ -388,7 +388,7 @@ bool WfdP2PServer::disallow_discover_impl(void) {
   int ret;
 
   if (this->mWpaIntfName[0] == '\0') {
-    LOG_VERB("WFD is not up");
+    LOG_VERB("%s: WFD is not up", this->get_name());
     return false;
   }
 
@@ -396,21 +396,20 @@ bool WfdP2PServer::disallow_discover_impl(void) {
 
   // Remove Wi-fi Direct P2P Group
   ret = this->wfd_remove_p2p_group(buf, 1024);
-  LOG_VERB(buf);
 
   char *ptrptr;
   char *ptr = strtok_r(buf, "\t \n\'", &ptrptr);
   while (ptr != NULL) {
     if (strstr(ptr, "OK")) {
-      LOG_VERB("Succedded to remove p2p group");
+      LOG_VERB("%s: Succedded to remove p2p group", this->get_name());
       return true;
     } else if (strstr(ptr, "FAIL")) {
-      LOG_VERB("Failed to remove p2p group");
+      LOG_VERB("%s: Failed to remove p2p group", this->get_name());
       return false;
     }
   }
 
-  LOG_ERR("Assertion: Must not reach here");
+  LOG_ERR("%s: Assertion: Must not reach here", this->get_name());
   return false;
 }
 
@@ -427,10 +426,10 @@ int WfdP2PServer::kill_dhcpd(void) {
   WfdP2PServer::sDhcpdEnabled = false;
 
   if (unlink(UDHCPD_CONFIG_PATH) != 0)
-    LOG_WARN("%s", strerror(errno));
+    LOG_WARN("%s: %s", this->get_name(), strerror(errno));
 
   if (WfdP2PServer::sDhcpdPid == 0) {
-    LOG_WARN("udhcpd is not alive");
+    LOG_WARN("%s: udhcpd is not alive", this->get_name());
     return 0;
   }
 
