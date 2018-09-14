@@ -31,6 +31,7 @@ class LogLevel {
 class LogReceiver extends BroadcastReceiver {
     public static final String kAction = "LogBroadcast";
     public static final String kKeyLogLevel = "LogLevel";
+    public static final String kKeyLogTag = "LogTag";
     public static final String kKeyLogMessage = "LogMessage";
 
     private Callback mCallback;
@@ -44,28 +45,30 @@ class LogReceiver extends BroadcastReceiver {
         String action = intent.getAction();
         assert action != null;
         if (action.equals(kAction)) {
+            String logTag = intent.getStringExtra(kKeyLogTag);
             String logMessage = intent.getStringExtra(kKeyLogMessage);
             int logLevel = intent.getIntExtra(kKeyLogLevel, LogLevel.DEBUG);
-            this.mCallback.onLogMessage(logLevel, logMessage);
+            this.mCallback.onLogMessage(logLevel, logTag, logMessage);
         }
     }
 
     interface Callback {
-        void onLogMessage(final int logLevel, String logMessage);
+        void onLogMessage(final int logLevel, String logTag, String logMessage);
     }
 }
 
 public class Logger {
-    private static void print(Context context, int logLevel, String logMessage) {
+    private static void print(Context context, int logLevel, String logTag, String logMessage) {
         Intent broadcastIntent = new Intent();
         broadcastIntent.setAction(LogReceiver.kAction);
         broadcastIntent.putExtra(LogReceiver.kKeyLogLevel, logLevel);
+        broadcastIntent.putExtra(LogReceiver.kKeyLogTag, logTag);
         broadcastIntent.putExtra(LogReceiver.kKeyLogMessage, logMessage);
         context.sendBroadcast(broadcastIntent);
     }
 
     private static void print(String tag, int logLevel, String logMessage) {
-        print(defaultContext, logLevel, "[" + tag + "] " + logMessage);
+        print(defaultContext, logLevel, tag, "[" + tag + "] " + logMessage);
     }
 
     public static void ERR(String tag, String logMessage) {

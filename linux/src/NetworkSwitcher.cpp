@@ -108,7 +108,7 @@ void NetworkSwitcher::reconnect_adapter(ServerAdapter *adapter,
   /* Wait until other adapter is disconnected */
   NSState state = this->get_state();
   if (retry_if_already_switching && state == NSState::kNSStateSwitching) {
-    LOG_VERB("It's now switching. Cannot reconnect control adapter.");
+    LOG_VERB("It's now switching. Cannot reconnect adapter %s", adapter->get_name());
     sleep(1);
     this->reconnect_adapter(adapter, retry_if_already_switching);
     return;

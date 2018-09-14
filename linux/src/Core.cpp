@@ -204,6 +204,8 @@ int Core::receive(void **pDataBuffer) {
 void Core::send_control_message(const void *dataBuffer, size_t dataLength) {
   ServerAdapter *control_adapter = this->get_active_control_adapter();
   control_adapter->send(dataBuffer, dataLength);
+  // TODO: WARN! Control adapter's send() does not care if the message is
+  // successfully sent or not!
 }
 
 void Core::send_request(CtrlReq request_code, uint16_t adapter_id) {
@@ -228,7 +230,7 @@ void Core::send_request(CtrlReq request_code, uint16_t adapter_id) {
 
 void Core::send_request_connect(uint16_t adapter_id) {
   this->send_request(kCtrlReqConnect, adapter_id);
-  LOG_VERB("Send(Control Message): Request(Connect %d)", adapter_id);
+  LOG_VERB("Send(Control Msg): Request(Connect %d)", adapter_id);
 }
 
 void Core::send_request_disconnect(uint16_t adapter_id) {
@@ -273,106 +275,127 @@ void Core::send_noti_private_data(PrivType priv_type, char *private_data_buf,
   this->send_control_message(&net_priv_type, 4);
   this->send_control_message(&net_private_data_len, 4);
   this->send_control_message(private_data_buf, private_data_len);
-  LOG_VERB("Send(Control Msg): Request(Priv Noti '%s'; type=%d)", private_data_buf, priv_type);
+  LOG_VERB("Send(Control Msg): Request(Priv Noti '%s'; type=%d)",
+           private_data_buf, priv_type);
 }
 
 void Core::control_adapter_receive_loop(ServerAdapter *adapter) {
   assert(adapter != NULL);
+
+  while (adapter->is_receiver_loop_on()) {
+    int res = Core::__control_adapter_receive_loop(adapter);
+    if (errno == EINTR) {
+      continue;
+    } else if (errno == EAGAIN) {
+      LOG_VERB("Receiving: Kernel I/O buffer is full at %s",
+               adapter->get_name());
+    } else if (res <= 0) {
+      break;
+    }
+  } // End while
+
+  // If control message loop is crashed, reconnect control adapter.
+  LOG_DEBUG("Control message loop is finished");
+}
+
+int Core::__control_adapter_receive_loop(ServerAdapter *adapter) {
+  Core *core = Core::get_instance();
 
   char data[512] = {
       0,
   };
   int res = 0;
 
-  Core *core = Core::get_instance();
-  while (adapter->is_receiver_loop_on()) {
-    // Receive 1Byte: Control Request Code
-    res = adapter->receive(data, 1);
-    if (res <= 0)
-      break;
+  // Receive 1Byte: Control Request Code
+  res = adapter->receive(data, 1);
+  if (res <= 0) {
+    return res;
+  }
 
-    char req_code = data[0];
-    /* If the control message is 'connect adapter', */
-    if (req_code == CtrlReq::kCtrlReqConnect ||
-        req_code == CtrlReq::kCtrlReqSleep ||
-        req_code == CtrlReq::kCtrlReqWakeUp ||
-        req_code == CtrlReq::kCtrlReqDisconnect ||
-        req_code == CtrlReq::kCtrlReqDisconnectAck) {
-      // Receive 2Byte: Adapter ID
-      res = adapter->receive(data, 2);
-      if (res <= 0)
-        break;
+  char req_code = data[0];
+  /* If the control message is 'connect adapter', */
+  if (req_code == CtrlReq::kCtrlReqConnect ||
+      req_code == CtrlReq::kCtrlReqSleep ||
+      req_code == CtrlReq::kCtrlReqWakeUp ||
+      req_code == CtrlReq::kCtrlReqDisconnect ||
+      req_code == CtrlReq::kCtrlReqDisconnectAck) {
+    // Receive 2Byte: Adapter ID
+    res = adapter->receive(data, 2);
+    if (res <= 0) {
+      return res;
+    }
 
-      // convert adapter_id to n_adapter_id
-      uint16_t n_adapter_id;
-      uint16_t adapter_id;
+    // convert adapter_id to n_adapter_id
+    uint16_t n_adapter_id;
+    uint16_t adapter_id;
 
-      memcpy(&n_adapter_id, data, 2);
-      adapter_id = ntohs(n_adapter_id);
+    memcpy(&n_adapter_id, data, 2);
+    adapter_id = ntohs(n_adapter_id);
 
-      if (req_code == CtrlReq::kCtrlReqConnect) {
-        LOG_VERB("Receive(Control Msg): Request(Connect %d)", adapter_id);
-        NetworkSwitcher::get_instance()->connect_adapter_by_peer(adapter_id);
-      } else if (req_code == CtrlReq::kCtrlReqSleep) {
-        LOG_VERB("Receive(Control Msg): Request(Sleep %d)", adapter_id);
-        NetworkSwitcher::get_instance()->sleep_adapter_by_peer(adapter_id);
-      } else if (req_code == CtrlReq::kCtrlReqWakeUp) {
-        LOG_VERB("Receive(Control Msg): Request(WakeUp %d)", adapter_id);
-        NetworkSwitcher::get_instance()->wake_up_adapter_by_peer(adapter_id);
-      } else if (req_code == CtrlReq::kCtrlReqDisconnect) {
-        LOG_VERB("Receive(Control Msg): Request(Disconnect %d)", adapter_id);
-        NetworkSwitcher::get_instance()->disconnect_adapter_by_peer(adapter_id);
-      } else if (req_code == CtrlReq::kCtrlReqDisconnectAck) {
-        LOG_VERB("Receive(Control Msg): Request(DisconnectAck %d)", adapter_id);
-        ServerAdapter *disconnect_adapter =
-            Core::get_instance()->find_adapter_by_id((int)adapter_id);
-        if (disconnect_adapter == NULL) {
-          LOG_WARN("Cannot find adapter %d", (int)adapter_id);
-        } else {
-          disconnect_adapter->peer_knows_disconnecting_on_purpose();
-        }
-      }
-    } else if (req_code == CtrlReq::kCtrlReqPriv) {
-      LOG_VERB("Receive(Control Msg): Request(Priv Noti--Start)");
-      uint16_t n_priv_type;
-      PrivType priv_type;
-      uint32_t n_len;
-      uint32_t len;
-
-      // Receive 4Byte: Priv Type
-      res = adapter->receive(&n_priv_type, 4);
-      if (res <= 0)
-        break;
-
-      priv_type = (ntohs(n_priv_type) == PrivType::kPrivTypeWFDInfo)
-                      ? PrivType::kPrivTypeWFDInfo
-                      : PrivType::kPrivTypeUnknown;
-
-      // Receive 4Byte: Private Data Length
-      res = adapter->receive(&n_len, 4);
-      if (res <= 0)
-        break;
-
-      len = ntohl(n_len);
-      assert(len <= 512);
-
-      // Receive nByte: Private Data
-      res = adapter->receive(data, len);
-      if (res <= 0)
-        break;
-      LOG_VERB("Receive(Control Msg): Request(Priv Noti '%s'; type=%d)", data, priv_type);
-
-      for (std::vector<ControlMessageListener *>::iterator it =
-               core->mControlMessageListeners.begin();
-           it != core->mControlMessageListeners.end(); it++) {
-        ControlMessageListener *listener = *it;
-        listener->on_receive_control_message(priv_type, data, len);
+    if (req_code == CtrlReq::kCtrlReqConnect) {
+      LOG_VERB("Receive(Control Msg): Request(Connect %d)", adapter_id);
+      NetworkSwitcher::get_instance()->connect_adapter_by_peer(adapter_id);
+    } else if (req_code == CtrlReq::kCtrlReqSleep) {
+      LOG_VERB("Receive(Control Msg): Request(Sleep %d)", adapter_id);
+      NetworkSwitcher::get_instance()->sleep_adapter_by_peer(adapter_id);
+    } else if (req_code == CtrlReq::kCtrlReqWakeUp) {
+      LOG_VERB("Receive(Control Msg): Request(WakeUp %d)", adapter_id);
+      NetworkSwitcher::get_instance()->wake_up_adapter_by_peer(adapter_id);
+    } else if (req_code == CtrlReq::kCtrlReqDisconnect) {
+      LOG_VERB("Receive(Control Msg): Request(Disconnect %d)", adapter_id);
+      NetworkSwitcher::get_instance()->disconnect_adapter_by_peer(adapter_id);
+    } else if (req_code == CtrlReq::kCtrlReqDisconnectAck) {
+      LOG_VERB("Receive(Control Msg): Request(DisconnectAck %d)", adapter_id);
+      ServerAdapter *disconnect_adapter =
+          Core::get_instance()->find_adapter_by_id((int)adapter_id);
+      if (disconnect_adapter == NULL) {
+        LOG_WARN("Cannot find adapter %d", (int)adapter_id);
+      } else {
+        disconnect_adapter->peer_knows_disconnecting_on_purpose();
       }
     }
-  } // End while
+  } else if (req_code == CtrlReq::kCtrlReqPriv) {
+    LOG_VERB("Receive(Control Msg): Request(Priv Noti--Start)");
+    uint16_t n_priv_type;
+    PrivType priv_type;
+    uint32_t n_len;
+    uint32_t len;
 
-  // If control message loop is crashed, reconnect control adapter.
-  LOG_DEBUG("Control message loop is finished");
+    // Receive 4Byte: Priv Type
+    res = adapter->receive(&n_priv_type, 4);
+    if (res <= 0) {
+      return res;
+    }
+
+    priv_type = (ntohs(n_priv_type) == PrivType::kPrivTypeWFDInfo)
+                    ? PrivType::kPrivTypeWFDInfo
+                    : PrivType::kPrivTypeUnknown;
+
+    // Receive 4Byte: Private Data Length
+    res = adapter->receive(&n_len, 4);
+    if (res <= 0) {
+      return res;
+    }
+
+    len = ntohl(n_len);
+    assert(len <= 512);
+
+    // Receive nByte: Private Data
+    res = adapter->receive(data, len);
+    if (res <= 0) {
+      return res;
+    }
+    LOG_VERB("Receive(Control Msg): Request(Priv Noti '%s'; type=%d)", data,
+             priv_type);
+
+    for (std::vector<ControlMessageListener *>::iterator it =
+             core->mControlMessageListeners.begin();
+         it != core->mControlMessageListeners.end(); it++) {
+      ControlMessageListener *listener = *it;
+      listener->on_receive_control_message(priv_type, data, len);
+    }
+  }
+  return res;
 }
 
 // Transactions
@@ -479,7 +502,8 @@ void StopCoreTransaction::start() {
     if (state != ServerAdapterState::kDisconnected &&
         state != ServerAdapterState::kDisconnecting) {
       control_adapter->disconnect(
-          StopCoreTransaction::disconnect_control_adapter_callback, true, false, true);
+          StopCoreTransaction::disconnect_control_adapter_callback, true, false,
+          true);
     }
   }
 }
@@ -530,7 +554,8 @@ void StopCoreTransaction::disconnect_control_adapter_callback(bool is_success) {
       if (state != ServerAdapterState::kDisconnected &&
           state != ServerAdapterState::kDisconnecting) {
         data_adapter->disconnect(
-            StopCoreTransaction::disconnect_data_adapter_callback, true, false, true);
+            StopCoreTransaction::disconnect_data_adapter_callback, true, false,
+            true);
       }
     }
   }

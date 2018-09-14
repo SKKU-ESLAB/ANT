@@ -222,10 +222,11 @@ class SegmentManager {
                 segment_enqueued = true;
             } else {
                 if (seg.seq_no < next_seq_no[type]) {
-                    Logger.DEBUG(kTag, ((type == kSegSend) ? "Sending Queue" : "Recving Queue") +
-                            Integer.toString(seg.seq_no) + ":" + Integer.toString
-                            (next_seq_no[type]));
-                    throw new AssertionError();
+                    // If duplicated data comes, ignore it.
+                    String queueName = (type == kSegSend) ? "SendQueue" : "ReceiveQueue";
+                    Logger.DEBUG(kTag, "Sequence No Error: (" + queueName + ") incoming=" + seg
+                            .seq_no + " / expected_next=" + next_seq_no[type]);
+                    return;
                 }
 
                 ListIterator it = pending_queue[type].listIterator();

@@ -336,37 +336,38 @@ public class MainActivity extends AppCompatActivity implements LogReceiver.Callb
     }
 
     @Override
-    public void onLogMessage(final int logLevel, final String logMessage) {
+    public void onLogMessage(final int logLevel, final String logTag, final String logMessage) {
         final int kPrintThreshold = LogLevel.VERB;
         final String kTag = "LOG";
         this.runOnUiThread(new Runnable() {
             @SuppressLint("SetTextI18n")
             @Override
             public void run() {
-                String printMessage = logMessage;
+                String printLevel = "";
                 int color = Color.BLACK;
                 switch (logLevel) {
                     case LogLevel.ERR:
-                        Log.e(kTag, logMessage);
-                        printMessage = "[E]" + printMessage;
+                        Log.e(logTag, logMessage);
+                        printLevel = "E";
                         color = Color.RED;
                         break;
                     case LogLevel.WARN:
-                        Log.w(kTag, logMessage);
-                        printMessage = "[W]" + printMessage;
+                        Log.w(logTag, logMessage);
+                        printLevel = "W";
                         color = Color.parseColor("#FF8000");
                         break;
                     case LogLevel.VERB:
-                        Log.i(kTag, logMessage);
-                        printMessage = "[V]" + printMessage;
+                        Log.i(logTag, logMessage);
+                        printLevel = "V";
                         color = Color.parseColor("#0072C1");
                         break;
                     case LogLevel.DEBUG:
-                        Log.d(kTag, logMessage);
-                        printMessage = "[D]" + printMessage;
+                        Log.d(logTag, logMessage);
+                        printLevel = "D";
                         color = Color.parseColor("#5C676F");
                         break;
                 }
+                String printMessage = "[" + printLevel + "/" + logTag + "] " + logMessage;
 
                 if (logLevel <= kPrintThreshold) {
                     mLogListViewData.add(0, new LogListViewItem(printMessage, color));
