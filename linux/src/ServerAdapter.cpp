@@ -453,7 +453,7 @@ void ServerAdapter::data_adapter_send_loop(void) {
     gettimeofday(&times[4], NULL);
 #endif
 
-    if (errno == EINTR) {
+    if (errno == EINTR || errno == 0) {
       sm->failed_sending(segment_to_send);
       continue;
     } else if (errno == EAGAIN) {
@@ -463,8 +463,8 @@ void ServerAdapter::data_adapter_send_loop(void) {
       continue;
     } else if (res < 0) {
       if (!is_disconnecting_on_purpose()) {
-        LOG_WARN("Sending %dB failed at %s (%d; %s)", len, this->get_name(),
-                 errno, strerror(errno));
+        LOG_WARN("Sending %dB failed at %s (%d / %d; %s)", len,
+                 this->get_name(), res, errno, strerror(errno));
       }
       sm->failed_sending(segment_to_send);
       break;
@@ -525,18 +525,18 @@ void ServerAdapter::data_adapter_receive_loop(ServerAdapter *adapter) {
     LOG_DEBUG("%s: Receiving...", adapter->get_name());
 #endif
     int res = adapter->receive(buf, len);
-    if (errno == EINTR) {
+    if (errno == EINTR || errno == 0) {
       continue;
     } else if (errno == EAGAIN) {
       LOG_WARN("Kernel I/O buffer is full at %s", adapter->get_name());
       continue;
     } else if (res < len) {
       if (!adapter->is_disconnecting_on_purpose()) {
-        LOG_WARN("Receiving failed at %s (%d; %s)", adapter->get_name(), errno,
-                 strerror(errno));
+        LOG_WARN("Receiving failed at %s (%d / %d; %s)", adapter->get_name(),
+                 errno, res, strerror(errno));
       } else {
-        LOG_DEBUG("Receiving broken at %s (%d; %s)", adapter->get_name(), errno,
-                  strerror(errno));
+        LOG_DEBUG("Receiving broken at %s (%d / %d; %s)", adapter->get_name(),
+                  errno, res, strerror(errno));
       }
       break;
     }
@@ -638,5 +638,24 @@ void ServerAdapter::disconnect_or_sleep(DisconnectCallback callback,
     this->sleep(callback, is_send_request);
   } else {
     this->disconnect(callback, is_send_request, false, true);
+  }
+}
+
+void ServerAdapter::set_state(ServerAdapterState new_state) {
+  ServerAdapterState old_state;
+
+  {
+    std::unique_lock<std::mutex> lck(this->mStateLock);
+    old_state = this->mState;
+    this->mState = new_state;
+  }
+
+  LOG_DEBUG("%s: State(%d->%d)", this->get_name(), old_state, new_state);
+
+  for (std::vector<ServerAdapterStateListener *>::iterator it =
+           this->mStateListeners.begin();
+       it != this->mStateListeners.end(); it++) {
+    ServerAdapterStateListener *listener = (*it);
+    listener->onUpdateServerAdapterState(this, old_state, new_state);
   }
 }

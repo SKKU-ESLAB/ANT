@@ -231,22 +231,7 @@ public:
 
 private:
   /* State setter */
-  void set_state(ServerAdapterState new_state) {
-    ServerAdapterState old_state;
-
-    {
-      std::unique_lock<std::mutex> lck(this->mStateLock);
-      old_state = this->mState;
-      this->mState = new_state;
-    }
-
-    for (std::vector<ServerAdapterStateListener *>::iterator it =
-             this->mStateListeners.begin();
-         it != this->mStateListeners.end(); it++) {
-      ServerAdapterStateListener *listener = (*it);
-      listener->onUpdateServerAdapterState(this, old_state, new_state);
-    }
-  }
+  void set_state(ServerAdapterState new_state);
 
   /* State */
   ServerAdapterState mState;

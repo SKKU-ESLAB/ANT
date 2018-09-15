@@ -199,7 +199,7 @@ int RfcommServerSocket::send_impl(const void *data_buffer, size_t data_length) {
     int once_sent_bytes =
         ::write(this->mClientSocket, data_buffer, data_length);
     if (once_sent_bytes <= 0) {
-      return -1;
+      return once_sent_bytes;
     }
 #if VERBOSE_BT_MSG != 0
     LOG_DEBUG("%s: Send: %d", this->get_name(), once_sent_bytes);
@@ -220,7 +220,7 @@ int RfcommServerSocket::receive_impl(void *data_buffer, size_t data_length) {
     int once_received_bytes =
         ::read(this->mClientSocket, data_buffer, data_length);
     if (once_received_bytes <= 0) {
-      return -1;
+      return once_received_bytes;
     }
 
     received_bytes += once_received_bytes;

@@ -258,23 +258,12 @@ class SegmentManager {
                 queue[type].notifyAll();
             }
         }
-
-//        if (type == kSegSend) {
-//            /*
-//            if (queue_size[type] > queue_threshold) {
-//                Core.getInstance().increase_adapter();
-//            } else if (queue_size[type] == 0) {
-//                Core.getInstance().decrease_adapter();
-//            }
-//            */
-//        }
     }
 
     public Segment dequeue(int type) {
         synchronized (queue[type]) {
             if (queue_size[type] == 0) {
                 try {
-                    //Logger.DEBUG(kTag, "Wating for queue is filled");
                     queue[type].wait();
                 } catch (InterruptedException e) {
                     e.printStackTrace();

@@ -49,7 +49,8 @@ import java.text.NumberFormat;
 import java.util.ArrayList;
 import java.util.Date;
 
-public class MainActivity extends AppCompatActivity implements LogReceiver.Callback {
+public class MainActivity extends AppCompatActivity implements LogReceiver.Callback,
+        CommInitializerResult {
     private static final String kTag = "MainActivity";
 
     // Components
@@ -96,6 +97,23 @@ public class MainActivity extends AppCompatActivity implements LogReceiver.Callb
 
         // Require permissions for SC
         this.requestPermissions();
+
+        // Initialize Communication Interfaces
+        Logger.VERB(kTag, "Initializing network interfaces...");
+        mCommInitializer = new CommInitializer(this, this);
+        mCommInitializer.start();
+    }
+
+
+    private CommInitializer mCommInitializer;
+
+    @Override
+    public void onCommInitializerResult(boolean isSuccess) {
+        if (isSuccess) {
+            Logger.VERB(kTag, "All network Interfaces ready");
+        } else {
+            Logger.VERB(kTag, "Initialization failed");
+        }
     }
 
     private View.OnClickListener onClickStartButton = new View.OnClickListener() {
