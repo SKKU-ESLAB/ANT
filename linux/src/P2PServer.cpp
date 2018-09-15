@@ -19,6 +19,8 @@
 
 #include <P2PServer.h>
 
+#include <DebugLog.h>
+
 using namespace sc;
 
 bool P2PServer::hold_and_allow_discover(void) {
@@ -26,9 +28,11 @@ bool P2PServer::hold_and_allow_discover(void) {
     bool res = this->allow_discover_impl();
 
     if(!res) {
+      LOG_DEBUG("%s: Failed to allow", this->get_name());
       this->mRefCount.decrease();
       this->set_state(P2PServerState::kDisallowed);
     } else {
+      LOG_DEBUG("%s: Successfully allowed", this->get_name());
       this->set_state(P2PServerState::kAllowed);
     }
     return res;
@@ -42,9 +46,11 @@ bool P2PServer::release_and_disallow_discover(void) {
     bool res = this->disallow_discover_impl();
 
     if(!res) {
+      LOG_DEBUG("%s: Failed to disallow", this->get_name());
       this->mRefCount.increase();
       this->set_state(P2PServerState::kAllowed);
     } else {
+      LOG_DEBUG("%s: Successfully disallowed", this->get_name());
       this->set_state(P2PServerState::kDisallowed);
     }
     return res;

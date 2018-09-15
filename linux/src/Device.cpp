@@ -28,13 +28,16 @@ bool Device::hold_and_turn_on(void) {
     bool res = this->turn_on_impl();
 
     if(!res) {
+      LOG_DEBUG("%s: Failed to turn on", this->get_name());
       this->mRefCount.decrease();
       this->set_state(DeviceState::kOff);
     } else {
+      LOG_DEBUG("%s: Successfully turned on", this->get_name());
       this->set_state(DeviceState::kOn);
     }
     return res;
   } else {
+    LOG_DEBUG("%s: Already turn on", this->get_name());
     // Already turn on
     return true;
   }
