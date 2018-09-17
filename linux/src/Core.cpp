@@ -325,8 +325,8 @@ void Core::send_noti_private_data(PrivType priv_type, char *private_data_buf,
   this->send_control_message(&net_priv_type, 4);
   this->send_control_message(&net_private_data_len, 4);
   this->send_control_message(private_data_buf, private_data_len);
-  LOG_VERB("Send(Control Msg): Request(Priv Noti '%s'; type=%d)",
-           private_data_buf, priv_type);
+  LOG_VERB("Send(Control Msg): Request(Priv Noti--End; type=%d)\n%s", priv_type,
+           private_data_buf);
 }
 
 void Core::control_adapter_receive_loop(ServerAdapter *adapter) {

@@ -163,7 +163,7 @@ private:
   void reset_send_queue(void);
   void reset_recv_queue(void);
 
-#if EXP_MEASURE_INTERVAL_SEND_QUEUE != 0
+#ifdef EXP_MEASURE_INTERVAL_SEND_QUEUE
   int mSendCount = 0;
   /* Milliseconds */
   int mIntervals[3] = {

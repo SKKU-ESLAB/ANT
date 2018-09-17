@@ -211,7 +211,7 @@ void SegmentManager::enqueue(SegQueueType type, Segment *seg) {
  * Note that this function is used for sending & receiving queue.
  */
 Segment *SegmentManager::dequeue(SegQueueType type) {
-#if EXP_MEASURE_INTERVAL_SEND_QUEUE != 0
+#ifdef EXP_MEASURE_INTERVAL_SEND_QUEUE
   struct timeval times[4];
   if (type == kSegSend)
     gettimeofday(&times[0], NULL);
@@ -222,7 +222,7 @@ Segment *SegmentManager::dequeue(SegQueueType type) {
   /* If queue is empty, wait until some segment is enqueued */
   int queueLength = this->mQueueLength[type].get_value();
 
-#if EXP_MEASURE_INTERVAL_SEND_QUEUE != 0
+#ifdef EXP_MEASURE_INTERVAL_SEND_QUEUE
   if (type == kSegSend) {
     gettimeofday(&times[1], NULL);
     if(this->mSendCount % 500 == 0) {
@@ -232,7 +232,7 @@ Segment *SegmentManager::dequeue(SegQueueType type) {
 #endif
 
   if (queueLength == 0) {
-#if VERBOSE_SEGMENT_QUEUE_WAITING != 0
+#ifdef VERBOSE_SEGMENT_QUEUE_WAITING
     if (type == kSegSend) {
       LOG_DEBUG("sending queue is empty. wait for another");
     } else {
@@ -240,7 +240,7 @@ Segment *SegmentManager::dequeue(SegQueueType type) {
     }
 #endif
 
-#if EXP_MEASURE_INTERVAL_SEND_QUEUE != 0
+#ifdef EXP_MEASURE_INTERVAL_SEND_QUEUE
   if (type == kSegSend)
     LOG_DEBUG("Try %d: Queue Length 0 %d %d %d", this->mSendCount, queueLength, this->mQueueLength[kSegSend].get_value(), this->mQueues[type].size());
 #endif
@@ -248,7 +248,7 @@ Segment *SegmentManager::dequeue(SegQueueType type) {
     this->mCondEnqueued[type].wait(lck);
   }
 
-#if EXP_MEASURE_INTERVAL_SEND_QUEUE != 0
+#ifdef EXP_MEASURE_INTERVAL_SEND_QUEUE
   if (type == kSegSend)
     gettimeofday(&times[2], NULL);
 #endif
@@ -262,12 +262,12 @@ Segment *SegmentManager::dequeue(SegQueueType type) {
   this->mQueues[type].pop_front();
   this->mQueueLength[type].decrease();
 
-#if EXP_MEASURE_INTERVAL_SEND_QUEUE != 0
+#ifdef EXP_MEASURE_INTERVAL_SEND_QUEUE
   if (type == kSegSend)
     gettimeofday(&times[3], NULL);
 #endif
 
-#if EXP_MEASURE_INTERVAL_SEND_QUEUE != 0
+#ifdef EXP_MEASURE_INTERVAL_SEND_QUEUE
   if (type == kSegSend) {
     for (int i = 0; i < 3; i++) {
       this->mIntervals[i] += (times[i + 1].tv_sec - times[i].tv_sec) * 1000 +

@@ -204,7 +204,7 @@ private:
 
 private:
   /* EXP: Measure sender thread loop's time interval */
-#if EXP_MEASURE_INTERVAL_SENDER != 0
+#ifdef EXP_MEASURE_INTERVAL_SENDER
 private:
   int mSendCount = 0;
   /* Milliseconds */
