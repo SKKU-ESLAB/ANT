@@ -49,7 +49,7 @@
 #if LOG_LEVEL < 1
 #define LOG_DEBUG(fmt, args...)                                                \
   do {                                                                         \
-    _log(fmt, "DEBUG", 9, ##args);                                             \
+    _log(fmt, "D", 9, ##args);                                             \
   } while (0)
 #else /* LOG_LEVEL >= 1 */
 #define LOG_DEBUG(fmt, args...)
@@ -58,7 +58,7 @@
 #if LOG_LEVEL < 2
 #define LOG_VERB(fmt, args...)                                                 \
   do {                                                                         \
-    _log(fmt, "VERB", 94, ##args);                                             \
+    _log(fmt, "V", 94, ##args);                                             \
   } while (0)
 #else /* LOG_LEVEL >= 2 */
 #define LOG_VERB(fmt, args...)
@@ -67,7 +67,7 @@
 #if LOG_LEVEL < 3
 #define LOG_WARN(fmt, args...)                                                 \
   do {                                                                         \
-    _log(fmt, "WARN", 91, ##args);                                             \
+    _log(fmt, "W", 91, ##args);                                             \
   } while (0)
 #else /* LOG_LEVEL >= 3 */
 #define LOG_WARN(fmt, args...)
@@ -76,7 +76,7 @@
 #if LOG_LEVEL < 4
 #define LOG_ERR(fmt, args...)                                                  \
   do {                                                                         \
-    _log(fmt, "ERR", 101, ##args);                                             \
+    _log(fmt, "E", 101, ##args);                                             \
   } while (0)
 #else /* LOG_LEVEL >= 4 */
 #define LOG_ERR(fmt, args...)
@@ -94,7 +94,7 @@
 inline void __log(const char *format, const char *fw, const char *fileName,
                   const char *funcName, int color, int lineNo, ...) {
   va_list ap;
-  printf("\033[%dm[%s] %s:%d (%s())  ", color, fw, fileName, lineNo, funcName);
+  printf("\033[%dm%s %s:%d (%s())  ", color, fw, fileName, lineNo, funcName);
   va_start(ap, lineNo);
   vprintf(format, ap);
   va_end(ap);
@@ -104,7 +104,7 @@ inline void __log(const char *format, const char *fw, const char *fileName,
 inline void __func(const char *format, const char *fw, const char *fileName,
                    const char *funcName, int lineNo, ...) {
   va_list ap;
-  printf("\033[2m[%s] %s:%d (%s())  ", fw, fileName, lineNo, funcName);
+  printf("\033[2m%s %s:%d (%s())  ", fw, fileName, lineNo, funcName);
   va_start(ap, lineNo);
   vprintf(format, ap);
   va_end(ap);

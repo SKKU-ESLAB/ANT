@@ -229,9 +229,9 @@ void on_connect(bool is_success) {
     iter++;
   }
 
-  printf("Finish Workload. Sleep 60 secs...\n");
+  printf("Finish Workload. Sleep 600 secs...\n");
 
-  sleep(60);
+  sleep(600);
 
   sc::stop_sc(NULL);
 

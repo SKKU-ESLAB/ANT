@@ -16,10 +16,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-#ifndef _NETWORK_SWITCHER_CONFIG_H_
-#define _NETWORK_SWITCHER_CONFIG_H_
-
 #define NETWORK_MONITOR_SLEEP_USECS (250 * 1000)
 
 /* Energy constants (mJ) */
@@ -40,5 +36,3 @@
 /* CoolSpots */
 #define AVERAGE_WFD_ON_LATENCY_SEC 8.04f /* 8.04 sec */
 #define MAX_BANDWIDTH 90000              /* 90000B/s */
-
-#endif /* !defined(_NETWORK_SWITCHER_CONFIG_H_) */

@@ -17,19 +17,20 @@
  * limitations under the License.
  */
 
-#include <ExpConfig.h>
-#include <NetworkSwitcher.h>
-#include <ServerAdapter.h>
+#include "../inc/ServerAdapter.h"
 
-#include <Core.h>
-#include <DebugLog.h>
+#include "../configs/ExpConfig.h"
+
+#include "../inc/Core.h"
+#include "../inc/DebugLog.h"
+#include "../inc/NetworkSwitcher.h"
 
 #include <arpa/inet.h>
 #include <mutex>
 #include <string.h>
 #include <thread>
 
-#if EXP_MEASURE_INTERVAL_SENDER != 0
+#ifdef EXP_MEASURE_INTERVAL_SENDER
 #include <sys/time.h>
 #endif
 
@@ -379,7 +380,7 @@ void ServerAdapter::data_adapter_send_loop(void) {
     this->mSenderSuspended = false;
   }
   while (this->mSenderLoopOn) {
-#if EXP_MEASURE_INTERVAL_SENDER != 0
+#ifdef EXP_MEASURE_INTERVAL_SENDER
     struct timeval times[5];
     gettimeofday(&times[0], NULL);
 #endif
@@ -411,23 +412,25 @@ void ServerAdapter::data_adapter_send_loop(void) {
     // At first, dequeue a segment from failed sending queue
     segment_to_send = sm->get_failed_sending();
 
-#if EXP_MEASURE_INTERVAL_SENDER != 0
+#ifdef EXP_MEASURE_INTERVAL_SENDER
     gettimeofday(&times[1], NULL);
 #endif
 
     // If there is no failed segment, dequeue from send queue
     if (likely(segment_to_send == NULL)) {
       segment_to_send = sm->dequeue(kSegSend);
-#if VERBOSE_SEGMENT_DEQUEUE == 1
-      LOG_DEBUG("Normal Segment: seqno=%d", segment_to_send->seq_no);
+#ifdef VERBOSE_SEGMENT_DEQUEUE
+      LOG_DEBUG("%s Normal Segment: seqno=%d", this->get_name(),
+                segment_to_send->seq_no);
 #endif
     } else {
-#if VERBOSE_SEGMENT_DEQUEUE == 1
-      LOG_DEBUG("Failed Segment: seqno=%d", segment_to_send->seq_no);
+#ifdef VERBOSE_SEGMENT_DEQUEUE
+      LOG_DEBUG("%s Failed Segment: seqno=%d", this->get_name(),
+                segment_to_send->seq_no);
 #endif
     }
 
-#if EXP_MEASURE_INTERVAL_SENDER != 0
+#ifdef EXP_MEASURE_INTERVAL_SENDER
     gettimeofday(&times[2], NULL);
 #endif
 
@@ -447,7 +450,7 @@ void ServerAdapter::data_adapter_send_loop(void) {
       }
     }
 
-#if EXP_MEASURE_INTERVAL_SENDER != 0
+#ifdef EXP_MEASURE_INTERVAL_SENDER
     gettimeofday(&times[3], NULL);
 #endif
 
@@ -456,7 +459,7 @@ void ServerAdapter::data_adapter_send_loop(void) {
 
     int res = this->send(data, len);
 
-#if EXP_MEASURE_INTERVAL_SENDER != 0
+#ifdef EXP_MEASURE_INTERVAL_SENDER
     gettimeofday(&times[4], NULL);
 #endif
 
@@ -492,7 +495,7 @@ void ServerAdapter::data_adapter_send_loop(void) {
 
     sm->free_segment(segment_to_send);
 
-#if EXP_MEASURE_INTERVAL_SENDER != 0
+#ifdef EXP_MEASURE_INTERVAL_SENDER
     gettimeofday(&times[5], NULL);
 
     for (int i = 0; i < 4; i++) {
@@ -541,7 +544,7 @@ void ServerAdapter::data_adapter_receive_loop(ServerAdapter *adapter) {
     void *buf = reinterpret_cast<void *>(segment_to_receive->data);
     int len = kSegSize + kSegHeaderSize;
 
-#if VERBOSE_SERVER_ADAPTER_RECEIVING != 0
+#ifdef VERBOSE_SERVER_ADAPTER_RECEIVING
     LOG_DEBUG("%s: Receiving...", adapter->get_name());
 #endif
     int res = adapter->receive(buf, len);
@@ -571,7 +574,7 @@ void ServerAdapter::data_adapter_receive_loop(ServerAdapter *adapter) {
     sm->enqueue(kSegRecv, segment_to_receive);
     segment_to_receive = sm->get_free_segment();
 
-#if VERBOSE_SERVER_ADAPTER_RECEIVING != 0
+#ifdef VERBOSE_SERVER_ADAPTER_RECEIVING
     LOG_DEBUG("%s: Received: %d", adapter->get_name(), res);
 #endif
   }

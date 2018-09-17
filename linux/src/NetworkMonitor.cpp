@@ -17,11 +17,13 @@
  * limitations under the License.
  */
 
-#include <NetworkMonitor.h>
-#include <NetworkSwitcher.h>
+#include "../inc/NetworkMonitor.h"
+#include "../inc/NetworkSwitcher.h"
 
-#include <ExpConfig.h>
-#include <NetworkSwitcherConfig.h>
+#include "../configs/ExpConfig.h"
+#include "../configs/NetworkSwitcherConfig.h"
+
+#include <string.h>
 
 using namespace sc;
 
@@ -58,8 +60,8 @@ void NetworkMonitor::switcher_thread(void) {
 }
 
 void NetworkMonitor::print_stats(Stats &stats) {
-#if PRINT_NETWORK_MONITOR_STATISTICS == 0
-  return;
+#ifndef PRINT_NETWORK_MONITOR_STATISTICS
+   return;
 #else
   if (Core::get_instance()->get_state() != CMState::kCMStateReady) {
     return;
@@ -67,11 +69,8 @@ void NetworkMonitor::print_stats(Stats &stats) {
 
   const int k_state_str_length = 20;
   char state_str[k_state_str_length];
-  switch (this->get_state()) {
-  case NSState::kNSStateInitialized:
-    strncpy(state_str, "Initialized", k_state_str_length);
-    break;
-  case NSState::kNSStateMonitoring:
+  switch (NetworkSwitcher::get_instance()->get_state()) {
+  case NSState::kNSStateReady:
     strncpy(state_str, "Ready", k_state_str_length);
     break;
   case NSState::kNSStateSwitching:
