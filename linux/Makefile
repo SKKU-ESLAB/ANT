@@ -21,7 +21,7 @@ OBJ=$(patsubst %, $(OBJ_DIR)/%, $(_OBJ))
 
 $(DEV_OBJ_DIR)/%.o: $(DEV_SRC)/%.cpp
 	$(CC) -o $@ -c $< -I$(INC) -I$(INC_CONFIG) -I$(DEV_INC) $(FLAG) $(LIB) 
-_DEV_OBJ=BtDevice.o BtP2PServer.o RfcommServerSocket.o TcpServerSocket.o Util.o WfdDevice.o WfdP2PServer.o EthServerAdapter.o
+_DEV_OBJ=BtDevice.o BtP2PServer.o RfcommServerSocket.o TcpServerSocket.o Util.o WfdDevice.o WfdP2PServer.o EthServerAdapter.o CommInitializer.o
 DEV_OBJ=$(patsubst %, $(DEV_OBJ_DIR)/%, $(_DEV_OBJ)) 
 
 all : outdir exp tests
@@ -31,7 +31,7 @@ outdir :
 
 exp: trace_runner
 
-tests: bt_only_test bt_control_wfd_data_test wpa_cli_test udhcpd_test
+tests: bt_only_test bt_control_wfd_data_test comm_init_test wpa_cli_test udhcpd_test
 
 trace_runner: exp/trace_runner.cpp $(OBJ) $(DEV_OBJ)
 	$(CC) -o $(BIN_DIR)/$@ $^ -I$(INC) -I$(INC_CONFIG) $(FLAG) $(LIB) -I$(DEV_INC)
@@ -46,6 +46,9 @@ wpa_cli_test: tests/wpa_cli.cpp $(OBJ) $(DEV_OBJ)
 	$(CC) -o $(BIN_DIR)/$@ $^ -I$(INC) -I$(INC_CONFIG) $(FLAG) $(LIB) -I$(DEV_INC)
 
 udhcpd_test: tests/udhcpd.cpp $(OBJ) $(DEV_OBJ)
+	$(CC) -o $(BIN_DIR)/$@ $^ -I$(INC) -I$(INC_CONFIG) $(FLAG) $(LIB) -I$(DEV_INC)
+
+comm_init_test: tests/comm_init.cpp $(OBJ) $(DEV_OBJ)
 	$(CC) -o $(BIN_DIR)/$@ $^ -I$(INC) -I$(INC_CONFIG) $(FLAG) $(LIB) -I$(DEV_INC)
 
 clean:

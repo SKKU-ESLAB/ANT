@@ -17,5 +17,8 @@ package com.redcarrottt.sc.internal;
  * limitations under the License.
  */
 public class ExpConfig {
-    // Empty. Reserved for future use
+    public static final boolean VERBOSE_SEGMENT_DEQUEUE = true;
+    public static final boolean VERBOSE_RECEIVER_TIME = false;
+    public static final boolean VERBOSE_CLIENT_ADAPTER = false;
+    public static final boolean VERBOSE_BANDWIDTH_UPDATE = false;
 }

@@ -68,7 +68,7 @@ public class Logger {
     }
 
     private static void print(String tag, int logLevel, String logMessage) {
-        print(defaultContext, logLevel, tag, "[" + tag + "] " + logMessage);
+        print(defaultContext, logLevel, tag, logMessage);
     }
 
     public static void ERR(String tag, String logMessage) {

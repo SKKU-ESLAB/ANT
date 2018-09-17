@@ -20,6 +20,7 @@
  */
 
 #include <Core.h>
+
 #include <ExpConfig.h>
 
 #include <DebugLog.h>
@@ -202,10 +203,59 @@ int Core::receive(void **pDataBuffer) {
 }
 
 void Core::send_control_message(const void *dataBuffer, size_t dataLength) {
-  ServerAdapter *control_adapter = this->get_active_control_adapter();
-  control_adapter->send(dataBuffer, dataLength);
-  // TODO: WARN! Control adapter's send() does not care if the message is
-  // successfully sent or not!
+  int num_retries = 5;
+  bool send_success = false;
+
+  bool mute_warning_message = false;
+
+  do {
+    ServerAdapter *control_adapter = this->get_active_control_adapter();
+    int res = control_adapter->send(dataBuffer, dataLength);
+
+    if (control_adapter->is_disconnecting_on_purpose()) {
+      // If it is disconnecting on purpose, wait until active control adapter
+      // is ready.
+      if (!mute_warning_message) {
+        LOG_WARN("Send(Control Msg) Result: Now disconnecting on purpose. It "
+                 "will wait until control adapter is ready.");
+        mute_warning_message = true;
+      }
+      sleep(1);
+      continue;
+    }
+
+    // Result handling
+    if (res > 0) {
+      // Success
+      LOG_DEBUG("Send(Control Msg) Result: Success");
+      send_success = true;
+    } else {
+      // Error handling
+      if (errno == 0) {
+        // Successful. Do nothing.
+        LOG_DEBUG("Send(Control Msg) Result: Successful, but res=0");
+        send_success = true;
+      } else if (errno == EINTR) {
+        // Handling interrupted system call
+        LOG_DEBUG("Send(Control Msg) Result: interrupted");
+        send_success = false;
+      } else if (errno == EAGAIN) {
+        // Kernel I/O buffer is full
+        LOG_WARN("Send(Control Msg) Result: Failed. Kernel I/O buffer is full");
+        send_success = false;
+      } else {
+        // Other errors
+        LOG_WARN("Send(Control Msg) Result: Failed res=%d errno=%d(%s)", res,
+                 errno, strerror(errno));
+        send_success = false;
+      }
+    }
+    num_retries--;
+  } while (!send_success && num_retries > 0);
+
+  if (!send_success) {
+    LOG_WARN("Send(Control Msg): Failed");
+  }
 }
 
 void Core::send_request(CtrlReq request_code, uint16_t adapter_id) {

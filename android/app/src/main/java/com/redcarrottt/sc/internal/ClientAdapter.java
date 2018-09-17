@@ -24,6 +24,9 @@ import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Date;
 
+import static com.redcarrottt.sc.internal.ExpConfig.VERBOSE_CLIENT_ADAPTER;
+import static com.redcarrottt.sc.internal.ExpConfig.VERBOSE_RECEIVER_TIME;
+import static com.redcarrottt.sc.internal.ExpConfig.VERBOSE_SEGMENT_DEQUEUE;
 import static com.redcarrottt.sc.internal.SegmentManager.kSegHeaderSize;
 import static com.redcarrottt.sc.internal.SegmentManager.kSegRecv;
 import static com.redcarrottt.sc.internal.SegmentManager.kSegSend;
@@ -32,7 +35,6 @@ import static com.redcarrottt.sc.internal.SegmentManager.kSegSize;
 public class ClientAdapter {
     private final String kTag = "ClientAdapter";
     private final ClientAdapter self = this;
-    private final boolean kVerboseClientAdapter = false;
 
     // Main Functions: connect, disconnect, send, receive
     public void connect(ConnectResultListener listener, boolean isSendRequest) {
@@ -102,8 +104,8 @@ public class ClientAdapter {
         if (state != State.kActive && state != State.kGoingSleep && state != State.kSleeping &&
                 state != State.kWakingUp) {
             if (!this.isDisconnectingOnPurpose()) {
-                Logger.ERR(kTag, "Receive Failed: Already disconnected or connect/disconnection " +
-                        "is " + "in" + " progress: " + this.getName() + " / " + this.getState());
+                Logger.ERR(kTag, "Receive Failed: Already disconnected or connect/disconnection "
+                        + "is " + "in" + " progress: " + this.getName() + " / " + this.getState());
             }
             return -1;
         }
@@ -534,7 +536,6 @@ public class ClientAdapter {
     }
 
     class ReceiveDataLoop implements ReceiveLoop {
-        private final boolean kMeasureInterval = true;
         private int mReceiveCount = 0;
         private Date mDates[] = new Date[5];
         private long mIntervals[] = new long[4];
@@ -542,15 +543,15 @@ public class ClientAdapter {
         @Override
         public void receiveLoop(ClientAdapter adapter) {
             while (adapter.mReceiverThread.isOn()) {
-                if (kMeasureInterval) this.mDates[0] = new Date();
+                if (VERBOSE_RECEIVER_TIME) this.mDates[0] = new Date();
 
                 SegmentManager sm = SegmentManager.getInstance();
                 Segment segmentToReceive = sm.get_free_segment();
                 int len = kSegSize + kSegHeaderSize;
 
-                if (kMeasureInterval) this.mDates[1] = new Date();
+                if (VERBOSE_RECEIVER_TIME) this.mDates[1] = new Date();
 
-                if (kVerboseClientAdapter) {
+                if (VERBOSE_CLIENT_ADAPTER) {
                     Logger.DEBUG(kTag, adapter.getName() + ": Receiving...");
                 }
                 int res = adapter.receive(segmentToReceive.data, len);
@@ -559,7 +560,7 @@ public class ClientAdapter {
                     break;
                 }
 
-                if (kMeasureInterval) this.mDates[2] = new Date();
+                if (VERBOSE_RECEIVER_TIME) this.mDates[2] = new Date();
 
                 // Read segment metadata
                 ByteBuffer buffer = ByteBuffer.allocate(4);
@@ -570,13 +571,17 @@ public class ClientAdapter {
                 buffer.put(segmentToReceive.data, 4, 4);
                 segmentToReceive.flag_len = buffer.getInt(0);
 
-                if (kMeasureInterval) this.mDates[3] = new Date();
+                if (VERBOSE_RECEIVER_TIME) this.mDates[3] = new Date();
+
+                if(VERBOSE_SEGMENT_DEQUEUE) {
+                    Logger.DEBUG(getName(), "Receive Segment: seqno=" + segmentToReceive.seq_no);
+                }
 
                 sm.enqueue(kSegRecv, segmentToReceive);
 
-                if (kMeasureInterval) this.mDates[4] = new Date();
+                if (VERBOSE_RECEIVER_TIME) this.mDates[4] = new Date();
 
-                if (kMeasureInterval) {
+                if (VERBOSE_RECEIVER_TIME) {
                     this.mReceiveCount++;
                     for (int i = 0; i < 4; i++) {
                         this.mIntervals[i] += this.mDates[i + 1].getTime() - this.mDates[i]

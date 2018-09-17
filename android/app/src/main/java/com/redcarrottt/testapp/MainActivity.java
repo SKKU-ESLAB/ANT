@@ -49,6 +49,8 @@ import java.text.NumberFormat;
 import java.util.ArrayList;
 import java.util.Date;
 
+import static com.redcarrottt.sc.internal.ExpConfig.VERBOSE_BANDWIDTH_UPDATE;
+
 public class MainActivity extends AppCompatActivity implements LogReceiver.Callback,
         CommInitializerResult {
     private static final String kTag = "MainActivity";
@@ -111,6 +113,8 @@ public class MainActivity extends AppCompatActivity implements LogReceiver.Callb
     public void onCommInitializerResult(boolean isSuccess) {
         if (isSuccess) {
             Logger.VERB(kTag, "All network Interfaces ready");
+            Button startButton = (Button) findViewById(R.id.startButton);
+            startButton.setEnabled(true);
         } else {
             Logger.VERB(kTag, "Initialization failed");
         }
@@ -311,7 +315,9 @@ public class MainActivity extends AppCompatActivity implements LogReceiver.Callb
                         TextView bandwidthTextView = (TextView) findViewById(R.id
                                 .bandwidthTextView);
                         NumberFormat format = NumberFormat.getNumberInstance();
-                        Log.d(kTag, "Bandwidth update: " + format.format(speed) + "B/s");
+                        if(VERBOSE_BANDWIDTH_UPDATE) {
+                            Log.d(kTag, "Bandwidth update: " + format.format(speed) + "B/s");
+                        }
                         bandwidthTextView.setText("Bandwidth: " + format.format(speed) + "B/s");
                     }
                 });
