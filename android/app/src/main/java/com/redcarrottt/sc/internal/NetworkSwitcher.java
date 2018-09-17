@@ -216,6 +216,7 @@ public class NetworkSwitcher {
             if (adapter == null) {
                 Logger.ERR(kTag, "Connecting requested data adapter is failed");
                 doneConnectRequestTx(false);
+                return;
             }
             adapter.connect(onConnectAdapter, false);
         }
@@ -228,6 +229,7 @@ public class NetworkSwitcher {
                 if (!isSuccess) {
                     Logger.ERR(kTag, "Connecting requested data adapter is failed");
                     doneConnectRequestTx(false);
+                    return;
                 }
                 Logger.VERB(kTag, "Connecting requested data adapter is done");
                 doneConnectRequestTx(true);
@@ -250,6 +252,7 @@ public class NetworkSwitcher {
             if (this.mTargetAdapter == null) {
                 Logger.ERR(kTag, "Reconnecting adapter is failed: retry");
                 restartReconnectAdapterTx(mTargetAdapter);
+                return;
             }
             this.mTargetAdapter.disconnect(onDisconnectAdapter, false, false, false);
         }

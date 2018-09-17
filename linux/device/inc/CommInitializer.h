@@ -1,6 +1,6 @@
 /* Copyright 2017-2018 All Rights Reserved.
  *  Gyeonghwan Hong (redcarrottt@gmail.com)
- *  
+ *
  * [Contact]
  *  Gyeonghwan Hong (redcarrottt@gmail.com)
  *
@@ -17,15 +17,20 @@
  * limitations under the License.
  */
 
-#ifndef EXP_CONFIG_H_
-#define EXP_CONFIG_H_
+#ifndef _COMM_INITIALIZER_H_
+#define _COMM_INITIALIZER_H_
 
-/* Printing */
-#define PRINT_NETWORK_MONITOR_STATISTICS 1
-#define EXP_MEASURE_INTERVAL_SENDER 0
-#define EXP_MEASURE_INTERVAL_SEND_QUEUE 0
-#define VERBOSE_SERVER_ADAPTER_RECEIVING 0
-#define VERBOSE_SEGMENT_QUEUE_WAITING 0
-#define VERBOSE_SEGMENT_DEQUEUE 1
+#include <string>
 
-#endif /* !defined(EXP_CONFIG_H_) */
+namespace sc {
+class CommInitializer {
+public:
+  void initialize(void);
+private:
+  int kill_dhcpd(void);
+  int ping_wpa_cli(char ret[], size_t len);
+  void retrieve_wpa_interface_name(std::string &wpaIntfName);
+}; /* class CommInitializer */
+} /* namespace sc */
+
+#endif /* !defined(_COMM_INITIALIZER_H_) */

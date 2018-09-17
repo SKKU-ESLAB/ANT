@@ -34,10 +34,12 @@
             android:layout_height="wrap_content"
             android:checked="true"
             android:text="WFD-Data" />
+
         <Button
             android:id="@+id/startButton"
             android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
+            android:layout_height="match_parent"
+            android:enabled="false"
             android:text="Start"/>
     </LinearLayout>
 

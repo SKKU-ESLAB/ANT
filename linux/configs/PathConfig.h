@@ -24,5 +24,7 @@
 #define WPA_CLI_PATH "/sbin/wpa_cli"
 #define IFCONFIG_PATH "/sbin/ifconfig"
 #define UDHCPD_PATH "/usr/sbin/udhcpd"
+#define IFUP_PATH "/sbin/ifup"
+#define IFDOWN_PATH "/sbin/ifdown"
 
 #endif /* !defined(_PATH_CONFIG_H_) */

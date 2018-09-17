@@ -418,6 +418,13 @@ void ServerAdapter::data_adapter_send_loop(void) {
     // If there is no failed segment, dequeue from send queue
     if (likely(segment_to_send == NULL)) {
       segment_to_send = sm->dequeue(kSegSend);
+#if VERBOSE_SEGMENT_DEQUEUE == 1
+      LOG_DEBUG("Normal Segment: seqno=%d", segment_to_send->seq_no);
+#endif
+    } else {
+#if VERBOSE_SEGMENT_DEQUEUE == 1
+      LOG_DEBUG("Failed Segment: seqno=%d", segment_to_send->seq_no);
+#endif
     }
 
 #if EXP_MEASURE_INTERVAL_SENDER != 0
@@ -453,21 +460,34 @@ void ServerAdapter::data_adapter_send_loop(void) {
     gettimeofday(&times[4], NULL);
 #endif
 
-    if (errno == EINTR || errno == 0) {
-      sm->failed_sending(segment_to_send);
-      continue;
-    } else if (errno == EAGAIN) {
-      LOG_VERB("Sending %dB: Kernel I/O buffer is full at %s", len,
-               this->get_name());
-      sm->failed_sending(segment_to_send);
-      continue;
-    } else if (res < 0) {
-      if (!is_disconnecting_on_purpose()) {
-        LOG_WARN("Sending %dB failed at %s (%d / %d; %s)", len,
-                 this->get_name(), res, errno, strerror(errno));
+    if (res <= 0) {
+      // Error handling
+      if (is_disconnecting_on_purpose()) {
+        // Now disconnecting on purpose... Send this segment by another adapter.
+        LOG_DEBUG("%s: Disconnecting on purpose", this->get_name());
+        sm->failed_sending(segment_to_send);
+        break;
+      } else if (errno == 0) {
+        // Successful. Do nothing.
+        LOG_DEBUG("%s: Send successful, but res=0", this->get_name());
+      } else if (errno == EINTR) {
+        // Handling interrupted system call
+        LOG_DEBUG("%s: Send interrupted (%dB)", this->get_name(), len);
+        sm->failed_sending(segment_to_send);
+        continue;
+      } else if (errno == EAGAIN) {
+        // Kernel I/O buffer is full
+        LOG_WARN("%s: Send fail (%dB) - Kernel I/O buffer is full",
+                 this->get_name(), len);
+        sm->failed_sending(segment_to_send);
+        continue;
+      } else {
+        // Other errors
+        LOG_WARN("%s: Send fail (%dB) - res=%d errno=%d(%s)", this->get_name(),
+                 len, res, errno, strerror(errno));
+        sm->failed_sending(segment_to_send);
+        break;
       }
-      sm->failed_sending(segment_to_send);
-      break;
     }
 
     sm->free_segment(segment_to_send);
@@ -525,12 +545,12 @@ void ServerAdapter::data_adapter_receive_loop(ServerAdapter *adapter) {
     LOG_DEBUG("%s: Receiving...", adapter->get_name());
 #endif
     int res = adapter->receive(buf, len);
-    if (errno == EINTR || errno == 0) {
+    if (errno == EINTR) {
       continue;
     } else if (errno == EAGAIN) {
       LOG_WARN("Kernel I/O buffer is full at %s", adapter->get_name());
       continue;
-    } else if (res < len) {
+    } else if (res < len && errno != 0) {
       if (!adapter->is_disconnecting_on_purpose()) {
         LOG_WARN("Receiving failed at %s (%d / %d; %s)", adapter->get_name(),
                  errno, res, strerror(errno));
@@ -656,6 +676,5 @@ void ServerAdapter::set_state(ServerAdapterState new_state) {
            this->mStateListeners.begin();
        it != this->mStateListeners.end(); it++) {
     ServerAdapterStateListener *listener = (*it);
-    listener->onUpdateServerAdapterState(this, old_state, new_state);
   }
 }

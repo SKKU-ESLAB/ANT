@@ -18,6 +18,9 @@
  */
 
 #include <API.h>
+
+#include <CommInitializer.h>
+
 #include <BtServerAdapter.h>
 #include <WfdServerAdapter.h>
 #include <EthServerAdapter.h>
@@ -94,6 +97,10 @@ int main(int argc, char** argv) {
     return -1;
   }
 
+  // Communication Interface Initialization
+  CommInitializer commInit;
+  commInit.initialize();
+
   snprintf(g_trace_file_name, 512, "%s", argv[1]);
   printf("Trace File: %s\n", g_trace_file_name);
 
@@ -113,7 +120,7 @@ int main(int argc, char** argv) {
   sc::register_data_adapter(btData);
   printf("  c) Control Adapter: TCP over Wi-fi Direct\n");
   sc::register_control_adapter(wfdControl);
-  printf("  c) Data Adapter: TCP over Wi-fi Direct\n");
+  printf("  d) Data Adapter: TCP over Wi-fi Direct\n");
   sc::register_data_adapter(wfdData);
 
   sc::start_sc(on_connect);
@@ -139,13 +146,11 @@ void on_connect(bool is_success) {
   sleep(2);
   
   temp_buf = (char*)calloc(TEST_DATA_SIZE, sizeof(char));
-  printf("Wait for 10 seconds...\n");
   sc::send(temp_buf, TEST_DATA_SIZE);
-  sleep(10);
   free(temp_buf);
 
-  printf("Wait for 3 seconds...\n");
-  sleep(3);
+  printf("Wait for 2 seconds...\n");
+  sleep(2);
 
 #define BUFFER_SIZE (20*1024*1024)
 #define SOURCE_LOCALHOST_BT "localhost (ANT-0)"
