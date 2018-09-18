@@ -17,11 +17,11 @@
  * limitations under the License.
  */
 
-#ifndef INC_COUNTER_H_
-#define INC_COUNTER_H_
+#ifndef __COUNTER_H__
+#define __COUNTER_H__
 
-#include <Counter.h>
-#include <DebugLog.h>
+#include "Counter.h"
+#include "DebugLog.h"
 
 #include <assert.h>
 #include <mutex>
@@ -176,7 +176,7 @@ private:
   /* Exponential moving average (EMA) */
   float mEma;       /* Exponential moving average */
   float mEmaWeight; /* Weight for Exponential moving average */
-};
+}; /* class Counter */
 } /* namespace sc */
 
-#endif /* INC_COUNTER_H_ */
+#endif /* !defined(__COUNTER_H__) */

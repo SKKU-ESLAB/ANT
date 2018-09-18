@@ -19,14 +19,14 @@
  * limitations under the License.
  */
 
-#include <Core.h>
+#include "../inc/Core.h"
 
-#include <ExpConfig.h>
+#include "../inc/DebugLog.h"
+#include "../inc/NetworkSwitcher.h"
+#include "../inc/ProtocolManager.h"
+#include "../inc/SegmentManager.h"
 
-#include <DebugLog.h>
-#include <NetworkSwitcher.h>
-#include <ProtocolManager.h>
-#include <SegmentManager.h>
+#include "../configs/ExpConfig.h"
 
 #include <arpa/inet.h>
 #include <errno.h>
@@ -46,7 +46,7 @@
  * to application memory, serialized vector should be freed. ProtocolManager is
  * in charge of freeing this memory.
  */
-namespace sc {
+using namespace sc;
 
 Core *Core::singleton = NULL;
 
@@ -640,5 +640,3 @@ void StopCoreTransaction::done(bool is_success) {
   this->mCaller->done_stop(is_success);
   sOngoing = NULL;
 }
-
-} /* namespace sc */

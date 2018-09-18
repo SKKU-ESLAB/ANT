@@ -19,18 +19,16 @@
  * limitations under the License.
  */
 
-#ifndef INC_PROTOCOL_MANAGER_H_
-#define INC_PROTOCOL_MANAGER_H_
+#ifndef __PROTOCOL_MANAGER_H__
+#define __PROTOCOL_MANAGER_H__
 #include <stdint.h>
 
-// #define COMMUNICATOR_UNIT_TEST
-
-/*  This is determined by the structure ProtocolData.
- *  In the ProtocolData, the size except the data pointer is the kProHeaderSize.
+namespace sc {
+/**
+ * This is determined by the structure ProtocolData.
+ * In the ProtocolData, the size except the data pointer is the kProHeaderSize.
  */
 #define kProtHeaderSize 6
-
-namespace sc {
 
 /**
  * Do not use architecture dependent sized types in this file
@@ -61,7 +59,6 @@ private:
   static void serialize_data(const uint8_t *dat_buf, uint32_t len,
                              uint8_t *vec_ptr);
 };
-
 } /* namespace sc */
 
-#endif // INC_PROTOCOL_MANAGER_H_
+#endif /* !defined(__PROTOCOL_MANAGER_H__) */

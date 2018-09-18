@@ -17,10 +17,10 @@
  * limitations under the License.
  */
 
-#ifndef _DEVICE_H_
-#define _DEVICE_H_
+#ifndef __DEVICE_H__
+#define __DEVICE_H__
 
-#include <RefCount.h>
+#include "RefCount.h"
 
 #include <thread>
 #include <mutex>
@@ -74,7 +74,6 @@ protected:
   /* Reference Count */
   RefCount mRefCount;
 }; /* class Device */
-
 } /* namespace sc */
 
-#endif /* !defined(_DEVICE_H_) */
+#endif /* !defined(__DEVICE_H__) */

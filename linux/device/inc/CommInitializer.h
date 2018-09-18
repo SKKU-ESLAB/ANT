@@ -17,8 +17,8 @@
  * limitations under the License.
  */
 
-#ifndef _COMM_INITIALIZER_H_
-#define _COMM_INITIALIZER_H_
+#ifndef __COMM_INITIALIZER_H__
+#define __COMM_INITIALIZER_H__
 
 #include <string>
 
@@ -33,4 +33,4 @@ private:
 }; /* class CommInitializer */
 } /* namespace sc */
 
-#endif /* !defined(_COMM_INITIALIZER_H_) */
+#endif /* !defined(__COMM_INITIALIZER_H__) */

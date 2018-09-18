@@ -17,10 +17,10 @@
  * limitations under the License.
  */
 
-#ifndef _RFCOMM_SERVER_SOCKET_H_
-#define _RFCOMM_SERVER_SOCKET_H_
+#ifndef __RFCOMM_SERVER_SOCKET_H__
+#define __RFCOMM_SERVER_SOCKET_H__
 
-#include <ServerSocket.h>
+#include "../../inc/ServerSocket.h"
 
 #include <mutex>
 #include <thread>
@@ -40,7 +40,6 @@
 #include <bluetooth/sdp_lib.h>
 
 namespace sc {
-
 class RfcommServerSocket : public ServerSocket {
 public:
   virtual bool open_impl(void);
@@ -72,7 +71,6 @@ private:
   int bt_register_service(void);
   int str2uuid(char *str, uuid_t *uuid);
 }; /* class RfcommServerSocket */
-
 } /* namespace sc */
 
-#endif /* !defined(_RFCOMM_SERVER_SOCKET_H_) */
+#endif /* !defined(__RFCOMM_SERVER_SOCKET_H__) */

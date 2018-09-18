@@ -17,9 +17,9 @@
  * limitations under the License.
  */
 
-#include <TcpServerSocket.h>
+#include "../inc/TcpServerSocket.h"
 
-#include <DebugLog.h>
+#include "../../inc/DebugLog.h"
 
 #include <arpa/inet.h>
 #include <errno.h>
@@ -79,7 +79,8 @@ bool TcpServerSocket::open_impl(void) {
       return true;
     } else {
       if (errno == EINTR) {
-        LOG_WARN("%s: Interrupted system call: Retry to accept...", this->get_name());
+        LOG_WARN("%s: Interrupted system call: Retry to accept...",
+                 this->get_name());
       } else {
         LOG_ERR("%s: Accept failed %s", this->get_name(), strerror(errno));
         return false;
@@ -100,7 +101,7 @@ bool TcpServerSocket::close_impl(void) {
   return true;
 }
 
-int TcpServerSocket:: send_impl(const void *data_buffer, size_t data_length) {
+int TcpServerSocket::send_impl(const void *data_buffer, size_t data_length) {
   int sent_bytes = 0;
 
   if (this->mClientSocket <= 0)

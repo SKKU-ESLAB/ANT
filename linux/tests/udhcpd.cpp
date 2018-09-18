@@ -17,8 +17,9 @@
  * limitations under the License.
  */
 
-#include <Util.h>
-#include <WfdConfig.h>
+#include "../device/inc/Util.h"
+
+#include "../configs/WfdConfig.h"
 
 #include <assert.h>
 #include <fcntl.h>
@@ -97,8 +98,7 @@ int main(int argc, char **argv) {
   snprintf(intfName, 100, "p2p-%s-%s", DEFAULT_WFD_DEVICE_NAME, argv[1]);
   set_dhcpd_config(intfName);
 
-  while(1) {
-
+  while (1) {
   }
   return 0;
 }

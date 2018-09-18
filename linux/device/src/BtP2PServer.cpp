@@ -1,6 +1,6 @@
 /* Copyright 2017-2018 All Rights Reserved.
  *  Gyeonghwan Hong (redcarrottt@gmail.com)
- *  
+ *
  * [Contact]
  *  Gyeonghwan Hong (redcarrottt@gmail.com)
  *
@@ -16,24 +16,21 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include <BtP2PServer.h>
+#include "../inc/BtP2PServer.h"
 
-#include <Util.h>
-#include <Counter.h>
+#include "../inc/Util.h"
 
-#include <thread>
+#include "../../inc/Counter.h"
+
 #include <mutex>
+#include <thread>
 
 #include <stdio.h>
 
 using namespace sc;
 
-BtP2PServer* BtP2PServer::sSingleton = NULL;
+BtP2PServer *BtP2PServer::sSingleton = NULL;
 
-bool BtP2PServer::allow_discover_impl(void) {
-  return true;
-}
+bool BtP2PServer::allow_discover_impl(void) { return true; }
 
-bool BtP2PServer::disallow_discover_impl(void) {
-  return true;
-}
+bool BtP2PServer::disallow_discover_impl(void) { return true; }

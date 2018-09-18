@@ -17,12 +17,12 @@
  * limitations under the License.
  */
 
-#ifndef _WFD_P2P_SERVER_H_
-#define _WFD_P2P_SERVER_H_
+#ifndef __WFD_P2P_SERVER_H__
+#define __WFD_P2P_SERVER_H__
 
-#include <P2PServer.h>
+#include "WfdIpAddressListener.h"
 
-#include <WfdIpAddressListener.h>
+#include "../../inc/P2PServer.h"
 
 #include <mutex>
 #include <thread>
@@ -32,7 +32,6 @@
 #include <stdio.h>
 
 namespace sc {
-
 class WfdP2PServer : public P2PServer {
 public:
   virtual bool allow_discover_impl(void);
@@ -42,14 +41,14 @@ public:
     this->mIpAddrListeners.push_back(listener);
   }
 
-  static WfdP2PServer* getSingleton(const char *wfd_device_name, void *owner) {
-    if(WfdP2PServer::sSingleton == NULL) {
+  static WfdP2PServer *getSingleton(const char *wfd_device_name, void *owner) {
+    if (WfdP2PServer::sSingleton == NULL) {
       WfdP2PServer::sSingleton = new WfdP2PServer(wfd_device_name, owner);
     }
     return WfdP2PServer::sSingleton;
   }
 
-  static WfdP2PServer* sSingleton;
+  static WfdP2PServer *sSingleton;
 
   ~WfdP2PServer(void) {}
 
@@ -94,7 +93,6 @@ private:
                                         void *context);
   int kill_dhcpd(void);
 }; /* class WfdP2PServer */
-
 } /* namespace sc */
 
-#endif /* !defined(_WFD_P2P_SERVER_H_) */
+#endif /* !defined(__WFD_P2P_SERVER_H__) */

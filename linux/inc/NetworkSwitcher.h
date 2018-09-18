@@ -17,13 +17,14 @@
  * limitations under the License.
  */
 
-#ifndef INC_NETWORK_SWITCHER_H_
-#define INC_NETWORK_SWITCHER_H_
+#ifndef __NETWORK_SWITCHER_H__
+#define __NETWORK_SWITCHER_H__
 
-#include <Core.h>
-#include <DebugLog.h>
-#include <ExpConfig.h>
-#include <ServerAdapter.h>
+#include "Core.h"
+#include "DebugLog.h"
+#include "ServerAdapter.h"
+
+#include "../configs/ExpConfig.h"
 
 #include <mutex>
 #include <thread>
@@ -180,4 +181,4 @@ public:
 }; /* class NetworkSwitcher */
 } /* namespace sc */
 
-#endif /* INC_NETWORK_SWITCHER_H_ */
+#endif /* !defined(__NETWORK_SWITCHER_H__) */

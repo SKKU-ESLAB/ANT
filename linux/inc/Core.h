@@ -19,13 +19,13 @@
  * limitations under the License.
  */
 
-#ifndef INC_COMMUNICATOR_H_
-#define INC_COMMUNICATOR_H_
+#ifndef __SC_CORE_H__
+#define __SC_CORE_H__
 
-#include <APIInternal.h>
-#include <ArrivalTimeCounter.h>
-#include <SegmentManager.h>
-#include <ServerAdapter.h>
+#include "APIInternal.h"
+#include "ArrivalTimeCounter.h"
+#include "SegmentManager.h"
+#include "ServerAdapter.h"
 
 #include <mutex>
 #include <stdint.h>
@@ -53,7 +53,7 @@ private:
   static StartCoreTransaction *sOngoing;
 
   Core *mCaller;
-};
+}; /* class StartCoreTransaction */
 
 class StopCoreTransaction {
 public:
@@ -75,7 +75,7 @@ private:
 
   int mDataAdaptersCount;
   std::mutex mDataAdaptersCountLock;
-};
+}; /* class StopCoreTransaction */
 
 /*
  * Control Request Code
@@ -92,12 +92,12 @@ typedef enum {
   kCtrlReqDisconnect = 4,
   kCtrlReqPriv = 10,
   kCtrlReqDisconnectAck = 24
-} CtrlReq;
+} CtrlReq; /* enum CtrlReq */
 
 typedef enum {
   kPrivTypeWFDInfo = 1,
   kPrivTypeUnknown = 999
-} PrivType;
+} PrivType; /* enum PrivType */
 
 /* Core State */
 typedef enum {
@@ -105,13 +105,13 @@ typedef enum {
   kCMStateStarting = 1,
   kCMStateReady = 2,
   kCMStateStopping = 3
-} CMState;
+} CMState; /* enum CMState */
 
 class ControlMessageListener {
 public:
   virtual void on_receive_control_message(PrivType priv_type, void *data,
                                           size_t len) = 0;
-};
+}; /* class ControlMessageListener */
 
 class ServerAdapter;
 
@@ -337,6 +337,6 @@ public:
    */
   friend StartCoreTransaction;
   friend StopCoreTransaction;
-};
+}; /* class Core */
 } /* namespace sc */
-#endif /* INC_COMMUNICATOR_H_ */
+#endif /* !defined(__SC_CORE_H__) */

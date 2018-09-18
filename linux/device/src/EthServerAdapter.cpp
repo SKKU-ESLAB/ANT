@@ -17,7 +17,7 @@
  * limitations under the License.
  */
 
-#include <EthServerAdapter.h>
+#include "../inc/EthServerAdapter.h"
 
 using namespace sc;
 

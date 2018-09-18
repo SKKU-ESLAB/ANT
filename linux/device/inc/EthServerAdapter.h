@@ -17,11 +17,12 @@
  * limitations under the License.
  */
 
-#ifndef _ETH_SERVER_ADAPTER_H_
-#define _ETH_SERVER_ADAPTER_H_
+#ifndef __ETH_SERVER_ADAPTER_H__
+#define __ETH_SERVER_ADAPTER_H__
 
-#include <ServerAdapter.h>
-#include <TcpServerSocket.h>
+#include "TcpServerSocket.h"
+
+#include "../../inc/ServerAdapter.h"
 
 #include <arpa/inet.h>
 #include <string.h>
@@ -34,7 +35,6 @@
 #include <stdio.h>
 
 namespace sc {
-
 class EthDevice : public Device {
 public:
   virtual bool turn_on_impl(void) { return true; }
@@ -50,7 +50,7 @@ public:
 protected:
   static EthDevice *sSingleton;
   EthDevice() : Device("Eth") {}
-};
+}; /* class EthDevice */
 
 class EthP2PServer : public P2PServer {
 public:
@@ -58,7 +58,7 @@ public:
   virtual bool disallow_discover_impl(void) { return true; }
 
   EthP2PServer() : P2PServer("Eth") {}
-};
+}; /* class EthP2PServer */
 
 class EthServerAdapter : public ServerAdapter {
 public:
@@ -75,7 +75,6 @@ public:
 
 protected:
 }; /* class EthServerAdapter */
-
 } /* namespace sc */
 
-#endif /* !defined(_ETH_SERVER_ADAPTER_H_) */
+#endif /* !defined(__ETH_SERVER_ADAPTER_H__) */

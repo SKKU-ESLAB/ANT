@@ -17,10 +17,10 @@
  * limitations under the License.
  */
 
-#ifndef _UTIL_H_
-#define _UTIL_H_
+#ifndef __UTIL_H__
+#define __UTIL_H__
 
-#include <PathConfig.h>
+#include "../../configs/PathConfig.h"
 
 #include <stdio.h>
 
@@ -34,4 +34,4 @@ public:
 
 } /* namespace sc */
 
-#endif /* !defined(_UTIL_H_) */
+#endif /* !defined(__UTIL_H__) */

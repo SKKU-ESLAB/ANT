@@ -16,9 +16,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include <RfcommServerSocket.h>
+#include "../inc/RfcommServerSocket.h"
 
-#include <DebugLog.h>
+#include "../../inc/DebugLog.h"
 
 #include <mutex>
 #include <thread>
@@ -42,18 +42,21 @@ bool RfcommServerSocket::open_impl(void) {
 
   this->mServerSocket = ::socket(AF_BLUETOOTH, SOCK_STREAM, BTPROTO_RFCOMM);
   if (this->mServerSocket < 0) {
-    LOG_ERR("%s: Bluetooth socket open failed(%s)", this->get_name(), strerror(errno));
+    LOG_ERR("%s: Bluetooth socket open failed(%s)", this->get_name(),
+            strerror(errno));
     return false;
   }
 
   this->mPort = this->bt_dynamic_bind_rc();
   if (this->mPort < 1 || this->mPort > 30) {
-    LOG_ERR("%s: Bluetooth socket bind failed(%s)", this->get_name(), strerror(errno));
+    LOG_ERR("%s: Bluetooth socket bind failed(%s)", this->get_name(),
+            strerror(errno));
     return false;
   }
 
   if (this->bt_register_service() < 0) {
-    LOG_ERR("%s: Bluetooth sdp session creation failed(%s)", this->get_name(), strerror(errno));
+    LOG_ERR("%s: Bluetooth sdp session creation failed(%s)", this->get_name(),
+            strerror(errno));
     return false;
   }
 
@@ -73,7 +76,8 @@ bool RfcommServerSocket::open_impl(void) {
   this->mClientSocket =
       ::accept(this->mServerSocket, (struct sockaddr *)&client_addr, &opt);
   if (this->mClientSocket < 0) {
-    LOG_ERR("%s: Bluetooth accept failed(%s)", this->get_name(), strerror(errno));
+    LOG_ERR("%s: Bluetooth accept failed(%s)", this->get_name(),
+            strerror(errno));
     return false;
   }
 

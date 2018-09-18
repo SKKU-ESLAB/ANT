@@ -1,6 +1,6 @@
 /* Copyright 2017-2018 All Rights Reserved.
  *  Gyeonghwan Hong (redcarrottt@gmail.com)
- *  
+ *
  * [Contact]
  *  Gyeonghwan Hong (redcarrottt@gmail.com)
  *
@@ -16,24 +16,26 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include <WfdDevice.h>
-#include <WfdConfig.h>
-#include <Util.h>
+#include "../inc/WfdDevice.h"
 
-#include <Counter.h>
+#include "../inc/Util.h"
 
-#include <thread>
+#include "../../inc/Counter.h"
+
+#include "../../configs/WfdConfig.h"
+
 #include <mutex>
+#include <thread>
 
 #include <stdio.h>
 
 using namespace sc;
 
-WfdDevice* WfdDevice::sSingleton = NULL;
+WfdDevice *WfdDevice::sSingleton = NULL;
 
 bool WfdDevice::turn_on_impl(void) {
   char buf[512];
-  char* const params[] = {"ifconfig", DEFAULT_WFD_DEVICE_NAME, "up", NULL};
+  char *const params[] = {"ifconfig", DEFAULT_WFD_DEVICE_NAME, "up", NULL};
 
   int res = Util::run_client(IFCONFIG_PATH, params, buf, 512);
   return (res >= 0);
@@ -41,7 +43,7 @@ bool WfdDevice::turn_on_impl(void) {
 
 bool WfdDevice::turn_off_impl(void) {
   char buf[512];
-  char* const params[] = {"ifconfig", DEFAULT_WFD_DEVICE_NAME, "down", NULL};
+  char *const params[] = {"ifconfig", DEFAULT_WFD_DEVICE_NAME, "down", NULL};
 
   int res = Util::run_client(IFCONFIG_PATH, params, buf, 512);
   return (res >= 0);

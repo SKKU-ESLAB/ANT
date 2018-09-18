@@ -1,6 +1,6 @@
 /* Copyright 2017-2018 All Rights Reserved.
  *  Gyeonghwan Hong (redcarrottt@gmail.com)
- *  
+ *
  * [Contact]
  *  Gyeonghwan Hong (redcarrottt@gmail.com)
  *
@@ -17,37 +17,38 @@
  * limitations under the License.
  */
 
-#ifndef _WFD_SERVER_ADAPTER_H_
-#define _WFD_SERVER_ADAPTER_H_
+#ifndef __WFD_SERVER_ADAPTER_H__
+#define __WFD_SERVER_ADAPTER_H__
 
-#include <ServerAdapter.h>
-#include <WfdDevice.h>
-#include <WfdP2PServer.h>
-#include <TcpServerSocket.h>
+#include "TcpServerSocket.h"
+#include "WfdDevice.h"
+#include "WfdP2PServer.h"
 
-#include <thread>
+#include "../../inc/ServerAdapter.h"
+
 #include <mutex>
+#include <thread>
 
 #include <stdio.h>
 
 namespace sc {
-
 class WfdServerAdapter : public ServerAdapter {
 public:
-  WfdServerAdapter(int id, const char* name, int port, const char* wfd_device_name) : ServerAdapter(id, name) { 
-    WfdDevice* device = WfdDevice::getSingleton();
-    WfdP2PServer* p2pServer = WfdP2PServer::getSingleton(wfd_device_name, (void*)this);
-    TcpServerSocket* serverSocket = new TcpServerSocket(name, port);
+  WfdServerAdapter(int id, const char *name, int port,
+                   const char *wfd_device_name)
+      : ServerAdapter(id, name) {
+    WfdDevice *device = WfdDevice::getSingleton();
+    WfdP2PServer *p2pServer =
+        WfdP2PServer::getSingleton(wfd_device_name, (void *)this);
+    TcpServerSocket *serverSocket = new TcpServerSocket(name, port);
     p2pServer->add_wfd_ip_address_listener(serverSocket);
     this->initialize(device, p2pServer, serverSocket, false);
   }
 
-  ~WfdServerAdapter(void) {
-  }
+  ~WfdServerAdapter(void) {}
 
 protected:
 }; /* class WfdServerAdapter */
-
 } /* namespace sc */
 
-#endif /* !defined(_WFD_SERVER_ADAPTER_H_) */
+#endif /* !defined(__WFD_SERVER_ADAPTER_H__) */

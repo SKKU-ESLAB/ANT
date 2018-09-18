@@ -17,14 +17,16 @@
  * limitations under the License.
  */
 
-#ifndef _BT_SERVER_ADAPTER_H_
-#define _BT_SERVER_ADAPTER_H_
+#ifndef __BT_SERVER_ADAPTER_H__
+#define __BT_SERVER_ADAPTER_H__
 
-#include <BtDevice.h>
-#include <BtP2PServer.h>
-#include <ExpConfig.h>
-#include <RfcommServerSocket.h>
-#include <ServerAdapter.h>
+#include "BtDevice.h"
+#include "BtP2PServer.h"
+#include "RfcommServerSocket.h"
+
+#include "../../inc/ServerAdapter.h"
+
+#include "../../configs/ExpConfig.h"
 
 #include <mutex>
 #include <thread>
@@ -32,23 +34,21 @@
 #include <stdio.h>
 
 namespace sc {
-
 class BtServerAdapter : public ServerAdapter {
 public:
   BtServerAdapter(int id, const char *name, const char *service_uuid)
       : ServerAdapter(id, name) {
     BtDevice *device = BtDevice::getSingleton();
     BtP2PServer *p2pServer = BtP2PServer::getSingleton();
-    RfcommServerSocket *serverSocket = new RfcommServerSocket(name, service_uuid);
+    RfcommServerSocket *serverSocket =
+        new RfcommServerSocket(name, service_uuid);
     this->initialize(device, p2pServer, serverSocket, false);
   }
 
-  ~BtServerAdapter(void) {
-  }
+  ~BtServerAdapter(void) {}
 
 protected:
 }; /* class BtServerAdapter */
-
 } /* namespace sc */
 
-#endif /* !defined(_BT_SERVER_ADAPTER_H_) */
+#endif /* !defined(__BT_SERVER_ADAPTER_H__) */

@@ -17,10 +17,10 @@
  * limitations under the License.
  */
 
-#ifndef _P2P_SERVER_H_
-#define _P2P_SERVER_H_
+#ifndef __P2P_SERVER_H__
+#define __P2P_SERVER_H__
 
-#include <RefCount.h>
+#include "RefCount.h"
 
 #include <thread>
 #include <mutex>
@@ -28,7 +28,6 @@
 #include <stdio.h>
 
 namespace sc {
-
 typedef enum {
   kDisallowed = 0,
   kAllowed = 1
@@ -70,7 +69,6 @@ protected:
   /* Reference Count */
   RefCount mRefCount;
 }; /* class P2PServer */
-
 } /* namespace sc */
 
-#endif /* !defined(_P2P_SERVER_H_) */
+#endif /* !defined(__P2P_SERVER_H__) */

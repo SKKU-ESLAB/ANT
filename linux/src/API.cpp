@@ -1,6 +1,6 @@
 /* Copyright 2017-2018 All Rights Reserved.
  *  Gyeonghwan Hong (redcarrottt@gmail.com)
- *  
+ *
  * [Contact]
  *  Gyeonghwan Hong (redcarrottt@gmail.com)
  *
@@ -17,12 +17,13 @@
  * limitations under the License.
  */
 
-#include <API.h>
-#include <APIInternal.h>
-#include <NetworkMonitor.h>
+#include "../inc/API.h"
 
-#include <mutex>
+#include "../inc/APIInternal.h"
+#include "../inc/NetworkMonitor.h"
+
 #include <condition_variable>
+#include <mutex>
 
 using namespace sc;
 
@@ -56,7 +57,7 @@ void sc::stop_sc(StopCallback stopCallback) {
   // Core stop procedure
   NetworkMonitor::get_instance()->stop();
   Core::get_instance()->stop();
-  
+
   // Wait until core stop thread ends
   std::unique_lock<std::mutex> lck(g_wait_lock_stop_sc);
   g_wait_cond_stop_sc.wait(lck);
