@@ -17,7 +17,7 @@
  * limitations under the License.
  */
 
-#include "../device/inc/Util.h"
+#include "../common/inc/ChildProcess.h"
 
 using namespace sc;
 
@@ -27,17 +27,17 @@ int main() {
 
   {
     char *const params[] = {"wpa_cli", "p2p_group_add", NULL};
-    Util::run_client(WPA_CLI_PATH, params, ret, len);
+    ChildProcess::run(WPA_CLI_PATH, params, ret, len);
     printf("wpa_cli p2p_group_add: %s\n", ret);
   }
   {
     char *const params[] = {"wpa_cli", "status", NULL};
-    Util::run_client(WPA_CLI_PATH, params, ret, len);
+    ChildProcess::run(WPA_CLI_PATH, params, ret, len);
     printf("wpa_cli status: %s\n", ret);
   }
   {
     char *const params[] = {"wpa_cli", "ping", NULL};
-    Util::run_client(WPA_CLI_PATH, params, ret, len);
+    ChildProcess::run(WPA_CLI_PATH, params, ret, len);
     printf("wpa_cli ping: %s\n", ret);
   }
 

@@ -20,7 +20,7 @@
 #ifndef __WFD_DEVICE_H__
 #define __WFD_DEVICE_H__
 
-#include "../../inc/Device.h"
+#include "../../core/inc/Device.h"
 
 #include <thread>
 #include <mutex>

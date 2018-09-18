@@ -18,9 +18,8 @@
  */
 #include "../inc/WfdDevice.h"
 
-#include "../inc/Util.h"
-
-#include "../../inc/Counter.h"
+#include "../../common/inc/Counter.h"
+#include "../../common/inc/ChildProcess.h"
 
 #include "../../configs/WfdConfig.h"
 
@@ -37,7 +36,7 @@ bool WfdDevice::turn_on_impl(void) {
   char buf[512];
   char *const params[] = {"ifconfig", DEFAULT_WFD_DEVICE_NAME, "up", NULL};
 
-  int res = Util::run_client(IFCONFIG_PATH, params, buf, 512);
+  int res = ChildProcess::run(IFCONFIG_PATH, params, buf, 512);
   return (res >= 0);
 }
 
@@ -45,6 +44,6 @@ bool WfdDevice::turn_off_impl(void) {
   char buf[512];
   char *const params[] = {"ifconfig", DEFAULT_WFD_DEVICE_NAME, "down", NULL};
 
-  int res = Util::run_client(IFCONFIG_PATH, params, buf, 512);
+  int res = ChildProcess::run(IFCONFIG_PATH, params, buf, 512);
   return (res >= 0);
 }

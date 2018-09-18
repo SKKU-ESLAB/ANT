@@ -22,7 +22,7 @@
 
 #include "TcpServerSocket.h"
 
-#include "../../inc/ServerAdapter.h"
+#include "../../core/inc/ServerAdapter.h"
 
 #include <arpa/inet.h>
 #include <string.h>

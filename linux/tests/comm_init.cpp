@@ -17,9 +17,8 @@
  * limitations under the License.
  */
 
-#include "../inc/DebugLog.h"
-
-#include "../device/inc/Util.h"
+#include "../common/inc/DebugLog.h"
+#include "../common/inc/ChildProcess.h"
 
 #include "../configs/ExpConfig.h"
 #include "../configs/PathConfig.h"
@@ -88,7 +87,7 @@ int main(void) {
 int ping_wpa_cli(char ret[], size_t len) {
   char *const params[] = {"wpa_cli", "ping", NULL};
 
-  return Util::run_client(WPA_CLI_PATH, params, ret, len);
+  return ChildProcess::run(WPA_CLI_PATH, params, ret, len);
 }
 
 void retrieve_wpa_interface_name(std::string &wpaIntfName) {

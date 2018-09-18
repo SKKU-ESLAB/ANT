@@ -23,9 +23,10 @@
 #define __SC_CORE_H__
 
 #include "APIInternal.h"
-#include "ArrivalTimeCounter.h"
 #include "SegmentManager.h"
 #include "ServerAdapter.h"
+
+#include "../../common/inc/ArrivalTimeCounter.h"
 
 #include <mutex>
 #include <stdint.h>

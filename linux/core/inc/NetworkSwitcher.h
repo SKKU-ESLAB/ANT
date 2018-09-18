@@ -21,10 +21,11 @@
 #define __NETWORK_SWITCHER_H__
 
 #include "Core.h"
-#include "DebugLog.h"
 #include "ServerAdapter.h"
 
-#include "../configs/ExpConfig.h"
+#include "../../common/inc/DebugLog.h"
+
+#include "../../configs/ExpConfig.h"
 
 #include <mutex>
 #include <thread>

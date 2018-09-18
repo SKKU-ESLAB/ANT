@@ -20,12 +20,13 @@
 #ifndef __SERVER_ADAPTER_H__
 #define __SERVER_ADAPTER_H__
 
-#include "Counter.h"
 #include "Device.h"
 #include "P2PServer.h"
 #include "ServerSocket.h"
 
-#include "../configs/ExpConfig.h"
+#include "../../common/inc/Counter.h"
+
+#include "../../configs/ExpConfig.h"
 
 #include <condition_variable>
 #include <mutex>

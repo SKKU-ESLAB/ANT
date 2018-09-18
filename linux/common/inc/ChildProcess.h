@@ -25,12 +25,12 @@
 #include <stdio.h>
 
 namespace sc {
-class Util {
+class ChildProcess {
 public:
-  static int run_client(const char *path, char *const params[], char *res_buf,
+  static int run(const char *path, char *const params[], char *res_buf,
                         size_t len);
-  static int run_client(const char *path, char *const params[]);
-}; /* class Util */
+  static int run(const char *path, char *const params[]);
+}; /* class ChildProcess */
 
 } /* namespace sc */
 

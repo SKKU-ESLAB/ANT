@@ -18,9 +18,8 @@
  */
 #include "../inc/BtP2PServer.h"
 
-#include "../inc/Util.h"
-
-#include "../../inc/Counter.h"
+#include "../../common/inc/ChildProcess.h"
+#include "../../common/inc/Counter.h"
 
 #include <mutex>
 #include <thread>

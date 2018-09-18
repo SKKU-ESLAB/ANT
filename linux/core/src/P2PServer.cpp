@@ -19,7 +19,7 @@
 
 #include "../inc/P2PServer.h"
 
-#include "../inc/DebugLog.h"
+#include "../../common/inc/DebugLog.h"
 
 using namespace sc;
 

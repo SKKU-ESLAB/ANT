@@ -16,9 +16,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "../inc/Util.h"
+#include "../inc/ChildProcess.h"
 
-#include "../../inc/DebugLog.h"
+#include "../../common/inc/DebugLog.h"
 
 #include <errno.h>
 #include <string.h>
@@ -26,7 +26,7 @@
 
 using namespace sc;
 
-int Util::run_client(const char *path, char *const params[], char *res_buf,
+int ChildProcess::run(const char *path, char *const params[], char *res_buf,
                      size_t len) {
   int fd[2];
   int pid;
@@ -78,7 +78,7 @@ int Util::run_client(const char *path, char *const params[], char *res_buf,
   }
 }
 
-int Util::run_client(const char *path, char *const params[]) {
+int ChildProcess::run(const char *path, char *const params[]) {
   int pid;
 
   if ((pid = fork()) < 0) {

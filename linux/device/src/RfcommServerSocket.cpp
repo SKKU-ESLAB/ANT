@@ -18,7 +18,7 @@
  */
 #include "../inc/RfcommServerSocket.h"
 
-#include "../../inc/DebugLog.h"
+#include "../../common/inc/DebugLog.h"
 
 #include <mutex>
 #include <thread>

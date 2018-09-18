@@ -21,6 +21,7 @@
 
 #ifndef __PROTOCOL_MANAGER_H__
 #define __PROTOCOL_MANAGER_H__
+
 #include <stdint.h>
 
 namespace sc {

@@ -20,7 +20,7 @@
 #ifndef __RFCOMM_SERVER_SOCKET_H__
 #define __RFCOMM_SERVER_SOCKET_H__
 
-#include "../../inc/ServerSocket.h"
+#include "../../core/inc/ServerSocket.h"
 
 #include <mutex>
 #include <thread>

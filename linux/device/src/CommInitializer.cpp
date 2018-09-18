@@ -20,9 +20,8 @@
 
 #include "../inc/CommInitializer.h"
 
-#include "../inc/Util.h"
-
-#include "../../inc/DebugLog.h"
+#include "../../common/inc/ChildProcess.h"
+#include "../../common/inc/DebugLog.h"
 
 #include "../../configs/ExpConfig.h"
 #include "../../configs/PathConfig.h"
@@ -86,7 +85,7 @@ void CommInitializer::initialize(void) {
 int CommInitializer::ping_wpa_cli(char ret[], size_t len) {
   char *const params[] = {"wpa_cli", "ping", NULL};
 
-  return Util::run_client(WPA_CLI_PATH, params, ret, len);
+  return ChildProcess::run(WPA_CLI_PATH, params, ret, len);
 }
 
 void CommInitializer::retrieve_wpa_interface_name(std::string &wpaIntfName) {

@@ -24,7 +24,7 @@
 #include "WfdDevice.h"
 #include "WfdP2PServer.h"
 
-#include "../../inc/ServerAdapter.h"
+#include "../../core/inc/ServerAdapter.h"
 
 #include <mutex>
 #include <thread>

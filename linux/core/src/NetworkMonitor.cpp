@@ -21,8 +21,8 @@
 
 #include "../inc/NetworkSwitcher.h"
 
-#include "../configs/ExpConfig.h"
-#include "../configs/NetworkSwitcherConfig.h"
+#include "../../configs/ExpConfig.h"
+#include "../../configs/NetworkSwitcherConfig.h"
 
 #include <string.h>
 
