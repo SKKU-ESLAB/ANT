@@ -34,20 +34,31 @@
 namespace sc {
 class WfdServerAdapter : public ServerAdapter {
 public:
+  ~WfdServerAdapter(void) {}
+
+  /* Singleton */
+  static WfdServerAdapter *get_instance(int id, const char *name, int port,
+                                        const char *wfd_device_name) {
+    if (sSingleton == NULL) {
+      sSingleton = new WfdServerAdapter(id, name, port, wfd_device_name);
+    }
+    return sSingleton;
+  }
+
+protected:
+  /* Singleton */
+  static WfdServerAdapter *sSingleton;
+
+  /* Constructor */
   WfdServerAdapter(int id, const char *name, int port,
                    const char *wfd_device_name)
       : ServerAdapter(id, name) {
-    WfdDevice *device = WfdDevice::getSingleton();
-    WfdP2PServer *p2pServer =
-        WfdP2PServer::getSingleton(wfd_device_name, (void *)this);
+    WfdDevice *device = new WfdDevice();
+    WfdP2PServer *p2pServer = new WfdP2PServer(wfd_device_name, (void *)this);
     TcpServerSocket *serverSocket = new TcpServerSocket(name, port);
     p2pServer->add_wfd_ip_address_listener(serverSocket);
     this->initialize(device, p2pServer, serverSocket, false);
   }
-
-  ~WfdServerAdapter(void) {}
-
-protected:
 }; /* class WfdServerAdapter */
 } /* namespace sc */
 

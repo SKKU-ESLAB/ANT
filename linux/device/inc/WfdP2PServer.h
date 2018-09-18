@@ -41,18 +41,6 @@ public:
     this->mIpAddrListeners.push_back(listener);
   }
 
-  static WfdP2PServer *getSingleton(const char *wfd_device_name, void *owner) {
-    if (WfdP2PServer::sSingleton == NULL) {
-      WfdP2PServer::sSingleton = new WfdP2PServer(wfd_device_name, owner);
-    }
-    return WfdP2PServer::sSingleton;
-  }
-
-  static WfdP2PServer *sSingleton;
-
-  ~WfdP2PServer(void) {}
-
-protected:
   WfdP2PServer(const char *wfd_device_name, void *owner) : P2PServer("WFD") {
     snprintf(this->mWfdDeviceName, 100, "%s", wfd_device_name);
     this->mWfdDeviceName[0] = '\0';
@@ -61,6 +49,9 @@ protected:
     this->mOwner = owner;
   }
 
+  ~WfdP2PServer(void) {}
+
+protected:
   std::vector<WfdIpAddressListener *> mIpAddrListeners;
 
   char mWfdDeviceName[100];

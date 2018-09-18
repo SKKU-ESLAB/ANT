@@ -42,7 +42,6 @@
 
 using namespace sc;
 
-WfdP2PServer *WfdP2PServer::sSingleton;
 struct sigaction WfdP2PServer::sSigaction;
 struct sigaction WfdP2PServer::sSigactionOld;
 bool WfdP2PServer::sDhcpdMonitoring = false;

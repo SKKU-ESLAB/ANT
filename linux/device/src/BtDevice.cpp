@@ -28,8 +28,6 @@
 
 using namespace sc;
 
-BtDevice *BtDevice::sSingleton = NULL;
-
 bool BtDevice::turn_on_impl(void) {
   char buf[512];
   char *const params[] = {"hciconfig", "hci0", "up", "piscan", NULL};

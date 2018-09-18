@@ -129,30 +129,17 @@ void Core::done_stop(bool is_success) {
   stop_sc_done(is_success);
 }
 
-// Register control adapter
-void Core::register_control_adapter(ServerAdapter *control_adapter) {
-  if (this->get_state() != CMState::kCMStateIdle) {
-    LOG_ERR("You can register control adapter on only idle state!");
-    return;
-  }
-  std::unique_lock<std::mutex> lck(this->mControlAdaptersLock);
-  control_adapter->enable_receiver_thread(Core::control_adapter_receive_loop);
-  this->mControlAdapters.push_back(control_adapter);
-}
-
-// Register data adapter
-void Core::register_data_adapter(ServerAdapter *data_adapter) {
+// Register adapter
+void Core::register_adapter(ServerAdapter *adapter) {
   if (this->get_state() != CMState::kCMStateIdle) {
     LOG_ERR("You can register data adapter on only idle state!");
     return;
   }
-  std::unique_lock<std::mutex> lck(this->mDataAdaptersLock);
-  data_adapter->enable_receiver_thread(NULL);
-  data_adapter->enable_sender_thread();
-  this->mDataAdapters.push_back(data_adapter);
+  std::unique_lock<std::mutex> lck(this->mAdaptersLock);
+  this->mAdapters.push_back(adapter);
 }
 
-int Core::send(const void *dataBuffer, uint32_t dataLength) {
+int Core::send(const void *dataBuffer, uint32_t dataLength, bool is_control) {
   CMState state = this->get_state();
   if (state != CMState::kCMStateReady) {
     LOG_ERR("Core is not started yet, so you cannot send the data");
@@ -179,7 +166,7 @@ int Core::send(const void *dataBuffer, uint32_t dataLength) {
   assert(serialized_vector != NULL && packet_size > 0);
 
   /* Hand over the data to the Protocol Manager */
-  sent_bytes = ProtocolManager::send_packet(serialized_vector, packet_size);
+  sent_bytes = ProtocolManager::send_packet(serialized_vector, packet_size, is_control);
   if (unlikely(sent_bytes < 0)) {
     LOG_ERR("Sending stopped(%u/%u) by %d", curr_offset, dataLength,
             sent_bytes);
@@ -187,7 +174,7 @@ int Core::send(const void *dataBuffer, uint32_t dataLength) {
   return sent_bytes;
 }
 
-int Core::receive(void **pDataBuffer) {
+int Core::receive(void **pDataBuffer, bool is_control) {
   CMState state = this->get_state();
   if (state != CMState::kCMStateReady) {
     LOG_ERR("Core is not started yet, so you cannot receive data");
@@ -197,256 +184,10 @@ int Core::receive(void **pDataBuffer) {
   uint32_t packet_size;
   uint8_t *packet;
 
-  packet_size = ProtocolManager::recv_packet(&packet);
+  packet_size = ProtocolManager::recv_packet(&packet, is_control);
   *pDataBuffer = packet;
 
   return packet_size;
-}
-
-void Core::send_control_message(const void *dataBuffer, size_t dataLength) {
-  int num_retries = 5;
-  bool send_success = false;
-
-  bool mute_warning_message = false;
-
-  do {
-    ServerAdapter *control_adapter = this->get_active_control_adapter();
-    int res = control_adapter->send(dataBuffer, dataLength);
-
-    if (control_adapter->is_disconnecting_on_purpose()) {
-      // If it is disconnecting on purpose, wait until active control adapter
-      // is ready.
-      if (!mute_warning_message) {
-        LOG_WARN("Send(Control Msg) Result: Now disconnecting on purpose. It "
-                 "will wait until control adapter is ready.");
-        mute_warning_message = true;
-      }
-      sleep(1);
-      continue;
-    }
-
-    // Result handling
-    if (res > 0) {
-      // Success
-      LOG_DEBUG("Send(Control Msg) Result: Success");
-      send_success = true;
-    } else {
-      // Error handling
-      if (errno == 0) {
-        // Successful. Do nothing.
-        LOG_DEBUG("Send(Control Msg) Result: Successful, but res=0");
-        send_success = true;
-      } else if (errno == EINTR) {
-        // Handling interrupted system call
-        LOG_DEBUG("Send(Control Msg) Result: interrupted");
-        send_success = false;
-      } else if (errno == EAGAIN) {
-        // Kernel I/O buffer is full
-        LOG_WARN("Send(Control Msg) Result: Failed. Kernel I/O buffer is full");
-        send_success = false;
-      } else {
-        // Other errors
-        LOG_WARN("Send(Control Msg) Result: Failed res=%d errno=%d(%s)", res,
-                 errno, strerror(errno));
-        send_success = false;
-      }
-    }
-    num_retries--;
-  } while (!send_success && num_retries > 0);
-
-  if (!send_success) {
-    LOG_WARN("Send(Control Msg): Failed");
-  }
-}
-
-void Core::send_request(CtrlReq request_code, uint16_t adapter_id) {
-  bool retry_check = true;
-  while (retry_check) {
-    ServerAdapter *control_adapter = this->get_active_control_adapter();
-    ServerAdapterState controlAdapterState = control_adapter->get_state();
-    if (controlAdapterState != ServerAdapterState::kActive) {
-      LOG_WARN("Now switching control adapter... adapter_id=%d state=%d",
-               control_adapter->get_id(), controlAdapterState);
-    } else {
-      retry_check = false;
-    }
-  }
-
-  uint8_t net_request_code = (uint8_t)request_code;
-  uint16_t net_adapter_id = htons(adapter_id);
-
-  this->send_control_message(&net_request_code, 1);
-  this->send_control_message(&net_adapter_id, 2);
-}
-
-void Core::send_request_connect(uint16_t adapter_id) {
-  this->send_request(kCtrlReqConnect, adapter_id);
-  LOG_VERB("Send(Control Msg): Request(Connect %d)", adapter_id);
-}
-
-void Core::send_request_disconnect(uint16_t adapter_id) {
-  this->send_request(kCtrlReqDisconnect, adapter_id);
-  LOG_VERB("Send(Control Msg): Request(Disconnect %d)", adapter_id);
-}
-
-void Core::send_request_disconnect_ack(uint16_t adapter_id) {
-  this->send_request(kCtrlReqDisconnectAck, adapter_id);
-  LOG_VERB("Send(Control Msg): Request(DisconnectAck %d)", adapter_id);
-}
-
-void Core::send_request_sleep(uint16_t adapter_id) {
-  this->send_request(kCtrlReqSleep, adapter_id);
-  LOG_VERB("Send(Control Msg): Request(Sleep %d)", adapter_id);
-}
-
-void Core::send_request_wake_up(uint16_t adapter_id) {
-  this->send_request(kCtrlReqWakeUp, adapter_id);
-  LOG_VERB("Send(Control Msg): Request(WakeUp %d)", adapter_id);
-}
-
-void Core::send_noti_private_data(PrivType priv_type, char *private_data_buf,
-                                  uint32_t private_data_len) {
-  bool retry_check = true;
-  while (retry_check) {
-    ServerAdapter *control_adapter = this->get_active_control_adapter();
-    ServerAdapterState controlAdapterState = control_adapter->get_state();
-    if (controlAdapterState != ServerAdapterState::kActive) {
-      LOG_WARN("Now switching control adapter...");
-    } else {
-      retry_check = false;
-    }
-  }
-
-  uint8_t request_code = kCtrlReqPriv;
-  uint32_t net_priv_type = htonl((unsigned long)priv_type);
-  uint32_t net_private_data_len = htonl(private_data_len);
-
-  LOG_VERB("Send(Control Msg): Request(Priv Noti--Start)");
-  this->send_control_message(&request_code, 1);
-  this->send_control_message(&net_priv_type, 4);
-  this->send_control_message(&net_private_data_len, 4);
-  this->send_control_message(private_data_buf, private_data_len);
-  LOG_VERB("Send(Control Msg): Request(Priv Noti--End; type=%d)\n%s", priv_type,
-           private_data_buf);
-}
-
-void Core::control_adapter_receive_loop(ServerAdapter *adapter) {
-  assert(adapter != NULL);
-
-  while (adapter->is_receiver_loop_on()) {
-    int res = Core::__control_adapter_receive_loop(adapter);
-    if (errno == EINTR) {
-      continue;
-    } else if (errno == EAGAIN) {
-      LOG_VERB("Receiving: Kernel I/O buffer is full at %s",
-               adapter->get_name());
-    } else if (res <= 0) {
-      break;
-    }
-  } // End while
-
-  // If control message loop is crashed, reconnect control adapter.
-  LOG_DEBUG("Control message loop is finished");
-}
-
-int Core::__control_adapter_receive_loop(ServerAdapter *adapter) {
-  Core *core = Core::get_instance();
-
-  char data[512] = {
-      0,
-  };
-  int res = 0;
-
-  // Receive 1Byte: Control Request Code
-  res = adapter->receive(data, 1);
-  if (res <= 0) {
-    return res;
-  }
-
-  char req_code = data[0];
-  /* If the control message is 'connect adapter', */
-  if (req_code == CtrlReq::kCtrlReqConnect ||
-      req_code == CtrlReq::kCtrlReqSleep ||
-      req_code == CtrlReq::kCtrlReqWakeUp ||
-      req_code == CtrlReq::kCtrlReqDisconnect ||
-      req_code == CtrlReq::kCtrlReqDisconnectAck) {
-    // Receive 2Byte: Adapter ID
-    res = adapter->receive(data, 2);
-    if (res <= 0) {
-      return res;
-    }
-
-    // convert adapter_id to n_adapter_id
-    uint16_t n_adapter_id;
-    uint16_t adapter_id;
-
-    memcpy(&n_adapter_id, data, 2);
-    adapter_id = ntohs(n_adapter_id);
-
-    if (req_code == CtrlReq::kCtrlReqConnect) {
-      LOG_VERB("Receive(Control Msg): Request(Connect %d)", adapter_id);
-      NetworkSwitcher::get_instance()->connect_adapter_by_peer(adapter_id);
-    } else if (req_code == CtrlReq::kCtrlReqSleep) {
-      LOG_VERB("Receive(Control Msg): Request(Sleep %d)", adapter_id);
-      NetworkSwitcher::get_instance()->sleep_adapter_by_peer(adapter_id);
-    } else if (req_code == CtrlReq::kCtrlReqWakeUp) {
-      LOG_VERB("Receive(Control Msg): Request(WakeUp %d)", adapter_id);
-      NetworkSwitcher::get_instance()->wake_up_adapter_by_peer(adapter_id);
-    } else if (req_code == CtrlReq::kCtrlReqDisconnect) {
-      LOG_VERB("Receive(Control Msg): Request(Disconnect %d)", adapter_id);
-      NetworkSwitcher::get_instance()->disconnect_adapter_by_peer(adapter_id);
-    } else if (req_code == CtrlReq::kCtrlReqDisconnectAck) {
-      LOG_VERB("Receive(Control Msg): Request(DisconnectAck %d)", adapter_id);
-      ServerAdapter *disconnect_adapter =
-          Core::get_instance()->find_adapter_by_id((int)adapter_id);
-      if (disconnect_adapter == NULL) {
-        LOG_WARN("Cannot find adapter %d", (int)adapter_id);
-      } else {
-        disconnect_adapter->peer_knows_disconnecting_on_purpose();
-      }
-    }
-  } else if (req_code == CtrlReq::kCtrlReqPriv) {
-    LOG_VERB("Receive(Control Msg): Request(Priv Noti--Start)");
-    uint16_t n_priv_type;
-    PrivType priv_type;
-    uint32_t n_len;
-    uint32_t len;
-
-    // Receive 4Byte: Priv Type
-    res = adapter->receive(&n_priv_type, 4);
-    if (res <= 0) {
-      return res;
-    }
-
-    priv_type = (ntohs(n_priv_type) == PrivType::kPrivTypeWFDInfo)
-                    ? PrivType::kPrivTypeWFDInfo
-                    : PrivType::kPrivTypeUnknown;
-
-    // Receive 4Byte: Private Data Length
-    res = adapter->receive(&n_len, 4);
-    if (res <= 0) {
-      return res;
-    }
-
-    len = ntohl(n_len);
-    assert(len <= 512);
-
-    // Receive nByte: Private Data
-    res = adapter->receive(data, len);
-    if (res <= 0) {
-      return res;
-    }
-    LOG_VERB("Receive(Control Msg): Request(Priv Noti '%s'; type=%d)", data,
-             priv_type);
-
-    for (std::vector<ControlMessageListener *>::iterator it =
-             core->mControlMessageListeners.begin();
-         it != core->mControlMessageListeners.end(); it++) {
-      ControlMessageListener *listener = *it;
-      listener->on_receive_control_message(priv_type, data, len);
-    }
-  }
-  return res;
 }
 
 // Transactions

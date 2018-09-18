@@ -48,9 +48,9 @@ public:
   static uint32_t serialize(ProtocolData *pd, const uint8_t *buf,
                             uint32_t offset, uint32_t payload_size,
                             uint8_t **ret_vector);
-  static int send_packet(uint8_t *serialized, uint32_t packet_size);
+  static int send_packet(uint8_t *serialized, uint32_t packet_size, bool is_control);
 
-  static uint32_t recv_packet(uint8_t **seralized);
+  static uint32_t recv_packet(uint8_t **seralized, bool is_control);
 
   static uint32_t parse_header(uint8_t *serialized, ProtocolData *ret_pd);
 

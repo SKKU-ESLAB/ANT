@@ -1,5 +1,7 @@
 /* Copyright 2017-2018 All Rights Reserved.
  *  Gyeonghwan Hong (redcarrottt@gmail.com)
+ *  Eunsoo Park (esevan.park@gmail.com)
+ *  Injung Hwang (sinban04@gmail.com)
  *
  * [Contact]
  *  Gyeonghwan Hong (redcarrottt@gmail.com)
@@ -136,10 +138,9 @@ bool ServerAdapter::__connect_thread(void) {
 
   // Turn on device
   {
-    DeviceState deviceState = this->mDevice->get_state();
-    bool res = this->mDevice->hold_and_turn_on();
 
-    deviceState = this->mDevice->get_state();
+    bool res = this->mDevice->turn_on();
+    DeviceState deviceState = this->mDevice->get_state();
     if (!res || deviceState != DeviceState::kOn) {
       LOG_ERR("Cannot connect the server adapter - turn-on fail: %s",
               this->get_name());
@@ -149,41 +150,39 @@ bool ServerAdapter::__connect_thread(void) {
 
   // Allow client's connection
   {
-    bool res = this->mP2PServer->hold_and_allow_discover();
+    bool res = this->mP2PServer->allow_discover();
 
     P2PServerState p2pServerState = this->mP2PServer->get_state();
     if (!res || p2pServerState != P2PServerState::kAllowed) {
       LOG_ERR("Cannot connect the server adapter - allow discover fail: %s",
               this->get_name());
-      this->mDevice->release_and_turn_off();
+      this->mDevice->turn_off();
       return false;
     }
   }
 
   // Open server socket
-  {
-    ServerSocketState socketState = this->mServerSocket->get_state();
-    if (socketState != ServerSocketState::kOpened) {
-      bool res = this->mServerSocket->open();
+  ServerSocketState socketState = this->mServerSocket->get_state();
+  if (socketState != ServerSocketState::kOpened) {
+    bool res = this->mServerSocket->open();
 
-      socketState = this->mServerSocket->get_state();
-      if (!res || socketState != ServerSocketState::kOpened) {
-        LOG_ERR("Cannot connect the server adapter - socket open fail: %s",
-                this->get_name());
-        this->mP2PServer->release_and_disallow_discover();
-        this->mDevice->release_and_turn_off();
-        return false;
-      }
+    socketState = this->mServerSocket->get_state();
+    if (!res || socketState != ServerSocketState::kOpened) {
+      LOG_ERR("Cannot connect the server adapter - socket open fail: %s",
+              this->get_name());
+      this->mP2PServer->disallow_discover();
+      this->mDevice->turn_off();
+      return false;
     }
   }
 
-  // Run sender & receiver threads
-  if (this->mSenderThreadEnabled && this->mSenderThread == NULL) {
+  // Run sender/receiver threads
+  if (this->mSenderThread == NULL) {
     this->mSenderThread =
         new std::thread(std::bind(&ServerAdapter::sender_thread, this));
     this->mSenderThread->detach();
   }
-  if (this->mReceiverThreadEnabled && this->mReceiverThread == NULL) {
+  if (this->mReceiverThread == NULL) {
     this->mReceiverThread =
         new std::thread(std::bind(&ServerAdapter::receiver_thread, this));
     this->mReceiverThread->detach();
@@ -231,7 +230,8 @@ void ServerAdapter::disconnect_thread(void) {
 bool ServerAdapter::__disconnect_thread(void) {
   // Finish sender & receiver threads
   if (this->mSenderThread != NULL) {
-    // If this adapter is already sleeping, wake up and finish the sender thread
+    // If this adapter is already sleeping, wake up and finish the sender
+    // thread
     this->mSenderLoopOn = false;
     if (this->get_state() == ServerAdapterState::kSleeping) {
       this->wake_up(NULL, false);
@@ -268,7 +268,7 @@ bool ServerAdapter::__disconnect_thread(void) {
   }
 
   {
-    bool res = this->mP2PServer->release_and_disallow_discover();
+    bool res = this->mP2PServer->disallow_discover();
 
     P2PServerState p2pServerState = this->mP2PServer->get_state();
     if (!res) {
@@ -286,7 +286,7 @@ bool ServerAdapter::__disconnect_thread(void) {
   }
 
   {
-    bool res = this->mDevice->release_and_turn_off();
+    bool res = this->mDevice->turn_off();
 
     DeviceState deviceState = this->mDevice->get_state();
     if (!res) {
@@ -358,7 +358,7 @@ void ServerAdapter::sender_thread(void) {
             (unsigned int)syscall(224));
 
   this->mSenderLoopOn = true;
-  this->data_adapter_send_loop();
+  this->sender_thread_loop();
 
   LOG_DEBUG("%s's Sender thread ends(tid: %d)", this->get_name(),
             (unsigned int)syscall(224));
@@ -375,7 +375,7 @@ void ServerAdapter::sender_thread(void) {
   this->mWaitSenderThreadCond.notify_all();
 }
 
-void ServerAdapter::data_adapter_send_loop(void) {
+void ServerAdapter::sender_thread_loop(void) {
   {
     std::unique_lock<std::mutex> lck(this->mSenderSuspendedMutex);
     this->mSenderSuspended = false;
@@ -410,26 +410,35 @@ void ServerAdapter::data_adapter_send_loop(void) {
       } while (true);
     }
 
-    // At first, dequeue a segment from failed sending queue
-    segment_to_send = sm->get_failed_sending();
-
 #ifdef EXP_MEASURE_INTERVAL_SENDER
     gettimeofday(&times[1], NULL);
 #endif
 
-    // If there is no failed segment, dequeue from send queue
+    // Dequeue from a queue (one of the three queues)
+    // Priority 1. Failed sending queue
+    segment_to_send = sm->get_failed_sending();
+#ifdef VERBOSE_SEGMENT_DEQUEUE
+    bool is_get_failed_segment = (segment_to_send != NULL);
+#endif
+
+    // Priority 2. Send control queue
     if (likely(segment_to_send == NULL)) {
-      segment_to_send = sm->dequeue(kSegSend);
-#ifdef VERBOSE_SEGMENT_DEQUEUE
-      LOG_DEBUG("%s Normal Segment: seqno=%d", this->get_name(),
-                segment_to_send->seq_no);
-#endif
-    } else {
-#ifdef VERBOSE_SEGMENT_DEQUEUE
-      LOG_DEBUG("%s Failed Segment: seqno=%d", this->get_name(),
-                segment_to_send->seq_no);
-#endif
+      segment_to_send = sm->dequeue(kSegSendControl);
     }
+
+    // Priority 3. Send data queue
+    if (likely(segment_to_send == NULL)) {
+      segment_to_send = sm->dequeue(kSegSendData);
+    }
+
+#ifdef VERBOSE_SEGMENT_DEQUEUE
+    bool is_control =
+        (mGetSegFlagBits(segment_to_send->flag_len) & kSegFlagControl);
+
+    LOG_DEBUG("%s: %s Segment (type=%s, seqno=%d)", this->get_name(),
+              (is_get_failed_segment ? "Failed" : "Normal"),
+              (is_control ? "Ctrl" : "Data"), segment_to_send->seq_no);
+#endif
 
 #ifdef EXP_MEASURE_INTERVAL_SENDER
     gettimeofday(&times[2], NULL);
@@ -464,10 +473,11 @@ void ServerAdapter::data_adapter_send_loop(void) {
     gettimeofday(&times[4], NULL);
 #endif
 
+    // Error handling
     if (res <= 0) {
-      // Error handling
       if (is_disconnecting_on_purpose()) {
-        // Now disconnecting on purpose... Send this segment by another adapter.
+        // Now disconnecting on purpose... Send this segment by another
+        // adapter.
         LOG_DEBUG("%s: Disconnecting on purpose", this->get_name());
         sm->failed_sending(segment_to_send);
         break;
@@ -516,16 +526,11 @@ void ServerAdapter::data_adapter_send_loop(void) {
 }
 
 void ServerAdapter::receiver_thread(void) {
-  if (this->mReceiveLoop == NULL) {
-    LOG_ERR("No receive loop specified!");
-    return;
-  }
-
   LOG_DEBUG("%s: Receiver thread spawned(tid: %d)", this->get_name(),
             (unsigned int)syscall(224));
 
   this->mReceiverLoopOn = true;
-  this->mReceiveLoop(this);
+  this->receiver_thread_loop();
 
   LOG_DEBUG("%s: Receiver thread ends(tid: %d)", this->get_name(),
             (unsigned int)syscall(224));
@@ -538,28 +543,28 @@ void ServerAdapter::receiver_thread(void) {
   this->mWaitReceiverThreadCond.notify_all();
 }
 
-void ServerAdapter::data_adapter_receive_loop(ServerAdapter *adapter) {
-  while (adapter->is_receiver_loop_on()) {
+void ServerAdapter::receiver_thread_loop(void) {
+  while (this->mReceiverLoopOn) {
     SegmentManager *sm = SegmentManager::get_instance();
     Segment *segment_to_receive = sm->get_free_segment();
     void *buf = reinterpret_cast<void *>(segment_to_receive->data);
     int len = kSegSize + kSegHeaderSize;
 
 #ifdef VERBOSE_SERVER_ADAPTER_RECEIVING
-    LOG_DEBUG("%s: Receiving...", adapter->get_name());
+    LOG_DEBUG("%s: Receiving...", this->get_name());
 #endif
-    int res = adapter->receive(buf, len);
+    int res = this->receive(buf, len);
     if (errno == EINTR) {
       continue;
     } else if (errno == EAGAIN) {
-      LOG_WARN("Kernel I/O buffer is full at %s", adapter->get_name());
+      LOG_WARN("Kernel I/O buffer is full at %s", this->get_name());
       continue;
     } else if (res < len && errno != 0) {
-      if (!adapter->is_disconnecting_on_purpose()) {
-        LOG_WARN("Receiving failed at %s (%d / %d; %s)", adapter->get_name(),
+      if (!this->is_disconnecting_on_purpose()) {
+        LOG_WARN("Receiving failed at %s (%d / %d; %s)", this->get_name(),
                  errno, res, strerror(errno));
       } else {
-        LOG_DEBUG("Receiving broken at %s (%d / %d; %s)", adapter->get_name(),
+        LOG_DEBUG("Receiving broken at %s (%d / %d; %s)", this->get_name(),
                   errno, res, strerror(errno));
       }
       break;
@@ -572,11 +577,18 @@ void ServerAdapter::data_adapter_receive_loop(ServerAdapter *adapter) {
     segment_to_receive->seq_no = ntohl(net_seq_no);
     segment_to_receive->flag_len = ntohl(net_flag_len);
 
-    sm->enqueue(kSegRecv, segment_to_receive);
+    bool is_control = ((mGetSegFlagBits(segment_to_receive->flag_len) &
+                        kSegFlagControl) != 0);
+
+    if (is_control) {
+      sm->enqueue(kSegRecvControl, segment_to_receive);
+    } else {
+      sm->enqueue(kSegRecvData, segment_to_receive);
+    }
     segment_to_receive = sm->get_free_segment();
 
 #ifdef VERBOSE_SERVER_ADAPTER_RECEIVING
-    LOG_DEBUG("%s: Received: %d", adapter->get_name(), res);
+    LOG_DEBUG("%s: Received: %d", this->get_name(), res);
 #endif
   }
 }
@@ -680,5 +692,6 @@ void ServerAdapter::set_state(ServerAdapterState new_state) {
            this->mStateListeners.begin();
        it != this->mStateListeners.end(); it++) {
     ServerAdapterStateListener *listener = (*it);
+    listener->onUpdateServerAdapterState(this, old_state, new_state);
   }
 }

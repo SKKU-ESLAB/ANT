@@ -30,8 +30,6 @@
 
 using namespace sc;
 
-WfdDevice *WfdDevice::sSingleton = NULL;
-
 bool WfdDevice::turn_on_impl(void) {
   char buf[512];
   char *const params[] = {"ifconfig", DEFAULT_WFD_DEVICE_NAME, "up", NULL};

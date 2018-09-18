@@ -36,18 +36,30 @@
 namespace sc {
 class BtServerAdapter : public ServerAdapter {
 public:
+  ~BtServerAdapter(void) {}
+
+  /* Singleton */
+  static BtServerAdapter *get_instance(int id, const char *name,
+                                       const char *service_uuid) {
+    if (sSingleton == NULL) {
+      sSingleton = new BtServerAdapter(id, name, service_uuid);
+    }
+    return sSingleton;
+  }
+
+private:
+  /* Singleton */
+  static BtServerAdapter *sSingleton;
+
+  /* Constructor */
   BtServerAdapter(int id, const char *name, const char *service_uuid)
       : ServerAdapter(id, name) {
-    BtDevice *device = BtDevice::getSingleton();
-    BtP2PServer *p2pServer = BtP2PServer::getSingleton();
+    BtDevice *device = new BtDevice();
+    BtP2PServer *p2pServer = new BtP2PServer();
     RfcommServerSocket *serverSocket =
         new RfcommServerSocket(name, service_uuid);
     this->initialize(device, p2pServer, serverSocket, false);
   }
-
-  ~BtServerAdapter(void) {}
-
-protected:
 }; /* class BtServerAdapter */
 } /* namespace sc */
 

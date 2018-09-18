@@ -39,6 +39,7 @@
         "functional": "cpp",
         "limits": "cpp",
         "ratio": "cpp",
-        "tuple": "cpp"
+        "tuple": "cpp",
+        "ostream": "cpp"
     }
 }

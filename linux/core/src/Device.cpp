@@ -23,46 +23,34 @@
 
 using namespace sc;
 
-bool Device::hold_and_turn_on(void) {
-  if (this->mRefCount.increase() == 1) {
-    this->set_state(DeviceState::kTurningOn);
+bool Device::turn_on(void) {
+  this->set_state(DeviceState::kTurningOn);
 
-    bool res = this->turn_on_impl();
+  bool res = this->turn_on_impl();
 
-    if (!res) {
-      LOG_DEBUG("%s: Failed to turn on", this->get_name());
-      this->mRefCount.decrease();
-      this->set_state(DeviceState::kOff);
-    } else {
-      LOG_DEBUG("%s: Successfully turned on", this->get_name());
-      this->set_state(DeviceState::kOn);
-    }
-    return res;
+  if (!res) {
+    LOG_DEBUG("%s: Failed to turn on", this->get_name());
+    this->set_state(DeviceState::kOff);
   } else {
-    LOG_DEBUG("%s: Already turn on", this->get_name());
-    // Already turn on
-    return true;
+    LOG_DEBUG("%s: Successfully turned on", this->get_name());
+    this->set_state(DeviceState::kOn);
   }
+
+  return res;
 }
 
-bool Device::release_and_turn_off(void) {
-  if (this->mRefCount.decrease() == 0) {
-    this->set_state(DeviceState::kTurningOff);
+bool Device::turn_off(void) {
+  this->set_state(DeviceState::kTurningOff);
 
-    bool res = this->turn_off_impl();
+  bool res = this->turn_off_impl();
 
-    if (!res) {
-      LOG_DEBUG("%s: Failed to turn off", this->get_name());
-      this->mRefCount.increase();
-      this->set_state(DeviceState::kOn);
-    } else {
-      LOG_DEBUG("%s: Successfully turned off", this->get_name());
-      this->set_state(DeviceState::kOff);
-    }
-    return res;
+  if (!res) {
+    LOG_DEBUG("%s: Failed to turn off", this->get_name());
+    this->set_state(DeviceState::kOn);
   } else {
-    // Not yet turn off
-    LOG_DEBUG("%s: Not yet turn off", this->get_name());
-    return true;
+    LOG_DEBUG("%s: Successfully turned off", this->get_name());
+    this->set_state(DeviceState::kOff);
   }
+  
+  return res;
 }

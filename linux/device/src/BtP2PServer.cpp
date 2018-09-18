@@ -28,8 +28,6 @@
 
 using namespace sc;
 
-BtP2PServer *BtP2PServer::sSingleton = NULL;
-
 bool BtP2PServer::allow_discover_impl(void) { return true; }
 
 bool BtP2PServer::disallow_discover_impl(void) { return true; }
