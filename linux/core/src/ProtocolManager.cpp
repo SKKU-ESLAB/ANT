@@ -21,8 +21,9 @@
 
 #include "../inc/ProtocolManager.h"
 
-#include "../inc/DebugLog.h"
 #include "../inc/SegmentManager.h"
+
+#include "../../common/inc/DebugLog.h"
 
 #include <netinet/in.h>
 #include <stdlib.h>

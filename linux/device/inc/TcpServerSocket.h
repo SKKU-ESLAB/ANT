@@ -22,7 +22,7 @@
 
 #include "WfdIpAddressListener.h"
 
-#include "../../inc/ServerSocket.h"
+#include "../../core/inc/ServerSocket.h"
 
 #include <mutex>
 #include <thread>

@@ -20,7 +20,6 @@
 #ifndef __COUNTER_H__
 #define __COUNTER_H__
 
-#include "Counter.h"
 #include "DebugLog.h"
 
 #include <assert.h>

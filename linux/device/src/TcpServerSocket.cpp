@@ -19,7 +19,7 @@
 
 #include "../inc/TcpServerSocket.h"
 
-#include "../../inc/DebugLog.h"
+#include "../../common/inc/DebugLog.h"
 
 #include <arpa/inet.h>
 #include <errno.h>

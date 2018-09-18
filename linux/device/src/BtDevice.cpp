@@ -18,9 +18,8 @@
  */
 #include "../inc/BtDevice.h"
 
-#include "../inc/Util.h"
-
-#include "../../inc/Counter.h"
+#include "../../common/inc/ChildProcess.h"
+#include "../../common/inc/Counter.h"
 
 #include <mutex>
 #include <thread>
@@ -35,7 +34,7 @@ bool BtDevice::turn_on_impl(void) {
   char buf[512];
   char *const params[] = {"hciconfig", "hci0", "up", "piscan", NULL};
 
-  int res = Util::run_client(HCICONFIG_PATH, params, buf, 512);
+  int res = ChildProcess::run(HCICONFIG_PATH, params, buf, 512);
   return (res >= 0);
 }
 
@@ -43,6 +42,6 @@ bool BtDevice::turn_off_impl(void) {
   char buf[512];
   char *const params[] = {"hciconfig", "hci0", "down", NULL};
 
-  int res = Util::run_client(HCICONFIG_PATH, params, buf, 512);
+  int res = ChildProcess::run(HCICONFIG_PATH, params, buf, 512);
   return (res >= 0);
 }

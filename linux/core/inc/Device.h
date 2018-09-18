@@ -17,10 +17,10 @@
  * limitations under the License.
  */
 
-#ifndef __P2P_SERVER_H__
-#define __P2P_SERVER_H__
+#ifndef __DEVICE_H__
+#define __DEVICE_H__
 
-#include "RefCount.h"
+#include "../../common/inc/RefCount.h"
 
 #include <thread>
 #include <mutex>
@@ -28,47 +28,52 @@
 #include <stdio.h>
 
 namespace sc {
+
 typedef enum {
-  kDisallowed = 0,
-  kAllowed = 1
-} P2PServerState;
+  kOff        = 0,
+  kTurningOn  = 1,
+  kOn         = 2,
+  kTurningOff = 3
+} DeviceState;
 
-class P2PServer {
+class ServerAdapter;
+class Device {
 public:
-  bool hold_and_allow_discover(void);
-  bool release_and_disallow_discover(void);
+  bool hold_and_turn_on(void);
+  bool release_and_turn_off(void);
 
-  virtual bool allow_discover_impl(void) = 0;
-  virtual bool disallow_discover_impl(void) = 0;
+  virtual bool turn_on_impl(void) = 0;
+  virtual bool turn_off_impl(void) = 0;
 
-  P2PServerState get_state(void) {
+  DeviceState get_state(void) {
     return this->mState;
   }
 
-  P2PServer(const char* name) {
-    this->mState = P2PServerState::kDisallowed;
+  Device(const char* name) {
+    this->mState = DeviceState::kOff;
     snprintf(this->mName, sizeof(this->mName), name);
   }
-  ~P2PServer(void) {
+
+  ~Device() {
   }
 
 protected:
-  void set_state(P2PServerState new_state) {
+  void set_state(DeviceState new_state) {
     this->mState = new_state;
   }
-
+  
   char* get_name() {
     return this->mName;
   }
 
 private:
-  P2PServerState mState;
+  DeviceState mState;
   char mName[256];
 
 protected:
   /* Reference Count */
   RefCount mRefCount;
-}; /* class P2PServer */
+}; /* class Device */
 } /* namespace sc */
 
-#endif /* !defined(__P2P_SERVER_H__) */
+#endif /* !defined(__DEVICE_H__) */

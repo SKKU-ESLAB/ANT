@@ -17,7 +17,7 @@
  * limitations under the License.
  */
 
-#include "../device/inc/Util.h"
+#include "../common/inc/ChildProcess.h"
 
 #include "../configs/WfdConfig.h"
 
@@ -83,7 +83,7 @@ int set_dhcpd_config(const char *intfName) {
   write(config_fd, script, strlen(script) + 1);
   close(config_fd);
 
-  Util::run_client(UDHCPD_PATH, params, buf, 256);
+  ChildProcess::run(UDHCPD_PATH, params, buf, 256);
 
   printf("Print: %s\n", buf);
 

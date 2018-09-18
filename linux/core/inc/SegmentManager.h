@@ -22,9 +22,9 @@
 #ifndef __SEGMENT_MANAGER_H__
 #define __SEGMENT_MANAGER_H__
 
-#include "Counter.h"
+#include "../../common/inc/Counter.h"
 
-#include "../configs/ExpConfig.h"
+#include "../../configs/ExpConfig.h"
 
 #include <condition_variable>
 #include <list>

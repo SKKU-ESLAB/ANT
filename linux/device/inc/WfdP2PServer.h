@@ -22,7 +22,7 @@
 
 #include "WfdIpAddressListener.h"
 
-#include "../../inc/P2PServer.h"
+#include "../../core/inc/P2PServer.h"
 
 #include <mutex>
 #include <thread>

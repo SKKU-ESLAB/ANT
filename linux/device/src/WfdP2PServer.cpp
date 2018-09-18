@@ -18,12 +18,13 @@
  */
 #include "../inc/WfdP2PServer.h"
 
-#include "../inc/Util.h"
 #include "../inc/WfdServerAdapter.h"
 
-#include "../../inc/Core.h"
-#include "../../inc/Counter.h"
-#include "../../inc/DebugLog.h"
+#include "../../common/inc/Counter.h"
+#include "../../common/inc/DebugLog.h"
+#include "../../common/inc/ChildProcess.h"
+
+#include "../../core/inc/Core.h"
 
 #include "../../configs/WfdConfig.h"
 
@@ -163,14 +164,14 @@ int WfdP2PServer::set_wps_device_name(char *wfd_device_name, char ret[],
   char *const params[] = {"wpa_cli", "set", "device_name", wfd_device_name,
                           NULL};
 
-  return Util::run_client(WPA_CLI_PATH, params, ret, len);
+  return ChildProcess::run(WPA_CLI_PATH, params, ret, len);
 }
 
 int WfdP2PServer::wfd_add_p2p_group(char ret[], size_t len) {
   char *const params[] = {"wpa_cli", "-i", DEFAULT_WFD_DEVICE_NAME,
                           "p2p_group_add", NULL};
 
-  return Util::run_client(WPA_CLI_PATH, params, ret, len);
+  return ChildProcess::run(WPA_CLI_PATH, params, ret, len);
 }
 
 bool WfdP2PServer::retrieve_wpa_interface_name(void) {
@@ -204,7 +205,7 @@ bool WfdP2PServer::retrieve_wpa_interface_name(void) {
 int WfdP2PServer::ping_wpa_cli(char ret[], size_t len) {
   char *const params[] = {"wpa_cli", "ping", NULL};
 
-  return Util::run_client(WPA_CLI_PATH, params, ret, len);
+  return ChildProcess::run(WPA_CLI_PATH, params, ret, len);
 }
 
 int WfdP2PServer::set_wfd_ip_addr(char *ip_addr) {
@@ -213,7 +214,7 @@ int WfdP2PServer::set_wfd_ip_addr(char *ip_addr) {
   char *const params[] = {"ifconfig", this->mWpaIntfName, ip_addr, NULL};
   char buf[256];
 
-  return Util::run_client(IFCONFIG_PATH, params, buf, 256);
+  return ChildProcess::run(IFCONFIG_PATH, params, buf, 256);
 }
 
 int WfdP2PServer::set_dhcpd_config(void) {
@@ -261,7 +262,7 @@ int WfdP2PServer::set_dhcpd_config(void) {
   write(config_fd, script, strlen(script) + 1);
   close(config_fd);
 
-  int dhcpdPid = Util::run_client(UDHCPD_PATH, params);
+  int dhcpdPid = ChildProcess::run(UDHCPD_PATH, params);
 
   return dhcpdPid;
 }
@@ -298,7 +299,7 @@ int WfdP2PServer::get_wfd_p2p_device_addr(char *dev_addr, size_t len) {
 int WfdP2PServer::get_wfd_status(char ret[], size_t len) {
   char *const params[] = {"wpa_cli", "status", NULL};
 
-  return Util::run_client(WPA_CLI_PATH, params, ret, len);
+  return ChildProcess::run(WPA_CLI_PATH, params, ret, len);
 }
 
 int WfdP2PServer::reset_wfd_server(char *pin, size_t len) {
@@ -339,7 +340,7 @@ int WfdP2PServer::reset_wps_pin(char ret[], size_t len) {
 
   assert(this->mWpaIntfName[0] != '\0');
 
-  return Util::run_client(WPA_CLI_PATH, params, ret, len);
+  return ChildProcess::run(WPA_CLI_PATH, params, ret, len);
 }
 
 int WfdP2PServer::get_wfd_ip_address(char *buf, size_t len) {
@@ -421,7 +422,7 @@ int WfdP2PServer::wfd_remove_p2p_group(char ret[], size_t len) {
 
   assert(this->mWpaIntfName[0] != '\0');
 
-  return Util::run_client(WPA_CLI_PATH, params, ret, len);
+  return ChildProcess::run(WPA_CLI_PATH, params, ret, len);
 }
 
 int WfdP2PServer::kill_dhcpd(void) {

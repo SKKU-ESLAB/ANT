@@ -17,7 +17,7 @@
  * limitations under the License.
  */
 
-#include "../inc/API.h"
+#include "../core/inc/API.h"
 
 #include "../device/inc/BtServerAdapter.h"
 #include "../device/inc/CommInitializer.h"

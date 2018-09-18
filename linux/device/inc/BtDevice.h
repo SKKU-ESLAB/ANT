@@ -20,7 +20,7 @@
 #ifndef __BT_DEVICE_H__
 #define __BT_DEVICE_H__
 
-#include "../../inc/Device.h"
+#include "../../core/inc/Device.h"
 
 #include <mutex>
 #include <thread>

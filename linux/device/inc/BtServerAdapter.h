@@ -24,7 +24,7 @@
 #include "BtP2PServer.h"
 #include "RfcommServerSocket.h"
 
-#include "../../inc/ServerAdapter.h"
+#include "../../core/inc/ServerAdapter.h"
 
 #include "../../configs/ExpConfig.h"
 

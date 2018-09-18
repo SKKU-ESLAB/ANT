@@ -21,10 +21,11 @@
 
 #include "../inc/SegmentManager.h"
 
-#include "../inc/DebugLog.h"
 #include "../inc/ProtocolManager.h"
 
-#include "../configs/ExpConfig.h"
+#include "../../common/inc/DebugLog.h"
+
+#include "../../configs/ExpConfig.h"
 
 #include <netinet/in.h>
 #include <stdlib.h>

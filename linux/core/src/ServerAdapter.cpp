@@ -20,10 +20,11 @@
 #include "../inc/ServerAdapter.h"
 
 #include "../inc/Core.h"
-#include "../inc/DebugLog.h"
 #include "../inc/NetworkSwitcher.h"
 
-#include "../configs/ExpConfig.h"
+#include "../../common/inc/DebugLog.h"
+
+#include "../../configs/ExpConfig.h"
 
 #include <arpa/inet.h>
 #include <mutex>

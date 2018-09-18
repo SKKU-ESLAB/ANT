@@ -20,7 +20,7 @@
 #ifndef __BT_P2P_SERVER_H__
 #define __BT_P2P_SERVER_H__
 
-#include "../../inc/P2PServer.h"
+#include "../../core/inc/P2PServer.h"
 
 #include <thread>
 #include <mutex>

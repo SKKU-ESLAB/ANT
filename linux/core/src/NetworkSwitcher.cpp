@@ -20,12 +20,13 @@
 #include "../inc/NetworkSwitcher.h"
 
 #include "../inc/Core.h"
-#include "../inc/DebugLog.h"
 #include "../inc/SegmentManager.h"
 #include "../inc/ServerAdapter.h"
 
-#include "../configs/ExpConfig.h"
-#include "../configs/NetworkSwitcherConfig.h"
+#include "../../common/inc/DebugLog.h"
+
+#include "../../configs/ExpConfig.h"
+#include "../../configs/NetworkSwitcherConfig.h"
 
 #include <string.h>
 #include <thread>

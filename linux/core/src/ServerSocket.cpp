@@ -20,7 +20,8 @@
 #include "../inc/ServerSocket.h"
 
 #include "../inc/ServerAdapter.h"
-#include "../inc/DebugLog.h"
+
+#include "../../common/inc/DebugLog.h"
 
 using namespace sc;
 
