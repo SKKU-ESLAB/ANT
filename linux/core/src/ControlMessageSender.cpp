@@ -22,6 +22,7 @@
 #include "../inc/API.h"
 
 #include <string>
+#include <iostream>
 
 using namespace sc;
 
@@ -33,6 +34,8 @@ void ControlMessageSender::send_control_message(std::string& message) {
 
 void ControlMessageSender::send_request(CMCode request_code,
                                         uint16_t adapter_id) {
+  std::string message("");
+  message.append(std::to_string());
   bool retry_check = true;
   while (retry_check) {
     ServerAdapter *control_adapter = this->get_active_control_adapter();
