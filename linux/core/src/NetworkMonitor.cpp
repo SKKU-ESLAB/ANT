@@ -134,7 +134,8 @@ void NetworkMonitor::get_stats(Stats &stats) {
   /* Statistics used in Energy-aware & Latency-aware Policy */
   stats.ema_send_request_size = core->get_ema_send_request_size();
   stats.ema_arrival_time_us = core->get_ema_send_arrival_time();
-  stats.now_queue_data_size = sm->get_queue_data_size(kSegSend) +
+  stats.now_queue_data_size = sm->get_queue_data_size(kSegSendData) +
+                              sm->get_queue_data_size(kSegSendControl) +
                               sm->get_failed_sending_queue_data_size();
 }
 

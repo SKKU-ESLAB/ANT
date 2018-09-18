@@ -191,27 +191,27 @@ public class Core {
     }
 
     public void sendRequestConnect(short adapterId) {
-        this.sendRequest(CtrlReq.kConnect, adapterId);
+        this.sendRequest(CMCode.kConnect, adapterId);
         Logger.VERB(kTag, "Send(Control Msg): Request(Connect " + adapterId + ")");
     }
 
     public void sendRequestDisconnect(short adapterId) {
-        this.sendRequest(CtrlReq.kDisconnect, adapterId);
+        this.sendRequest(CMCode.kDisconnect, adapterId);
         Logger.VERB(kTag, "Send(Control Msg): Request(Disconnect " + adapterId + ")");
     }
 
     public void sendRequestDisconnectAck(short adapterId) {
-        this.sendRequest(CtrlReq.kDisconnectAck, adapterId);
+        this.sendRequest(CMCode.kDisconnectAck, adapterId);
         Logger.VERB(kTag, "Send(Control Msg): Request(DisconnectAck " + adapterId + ")");
     }
 
     public void sendRequestSleep(short adapterId) {
-        this.sendRequest(CtrlReq.kSleep, adapterId);
+        this.sendRequest(CMCode.kSleep, adapterId);
         Logger.VERB(kTag, "Send(Control Msg): Request(Sleep " + adapterId + ")");
     }
 
     public void sendRequestWakeup(short adapterId) {
-        this.sendRequest(CtrlReq.kWakeup, adapterId);
+        this.sendRequest(CMCode.kWakeup, adapterId);
         Logger.VERB(kTag, "Send(Control Msg): Request(WakeUp " + adapterId + ")");
     }
 
@@ -240,8 +240,8 @@ public class Core {
                 }
 
                 Byte reqCode = dataBuffer[0];
-                if (reqCode == CtrlReq.kConnect || reqCode == CtrlReq.kSleep || reqCode ==
-                        CtrlReq.kWakeup || reqCode == CtrlReq.kDisconnect || reqCode == CtrlReq
+                if (reqCode == CMCode.kConnect || reqCode == CMCode.kSleep || reqCode ==
+                        CMCode.kWakeup || reqCode == CMCode.kDisconnect || reqCode == CMCode
                         .kDisconnectAck) {
                     // "Connect Adapter" Request
                     // Receive 2Byte: Adapter ID
@@ -251,22 +251,22 @@ public class Core {
                     buffer.put(dataBuffer, 0, 2);
                     short adapterId = buffer.getShort(0);
 
-                    if (reqCode == CtrlReq.kConnect) {
+                    if (reqCode == CMCode.kConnect) {
                         Logger.VERB(kTag, "Receive(Control Msg): Request(Connect " + adapterId +
                                 ")");
                         NetworkSwitcher.getInstance().connectAdapterByPeer(adapterId);
-                    } else if (reqCode == CtrlReq.kSleep) {
+                    } else if (reqCode == CMCode.kSleep) {
                         Logger.VERB(kTag, "Receive(Control Msg): Request(Sleep " + adapterId + ")");
                         NetworkSwitcher.getInstance().sleepAdapterByPeer(adapterId);
-                    } else if (reqCode == CtrlReq.kWakeup) {
+                    } else if (reqCode == CMCode.kWakeup) {
                         Logger.VERB(kTag, "Receive(Control Msg): Request(WakeUp " + adapterId +
                                 ")");
                         NetworkSwitcher.getInstance().wakeUpAdapterByPeer(adapterId);
-                    } else if (reqCode == CtrlReq.kDisconnect) {
+                    } else if (reqCode == CMCode.kDisconnect) {
                         Logger.VERB(kTag, "Receive(Control Msg): Request(Disconnect " + adapterId
                                 + ")");
                         NetworkSwitcher.getInstance().disconnectAdapterByPeer(adapterId);
-                    } else if (reqCode == CtrlReq.kDisconnectAck) {
+                    } else if (reqCode == CMCode.kDisconnectAck) {
                         Logger.VERB(kTag, "Receive(Control Msg): Request(DisconnectAck " +
                                 adapterId + ")");
                         ClientAdapter disconnect_adapter = findAdapterById(adapterId);
@@ -276,7 +276,7 @@ public class Core {
                             disconnect_adapter.peerKnowsDisconnectingOnPurpose();
                         }
                     }
-                } else if (reqCode == CtrlReq.kPriv) {
+                } else if (reqCode == CMCode.kPriv) {
                     // "Priv" Request
                     int privType;
                     int privDataLength;
@@ -324,7 +324,7 @@ public class Core {
     }
 
     // Control Request Code
-    class CtrlReq {
+    class CMCode {
         public static final char kConnect = 1;
         public static final char kSleep = 2;
         public static final char kWakeup = 3;

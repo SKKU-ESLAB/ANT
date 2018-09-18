@@ -33,20 +33,10 @@ public:
   virtual bool turn_on_impl(void);
   virtual bool turn_off_impl(void);
 
-  static BtDevice *getSingleton() {
-    if (BtDevice::sSingleton == NULL) {
-      BtDevice::sSingleton = new BtDevice();
-    }
-    return BtDevice::sSingleton;
-  }
-
-  static BtDevice *sSingleton;
-
+  BtDevice() : Device("Bluetooth") {}
   ~BtDevice(void) {}
 
 protected:
-  BtDevice() : Device("Bluetooth") {}
-
 }; /* class BtDevice */
 } /* namespace sc */
 

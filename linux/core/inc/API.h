@@ -30,20 +30,16 @@ void start_sc(StartCallback startCallback);
 typedef void (*StopCallback)(bool is_success);
 void stop_sc(StopCallback stopCallback);
 
-inline void register_control_adapter(ServerAdapter *adapter) {
-  Core::get_instance()->register_control_adapter(adapter);
-}
-
-inline void register_data_adapter(ServerAdapter *adapter) {
-  Core::get_instance()->register_data_adapter(adapter);
+inline void register_adapter(ServerAdapter *adapter) {
+  Core::get_instance()->register_adapter(adapter);
 }
 
 inline int send(const void *dataBuffer, uint32_t dataLength) {
-  Core::get_instance()->send(dataBuffer, dataLength);
+  Core::get_instance()->send(dataBuffer, dataLength, false);
 }
 
 inline int receive(void **dataBuffer) {
-  Core::get_instance()->receive(dataBuffer);
+  Core::get_instance()->receive(dataBuffer, false);
 }
 } /* namespace sc */
 

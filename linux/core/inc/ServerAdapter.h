@@ -64,7 +64,6 @@ public:
   /* Basic APIs
    *  - connect, disconnect, sleep, wake up
    *  - send, receive
-   *  - enable sender thread, enable receiver thread
    */
   /* Basic APIs related to connection/sleeping */
   void connect(ConnectCallback callback, bool is_send_request);
@@ -78,24 +77,6 @@ public:
   /* Basic APIs related to data transmission */
   int send(const void *buf, size_t len);
   int receive(void *buf, size_t len);
-
-  /* Basic APIs related to handling sender/receiver threads */
-  void enable_sender_thread() {
-    this->mSenderThreadEnabled = true;
-    return;
-  }
-  void enable_receiver_thread(ReceiveLoop receive_loop) {
-    if (receive_loop == NULL) {
-      this->mReceiveLoop = ServerAdapter::data_adapter_receive_loop;
-    } else {
-      this->mReceiveLoop = receive_loop;
-    }
-    this->mReceiverThreadEnabled = true;
-    return;
-  }
-
-  /* Basic APIs called in receiver loops */
-  bool is_receiver_loop_on(void) { return mReceiverLoopOn; }
 
 private:
   /* Connect Thread */
@@ -111,9 +92,8 @@ private:
 
   /* Sender Thread */
   void sender_thread(void);
-  void data_adapter_send_loop(void);
+  void sender_thread_loop(void);
   std::thread *mSenderThread = NULL;
-  bool mSenderThreadEnabled = false;
   bool mSenderLoopOn = false;
   bool mSenderSuspended = false;
   std::mutex mSenderSuspendedMutex;
@@ -123,10 +103,8 @@ private:
 
   /* Receiver Thread */
   void receiver_thread(void);
-  static void data_adapter_receive_loop(ServerAdapter *adapter);
+  void receiver_thread_loop(void);
   std::thread *mReceiverThread = NULL;
-  ReceiveLoop mReceiveLoop = NULL;
-  bool mReceiverThreadEnabled = false;
   bool mReceiverLoopOn = false;
   DisconnectCallback mDisconnectCallback = NULL;
   std::mutex mWaitReceiverThreadMutex;

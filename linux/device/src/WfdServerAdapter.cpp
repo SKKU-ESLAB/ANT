@@ -17,28 +17,8 @@
  * limitations under the License.
  */
 
-#ifndef __WFD_DEVICE_H__
-#define __WFD_DEVICE_H__
+#include "../inc/WfdServerAdapter.h"
 
-#include "../../core/inc/Device.h"
+using namespace sc;
 
-#include <mutex>
-#include <thread>
-
-#include <stdio.h>
-
-namespace sc {
-class WfdDevice : public Device {
-public:
-  virtual bool turn_on_impl(void);
-  virtual bool turn_off_impl(void);
-
-  WfdDevice() : Device("WFD") {}
-
-  ~WfdDevice(void) {}
-
-protected:
-}; /* class WfdDevice */
-} /* namespace sc */
-
-#endif /* !defined(__WFD_DEVICE_H__) */
+WfdServerAdapter *WfdServerAdapter::sSingleton = NULL;

@@ -114,7 +114,7 @@ uint32_t ProtocolManager::parse_header(uint8_t *serialized,
   return vec_offset;
 }
 
-int ProtocolManager::send_packet(uint8_t *serialized, uint32_t packet_size) {
+int ProtocolManager::send_packet(uint8_t *serialized, uint32_t packet_size, bool is_control) {
   SegmentManager *sm = SegmentManager::get_instance();
 #ifdef COMMUNICATOR_UNIT_TEST
   uint8_t buf_test = *serialized;
@@ -122,14 +122,14 @@ int ProtocolManager::send_packet(uint8_t *serialized, uint32_t packet_size) {
   free(serialized);
 #endif
   // Hand over the data to the segment manager
-  return sm->send_to_segment_manager(serialized, packet_size);
+  return sm->send_to_segment_manager(serialized, packet_size, is_control);
 }
 
-uint32_t ProtocolManager::recv_packet(uint8_t **buf) {
+uint32_t ProtocolManager::recv_packet(uint8_t **buf, bool is_control) {
   ProtocolData pd = {0, 0, NULL};
   SegmentManager *sm = SegmentManager::get_instance();
   uint8_t *p_data_buf =
-      sm->recv_from_segment_manager(reinterpret_cast<void *>(&pd));
+      sm->recv_from_segment_manager(reinterpret_cast<void *>(&pd), is_control);
   assert(pd.len == 0 || p_data_buf != NULL);
 
   *buf = p_data_buf;

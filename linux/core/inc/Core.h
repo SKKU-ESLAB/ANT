@@ -78,28 +78,6 @@ private:
   std::mutex mDataAdaptersCountLock;
 }; /* class StopCoreTransaction */
 
-/*
- * Control Request Code
- * It is used to classify "control request message" that is transferred to the
- * peer.
- *  - Commands: "Connect", "Sleep", "WakeUp", "Disconnect"
- *  - Acks: "Disconnect"
- *  - Private Data: "Priv"
- */
-typedef enum {
-  kCtrlReqConnect = 1,
-  kCtrlReqSleep = 2,
-  kCtrlReqWakeUp = 3,
-  kCtrlReqDisconnect = 4,
-  kCtrlReqPriv = 10,
-  kCtrlReqDisconnectAck = 24
-} CtrlReq; /* enum CtrlReq */
-
-typedef enum {
-  kPrivTypeWFDInfo = 1,
-  kPrivTypeUnknown = 999
-} PrivType; /* enum PrivType */
-
 /* Core State */
 typedef enum {
   kCMStateIdle = 0,
@@ -107,12 +85,6 @@ typedef enum {
   kCMStateReady = 2,
   kCMStateStopping = 3
 } CMState; /* enum CMState */
-
-class ControlMessageListener {
-public:
-  virtual void on_receive_control_message(PrivType priv_type, void *data,
-                                          size_t len) = 0;
-}; /* class ControlMessageListener */
 
 class ServerAdapter;
 
@@ -130,39 +102,17 @@ public:
   void stop();
   void done_stop(bool is_success);
 
-  void register_control_adapter(ServerAdapter *adapter);
-  void register_data_adapter(ServerAdapter *adapter);
+  void register_adapter(ServerAdapter *adapter);
 
-  int send(const void *dataBuffer, uint32_t dataLength);
-  int receive(void **pDataBuffer);
+  int send(const void *dataBuffer, uint32_t dataLength, bool is_control);
+  int receive(void **pDataBuffer, bool is_control);
 
 public:
-  // TODO: Add AdapterPair class
-  // data adapter & control adapter need to be tied in pair(couple).
-
   ServerAdapter *find_adapter_by_id(int adapter_id) {
-    ServerAdapter *adapter = NULL;
-    adapter = this->find_data_adapter_by_id(adapter_id);
-    if (adapter == NULL)
-      adapter = this->find_control_adapter_by_id(adapter_id);
-    return adapter;
-  }
-
-  /* Handling data adapters */
-  ServerAdapter *get_data_adapter(int index) {
-    std::unique_lock<std::mutex> lck(this->mDataAdaptersLock);
-    return this->mDataAdapters.at(index);
-  }
-  ServerAdapter *get_active_data_adapter() {
-    std::unique_lock<std::mutex> lck(this->mDataAdaptersLock);
-    assert(this->mActiveAdapterIndex < this->mDataAdapters.size());
-    return this->mDataAdapters.at(this->mActiveAdapterIndex);
-  }
-  ServerAdapter *find_data_adapter_by_id(int adapter_id) {
-    std::unique_lock<std::mutex> lck(this->mDataAdaptersLock);
+    std::unique_lock<std::mutex> lck(this->mAdaptersLock);
     for (std::vector<ServerAdapter *>::iterator it =
-             this->mDataAdapters.begin();
-         it != this->mDataAdapters.end(); it++) {
+             this->mAdapters.begin();
+         it != this->mAdapters.end(); it++) {
       ServerAdapter *adapter = *it;
       if (adapter->get_id() == adapter_id) {
         return adapter;
@@ -170,36 +120,20 @@ public:
     }
     return NULL;
   }
-  int get_data_adapter_count(void) {
-    std::unique_lock<std::mutex> lck(this->mDataAdaptersLock);
-    return this->mDataAdapters.size();
+
+  ServerAdapter *get_adapter(int index) {
+    std::unique_lock<std::mutex> lck(this->mAdaptersLock);
+    assert(index < this->mAdapters.size());
+    return this->mAdapters.at(index);
   }
 
-  /* Handling control adapters */
-  ServerAdapter *get_control_adapter(int index) {
-    std::unique_lock<std::mutex> lck(this->mControlAdaptersLock);
-    return this->mControlAdapters.at(index);
+  ServerAdapter *get_active_adapter() {
+    return this->get_adapter(this->get_active_adapter_index());
   }
-  ServerAdapter *get_active_control_adapter() {
-    std::unique_lock<std::mutex> lck(this->mControlAdaptersLock);
-    assert(this->mActiveAdapterIndex < this->mControlAdapters.size());
-    return this->mControlAdapters.at(this->mActiveAdapterIndex);
-  }
-  ServerAdapter *find_control_adapter_by_id(int adapter_id) {
-    std::unique_lock<std::mutex> lck(this->mControlAdaptersLock);
-    for (std::vector<ServerAdapter *>::iterator it =
-             this->mControlAdapters.begin();
-         it != this->mControlAdapters.end(); it++) {
-      ServerAdapter *adapter = *it;
-      if (adapter->get_id() == adapter_id) {
-        return adapter;
-      }
-    }
-    return NULL;
-  }
-  int get_control_adapter_count(void) {
-    std::unique_lock<std::mutex> lck(this->mControlAdaptersLock);
-    return this->mControlAdapters.size();
+
+  int get_adapter_count(void) {
+    std::unique_lock<std::mutex> lck(this->mAdaptersLock);
+    return this->mAdapters.size();
   }
 
   /* Handling adapter index */
@@ -209,46 +143,14 @@ public:
   }
 
 public:
-  /* Control message handling (External) */
-  void send_request_connect(uint16_t adapter_id);
-  void send_request_disconnect(uint16_t adapter_id);
-  void send_request_disconnect_ack(uint16_t adapter_id);
-  void send_request_sleep(uint16_t adapter_id);
-  void send_request_wake_up(uint16_t adapter_id);
-  void send_noti_private_data(PrivType priv_type, char *private_data_buf,
-                              uint32_t private_data_len);
-
-private:
-  /* Control message handling (Internal) */
-  void send_control_message(const void *dataBuffer, size_t dataLength);
-  void send_request(CtrlReq request_code, uint16_t adapter_id);
-
-public:
-  /* Handling control message (private data) listener */
-  void add_control_message_listener(ControlMessageListener *listener) {
-    this->mControlMessageListeners.push_back(listener);
-  }
-  static void control_adapter_receive_loop(ServerAdapter *adapter);
-  static int __control_adapter_receive_loop(ServerAdapter* adapter);
-
-public:
   /* Get statistics */
   int get_total_bandwidth(void) {
     int num_adapters = 0;
     int now_total_bandwidth = 0;
-    /* Statistics from control adapter */
-    {
-      ServerAdapter *adapter = this->get_active_control_adapter();
-      int bandwidth_up = adapter->get_bandwidth_up();
-      int bandwidth_down = adapter->get_bandwidth_down();
-      now_total_bandwidth += (bandwidth_up + bandwidth_down);
-      num_adapters++;
-    }
-
-    /* Statistics from data adapters */
-    int data_adapter_count = this->get_data_adapter_count();
-    for (int i = 0; i < data_adapter_count; i++) {
-      ServerAdapter *adapter = this->get_data_adapter(i);
+    /* Statistics from adapters */
+    int adapter_count = this->get_adapter_count();
+    for (int i = 0; i < adapter_count; i++) {
+      ServerAdapter *adapter = this->get_adapter(i);
       if (adapter == NULL)
         continue;
       int bandwidth_up = adapter->get_bandwidth_up();
@@ -286,13 +188,10 @@ private:
 private:
   /*
    * Adapter List
-   *  - N Data Adapters (+ access lock)
-   *  - 1 Control Adapter (+ access lock)
+   *  - N Adapters (+ access lock)
    */
-  std::vector<ServerAdapter *> mDataAdapters;
-  std::vector<ServerAdapter *> mControlAdapters;
-  std::mutex mDataAdaptersLock;
-  std::mutex mControlAdaptersLock;
+  std::vector<ServerAdapter *> mAdapters;
+  std::mutex mAdaptersLock;
 
   /*
    * Active Adapter Index means the index value indicating
@@ -305,9 +204,6 @@ private:
   int mActiveAdapterIndex;
 
 private:
-  /* Control Message Listeners */
-  std::vector<ControlMessageListener *> mControlMessageListeners;
-
   /* Statistics */
   Counter mSendRequestSize;
   ArrivalTimeCounter mSendArrivalTime;

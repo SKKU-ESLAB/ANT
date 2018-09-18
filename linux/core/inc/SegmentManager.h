@@ -41,9 +41,9 @@ namespace sc {
 #define kSegHeaderSize 8
 
 #define kSegLenOffset 0
-#define kSegLenMask 0x00007FFF
-#define kSegFlagOffset 15
-#define kSegFlagMask 0x00008000
+#define kSegLenMask 0x00003FFF
+#define kSegFlagOffset 14
+#define kSegFlagMask 0x0000C000
 #define mGetSegLenBits(x) (((x)&kSegLenMask) >> kSegLenOffset)
 #define mGetSegFlagBits(x) (((x)&kSegFlagMask) >> kSegFlagOffset)
 #define mSetSegBits(x, dest, offset, mask)                                     \
@@ -58,15 +58,20 @@ namespace sc {
  * Queue Type
  */
 typedef enum {
-  kSegSend = 0,
-  kSegRecv = 1,
-  kSegMaxQueueType = 2
+  kSegSendData = 0,
+  kSegRecvData = 1,
+  kSegSendControl = 2,
+  kSegRecvControl = 3,
+  kSegMaxQueueType = 4
 } SegQueueType; /* enum SegQueueType */
 
 /**
  * Types of Flag
  */
-typedef enum { kSegFlagMF = 1 } SegFlagVal; /* enum SegFlagVal */
+typedef enum {
+  kSegFlagMF = 1,
+  kSegFlagControl = 2
+} SegFlagVal; /* enum SegFlagVal */
 
 /**
  * < Data Structure of Segment > - Handled by Segment Manager
@@ -86,8 +91,8 @@ typedef struct {
 class SegmentManager {
 public:
   /* Used in protocol manager */
-  int send_to_segment_manager(uint8_t *data, size_t len);
-  uint8_t *recv_from_segment_manager(void *proc_data_handle);
+  int send_to_segment_manager(uint8_t *data, size_t len, bool is_control);
+  uint8_t *recv_from_segment_manager(void *proc_data_handle, bool is_control);
 
   void failed_sending(Segment *seg);
   Segment *get_failed_sending(void);
@@ -96,10 +101,6 @@ public:
   Segment *get_free_segment(void);
   void free_segment(Segment *seg);
   void free_segment_all(void);
-
-  void reset(void);
-
-  void notify_queue(void);
 
   int get_queue_length(int type) {
     return this->mQueueLength[type].get_value();
@@ -127,8 +128,9 @@ private:
   static SegmentManager *singleton;
   SegmentManager(void) {
     this->mNextGlobalSeqNo = 0;
-    this->mNextSeqNo[kSegSend] = 0;
-    this->mNextSeqNo[kSegRecv] = 0;
+    for (int i = 0; i < kSegMaxQueueType; i++) {
+      this->mNextSeqNo[i] = 0;
+    }
     this->mFreeSegmentListSize = 0;
 
     is_start = 0;

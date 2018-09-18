@@ -1,6 +1,6 @@
 /* Copyright 2017-2018 All Rights Reserved.
  *  Gyeonghwan Hong (redcarrottt@gmail.com)
- *  
+ *
  * [Contact]
  *  Gyeonghwan Hong (redcarrottt@gmail.com)
  *
@@ -22,8 +22,8 @@
 
 #include "../../core/inc/P2PServer.h"
 
-#include <thread>
 #include <mutex>
+#include <thread>
 
 #include <stdio.h>
 
@@ -33,21 +33,10 @@ public:
   virtual bool allow_discover_impl(void);
   virtual bool disallow_discover_impl(void);
 
-  static BtP2PServer* getSingleton() {
-    if(BtP2PServer::sSingleton == NULL) {
-      BtP2PServer::sSingleton = new BtP2PServer();
-    }
-    return BtP2PServer::sSingleton;
-  }
-
-  static BtP2PServer* sSingleton;
-
-  ~BtP2PServer(void) {
-  }
+  BtP2PServer(void) : P2PServer("BT") {}
+  ~BtP2PServer(void) {}
 
 protected:
-  BtP2PServer(void) : P2PServer("BT") {
-  }
 }; /* class BtP2PServer */
 } /* namespace sc */
 

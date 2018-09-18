@@ -54,7 +54,8 @@ void SegmentManager::serialize_segment_header(Segment *seg) {
   memcpy(seg->data + 4, &net_flag_len, sizeof(uint32_t));
 }
 
-int SegmentManager::send_to_segment_manager(uint8_t *data, size_t len) {
+int SegmentManager::send_to_segment_manager(uint8_t *data, size_t len,
+                                            bool is_control) {
   assert(data != NULL && len > 0);
 
   uint32_t offset = 0;
@@ -67,7 +68,7 @@ int SegmentManager::send_to_segment_manager(uint8_t *data, size_t len) {
   int seg_idx;
   for (seg_idx = 0; seg_idx < num_of_segments; seg_idx++) {
     uint32_t seg_len = (len - offset < kSegSize) ? len - offset : kSegSize;
-    Segment *seg = get_free_segment();
+    Segment *seg = this->get_free_segment();
 
     /* Set segment length */
     mSetSegLenBits(seg_len, seg->flag_len);
@@ -83,16 +84,25 @@ int SegmentManager::send_to_segment_manager(uint8_t *data, size_t len) {
     if (offset < len)
       mSetSegFlagBits(kSegFlagMF, seg->flag_len);
 
-    /* Set segment header to data */
-    serialize_segment_header(seg);
+    /* Set control segment flag */
+    if (is_control)
+      mSetSegFlagBits(kSegFlagControl, seg->flag_len);
 
-    enqueue(kSegSend, seg);
+    /* Set segment header to data */
+    this->serialize_segment_header(seg);
+
+    if (is_control) {
+      this->enqueue(kSegSendControl, seg);
+    } else {
+      this->enqueue(kSegSendData, seg);
+    }
   }
 
   return 0;
 }
 
-uint8_t *SegmentManager::recv_from_segment_manager(void *proc_data_handle) {
+uint8_t *SegmentManager::recv_from_segment_manager(void *proc_data_handle,
+                                                   bool is_control) {
   assert(proc_data_handle != NULL);
 
   ProtocolData *pd = reinterpret_cast<ProtocolData *>(proc_data_handle);
@@ -104,7 +114,11 @@ uint8_t *SegmentManager::recv_from_segment_manager(void *proc_data_handle) {
   Segment *seg;
 
   while (dequeued == false) {
-    seg = dequeue(kSegRecv);
+    if (is_control) {
+      seg = dequeue(kSegRecvControl);
+    } else {
+      seg = dequeue(kSegRecvData);
+    }
     if (seg) {
       dequeued = true;
     }
@@ -127,7 +141,11 @@ uint8_t *SegmentManager::recv_from_segment_manager(void *proc_data_handle) {
   free_segment(seg);
 
   while (cont) {
-    seg = dequeue(kSegRecv);
+    if (is_control) {
+      seg = dequeue(kSegRecvControl);
+    } else {
+      seg = dequeue(kSegRecvData);
+    }
     data_size = mGetSegLenBits(seg->flag_len);
     memcpy(serialized + offset, &(seg->data[kSegHeaderSize]), data_size);
     cont = (mGetSegFlagBits(seg->flag_len) == kSegFlagMF);
@@ -148,7 +166,7 @@ void SegmentManager::enqueue(SegQueueType type, Segment *seg) {
   std::unique_lock<std::mutex> lck(this->mQueueLock[type]);
   bool segment_enqueued = false;
 
-  if (type == kSegSend) {
+  if (type == kSegSendControl || type == kSegSendData) {
     this->mSendRequest.add(SEGMENT_DATA_SIZE);
   }
 
@@ -167,8 +185,8 @@ void SegmentManager::enqueue(SegQueueType type, Segment *seg) {
      * it enqueues its segments to the pending queue, not normal queue.
      */
     if (seg->seq_no <= this->mNextSeqNo[type]) {
-      LOG_ERR("Sequence # Error!: %d > %d, %s", seg->seq_no,
-              this->mNextSeqNo[type], type == kSegSend ? "Send" : "Recv");
+      LOG_ERR("Sequence # Error!: %d > %d (Queue #%d)", seg->seq_no,
+              this->mNextSeqNo[type], (int)type);
     }
     assert(seg->seq_no > this->mNextSeqNo[type]);
 
@@ -354,12 +372,4 @@ Segment *SegmentManager::get_failed_sending(void) {
   this->mSendFailQueue.pop_front();
 
   return res;
-}
-
-void SegmentManager::reset(void) {}
-
-void SegmentManager::notify_queue() {
-  LOG_VERB("notify all\n");
-  this->mCondEnqueued[kSegSend].notify_all();
-  this->mCondEnqueued[kSegRecv].notify_all();
 }

@@ -35,8 +35,8 @@ typedef enum {
 
 class P2PServer {
 public:
-  bool hold_and_allow_discover(void);
-  bool release_and_disallow_discover(void);
+  bool allow_discover(void);
+  bool disallow_discover(void);
 
   virtual bool allow_discover_impl(void) = 0;
   virtual bool disallow_discover_impl(void) = 0;
@@ -64,10 +64,6 @@ protected:
 private:
   P2PServerState mState;
   char mName[256];
-
-protected:
-  /* Reference Count */
-  RefCount mRefCount;
 }; /* class P2PServer */
 } /* namespace sc */
 
