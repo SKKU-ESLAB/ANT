@@ -17,11 +17,15 @@
  * limitations under the License.
  */
 
-#ifndef _SERVER_ADAPTER_H_
-#define _SERVER_ADAPTER_H_
+#ifndef __SERVER_ADAPTER_H__
+#define __SERVER_ADAPTER_H__
 
-#include <Counter.h>
-#include <ExpConfig.h>
+#include "Counter.h"
+#include "Device.h"
+#include "P2PServer.h"
+#include "ServerSocket.h"
+
+#include "../configs/ExpConfig.h"
 
 #include <condition_variable>
 #include <mutex>
@@ -30,12 +34,7 @@
 
 #include <stdio.h>
 
-#include <Device.h>
-#include <P2PServer.h>
-#include <ServerSocket.h>
-
 namespace sc {
-
 typedef enum {
   kDisconnected = 0,
   kConnecting = 1,
@@ -44,7 +43,7 @@ typedef enum {
   kGoingSleeping = 4,
   kSleeping = 5,
   kWakingUp = 6
-} ServerAdapterState;
+} ServerAdapterState; /* enum ServerAdapterState */
 
 class ServerAdapter;
 class ServerAdapterStateListener {
@@ -52,7 +51,7 @@ public:
   virtual void onUpdateServerAdapterState(ServerAdapter *adapter,
                                           ServerAdapterState old_state,
                                           ServerAdapterState new_state) = 0;
-};
+}; /* class ServerAdapterStateListener */
 
 typedef void (*ConnectCallback)(bool is_success);
 typedef void (*DisconnectCallback)(bool is_success);
@@ -68,7 +67,8 @@ public:
    */
   /* Basic APIs related to connection/sleeping */
   void connect(ConnectCallback callback, bool is_send_request);
-  void disconnect(DisconnectCallback callback, bool is_send_request, bool is_send_ack, bool is_on_purpose);
+  void disconnect(DisconnectCallback callback, bool is_send_request,
+                  bool is_send_ack, bool is_on_purpose);
   void sleep(DisconnectCallback callback, bool is_send_request);
   void wake_up(ConnectCallback callback, bool is_send_request);
   void connect_or_wake_up(ConnectCallback callback, bool is_send_request);
@@ -267,6 +267,6 @@ protected:
     this->mIsSleepingAllowed = is_sleeping_allowed;
   }
 }; /* class ServerAdapter */
-
 } /* namespace sc */
-#endif /* !defined(_SERVER_ADAPTER_H_) */
+
+#endif /* !defined(__SERVER_ADAPTER_H__) */

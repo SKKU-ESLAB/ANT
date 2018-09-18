@@ -17,10 +17,10 @@
  * limitations under the License.
  */
 
-#ifndef INC_ARRIVAL_TIME_COUNTER_H_
-#define INC_ARRIVAL_TIME_COUNTER_H_
+#ifndef __ARRIVAL_TIME_COUNTER_H__
+#define __ARRIVAL_TIME_COUNTER_H__
 
-#include <Counter.h>
+#include "Counter.h"
 
 #include <sys/time.h>
 
@@ -58,7 +58,7 @@ private:
   std::mutex mArriveLock;
 
   struct timeval mLastAccessedTS;
-};
+}; /* class ArrivalTimeCounter */
 } /* namespace sc */
 
-#endif /* INC_ARRIVAL_TIME_H_ COUNTER_*/
+#endif /* !defined(__ARRIVAL_TIME_COUNTER_H__) */

@@ -17,12 +17,12 @@
  * limitations under the License.
  */
 
-#ifndef _TCP_SERVER_SOCKET_H_
-#define _TCP_SERVER_SOCKET_H_
+#ifndef __TCP_SERVER_SOCKET_H__
+#define __TCP_SERVER_SOCKET_H__
 
-#include <ServerSocket.h>
+#include "WfdIpAddressListener.h"
 
-#include <WfdIpAddressListener.h>
+#include "../../inc/ServerSocket.h"
 
 #include <mutex>
 #include <thread>
@@ -35,7 +35,6 @@
 #include <unistd.h>
 
 namespace sc {
-
 class ServerSocket;
 class WfdIpAddressListener;
 class TcpServerSocket : public ServerSocket, public WfdIpAddressListener {
@@ -67,7 +66,6 @@ protected:
 
 private:
 }; /* class TcpServerSocket */
-
 } /* namespace sc */
 
-#endif /* !defined(_TCP_SERVER_SOCKET_H_) */
+#endif /* !defined(__TCP_SERVER_SOCKET_H__) */

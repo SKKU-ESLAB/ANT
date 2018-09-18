@@ -17,16 +17,14 @@
  * limitations under the License.
  */
 
-#ifndef _WFD_WFD_IP_ADDRESS_LISTENER_H_
-#define _WFD_WFD_IP_ADDRESS_LISTENER_H_
+#ifndef __WFD_IP_ADDRESS_LISTENER_H__
+#define __WFD_IP_ADDRESS_LISTENER_H__
 
 namespace sc {
-
 class WfdIpAddressListener {
 public:
   virtual void on_change_ip_address(const char* ip_address) = 0;
-};
-
+}; /* class WfdIpAddressListener */
 } /* namespace sc */
 
-#endif /* !defined(_WFD_WFD_IP_ADDRESS_LISTENER_H_) */
+#endif /* !defined(__WFD_IP_ADDRESS_LISTENER_H__) */

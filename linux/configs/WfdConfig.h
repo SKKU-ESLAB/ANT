@@ -17,6 +17,9 @@
  * limitations under the License.
  */
 
+#ifndef __WFD_CONFIG_H__
+#define __WFD_CONFIG_H__
+
 /* WLAN device configuration */
 #define DEFAULT_WFD_DEVICE_NAME "wlan0"
 
@@ -31,3 +34,5 @@
 #define WFD_DHCPD_SUBNET_MASK "255.255.255.0"
 #define WFD_DHCPD_BROADCAST_ADDRESS "192.168.49.255"
 #define UDHCPD_CONFIG_PATH "dhcpd.conf"
+
+#endif /* defined(__WFD_CONFIG_H__) */

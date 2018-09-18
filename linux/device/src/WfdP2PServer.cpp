@@ -16,14 +16,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include <WfdConfig.h>
-#include <WfdP2PServer.h>
+#include "../inc/WfdP2PServer.h"
 
-#include <Core.h>
-#include <Counter.h>
-#include <DebugLog.h>
-#include <Util.h>
-#include <WfdServerAdapter.h>
+#include "../inc/Util.h"
+#include "../inc/WfdServerAdapter.h"
+
+#include "../../inc/Core.h"
+#include "../../inc/Counter.h"
+#include "../../inc/DebugLog.h"
+
+#include "../../configs/WfdConfig.h"
 
 #include <mutex>
 #include <thread>

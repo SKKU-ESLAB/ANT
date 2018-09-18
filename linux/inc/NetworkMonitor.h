@@ -17,13 +17,12 @@
  * limitations under the License.
  */
 
-#ifndef INC_NETWORK_MONITOR_H_
-#define INC_NETWORK_MONITOR_H_
+#ifndef __NETWORK_MONITOR_H__
+#define __NETWORK_MONITOR_H__
 
-#include <NetworkSwitcher.h>
+#include "NetworkSwitcher.h"
 
 namespace sc {
-
 typedef enum {
   kNSModeEnergyAware = 0,  /* WearDrive-like */
   kNSModeLatencyAware = 1, /* Selective Connection Unique */
@@ -129,4 +128,4 @@ private:
 }; /* class NetworkMonitor */
 } /* namespace sc */
 
-#endif /* !defined(INC_NETWORK_MONITOR_H_) */
+#endif /* !defined(__NETWORK_MONITOR_H__) */

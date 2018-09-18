@@ -16,9 +16,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
+#ifndef __PATH_CONFIG_H__
+#define __PATH_CONFIG_H__
+
 #define HCICONFIG_PATH "/bin/hciconfig"
 #define WPA_CLI_PATH "/sbin/wpa_cli"
 #define IFCONFIG_PATH "/sbin/ifconfig"
 #define UDHCPD_PATH "/usr/sbin/udhcpd"
 #define IFUP_PATH "/sbin/ifup"
 #define IFDOWN_PATH "/sbin/ifdown"
+
+#endif /* !defined(__PATH_CONFIG_H__) */

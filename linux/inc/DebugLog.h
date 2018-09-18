@@ -19,13 +19,12 @@
  * limitations under the License.
  */
 
-#ifndef DEBUG_LOG_H
-#define DEBUG_LOG_H
+#ifndef __DEBUG_LOG_H__
+#define __DEBUG_LOG_H__
 
 #include <stdarg.h>
 #include <stdio.h>
 
-//#define NDEBUG
 #include <assert.h>
 
 #ifndef likely
@@ -110,4 +109,4 @@ inline void __func(const char *format, const char *fw, const char *fileName,
   va_end(ap);
   printf("]\033[0m\n");
 }
-#endif /* DEBUG_LOG_H */
+#endif /* !defined(__DEBUG_LOG_H__) */

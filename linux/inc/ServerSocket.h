@@ -17,8 +17,8 @@
  * limitations under the License.
  */
 
-#ifndef _SERVER_SOCKET_H_
-#define _SERVER_SOCKET_H_
+#ifndef __SERVER_SOCKET_H__
+#define __SERVER_SOCKET_H__
 
 #include <mutex>
 #include <thread>
@@ -26,13 +26,12 @@
 #include <stdio.h>
 
 namespace sc {
-
 typedef enum {
   kClosed = 0,
   kOpening = 1,
   kOpened = 2,
   kClosing = 3
-} ServerSocketState;
+} ServerSocketState; /* enum ServerSocketState */
 
 class ServerSocket {
 public:
@@ -64,7 +63,6 @@ private:
   ServerSocketState mState;
   char mName[256];
 }; /* class ServerSocket */
-
 } /* namespace sc */
 
-#endif /* !defined(_SERVER_SOCKET_H_) */
+#endif /* !defined(__SERVER_SOCKET_H__) */

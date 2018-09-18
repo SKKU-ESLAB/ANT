@@ -1,6 +1,6 @@
 /* Copyright 2017-2018 All Rights Reserved.
  *  Gyeonghwan Hong (redcarrottt@gmail.com)
- *  
+ *
  * [Contact]
  *  Gyeonghwan Hong (redcarrottt@gmail.com)
  *
@@ -17,12 +17,12 @@
  * limitations under the License.
  */
 
-#ifndef INC_API_INTERNAL_H_
-#define INC_API_INTERNAL_H_
+#ifndef __API_INTERNAL_H__
+#define __API_INTERNAL_H__
 
 namespace sc {
-    void start_sc_done(bool is_success);
-    void stop_sc_done(bool is_success);
-}
+void start_sc_done(bool is_success);
+void stop_sc_done(bool is_success);
+} /* namespace sc */
 
-#endif /* !defined(INC_API_INTERNAL_H_) */
+#endif /* !defined(__API_INTERNAL_H__) */

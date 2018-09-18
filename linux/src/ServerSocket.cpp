@@ -17,9 +17,10 @@
  * limitations under the License.
  */
 
-#include <ServerAdapter.h>
+#include "../inc/ServerSocket.h"
 
-#include <DebugLog.h>
+#include "../inc/ServerAdapter.h"
+#include "../inc/DebugLog.h"
 
 using namespace sc;
 

@@ -17,10 +17,10 @@
  * limitations under the License.
  */
 
-#ifndef _BT_P2P_SERVER_H_
-#define _BT_P2P_SERVER_H_
+#ifndef __BT_P2P_SERVER_H__
+#define __BT_P2P_SERVER_H__
 
-#include <P2PServer.h>
+#include "../../inc/P2PServer.h"
 
 #include <thread>
 #include <mutex>
@@ -28,7 +28,6 @@
 #include <stdio.h>
 
 namespace sc {
-
 class BtP2PServer : public P2PServer {
 public:
   virtual bool allow_discover_impl(void);
@@ -50,7 +49,6 @@ protected:
   BtP2PServer(void) : P2PServer("BT") {
   }
 }; /* class BtP2PServer */
-
 } /* namespace sc */
 
-#endif /* !defined(_BT_P2P_SERVER_H_) */
+#endif /* !defined(__BT_P2P_SERVER_H__) */

@@ -1,6 +1,6 @@
 /* Copyright 2017-2018 All Rights Reserved.
  *  Gyeonghwan Hong (redcarrottt@gmail.com)
- *  
+ *
  * [Contact]
  *  Gyeonghwan Hong (redcarrottt@gmail.com)
  *
@@ -16,23 +16,24 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include <BtDevice.h>
+#include "../inc/BtDevice.h"
 
-#include <Util.h>
-#include <Counter.h>
+#include "../inc/Util.h"
 
-#include <thread>
+#include "../../inc/Counter.h"
+
 #include <mutex>
+#include <thread>
 
 #include <stdio.h>
 
 using namespace sc;
 
-BtDevice* BtDevice::sSingleton = NULL;
+BtDevice *BtDevice::sSingleton = NULL;
 
 bool BtDevice::turn_on_impl(void) {
   char buf[512];
-  char* const params[] = {"hciconfig", "hci0", "up", "piscan", NULL};
+  char *const params[] = {"hciconfig", "hci0", "up", "piscan", NULL};
 
   int res = Util::run_client(HCICONFIG_PATH, params, buf, 512);
   return (res >= 0);
@@ -40,7 +41,7 @@ bool BtDevice::turn_on_impl(void) {
 
 bool BtDevice::turn_off_impl(void) {
   char buf[512];
-  char* const params[] = {"hciconfig", "hci0", "down", NULL};
+  char *const params[] = {"hciconfig", "hci0", "down", NULL};
 
   int res = Util::run_client(HCICONFIG_PATH, params, buf, 512);
   return (res >= 0);

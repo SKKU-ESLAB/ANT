@@ -18,6 +18,7 @@
  */
 
 #include "../inc/NetworkMonitor.h"
+
 #include "../inc/NetworkSwitcher.h"
 
 #include "../configs/ExpConfig.h"
@@ -61,7 +62,7 @@ void NetworkMonitor::switcher_thread(void) {
 
 void NetworkMonitor::print_stats(Stats &stats) {
 #ifndef PRINT_NETWORK_MONITOR_STATISTICS
-   return;
+  return;
 #else
   if (Core::get_instance()->get_state() != CMState::kCMStateReady) {
     return;

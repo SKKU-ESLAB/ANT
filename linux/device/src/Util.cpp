@@ -16,9 +16,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include <Util.h>
+#include "../inc/Util.h"
 
-#include <DebugLog.h>
+#include "../../inc/DebugLog.h"
 
 #include <errno.h>
 #include <string.h>
@@ -52,7 +52,8 @@ int Util::run_client(const char *path, char *const params[], char *res_buf,
       read_bytes = read(fd[0], buf, 1024);
 
       if (read_bytes < 0) {
-        LOG_DEBUG("%s(pid %d): read error(%s) / retry %d", path, pid, strerror(errno), tries);
+        LOG_DEBUG("%s(pid %d): read error(%s) / retry %d", path, pid,
+                  strerror(errno), tries);
       } else {
         break;
       }

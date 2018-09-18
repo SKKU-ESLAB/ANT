@@ -17,8 +17,8 @@
  * limitations under the License.
  */
 
-#ifndef _REF_COUNT_H_
-#define _REF_COUNT_H_
+#ifndef __REF_COUNT_H__
+#define __REF_COUNT_H__
 
 #include <mutex>
 
@@ -47,6 +47,6 @@ public:
 protected:
   int mCount;
   std::mutex mLock;
-};
+}; /* class RefCount */
 } /* namespace sc */
-#endif /* !defined(_REF_COUNT_H_) */
+#endif /* !defined(__REF_COUNT_H__) */

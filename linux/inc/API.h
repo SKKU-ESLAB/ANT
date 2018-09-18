@@ -17,14 +17,13 @@
  * limitations under the License.
  */
 
-#ifndef INC_API_H_
-#define INC_API_H_
+#ifndef __SC_API_H__
+#define __SC_API_H__
 
-#include <Core.h>
-#include <ServerAdapter.h>
+#include "Core.h"
+#include "ServerAdapter.h"
 
 namespace sc {
-
 typedef void (*StartCallback)(bool is_success);
 void start_sc(StartCallback startCallback);
 
@@ -39,22 +38,13 @@ inline void register_data_adapter(ServerAdapter *adapter) {
   Core::get_instance()->register_data_adapter(adapter);
 }
 
-/*
- * If data size is big, it is recommanded to use following
- * libraries in a thread
- */
 inline int send(const void *dataBuffer, uint32_t dataLength) {
   Core::get_instance()->send(dataBuffer, dataLength);
 }
 
-/*
- * @param len: IN buffer length
- * @param buf: OUT buffer read
- * @return: Received bytes(<0 if error)
- */
 inline int receive(void **dataBuffer) {
   Core::get_instance()->receive(dataBuffer);
 }
-
 } /* namespace sc */
-#endif /* INC_API_H_ */
+
+#endif /* !defined(__SC_API_H__) */

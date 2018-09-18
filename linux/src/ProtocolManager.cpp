@@ -19,16 +19,17 @@
  * limitations under the License.
  */
 
-#include <ProtocolManager.h>
+#include "../inc/ProtocolManager.h"
 
-#include <DebugLog.h>
-#include <SegmentManager.h>
+#include "../inc/DebugLog.h"
+#include "../inc/SegmentManager.h"
 
 #include <netinet/in.h>
 #include <stdlib.h>
 #include <string.h>
 
-namespace sc {
+using namespace sc;
+
 uint16_t ProtocolManager::sPacketId = 1;
 
 void ProtocolManager::data_to_protocol_data(const uint8_t *dat, uint32_t size,
@@ -134,4 +135,3 @@ uint32_t ProtocolManager::recv_packet(uint8_t **buf) {
 
   return pd.len;
 }
-} /* namespace sc */

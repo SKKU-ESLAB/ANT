@@ -1,6 +1,6 @@
 /* Copyright 2017-2018 All Rights Reserved.
  *  Gyeonghwan Hong (redcarrottt@gmail.com)
- *  
+ *
  * [Contact]
  *  Gyeonghwan Hong (redcarrottt@gmail.com)
  *
@@ -17,17 +17,17 @@
  * limitations under the License.
  */
 
-#include <P2PServer.h>
+#include "../inc/P2PServer.h"
 
-#include <DebugLog.h>
+#include "../inc/DebugLog.h"
 
 using namespace sc;
 
 bool P2PServer::hold_and_allow_discover(void) {
-  if(this->mRefCount.increase() == 1) {
+  if (this->mRefCount.increase() == 1) {
     bool res = this->allow_discover_impl();
 
-    if(!res) {
+    if (!res) {
       LOG_DEBUG("%s: Failed to allow", this->get_name());
       this->mRefCount.decrease();
       this->set_state(P2PServerState::kDisallowed);
@@ -42,10 +42,10 @@ bool P2PServer::hold_and_allow_discover(void) {
 }
 
 bool P2PServer::release_and_disallow_discover(void) {
-  if(this->mRefCount.decrease() == 0) {
+  if (this->mRefCount.decrease() == 0) {
     bool res = this->disallow_discover_impl();
 
-    if(!res) {
+    if (!res) {
       LOG_DEBUG("%s: Failed to disallow", this->get_name());
       this->mRefCount.increase();
       this->set_state(P2PServerState::kAllowed);

@@ -17,10 +17,11 @@
  * limitations under the License.
  */
 
-#include <API.h>
-#include <BtServerAdapter.h>
-#include <EthServerAdapter.h>
-#include <WfdServerAdapter.h>
+#include "../inc/API.h"
+
+#include "../device/inc/BtServerAdapter.h"
+#include "../device/inc/EthServerAdapter.h"
+#include "../device/inc/WfdServerAdapter.h"
 
 #include <thread>
 

@@ -17,7 +17,7 @@
  * limitations under the License.
  */
 
-#include <Util.h>
+#include "../device/inc/Util.h"
 
 using namespace sc;
 

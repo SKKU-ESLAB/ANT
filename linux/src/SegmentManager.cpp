@@ -19,11 +19,12 @@
  * limitations under the License.
  */
 
-#include <SegmentManager.h>
-#include <ExpConfig.h>
+#include "../inc/SegmentManager.h"
 
-#include <DebugLog.h>
-#include <ProtocolManager.h>
+#include "../inc/DebugLog.h"
+#include "../inc/ProtocolManager.h"
+
+#include "../configs/ExpConfig.h"
 
 #include <netinet/in.h>
 #include <stdlib.h>
@@ -31,7 +32,8 @@
 
 #include <list>
 
-namespace sc {
+using namespace sc;
+
 /* Singleton */
 SegmentManager *SegmentManager::singleton = NULL;
 
@@ -225,7 +227,7 @@ Segment *SegmentManager::dequeue(SegQueueType type) {
 #ifdef EXP_MEASURE_INTERVAL_SEND_QUEUE
   if (type == kSegSend) {
     gettimeofday(&times[1], NULL);
-    if(this->mSendCount % 500 == 0) {
+    if (this->mSendCount % 500 == 0) {
       LOG_DEBUG("Try %d: Queue Length %d", this->mSendCount, queueLength);
     }
   }
@@ -241,8 +243,10 @@ Segment *SegmentManager::dequeue(SegQueueType type) {
 #endif
 
 #ifdef EXP_MEASURE_INTERVAL_SEND_QUEUE
-  if (type == kSegSend)
-    LOG_DEBUG("Try %d: Queue Length 0 %d %d %d", this->mSendCount, queueLength, this->mQueueLength[kSegSend].get_value(), this->mQueues[type].size());
+    if (type == kSegSend)
+      LOG_DEBUG("Try %d: Queue Length 0 %d %d %d", this->mSendCount,
+                queueLength, this->mQueueLength[kSegSend].get_value(),
+                this->mQueues[type].size());
 #endif
 
     this->mCondEnqueued[type].wait(lck);
@@ -358,5 +362,3 @@ void SegmentManager::notify_queue() {
   this->mCondEnqueued[kSegSend].notify_all();
   this->mCondEnqueued[kSegRecv].notify_all();
 }
-
-}; /* namespace sc */

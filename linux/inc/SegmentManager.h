@@ -19,21 +19,22 @@
  * limitations under the License.
  */
 
-#ifndef INC_SEGMENT_MANAGER_H_
-#define INC_SEGMENT_MANAGER_H_
+#ifndef __SEGMENT_MANAGER_H__
+#define __SEGMENT_MANAGER_H__
 
-#include <Counter.h>
-#include <ExpConfig.h>
+#include "Counter.h"
+
+#include "../configs/ExpConfig.h"
 
 #include <condition_variable>
 #include <list>
 #include <mutex>
 #include <stdint.h>
 
-// For experiment
 #include <sys/time.h>
 #include <unistd.h>
 
+namespace sc {
 #define kSegSize 512
 
 #define kSegFreeThreshold 256
@@ -53,16 +54,21 @@
 #define mSetSegFlagBits(x, dest)                                               \
   mSetSegBits(x, dest, kSegFlagOffset, kSegFlagMask)
 
-namespace sc {
-/*
- *  Queue Type
+/**
+ * Queue Type
  */
-typedef enum { kSegSend = 0, kSegRecv = 1, kSegMaxQueueType = 2 } SegQueueType;
-/*  Types of Flag
- */
-typedef enum { kSegFlagMF = 1 } SegFlagVal;
+typedef enum {
+  kSegSend = 0,
+  kSegRecv = 1,
+  kSegMaxQueueType = 2
+} SegQueueType; /* enum SegQueueType */
 
-/*
+/**
+ * Types of Flag
+ */
+typedef enum { kSegFlagMF = 1 } SegFlagVal; /* enum SegFlagVal */
+
+/**
  * < Data Structure of Segment > - Handled by Segment Manager
  * Segment is the minimum unit of sending data through the network.
  * The partial of the segment cannot be sent.
@@ -75,7 +81,7 @@ typedef struct {
   uint32_t seq_no;
   uint32_t flag_len; // To present the size of the segment(consider the flag)
   uint8_t data[SEGMENT_DATA_SIZE];
-} Segment;
+} Segment; /* struct Segment */
 
 class SegmentManager {
 public:
@@ -95,7 +101,9 @@ public:
 
   void notify_queue(void);
 
-  int get_queue_length(int type) { return this->mQueueLength[type].get_value(); }
+  int get_queue_length(int type) {
+    return this->mQueueLength[type].get_value();
+  }
 
   int get_queue_data_size(int type) {
     return this->mQueueLength[type].get_value() * SEGMENT_DATA_SIZE;
@@ -170,6 +178,7 @@ private:
       0,
   };
 #endif
-};
+}; /* class SegmentManager */
 } /* namespace sc */
-#endif // INC_SEGMENT_MANAGER_H_
+
+#endif // !defined(__SEGMENT_MANAGER_H__)

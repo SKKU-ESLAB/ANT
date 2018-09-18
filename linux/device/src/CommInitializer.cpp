@@ -18,14 +18,15 @@
  * limitations under the License.
  */
 
-#include <CommInitializer.h>
+#include "../inc/CommInitializer.h"
 
-#include <DebugLog.h>
-#include <Util.h>
+#include "../inc/Util.h"
 
-#include <ExpConfig.h>
-#include <PathConfig.h>
-#include <WfdConfig.h>
+#include "../../inc/DebugLog.h"
+
+#include "../../configs/ExpConfig.h"
+#include "../../configs/PathConfig.h"
+#include "../../configs/WfdConfig.h"
 
 #include <stdio.h>
 #include <stdlib.h>

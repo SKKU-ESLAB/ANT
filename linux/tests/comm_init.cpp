@@ -17,12 +17,13 @@
  * limitations under the License.
  */
 
-#include <DebugLog.h>
-#include <Util.h>
+#include "../inc/DebugLog.h"
 
-#include <ExpConfig.h>
-#include <PathConfig.h>
-#include <WfdConfig.h>
+#include "../device/inc/Util.h"
+
+#include "../configs/ExpConfig.h"
+#include "../configs/PathConfig.h"
+#include "../configs/WfdConfig.h"
 
 #include <stdio.h>
 #include <stdlib.h>

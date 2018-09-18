@@ -17,6 +17,9 @@
  * limitations under the License.
  */
 
+#ifndef __EXP_CONFIG_H__
+#define __EXP_CONFIG_H__
+
 /* Printing */
 #define PRINT_NETWORK_MONITOR_STATISTICS
 //#define EXP_MEASURE_INTERVAL_SENDER
@@ -24,3 +27,5 @@
 //#define VERBOSE_SERVER_ADAPTER_RECEIVING
 //#define VERBOSE_SEGMENT_QUEUE_WAITING
 #define VERBOSE_SEGMENT_DEQUEUE
+
+#endif /* !defined(__EXP_CONFIG_H__) */

@@ -1,6 +1,6 @@
 /* Copyright 2017-2018 All Rights Reserved.
  *  Gyeonghwan Hong (redcarrottt@gmail.com)
- *  
+ *
  * [Contact]
  *  Gyeonghwan Hong (redcarrottt@gmail.com)
  *
@@ -17,41 +17,37 @@
  * limitations under the License.
  */
 
-#ifndef _BT_DEVICE_H_
-#define _BT_DEVICE_H_
+#ifndef __BT_DEVICE_H__
+#define __BT_DEVICE_H__
 
-#include <Device.h>
+#include "../../inc/Device.h"
 
-#include <thread>
 #include <mutex>
+#include <thread>
 
 #include <stdio.h>
 
 namespace sc {
-
 class BtDevice : public Device {
 public:
   virtual bool turn_on_impl(void);
   virtual bool turn_off_impl(void);
 
-  static BtDevice* getSingleton() {
-    if(BtDevice::sSingleton == NULL) {
+  static BtDevice *getSingleton() {
+    if (BtDevice::sSingleton == NULL) {
       BtDevice::sSingleton = new BtDevice();
     }
     return BtDevice::sSingleton;
   }
 
-  static BtDevice* sSingleton;
+  static BtDevice *sSingleton;
 
-  ~BtDevice(void) {
-  }
+  ~BtDevice(void) {}
 
 protected:
-  BtDevice() : Device("Bluetooth") {
-  }
+  BtDevice() : Device("Bluetooth") {}
 
 }; /* class BtDevice */
-
 } /* namespace sc */
 
-#endif /* !defined(_BT_DEVICE_H_) */
+#endif /* !defined(__BT_DEVICE_H__) */

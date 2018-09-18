@@ -17,10 +17,10 @@
  * limitations under the License.
  */
 
-#ifndef _WFD_DEVICE_H_
-#define _WFD_DEVICE_H_
+#ifndef __WFD_DEVICE_H__
+#define __WFD_DEVICE_H__
 
-#include <Device.h>
+#include "../../inc/Device.h"
 
 #include <thread>
 #include <mutex>
@@ -28,7 +28,6 @@
 #include <stdio.h>
 
 namespace sc {
-
 class WfdDevice : public Device {
 public:
   virtual bool turn_on_impl(void);
@@ -49,9 +48,7 @@ public:
 protected:
   WfdDevice() : Device("WFD") {
   }
-
 }; /* class WfdDevice */
-
 } /* namespace sc */
 
-#endif /* !defined(_WFD_DEVICE_H_) */
+#endif /* !defined(__WFD_DEVICE_H__) */

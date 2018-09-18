@@ -1,6 +1,6 @@
 /* Copyright 2017-2018 All Rights Reserved.
  *  Gyeonghwan Hong (redcarrottt@gmail.com)
- *  
+ *
  * [Contact]
  *  Gyeonghwan Hong (redcarrottt@gmail.com)
  *
@@ -17,17 +17,19 @@
  * limitations under the License.
  */
 
-#include <ServerAdapter.h>
+#include "../inc/Device.h"
+
+#include "../inc/ServerAdapter.h"
 
 using namespace sc;
 
 bool Device::hold_and_turn_on(void) {
-  if(this->mRefCount.increase() == 1) {
+  if (this->mRefCount.increase() == 1) {
     this->set_state(DeviceState::kTurningOn);
 
     bool res = this->turn_on_impl();
 
-    if(!res) {
+    if (!res) {
       LOG_DEBUG("%s: Failed to turn on", this->get_name());
       this->mRefCount.decrease();
       this->set_state(DeviceState::kOff);
@@ -44,12 +46,12 @@ bool Device::hold_and_turn_on(void) {
 }
 
 bool Device::release_and_turn_off(void) {
-  if(this->mRefCount.decrease() == 0) {
+  if (this->mRefCount.decrease() == 0) {
     this->set_state(DeviceState::kTurningOff);
 
     bool res = this->turn_off_impl();
 
-    if(!res) {
+    if (!res) {
       LOG_DEBUG("%s: Failed to turn off", this->get_name());
       this->mRefCount.increase();
       this->set_state(DeviceState::kOn);
