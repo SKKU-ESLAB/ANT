@@ -133,7 +133,7 @@ public class ClientAdapter {
             }
 
             // Turn on device
-            self.mDevice.holdAndTurnOn(this);
+            self.mDevice.turnOn(this);
         }
 
         @Override
@@ -159,7 +159,7 @@ public class ClientAdapter {
             if (!isSuccess || p2pClientState != P2PClient.State.kConnected) {
                 Logger.ERR(kTag, "Cannot connect the server adapter - discover fail:" + self
                         .getName());
-                self.mDevice.releaseAndTurnOff(null);
+                self.mDevice.turnOff(null);
                 this.onFail();
                 return;
             }
@@ -185,7 +185,7 @@ public class ClientAdapter {
                         Logger.ERR(kTag, "Cannot connect the server adapter - socket open fail: "
                                 + self.getName());
                         self.mP2PClient.releaseAndDisconnect(null);
-                        self.mDevice.releaseAndTurnOff(null);
+                        self.mDevice.turnOff(null);
                         onFail();
                         return;
                     }
@@ -321,7 +321,7 @@ public class ClientAdapter {
             }
 
             // Turn off device
-            self.mDevice.releaseAndTurnOff(this);
+            self.mDevice.turnOff(this);
         }
 
         @Override

@@ -24,26 +24,46 @@
 using namespace sc;
 
 bool P2PServer::allow_discover(void) {
+  // Check previous state
+  P2PServerState state = this->get_state();
+  if (state == P2PServerState::kAllowed) {
+    LOG_ERR("%s: Failed to allow discover - Already allowed (%d)",
+            this->get_name(), state);
+    return false;
+  }
+
+  // Allow discover
   bool res = this->allow_discover_impl();
 
+  // Check result and change state
   if (!res) {
-    LOG_DEBUG("%s: Failed to allow", this->get_name());
+    LOG_DEBUG("%s: Failed to allow discover", this->get_name());
     this->set_state(P2PServerState::kDisallowed);
   } else {
-    LOG_DEBUG("%s: Successfully allowed", this->get_name());
+    LOG_DEBUG("%s: Successfully allowed discover", this->get_name());
     this->set_state(P2PServerState::kAllowed);
   }
   return res;
 }
 
 bool P2PServer::disallow_discover(void) {
+  // Check previous state
+  P2PServerState state = this->get_state();
+  if (state == P2PServerState::kDisallowed) {
+    LOG_ERR("%s: Failed to disallow discover - Already disallowed (%d)",
+            this->get_name(), state);
+    return false;
+  }
+
+  // Disallow discover
   bool res = this->disallow_discover_impl();
 
+  // Check result and change state
   if (!res) {
-    LOG_DEBUG("%s: Failed to disallow", this->get_name());
+    LOG_DEBUG("%s: Failed to disallow discover", this->get_name());
     this->set_state(P2PServerState::kAllowed);
   } else {
-    LOG_DEBUG("%s: Successfully disallowed", this->get_name());
+    LOG_DEBUG("%s: Successfully disallowed discover", this->get_name());
     this->set_state(P2PServerState::kDisallowed);
   }
   return res;

@@ -24,10 +24,21 @@
 using namespace sc;
 
 bool Device::turn_on(void) {
+  // Check previous state
+  DeviceState state = this->get_state();
+  if (state == DeviceState::kOn || state == DeviceState::kTurningOn) {
+    LOG_ERR("%s: Failed to turn on - Already turned on (%d)", this->get_name(),
+            state);
+    return false;
+  }
+
+  // State change
   this->set_state(DeviceState::kTurningOn);
 
+  // Turn on the device
   bool res = this->turn_on_impl();
 
+  // Result check
   if (!res) {
     LOG_DEBUG("%s: Failed to turn on", this->get_name());
     this->set_state(DeviceState::kOff);
@@ -40,10 +51,21 @@ bool Device::turn_on(void) {
 }
 
 bool Device::turn_off(void) {
+  // Check previous state
+  DeviceState state = this->get_state();
+  if (state == DeviceState::kOff || state == DeviceState::kTurningOff) {
+    LOG_ERR("%s: Failed to turn off - Already turned off (%d)",
+            this->get_name(), state);
+    return false;
+  }
+
+  // State change
   this->set_state(DeviceState::kTurningOff);
 
+  // Turn off the device
   bool res = this->turn_off_impl();
-
+  
+  // Result check
   if (!res) {
     LOG_DEBUG("%s: Failed to turn off", this->get_name());
     this->set_state(DeviceState::kOn);
@@ -51,6 +73,6 @@ bool Device::turn_off(void) {
     LOG_DEBUG("%s: Successfully turned off", this->get_name());
     this->set_state(DeviceState::kOff);
   }
-  
+
   return res;
 }

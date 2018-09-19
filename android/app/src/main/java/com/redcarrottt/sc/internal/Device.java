@@ -31,14 +31,8 @@ public abstract class Device {
 
     // Main Functions
     @SuppressWarnings("SynchronizeOnNonFinalField")
-    void holdAndTurnOn(TurnOnResultListener resultListener) {
-        int refCount;
-        synchronized (this.mRefCount) {
-            this.mRefCount++;
-            refCount = this.mRefCount;
-        }
+    void turnOn(TurnOnResultListener resultListener) {
         this.mTurnOnResultListener = resultListener;
-        if (refCount == 1) {
             this.setState(State.kTurningOn);
             this.turnOnImpl();
         } else {
@@ -67,7 +61,7 @@ public abstract class Device {
     }
 
     @SuppressWarnings("SynchronizeOnNonFinalField")
-    void releaseAndTurnOff(TurnOffResultListener resultListener) {
+    void turnOff(TurnOffResultListener resultListener) {
         int refCount;
         synchronized (this.mRefCount) {
             this.mRefCount--;
@@ -134,12 +128,10 @@ public abstract class Device {
     public Device(String name) {
         this.mState = State.kOff;
         this.mName = name;
-        this.mRefCount = 0;
     }
 
     // Attributes
     private String mName;
-    private Integer mRefCount;
 
     // State
     private Integer mState;
