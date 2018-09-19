@@ -137,43 +137,52 @@ bool ServerAdapter::__connect_thread(void) {
   }
 
   // Turn on device
-  {
-
+  DeviceState deviceState = this->mDevice->get_state();
+  if (deviceState != DeviceState::kOn &&
+      deviceState != DeviceState::kTurningOn) {
     bool res = this->mDevice->turn_on();
-    DeviceState deviceState = this->mDevice->get_state();
+    deviceState = this->mDevice->get_state();
     if (!res || deviceState != DeviceState::kOn) {
-      LOG_ERR("Cannot connect the server adapter - turn-on fail: %s",
+      LOG_ERR("%s: Cannot connect the server adapter - turn-on fail",
               this->get_name());
       return false;
     }
+  } else {
+    LOG_VERB("%s: Already turned on or turning on", this->get_name());
   }
 
   // Allow client's connection
-  {
+  P2PServerState p2pServerState = this->mP2PServer->get_state();
+  if (p2pServerState != P2PServerState::kAllowed) {
     bool res = this->mP2PServer->allow_discover();
 
-    P2PServerState p2pServerState = this->mP2PServer->get_state();
+    p2pServerState = this->mP2PServer->get_state();
     if (!res || p2pServerState != P2PServerState::kAllowed) {
-      LOG_ERR("Cannot connect the server adapter - allow discover fail: %s",
+      LOG_ERR("%s: Cannot connect the server adapter - allow discover fail",
               this->get_name());
       this->mDevice->turn_off();
       return false;
     }
+  } else {
+    LOG_VERB("%s: Already allowed discovery", this->get_name());
   }
 
   // Open server socket
   ServerSocketState socketState = this->mServerSocket->get_state();
-  if (socketState != ServerSocketState::kOpened) {
+  if (socketState != ServerSocketState::kOpened &&
+      socketState != ServerSocketState::kOpening) {
     bool res = this->mServerSocket->open();
 
     socketState = this->mServerSocket->get_state();
     if (!res || socketState != ServerSocketState::kOpened) {
-      LOG_ERR("Cannot connect the server adapter - socket open fail: %s",
+      LOG_ERR("%s: Cannot connect the server adapter - socket open fail",
               this->get_name());
       this->mP2PServer->disallow_discover();
       this->mDevice->turn_off();
       return false;
     }
+  } else {
+    LOG_VERB("%s: Already socket opened or opening", this->get_name());
   }
 
   // Run sender/receiver threads
@@ -244,8 +253,9 @@ bool ServerAdapter::__disconnect_thread(void) {
     return false;
   }
 
-  {
-    ServerSocketState socketState = this->mServerSocket->get_state();
+  ServerSocketState socketState = this->mServerSocket->get_state();
+  if (socketState != ServerSocketState::kClosed && socketState != ServerSocketState::kClosing) {
+    socketState = this->mServerSocket->get_state();
     if (socketState != ServerSocketState::kClosed) {
       bool res = this->mServerSocket->close();
 
@@ -256,6 +266,8 @@ bool ServerAdapter::__disconnect_thread(void) {
         return false;
       }
     }
+  } else {
+    LOG_VERB("%s: Already socket closed or closing", this->get_name());
   }
 
   // Disallow scan P2P Server
@@ -264,16 +276,19 @@ bool ServerAdapter::__disconnect_thread(void) {
     return false;
   }
 
-  {
+  P2PServerState p2pServerState = this->mP2PServer->get_state();
+  if(p2pServerState != P2PServerState::kDisallowed) {
     bool res = this->mP2PServer->disallow_discover();
 
-    P2PServerState p2pServerState = this->mP2PServer->get_state();
+    p2pServerState = this->mP2PServer->get_state();
     if (!res) {
       LOG_ERR(
           "Cannot disconnect the server adapter - disallow discover fail: %s",
           this->get_name());
       return false;
     }
+  } else {
+    LOG_VERB("%s: Already disallowed discovery", this->get_name());
   }
 
   // Turn off device
@@ -282,15 +297,18 @@ bool ServerAdapter::__disconnect_thread(void) {
     return false;
   }
 
-  {
+  DeviceState deviceState = this->mDevice->get_state();
+  if(deviceState != DeviceState::kOff && deviceState != DeviceState::kOn) {
     bool res = this->mDevice->turn_off();
 
-    DeviceState deviceState = this->mDevice->get_state();
+    deviceState = this->mDevice->get_state();
     if (!res) {
       LOG_ERR("Cannot disconnect the server adapter - turn-off fail: %s",
               this->get_name());
       return false;
     }
+  } else {
+    LOG_VERB("%s: Already turned off or turning off", this->get_name());
   }
 
   // Wait for sender/receiver thread
