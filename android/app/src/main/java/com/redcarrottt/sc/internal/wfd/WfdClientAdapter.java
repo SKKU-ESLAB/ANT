@@ -12,25 +12,31 @@ import java.util.Arrays;
 public class WfdClientAdapter extends ClientAdapter implements ControlMessageListener {
     private static final String kTag = "WfdClientAdapter";
 
-    // Components
-    private WfdP2PClient mP2pClient;
-    private TcpClientSocket mClientSocket;
+    // Singleton
+    static public WfdClientAdapter singleton(int id, String name, int targetPort, Activity
+            ownerActivity) {
+        if (sSingleton == null) {
+            sSingleton = new WfdClientAdapter(id, name, targetPort, ownerActivity);
+        }
+        return sSingleton;
+    }
+
+    static private WfdClientAdapter sSingleton;
 
     // Constructor
-    public WfdClientAdapter(int id, String name,
-                            int targetPort, Activity ownerActivity) {
+    private WfdClientAdapter(int id, String name, int targetPort, Activity ownerActivity) {
         super(id, name);
 
         // Components
-        WfdDevice device = WfdDevice.getSingleton(ownerActivity);
-        this.mP2pClient = WfdP2PClient.getSingleton(ownerActivity);
+        WfdDevice device = new WfdDevice(ownerActivity);
+        this.mP2pClient = new WfdP2PClient(ownerActivity);
         this.mClientSocket = new TcpClientSocket(targetPort);
 
         // Initialize
         this.initialize(device, this.mP2pClient, this.mClientSocket);
 
         // Add WfdP2PClient as a control message listener
-        Core.getInstance().addControlMessageListener(this);
+        Core.singleton().addControlMessageListener(this);
     }
 
     @Override
@@ -50,4 +56,8 @@ public class WfdClientAdapter extends ClientAdapter implements ControlMessageLis
             mClientSocket.setTcpClientInfo(targetIpAddress);
         }
     }
+
+    // Components
+    private WfdP2PClient mP2pClient;
+    private TcpClientSocket mClientSocket;
 }

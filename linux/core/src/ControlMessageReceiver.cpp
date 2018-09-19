@@ -59,7 +59,7 @@ void ControlMessageReceiver::receiving_thread_loop(void) {
 
 bool ControlMessageReceiver::receiving_thread_loop_internal(void) {
   void *message_buffer = NULL;
-  Core::get_instance()->receive(&message_buffer, true);
+  Core::singleton()->receive(&message_buffer, true);
   if (message_buffer == NULL) {
     return false;
   }
@@ -107,28 +107,28 @@ void ControlMessageReceiver::on_receive_normal_message(int control_message_code,
   switch (control_message_code) {
   case CMCode::kCMCodeConnect: {
     LOG_VERB("Receive(Control Msg): Request(Connect %d)", adapter_id);
-    NetworkSwitcher::get_instance()->connect_adapter_by_peer(adapter_id);
+    NetworkSwitcher::singleton()->connect_adapter_by_peer(adapter_id);
     break;
   }
   case CMCode::kCMCodeDisconnect: {
     LOG_VERB("Receive(Control Msg): Request(Disconnect %d)", adapter_id);
-    NetworkSwitcher::get_instance()->disconnect_adapter_by_peer(adapter_id);
+    NetworkSwitcher::singleton()->disconnect_adapter_by_peer(adapter_id);
     break;
   }
   case CMCode::kCMCodeSleep: {
     LOG_VERB("Receive(Control Msg): Request(Sleep %d)", adapter_id);
-    NetworkSwitcher::get_instance()->sleep_adapter_by_peer(adapter_id);
+    NetworkSwitcher::singleton()->sleep_adapter_by_peer(adapter_id);
     break;
   }
   case CMCode::kCMCodeWakeUp: {
     LOG_VERB("Receive(Control Msg): Request(WakeUp %d)", adapter_id);
-    NetworkSwitcher::get_instance()->wake_up_adapter_by_peer(adapter_id);
+    NetworkSwitcher::singleton()->wake_up_adapter_by_peer(adapter_id);
     break;
   }
   case CMCode::kCMCodeDisconnectAck: {
     LOG_VERB("Receive(Control Msg): Request(DisconnectAck %d)", adapter_id);
     ServerAdapter *disconnect_adapter =
-        Core::get_instance()->find_adapter_by_id((int)adapter_id);
+        Core::singleton()->find_adapter_by_id((int)adapter_id);
     if (disconnect_adapter == NULL) {
       LOG_WARN("Cannot find adapter %d", (int)adapter_id);
     } else {

@@ -21,20 +21,6 @@
             android:layout_height="wrap_content"
             android:text="Profile"/>
 
-        <CheckBox
-            android:id="@+id/btDataCheckbox"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:checked="true"
-            android:text="BT-Data" />
-
-        <CheckBox
-            android:id="@+id/wfdDataCheckbox"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:checked="true"
-            android:text="WFD-Data" />
-
         <Button
             android:id="@+id/startButton"
             android:layout_width="wrap_content"

@@ -30,21 +30,13 @@ public abstract class P2PClient {
     private final String kTag = "P2PClient";
 
     // Main function 1: Discover and connect
-    public void holdAndDiscoverAndConnect(DiscoverAndConnectResultListener resultListener) {
-        int refCount;
-        synchronized (this.mRefCount) {
-            this.mRefCount++;
-            refCount = this.mRefCount;
+    public void discoverAndConnect(DiscoverAndConnectResultListener resultListener) {
+        if (this.getState() != State.kDisconnected) {
+            Logger.ERR(kTag, "It's already connected or discovering is in progress");
+            doneDiscoverAndConnectTx(resultListener, false);
+            return;
         }
-        if (refCount == 1) {
-            if (this.getState() != State.kDisconnected) {
-                Logger.ERR(kTag, "It's already connected or discovering is in progress");
-                doneDiscoverAndConnectTx(resultListener, false);
-            }
-            runDiscoverAndConnectTx(resultListener);
-        } else {
-            doneDiscoverAndConnectTx(resultListener, true);
-        }
+        runDiscoverAndConnectTx(resultListener);
     }
 
     private void runDiscoverAndConnectTx(DiscoverAndConnectResultListener resultListener) {
@@ -63,12 +55,12 @@ public abstract class P2PClient {
         if (isSuccess) {
             this.setState(State.kConnected);
         } else {
-            synchronized (this.mRefCount) {
-                this.mRefCount--;
-            }
             this.setState(State.kDisconnected);
         }
-        if (resultListener != null) resultListener.onDiscoverAndConnectResult(isSuccess);
+
+        if (resultListener != null) {
+            resultListener.onDiscoverAndConnectResult(isSuccess);
+        }
     }
 
     private static DiscoverAndConnectTransaction sOngoingDiscoverConnectTx = null;
@@ -107,22 +99,14 @@ public abstract class P2PClient {
     }
 
     // Main function 2: Disconnect
-    public void releaseAndDisconnect(DisconnectResultListener resultListener) {
-        int refCount;
-        synchronized (this.mRefCount) {
-            this.mRefCount--;
-            refCount = this.mRefCount;
+    public void disconnect(DisconnectResultListener resultListener) {
+        int state = this.getState();
+        if (state == State.kDisconnected || state == State.kDisconnecting) {
+            Logger.ERR(kTag, "It's already disconnected or disconnecting is in progress");
+            doneDisconnectTx(resultListener, false);
+            return;
         }
-        if (refCount == 1) {
-            int state = this.getState();
-            if (state == State.kDisconnected || state == State.kDisconnecting) {
-                Logger.ERR(kTag, "It's already disconnected or disconnecting is in progress");
-                doneDisconnectTx(resultListener, false);
-            }
-            runDisconnectTx(resultListener);
-        } else {
-            doneDisconnectTx(resultListener, true);
-        }
+        runDisconnectTx(resultListener);
     }
 
     private void runDisconnectTx(DisconnectResultListener resultListener) {
@@ -140,12 +124,11 @@ public abstract class P2PClient {
         if (isSuccess) {
             this.setState(State.kDisconnected);
         } else {
-            synchronized (this.mRefCount) {
-                this.mRefCount++;
-            }
             this.setState(State.kConnected);
         }
-        if (resultListener != null) resultListener.onDisconnectResult(isSuccess);
+        if (resultListener != null) {
+            resultListener.onDisconnectResult(isSuccess);
+        }
     }
 
     private static DisconnectTransaction sOngoingDisconnectTx = null;
@@ -206,11 +189,7 @@ public abstract class P2PClient {
 
     protected P2PClient() {
         this.mState = State.kDisconnected;
-        this.mRefCount = 0;
     }
-
-    // Attributes
-    private Integer mRefCount;
 
     // State
     private Integer mState;

@@ -151,7 +151,7 @@ private:
 
 public:
   /* Singleton */
-  static NetworkSwitcher *get_instance(void) {
+  static NetworkSwitcher *singleton(void) {
     if (NetworkSwitcher::singleton == NULL) {
       NetworkSwitcher::singleton = new NetworkSwitcher();
     }

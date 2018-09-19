@@ -37,7 +37,7 @@ public:
   ~WfdServerAdapter(void) {}
 
   /* Singleton */
-  static WfdServerAdapter *get_instance(int id, const char *name, int port,
+  static WfdServerAdapter *singleton(int id, const char *name, int port,
                                         const char *wfd_device_name) {
     if (sSingleton == NULL) {
       sSingleton = new WfdServerAdapter(id, name, port, wfd_device_name);

@@ -42,7 +42,7 @@ public class NetworkSwitcher {
             return;
         }
 
-        Core core = Core.getInstance();
+        Core core = Core.singleton();
         ClientAdapter adapter = core.findAdapterById(adapterId);
         if (adapter == null) {
             Logger.WARN(kTag, "Cannot find adapter " + adapterId);
@@ -63,7 +63,7 @@ public class NetworkSwitcher {
             return;
         }
         this.setState(State.kSwitching);
-        ClientAdapter adapter = Core.getInstance().findDataAdapterById(adapterId);
+        ClientAdapter adapter = Core.singleton().findDataAdapterById(adapterId);
         adapter.sleep(false);
         this.setState(State.kReady);
     }
@@ -77,7 +77,7 @@ public class NetworkSwitcher {
             return;
         }
         this.setState(State.kSwitching);
-        ClientAdapter adapter = Core.getInstance().findDataAdapterById(adapterId);
+        ClientAdapter adapter = Core.singleton().findDataAdapterById(adapterId);
         adapter.wakeUp(false);
         this.setState(State.kReady);
     }
@@ -145,7 +145,7 @@ public class NetworkSwitcher {
     // Singleton
     private static NetworkSwitcher sSingleton;
 
-    public static NetworkSwitcher getInstance() {
+    public static NetworkSwitcher singleton() {
         if (sSingleton == null) {
             sSingleton = new NetworkSwitcher();
         }
@@ -178,7 +178,7 @@ public class NetworkSwitcher {
         if (!isSuccess) {
             Logger.WARN(kTag, "Connection request failed");
         }
-        NetworkSwitcher.getInstance().doneSwitch();
+        NetworkSwitcher.singleton().doneSwitch();
         sOngoingConnectRequest = null;
     }
 
@@ -212,7 +212,7 @@ public class NetworkSwitcher {
         }
 
         void start() {
-            ClientAdapter adapter = Core.getInstance().findDataAdapterById(this.mAdapterId);
+            ClientAdapter adapter = Core.singleton().findDataAdapterById(this.mAdapterId);
             if (adapter == null) {
                 Logger.ERR(kTag, "Connecting requested data adapter is failed");
                 doneConnectRequestTx(false);
@@ -289,7 +289,7 @@ public class NetworkSwitcher {
                 }
 
                 Logger.VERB(kTag, "Reconnecting adapter is done");
-                NetworkSwitcher.getInstance().doneSwitch();
+                NetworkSwitcher.singleton().doneSwitch();
             }
         }
     }

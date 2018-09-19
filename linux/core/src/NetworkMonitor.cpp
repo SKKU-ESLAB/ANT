@@ -51,7 +51,7 @@ void NetworkMonitor::switcher_thread(void) {
 
     // Check and switch
     // If the switcher is already switching,
-    NSState switcher_state = NetworkSwitcher::get_instance()->get_state();
+    NSState switcher_state = NetworkSwitcher::singleton()->get_state();
     if (switcher_state == NSState::kNSStateReady) {
       this->check_and_decide_switching(stats);
     }
@@ -64,13 +64,13 @@ void NetworkMonitor::print_stats(Stats &stats) {
 #ifndef PRINT_NETWORK_MONITOR_STATISTICS
   return;
 #else
-  if (Core::get_instance()->get_state() != CoreState::kCoreStateReady) {
+  if (Core::singleton()->get_state() != CoreState::kCoreStateReady) {
     return;
   }
 
   const int k_state_str_length = 20;
   char state_str[k_state_str_length];
-  switch (NetworkSwitcher::get_instance()->get_state()) {
+  switch (NetworkSwitcher::singleton()->get_state()) {
   case NSState::kNSStateReady:
     strncpy(state_str, "Ready", k_state_str_length);
     break;
@@ -121,8 +121,8 @@ void NetworkMonitor::print_stats(Stats &stats) {
 
 void NetworkMonitor::get_stats(Stats &stats) {
   // TODO: consider peer's request_speed, now_queue_data_size
-  Core *core = Core::get_instance();
-  SegmentManager *sm = SegmentManager::get_instance();
+  Core *core = Core::singleton();
+  SegmentManager *sm = SegmentManager::singleton();
 
   /* Statistics used to print present status */
   this->mQueueArrivalSpeed.set_value(sm->get_send_request_per_sec());
@@ -180,7 +180,7 @@ bool NetworkMonitor::check_increase_adapter(const Stats &stats) {
   /* Check the condition of adapter increase based on switching policy */
   if (!this->is_increaseable()) {
     return false;
-  } else if (Core::get_instance()->get_state() != kCoreStateReady) {
+  } else if (Core::singleton()->get_state() != kCoreStateReady) {
     return false;
   } else {
     switch (this->get_mode()) {
@@ -232,7 +232,7 @@ bool NetworkMonitor::check_decrease_adapter(const Stats &stats) {
   /* Check the condition of adapter decrease based on switching policy */
   if (!this->is_decreaseable()) {
     return false;
-  } else if (Core::get_instance()->get_state() != kCoreStateReady) {
+  } else if (Core::singleton()->get_state() != kCoreStateReady) {
     return false;
   } else {
     switch (this->get_mode()) {
@@ -304,7 +304,7 @@ bool NetworkMonitor::check_decrease_adapter(const Stats &stats) {
 bool NetworkMonitor::is_increaseable(void) {
   /* Check the minimum condition of adapter increase such as adapters' count
    */
-  Core *core = Core::get_instance();
+  Core *core = Core::singleton();
   int adapter_count = core->get_adapter_count();
   int active_data_adapter_index = core->get_active_adapter_index();
   return ((adapter_count > 1) &&
@@ -313,14 +313,14 @@ bool NetworkMonitor::is_increaseable(void) {
 bool NetworkMonitor::is_decreaseable(void) {
   /* Check the minimum condition of adapter decrease such as adapters' count
    */
-  Core *core = Core::get_instance();
+  Core *core = Core::singleton();
   int adapter_count = core->get_adapter_count();
   int active_data_adapter_index = core->get_active_adapter_index();
   return ((adapter_count > 1) && (active_data_adapter_index > 0));
 }
 
 bool NetworkMonitor::increase_adapter(void) {
-  Core *core = Core::get_instance();
+  Core *core = Core::singleton();
   if (core->get_adapter_count() == 0) {
     LOG_ERR("No data adapter is registered!");
     return false;
@@ -332,12 +332,12 @@ bool NetworkMonitor::increase_adapter(void) {
   int prev_index = core->get_active_adapter_index();
   int next_index = prev_index + 1;
 
-  return NetworkSwitcher::get_instance()->switch_adapters(prev_index,
+  return NetworkSwitcher::singleton()->switch_adapters(prev_index,
                                                           next_index);
 }
 
 bool NetworkMonitor::decrease_adapter(void) {
-  Core *core = Core::get_instance();
+  Core *core = Core::singleton();
   if (core->get_adapter_count() == 0) {
     LOG_ERR("No data adapter is registered!");
     return false;
@@ -349,6 +349,6 @@ bool NetworkMonitor::decrease_adapter(void) {
   int prev_index = core->get_active_adapter_index();
   int next_index = prev_index - 1;
 
-  return NetworkSwitcher::get_instance()->switch_adapters(prev_index,
+  return NetworkSwitcher::singleton()->switch_adapters(prev_index,
                                                           next_index);
 }

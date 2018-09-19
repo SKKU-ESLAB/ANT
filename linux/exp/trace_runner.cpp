@@ -102,9 +102,9 @@ int main(int argc, char **argv) {
   snprintf(g_trace_file_name, 512, "%s", argv[1]);
   printf("Trace File: %s\n", g_trace_file_name);
 
-  bt = sc::BtServerAdapter::get_instance(
+  bt = sc::BtServerAdapter::singleton(
       1, "Bt", "150e8400-1234-41d4-a716-446655440000");
-  wfd = sc::WfdServerAdapter::get_instance(2, "Wfd", 3455, "SelCon");
+  wfd = sc::WfdServerAdapter::singleton(2, "Wfd", 3455, "SelCon");
 
   printf("Step 1. Initializing Network Adapters\n");
 

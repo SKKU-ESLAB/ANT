@@ -37,8 +37,8 @@ bool g_stop_sc_success;
 
 void sc::start_sc(StartCallback startCallback) {
   // Core start procedure
-  Core::get_instance()->start();
-  NetworkMonitor::get_instance()->start();
+  Core::singleton()->start();
+  NetworkMonitor::singleton()->start();
 
   // Wait until core start thread ends
   std::unique_lock<std::mutex> lck(g_wait_lock_start_sc);
@@ -55,8 +55,8 @@ void sc::start_sc_done(bool is_success) {
 
 void sc::stop_sc(StopCallback stopCallback) {
   // Core stop procedure
-  NetworkMonitor::get_instance()->stop();
-  Core::get_instance()->stop();
+  NetworkMonitor::singleton()->stop();
+  Core::singleton()->stop();
 
   // Wait until core stop thread ends
   std::unique_lock<std::mutex> lck(g_wait_lock_stop_sc);

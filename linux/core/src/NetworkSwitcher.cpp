@@ -58,7 +58,7 @@ void NetworkSwitcher::disconnect_adapter_by_peer(int adapter_id) {
     return;
   }
 
-  Core *core = Core::get_instance();
+  Core *core = Core::singleton();
   ServerAdapter *adapter = core->find_adapter_by_id(adapter_id);
   if (adapter == NULL) {
     LOG_WARN("Cannot find adapter %d", (int)adapter_id);
@@ -77,7 +77,7 @@ void NetworkSwitcher::sleep_adapter_by_peer(int adapter_id) {
     return;
   }
 
-  ServerAdapter *adapter = Core::get_instance()->get_adapter(adapter_id);
+  ServerAdapter *adapter = Core::singleton()->get_adapter(adapter_id);
   if (adapter != NULL) {
     this->set_state(NSState::kNSStateSwitching);
     adapter->sleep(NULL, false);
@@ -92,7 +92,7 @@ void NetworkSwitcher::wake_up_adapter_by_peer(int adapter_id) {
     return;
   }
 
-  ServerAdapter *adapter = Core::get_instance()->get_adapter(adapter_id);
+  ServerAdapter *adapter = Core::singleton()->get_adapter(adapter_id);
   if (adapter != NULL) {
     this->set_state(NSState::kNSStateSwitching);
     adapter->wake_up(NULL, false);
@@ -143,7 +143,7 @@ bool SwitchAdapterTransaction::run(int prev_index, int next_index) {
     return true;
   } else {
     LOG_WARN("Already starting core");
-    NetworkSwitcher *switcher = NetworkSwitcher::get_instance();
+    NetworkSwitcher *switcher = NetworkSwitcher::singleton();
     switcher->done_switch();
     return false;
   }
@@ -153,18 +153,18 @@ void SwitchAdapterTransaction::done(bool is_success) {
   if (is_success) {
     LOG_VERB("Switch (%d->%d): Success", sOngoing->mPrevIndex,
              sOngoing->mNextIndex);
-    Core::get_instance()->set_active_adapter_index(sOngoing->mNextIndex);
+    Core::singleton()->set_active_adapter_index(sOngoing->mNextIndex);
   } else {
     LOG_VERB("Switch (%d->%d): Failed", sOngoing->mPrevIndex,
              sOngoing->mNextIndex);
   }
-  NetworkSwitcher::get_instance()->done_switch();
+  NetworkSwitcher::singleton()->done_switch();
   sOngoing = NULL;
 }
 
 void SwitchAdapterTransaction::start(void) {
   // Switch Step 1, 2-a
-  Core *core = Core::get_instance();
+  Core *core = Core::singleton();
 
   ServerAdapter *next_adapter = core->get_adapter(this->mNextIndex);
   if (next_adapter == NULL) {
@@ -198,8 +198,8 @@ void SwitchAdapterTransaction::start(void) {
 
 void SwitchAdapterTransaction::connect_next_adapter_callback(bool is_success) {
   // Switch Step 2-b, 3-a
-  Core *core = Core::get_instance();
-  NetworkSwitcher *switcher = NetworkSwitcher::get_instance();
+  Core *core = Core::singleton();
+  NetworkSwitcher *switcher = NetworkSwitcher::singleton();
   if (!is_success) {
     LOG_ERR("Connecting next adapter is failed");
     sOngoing->done(false);
@@ -257,14 +257,14 @@ bool ConnectRequestTransaction::run(int adapter_id) {
     return true;
   } else {
     LOG_WARN("Already starting core");
-    NetworkSwitcher *switcher = NetworkSwitcher::get_instance();
+    NetworkSwitcher *switcher = NetworkSwitcher::singleton();
     switcher->done_switch();
     return false;
   }
 }
 
 void ConnectRequestTransaction::done() {
-  NetworkSwitcher *switcher = NetworkSwitcher::get_instance();
+  NetworkSwitcher *switcher = NetworkSwitcher::singleton();
   switcher->done_switch();
   sOngoing = NULL;
 }
@@ -273,7 +273,7 @@ void ConnectRequestTransaction::done() {
 bool ConnectRequestTransaction::start() {
   // Connect requested adapter
   ServerAdapter *adapter =
-      Core::get_instance()->find_adapter_by_id(this->mAdapterId);
+      Core::singleton()->find_adapter_by_id(this->mAdapterId);
   if (adapter == NULL) {
     LOG_ERR("Connecting requested adapter is failed");
     this->done();
@@ -300,7 +300,7 @@ bool ReconnectAdapterTransaction::run(ServerAdapter *targetAdapter) {
     return true;
   } else {
     LOG_WARN("Already starting core");
-    NetworkSwitcher *switcher = NetworkSwitcher::get_instance();
+    NetworkSwitcher *switcher = NetworkSwitcher::singleton();
     switcher->done_switch();
     return false;
   }
@@ -313,7 +313,7 @@ void ReconnectAdapterTransaction::done(bool require_restart) {
   } else {
     sleep(1);
 
-    NetworkSwitcher *switcher = NetworkSwitcher::get_instance();
+    NetworkSwitcher *switcher = NetworkSwitcher::singleton();
     switcher->done_switch();
   }
 }
@@ -354,5 +354,5 @@ void ReconnectAdapterTransaction::connect_callback(bool is_success) {
     return;
   }
   LOG_VERB("Reconnecting adapter is done");
-  NetworkSwitcher::get_instance()->done_switch();
+  NetworkSwitcher::singleton()->done_switch();
 }

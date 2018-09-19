@@ -27,9 +27,14 @@ import java.util.Date;
 import static com.redcarrottt.sc.internal.ExpConfig.VERBOSE_CLIENT_ADAPTER;
 import static com.redcarrottt.sc.internal.ExpConfig.VERBOSE_RECEIVER_TIME;
 import static com.redcarrottt.sc.internal.ExpConfig.VERBOSE_SEGMENT_DEQUEUE;
+import static com.redcarrottt.sc.internal.SegmentManager.kSegFlagControl;
 import static com.redcarrottt.sc.internal.SegmentManager.kSegHeaderSize;
 import static com.redcarrottt.sc.internal.SegmentManager.kSegRecv;
+import static com.redcarrottt.sc.internal.SegmentManager.kSegRecvControl;
+import static com.redcarrottt.sc.internal.SegmentManager.kSegRecvData;
 import static com.redcarrottt.sc.internal.SegmentManager.kSegSend;
+import static com.redcarrottt.sc.internal.SegmentManager.kSegSendControl;
+import static com.redcarrottt.sc.internal.SegmentManager.kSegSendData;
 import static com.redcarrottt.sc.internal.SegmentManager.kSegSize;
 
 public class ClientAdapter {
@@ -47,7 +52,7 @@ public class ClientAdapter {
         }
 
         if (isSendRequest) {
-            Core.getInstance().sendRequestConnect((short) this.getId());
+            Core.singleton().sendRequestConnect((short) this.getId());
         }
 
         ConnectThread thread = new ConnectThread(listener);
@@ -68,9 +73,9 @@ public class ClientAdapter {
         }
 
         if (isSendRequest) {
-            Core.getInstance().sendRequestDisconnect((short) this.getId());
+            Core.singleton().sendRequestDisconnect((short) this.getId());
         } else if (isSendAck) {
-            Core.getInstance().sendRequestDisconnectAck((short) this.getId());
+            Core.singleton().sendRequestDisconnectAck((short) this.getId());
         }
 
         DisconnectThread thread = new DisconnectThread(listener);
@@ -149,7 +154,7 @@ public class ClientAdapter {
             Logger.VERB(kTag, "Turn on success: " + self.getName());
 
             // Discover and connect to server
-            self.mP2PClient.holdAndDiscoverAndConnect(this);
+            self.mP2PClient.discoverAndConnect(this);
         }
 
         @Override
@@ -184,7 +189,7 @@ public class ClientAdapter {
                     if (!res || socketState != ClientSocket.State.kOpened) {
                         Logger.ERR(kTag, "Cannot connect the server adapter - socket open fail: "
                                 + self.getName());
-                        self.mP2PClient.releaseAndDisconnect(null);
+                        self.mP2PClient.disconnect(null);
                         self.mDevice.turnOff(null);
                         onFail();
                         return;
@@ -272,14 +277,14 @@ public class ClientAdapter {
 
                 socketState = self.mClientSocket.getState();
                 if (!res || socketState != ClientSocket.State.kClosed) {
-                    Logger.ERR(kTag, "Cannot releaseAndDisconnect the server adapter - socket " +
-                            "close fail: " + "" + "" + self.getName());
+                    Logger.ERR(kTag, "Cannot disconnect the server adapter - socket " + "close "
+                            + "fail: " + "" + "" + self.getName());
                     return false;
                 }
             }
 
             // P2P Disconnect
-            self.mP2PClient.releaseAndDisconnect(this);
+            self.mP2PClient.disconnect(this);
 
             // Wait for sender/receiver thread
             try {
@@ -314,8 +319,8 @@ public class ClientAdapter {
             // Check the result of "P2P Disconnect"
             int p2pClientState = self.mP2PClient.getState();
             if (!isSuccess) {
-                Logger.ERR(kTag, "Cannot releaseAndDisconnect the server adapter - " +
-                        "releaseAndDisconnect P2P " + "client fail: " + self.getName());
+                Logger.ERR(kTag, "Cannot disconnect the server adapter - " + "disconnect P2P " +
+                        "client fail: " + self.getName());
                 this.onFail();
                 return;
             }
@@ -328,8 +333,8 @@ public class ClientAdapter {
         public void onTurnOffResult(boolean isSuccess) {
             int deviceState = self.mDevice.getState();
             if (!isSuccess) {
-                Logger.ERR(kTag, "Cannot releaseAndDisconnect the server adapter - turn-off " +
-                        "fail:" + " " + self.getName());
+                Logger.ERR(kTag, "Cannot disconnect the server adapter - turn-off " + "fail:" +
+                        "" + " " + self.getName());
                 this.onFail();
                 return;
             }
@@ -367,31 +372,6 @@ public class ClientAdapter {
         void onDisconnectResult(boolean isSuccess);
     }
 
-    // Thread Control Functions: enableSenderThread, enableReceiverThread
-    void enableSenderThread() {
-        this.mSenderThread = new SenderThread();
-    }
-
-    void enableReceiverThread() {
-        this.mReceiveLoop = new ReceiveDataLoop();
-        this.mReceiverThread = new ReceiverThread();
-    }
-
-    void enableReceiverThread(ReceiveLoop receiveLoop) {
-        if (receiveLoop == null) {
-            Logger.ERR(kTag, "ReceiverLoop is null!");
-            return;
-        }
-
-        this.mReceiveLoop = receiveLoop;
-        this.mReceiverThread = new ReceiverThread();
-    }
-
-    // Receiver Loop Interface
-    interface ReceiveLoop {
-        void receiveLoop(ClientAdapter adapter);
-    }
-
     // Sender/Receiver Threads
     @SuppressWarnings("SynchronizeOnNonFinalField")
     class SenderThread extends Thread {
@@ -408,8 +388,21 @@ public class ClientAdapter {
                 self.mIsWaitSenderThread = false;
             }
 
+            this.senderThreadLoop();
+
+            NetworkSwitcher.singleton().reconnectAdapter(ClientAdapter.this);
+            Logger.VERB(kTag, ClientAdapter.this.getName() + "'s Sender thread ends");
+
+            synchronized (self.mIsWaitSenderThread) {
+                if (self.mIsWaitSenderThread) {
+                    self.mWaitSenderThread.notifyAll();
+                }
+            }
+        }
+
+        private void senderThreadLoop() {
             while (this.mIsOn) {
-                SegmentManager sm = SegmentManager.getInstance();
+                SegmentManager sm = SegmentManager.singleton();
                 Segment segmentToSend;
 
                 // If this sender is set to be suspended, wait until it wakes up
@@ -435,12 +428,16 @@ public class ClientAdapter {
                     } while (true);
                 }
 
-                // At first, dequeue a segment from failed sending queue
+                // Dequeue from a queue (one of the three queues)
+                // Priority 1. Failed sending queue
                 segmentToSend = sm.get_failed_sending();
-
-                // If there is no failed segment, dequeue from send queue
+                // Priority 2. Send control queue
                 if (segmentToSend == null) {
-                    segmentToSend = sm.dequeue(kSegSend);
+                    segmentToSend = sm.dequeue(kSegSendControl);
+                }
+                // Priority 3. Send data queue
+                if (segmentToSend == null) {
+                    segmentToSend = sm.dequeue(kSegSendData);
                 }
 
                 // If it is suspended, push the segment to the send-fail queue
@@ -464,15 +461,6 @@ public class ClientAdapter {
                     break;
                 }
                 sm.free_segment(segmentToSend);
-            }
-
-            NetworkSwitcher.getInstance().reconnectAdapter(ClientAdapter.this);
-            Logger.VERB(kTag, ClientAdapter.this.getName() + "'s Sender thread ends");
-
-            synchronized (self.mIsWaitSenderThread) {
-                if (self.mIsWaitSenderThread) {
-                    self.mWaitSenderThread.notifyAll();
-                }
             }
         }
 
@@ -509,7 +497,7 @@ public class ClientAdapter {
                 self.mIsWaitReceiverThread = false;
             }
 
-            mReceiveLoop.receiveLoop(self);
+            this.receiverThreadLoop(self);
 
             synchronized (self.mIsWaitReceiverThread) {
                 if (self.mIsWaitReceiverThread) {
@@ -518,34 +506,15 @@ public class ClientAdapter {
             }
         }
 
-        public void finish() {
-            synchronized (this.mIsOn) {
-                this.mIsOn = false;
-            }
-        }
-
-        ReceiverThread() {
-            this.mIsOn = false;
-        }
-
-        public boolean isOn() {
-            return this.mIsOn;
-        }
-
-        private Boolean mIsOn;
-    }
-
-    class ReceiveDataLoop implements ReceiveLoop {
         private int mReceiveCount = 0;
         private Date mDates[] = new Date[5];
         private long mIntervals[] = new long[4];
 
-        @Override
-        public void receiveLoop(ClientAdapter adapter) {
-            while (adapter.mReceiverThread.isOn()) {
+        public void receiverThreadLoop(ClientAdapter adapter) {
+            while (this.isOn()) {
                 if (VERBOSE_RECEIVER_TIME) this.mDates[0] = new Date();
 
-                SegmentManager sm = SegmentManager.getInstance();
+                SegmentManager sm = SegmentManager.singleton();
                 Segment segmentToReceive = sm.get_free_segment();
                 int len = kSegSize + kSegHeaderSize;
 
@@ -573,11 +542,18 @@ public class ClientAdapter {
 
                 if (VERBOSE_RECEIVER_TIME) this.mDates[3] = new Date();
 
-                if(VERBOSE_SEGMENT_DEQUEUE) {
+                if (VERBOSE_SEGMENT_DEQUEUE) {
                     Logger.DEBUG(getName(), "Receive Segment: seqno=" + segmentToReceive.seq_no);
                 }
 
-                sm.enqueue(kSegRecv, segmentToReceive);
+                // TODO: divide into data/control queues
+                boolean is_control = ((SegmentManager.mGetSegFlagBits(segmentToReceive.flag_len) &
+                        kSegFlagControl) != 0);
+                if(is_control) {
+                    sm.enqueue(kSegRecvControl, segmentToReceive);
+                } else {
+                    sm.enqueue(kSegRecvData, segmentToReceive);
+                }
 
                 if (VERBOSE_RECEIVER_TIME) this.mDates[4] = new Date();
 
@@ -598,14 +574,29 @@ public class ClientAdapter {
                 }
             }
 
-            NetworkSwitcher.getInstance().reconnectAdapter(ClientAdapter.this);
+            NetworkSwitcher.singleton().reconnectAdapter(ClientAdapter.this);
             Logger.VERB(kTag, ClientAdapter.this.getName() + "'s Receiver thread ends");
         }
+
+        public void finish() {
+            synchronized (this.mIsOn) {
+                this.mIsOn = false;
+            }
+        }
+
+        ReceiverThread() {
+            this.mIsOn = false;
+        }
+
+        public boolean isOn() {
+            return this.mIsOn;
+        }
+
+        private Boolean mIsOn;
     }
 
     private SenderThread mSenderThread;
     private ReceiverThread mReceiverThread;
-    private ReceiveLoop mReceiveLoop;
     private Boolean mSenderSuspended;
 
     private Boolean mIsWaitSenderThread;
@@ -628,7 +619,7 @@ public class ClientAdapter {
             } else {
                 if (isSendRequest) {
                     // Send Request
-                    Core.getInstance().sendRequestSleep((short) this.getId());
+                    Core.singleton().sendRequestSleep((short) this.getId());
                 }
 
                 // Sleep
@@ -652,7 +643,7 @@ public class ClientAdapter {
         }
         if (sender_suspended) {
             // Send Request
-            Core.getInstance().sendRequestWakeup((short) this.getId());
+            Core.singleton().sendRequestWakeup((short) this.getId());
 
             // Wake up
             this.setState(State.kWakingUp);

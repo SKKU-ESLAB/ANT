@@ -1,6 +1,5 @@
 package com.redcarrottt.sc.internal.wfd;
 
-import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.content.BroadcastReceiver;
 import android.content.Context;
@@ -346,19 +345,8 @@ class WfdP2PClient extends P2PClient {
         }
     }
 
-    //Singleton
-    public static WfdP2PClient getSingleton(Activity ownerActivity) {
-        if (sSingleton == null) {
-            sSingleton = new WfdP2PClient(ownerActivity);
-        }
-        return sSingleton;
-    }
-
-    @SuppressLint("StaticFieldLeak")
-    private static WfdP2PClient sSingleton = null;
-
     // Constructor
-    private WfdP2PClient(Activity ownerActivity) {
+    public WfdP2PClient(Activity ownerActivity) {
         this.mOwnerActivity = ownerActivity;
         this.mIsInfoSet = false;
         this.mInfoSetTrigger = new Object();

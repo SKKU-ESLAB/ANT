@@ -57,8 +57,6 @@ public:
 typedef void (*ConnectCallback)(bool is_success);
 typedef void (*DisconnectCallback)(bool is_success);
 
-typedef void (*ReceiveLoop)(ServerAdapter *adapter);
-
 class ServerAdapter {
 public:
   /* Basic APIs

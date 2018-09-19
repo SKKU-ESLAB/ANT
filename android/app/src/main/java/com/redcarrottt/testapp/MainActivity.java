@@ -34,8 +34,6 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.BaseAdapter;
 import android.widget.Button;
-import android.widget.CheckBox;
-import android.widget.CompoundButton;
 import android.widget.ListView;
 import android.widget.TextView;
 
@@ -72,14 +70,6 @@ public class MainActivity extends AppCompatActivity implements LogReceiver.Callb
         // Initialize StartButton
         Button startButton = (Button) findViewById(R.id.startButton);
         startButton.setOnClickListener(onClickStartButton);
-
-        // Initialize BtDataCheckBox
-        CheckBox btDataCheckBox = (CheckBox) findViewById(R.id.btDataCheckbox);
-        btDataCheckBox.setOnCheckedChangeListener(onChangeBtDataCheckBox);
-
-        // Initialize WfdDataCheckBox
-        CheckBox wfdDataCheckBox = (CheckBox) findViewById(R.id.wfdDataCheckbox);
-        wfdDataCheckBox.setOnCheckedChangeListener(onChangeWfdDataCheckBox);
 
         // Initialize SpeedWatcherThread for BandwidthTextView
         this.mSpeedWatcherThread = new SpeedWatcherThread();
@@ -144,32 +134,6 @@ public class MainActivity extends AppCompatActivity implements LogReceiver.Callb
         switchProfileButton.setText(this.mProfiles[this.mPresentProfile] + " Profile");
     }
 
-    private boolean mIsBtDataChecked = true;
-    private CheckBox.OnCheckedChangeListener onChangeBtDataCheckBox = new CheckBox
-            .OnCheckedChangeListener() {
-        @Override
-        public void onCheckedChanged(CompoundButton self, boolean isChecked) {
-            mIsBtDataChecked = isChecked;
-            if (!mIsBtDataChecked && !mIsWfdDataChecked) {
-                mIsBtDataChecked = true;
-                self.setChecked(true);
-            }
-        }
-    };
-
-    private boolean mIsWfdDataChecked = true;
-    private CheckBox.OnCheckedChangeListener onChangeWfdDataCheckBox = new CheckBox
-            .OnCheckedChangeListener() {
-        @Override
-        public void onCheckedChanged(CompoundButton self, boolean isChecked) {
-            mIsWfdDataChecked = isChecked;
-            if (!mIsBtDataChecked && !mIsWfdDataChecked) {
-                mIsWfdDataChecked = true;
-                self.setChecked(true);
-            }
-        }
-    };
-
     private void requestPermissions() {
         if (ContextCompat.checkSelfPermission(MainActivity.this, Manifest.permission.INTERNET) !=
                 PackageManager.PERMISSION_GRANTED) {
@@ -192,32 +156,21 @@ public class MainActivity extends AppCompatActivity implements LogReceiver.Callb
                 break;
         }
 
-        if (!this.mIsBtDataChecked && !this.mIsWfdDataChecked) {
-            Logger.ERR(kTag, "No data adapter is selected!");
-            return;
-        } else if (btAddress == "") {
+        if (btAddress == "") {
             Logger.ERR(kTag, "No bluetooth address is defined!");
             return;
+        } else {
+            Logger.VERB(kTag, "BT Address: " + btAddress);
         }
+
 
         // Setting adapters
-        BtClientAdapter btControl = new BtClientAdapter(1, "Control/BT", btAddress,
+        BtClientAdapter bt = BtClientAdapter.singleton(1, "BT", btAddress,
                 "150e8400-1234-41d4-a716-446655440000", this);
-        API.registerControlAdapter(btControl);
+        API.registerAdapter(bt);
 
-        if (this.mIsBtDataChecked) {
-            BtClientAdapter btData = new BtClientAdapter(11, "Data/BT", btAddress,
-                    "150e8400-1234-41d4-a716-446655440001", this);
-            API.registerDataAdapter(btData);
-        }
-        if (this.mIsWfdDataChecked) {
-            WfdClientAdapter wfdData = new WfdClientAdapter(12, "Data/WFD", 3456, this);
-            API.registerDataAdapter(wfdData);
-
-            WfdClientAdapter wfdControl = new WfdClientAdapter(2, "Control/WFD", 3455, this);
-            API.registerControlAdapter(wfdControl);
-        }
-        Logger.VERB(kTag, "BT Address: " + btAddress);
+        WfdClientAdapter wfd = WfdClientAdapter.singleton(2, "WFD", 3456, this);
+        API.registerAdapter(wfd);
 
         // Start the selective connection
         API.startSC(onStartSCResult);
@@ -315,7 +268,7 @@ public class MainActivity extends AppCompatActivity implements LogReceiver.Callb
                         TextView bandwidthTextView = (TextView) findViewById(R.id
                                 .bandwidthTextView);
                         NumberFormat format = NumberFormat.getNumberInstance();
-                        if(VERBOSE_BANDWIDTH_UPDATE) {
+                        if (VERBOSE_BANDWIDTH_UPDATE) {
                             Log.d(kTag, "Bandwidth update: " + format.format(speed) + "B/s");
                         }
                         bandwidthTextView.setText("Bandwidth: " + format.format(speed) + "B/s");

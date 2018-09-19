@@ -23,26 +23,22 @@ import com.redcarrottt.sc.internal.Core;
 
 public class API {
     public static void startSC(OnStartSCResult resultListener) {
-        Core.getInstance().start(resultListener);
+        Core.singleton().start(resultListener);
     }
 
     public static void stopSC(OnStopSCResult resultListener) {
-        Core.getInstance().stop(resultListener);
+        Core.singleton().stop(resultListener);
     }
 
-    public static void registerControlAdapter(ClientAdapter adapter) {
-        Core.getInstance().registerControlAdapter(adapter);
-    }
-
-    public static void registerDataAdapter(ClientAdapter adapter) {
-        Core.getInstance().registerDataAdapter(adapter);
+    public static void registerAdapter(ClientAdapter adapter) {
+        Core.singleton().registerAdapter(adapter);
     }
 
     public static int send(byte[] dataBuffer, int dataLength) {
-        return Core.getInstance().send(dataBuffer, dataLength);
+        return Core.singleton().send(dataBuffer, dataLength, false);
     }
 
     public static int receive(byte[] dataBuffer) {
-        return Core.getInstance().receive(dataBuffer);
+        return Core.singleton().receive(dataBuffer, false);
     }
 }

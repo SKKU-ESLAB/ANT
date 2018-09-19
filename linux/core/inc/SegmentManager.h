@@ -117,7 +117,7 @@ public:
   int get_send_request_per_sec() { return this->mSendRequest.get_speed(); }
 
   /* Singleton */
-  static SegmentManager *get_instance(void) {
+  static SegmentManager *singleton(void) {
     if (singleton == NULL)
       singleton = new SegmentManager();
     return singleton;
