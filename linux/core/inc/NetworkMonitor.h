@@ -108,7 +108,7 @@ private:
 
 public:
   /* Singleton */
-  static NetworkMonitor *get_instance(void) {
+  static NetworkMonitor *singleton(void) {
     if (NetworkMonitor::singleton == NULL) {
       NetworkMonitor::singleton = new NetworkMonitor();
     }

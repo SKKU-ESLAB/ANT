@@ -55,7 +55,7 @@ void ServerAdapter::connect(ConnectCallback callback, bool is_send_request) {
 
   // Send request
   if (is_send_request) {
-    Core::get_instance()->get_control_sender()->send_request_connect(
+    Core::singleton()->get_control_sender()->send_request_connect(
         this->get_id());
   }
 
@@ -91,10 +91,10 @@ void ServerAdapter::disconnect(DisconnectCallback callback,
 
   // Send request
   if (is_send_request) {
-    Core::get_instance()->get_control_sender()->send_request_disconnect(
+    Core::singleton()->get_control_sender()->send_request_disconnect(
         this->get_id());
   } else if (is_send_ack) {
-    Core::get_instance()->get_control_sender()->send_request_disconnect_ack(
+    Core::singleton()->get_control_sender()->send_request_disconnect_ack(
         this->get_id());
   }
 
@@ -387,7 +387,7 @@ void ServerAdapter::sender_thread(void) {
   } else {
     // Reconnect the adapter
     LOG_ADAPTER_THREAD_FAIL(this->get_name(), "Sender");
-    NetworkSwitcher::get_instance()->reconnect_adapter(this, true);
+    NetworkSwitcher::singleton()->reconnect_adapter(this, true);
   }
 
   this->mWaitSenderThreadCond.notify_all();
@@ -404,7 +404,7 @@ void ServerAdapter::sender_thread_loop(void) {
     gettimeofday(&times[0], NULL);
 #endif
 
-    SegmentManager *sm = SegmentManager::get_instance();
+    SegmentManager *sm = SegmentManager::singleton();
     Segment *segment_to_send = NULL;
 
     // If this sender is set to be suspended, wait until it wakes up
@@ -451,7 +451,7 @@ void ServerAdapter::sender_thread_loop(void) {
 
 #ifdef VERBOSE_SEGMENT_DEQUEUE
     bool is_control =
-        (mGetSegFlagBits(segment_to_send->flag_len) & kSegFlagControl);
+        ((mGetSegFlagBits(segment_to_send->flag_len) & kSegFlagControl) != 0);
 
     LOG_DEBUG("%s: %s Segment (type=%s, seqno=%d)", this->get_name(),
               (is_get_failed_segment ? "Failed" : "Normal"),
@@ -560,7 +560,7 @@ void ServerAdapter::receiver_thread(void) {
   } else {
     // Reconnect the adapter
     LOG_ADAPTER_THREAD_FAIL(this->get_name(), "Receiver");
-    NetworkSwitcher::get_instance()->reconnect_adapter(this, true);
+    NetworkSwitcher::singleton()->reconnect_adapter(this, true);
   }
 
   this->mWaitReceiverThreadCond.notify_all();
@@ -568,7 +568,7 @@ void ServerAdapter::receiver_thread(void) {
 
 void ServerAdapter::receiver_thread_loop(void) {
   while (this->mReceiverLoopOn) {
-    SegmentManager *sm = SegmentManager::get_instance();
+    SegmentManager *sm = SegmentManager::singleton();
     Segment *segment_to_receive = sm->get_free_segment();
     void *buf = reinterpret_cast<void *>(segment_to_receive->data);
     int len = kSegSize + kSegHeaderSize;
@@ -634,7 +634,7 @@ void ServerAdapter::sleep(DisconnectCallback callback, bool is_send_request) {
     } else {
       // Send Request
       if (is_send_request) {
-        Core::get_instance()->get_control_sender()->send_request_sleep(
+        Core::singleton()->get_control_sender()->send_request_sleep(
             this->get_id());
       }
 
@@ -664,7 +664,7 @@ void ServerAdapter::wake_up(DisconnectCallback callback, bool is_send_request) {
   if (sender_suspended) {
     // Send Request
     if (is_send_request) {
-      Core::get_instance()->get_control_sender()->send_request_wake_up(
+      Core::singleton()->get_control_sender()->send_request_wake_up(
           this->get_id());
     }
 

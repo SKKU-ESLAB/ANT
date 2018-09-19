@@ -80,15 +80,15 @@ int SegmentManager::send_to_segment_manager(uint8_t *data, size_t len,
     memcpy(&(seg->data[kSegHeaderSize]), data + offset, seg_len);
     offset += seg_len;
 
-    /* Set segment MF flag */
+    /* Set segment MF flag and/or control segment flag */
+    int flag = 0;
     if (offset < len)
-      mSetSegFlagBits(kSegFlagMF, seg->flag_len);
-
-    /* Set control segment flag */
+      flag |= kSegFlagMF;
     if (is_control)
-      mSetSegFlagBits(kSegFlagControl, seg->flag_len);
+      flag |= kSegFlagControl;
+    mSetSegFlagBits(flag, seg->flag_len);
 
-    /* Set segment header to data */
+        /* Set segment header to data */
     this->serialize_segment_header(seg);
 
     if (is_control) {
@@ -136,7 +136,7 @@ uint8_t *SegmentManager::recv_from_segment_manager(void *proc_data_handle,
          data_size);
   offset += data_size;
 
-  cont = (mGetSegFlagBits(seg->flag_len) == kSegFlagMF);
+  cont = ((mGetSegFlagBits(seg->flag_len) & kSegFlagMF) != 0);
 
   free_segment(seg);
 
@@ -148,7 +148,7 @@ uint8_t *SegmentManager::recv_from_segment_manager(void *proc_data_handle,
     }
     data_size = mGetSegLenBits(seg->flag_len);
     memcpy(serialized + offset, &(seg->data[kSegHeaderSize]), data_size);
-    cont = (mGetSegFlagBits(seg->flag_len) == kSegFlagMF);
+    cont = ((mGetSegFlagBits(seg->flag_len) & kSegFlagMF) != 0);
     offset += data_size;
     free_segment(seg);
   }

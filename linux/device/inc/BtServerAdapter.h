@@ -39,7 +39,7 @@ public:
   ~BtServerAdapter(void) {}
 
   /* Singleton */
-  static BtServerAdapter *get_instance(int id, const char *name,
+  static BtServerAdapter *singleton(int id, const char *name,
                                        const char *service_uuid) {
     if (sSingleton == NULL) {
       sSingleton = new BtServerAdapter(id, name, service_uuid);

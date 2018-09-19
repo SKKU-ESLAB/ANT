@@ -100,19 +100,10 @@ class BtDevice extends Device {
         }
     };
 
-    // Singleton
-    public static BtDevice getSingleton(Activity ownerActivity) {
-        if (sSingleton == null) {
-            sSingleton = new BtDevice(ownerActivity);
-        }
-        return sSingleton;
-    }
-
-    private static BtDevice sSingleton = null;
     private Activity mOwnerActivity;
 
     // Constructor
-    private BtDevice(Activity ownerActivity) {
+    public BtDevice(Activity ownerActivity) {
         super("Bluetooth");
         this.mOwnerActivity = ownerActivity;
     }

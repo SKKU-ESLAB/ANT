@@ -143,7 +143,7 @@ bool WfdP2PServer::allow_discover_impl(void) {
      *  <Server IP Address>
      */
     LOG_DEBUG("%s: Send WFD Info: %s", this->get_name(), wfdInfo);
-    Core::get_instance()->get_control_sender()->send_noti_private_data(
+    Core::singleton()->get_control_sender()->send_noti_private_data(
         PrivType::kPrivTypeWFDInfo, wfdInfo, strlen(wfdInfo));
 
     // Notify IP address to the listeners

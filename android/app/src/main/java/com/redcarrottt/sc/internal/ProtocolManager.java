@@ -33,10 +33,11 @@ class ProtocolData {
 }
 
 class ProtocolManager {
-    static public final int kProtHeaderSize = 6;
+    static public final int kProtocolHeaderSize = 6;
 
-    static private short packet_id;
-    static private byte[] serialized_vector = null;
+    static private short sPacketId;
+    static private byte[] sSerializedVector = null;
+
     static private void serialize_header(ProtocolData pd, byte[] vec_ptr) {
         if (vec_ptr == null) throw new AssertionError();
 
@@ -60,69 +61,65 @@ class ProtocolManager {
     static public ProtocolData data_to_protocol_data(byte[] buf, int len) {
         ProtocolData pd = new ProtocolData();
 
-        pd.id = packet_id++;
+        pd.id = sPacketId++;
         pd.len = len;
         pd.data = buf;
 
         return pd;
     }
 
-    static public int serialize(ProtocolData pd, byte[] buf, int offset, int payload_size) {
-        //if (serialized_vector != null) throw new AssertionError();
-
+    static public int serialize(ProtocolData protocolData, byte[] buf, int offset, int
+            payload_size) {
         int vec_size;
         int data_offset;
 
-        data_offset = kProtHeaderSize;
+        data_offset = kProtocolHeaderSize;
         vec_size = data_offset + payload_size;
 
-        serialized_vector = new byte[vec_size];
+        sSerializedVector = new byte[vec_size];
 
-        serialize_header(pd, serialized_vector);
-        System.arraycopy(buf, offset, serialized_vector, data_offset, payload_size);
+        serialize_header(protocolData, sSerializedVector);
+        System.arraycopy(buf, offset, sSerializedVector, data_offset, payload_size);
 
-        if (serialized_vector == null) throw new AssertionError();
+        if (sSerializedVector == null) throw new AssertionError();
 
         return vec_size;
     }
 
-    static void parse_header(byte[] serialized, ProtocolData ret_pd) {
-        if (serialized == null || ret_pd == null) throw new AssertionError();
+    static void parse_header(byte[] serialized, ProtocolData protocolData) {
+        if (serialized == null || protocolData == null) throw new AssertionError();
 
         int vec_offset = 0;
         ByteBuffer buffer = ByteBuffer.allocate(2);
 
         buffer.put(serialized, vec_offset, 2);
-        ret_pd.id = buffer.getShort(0);
+        protocolData.id = buffer.getShort(0);
         vec_offset += 2;
-        //Logger.DEBUG(kTag, "ret_pd.id is " + ret_pd.id);
 
         buffer = ByteBuffer.allocate(4);
         buffer.put(serialized, vec_offset, 4);
-        ret_pd.len = buffer.getInt(0);
-        //vec_offset += 4;
-        //Logger.DEBUG(kTag, "ret_pd.len is " + ret_pd.len);
-
+        protocolData.len = buffer.getInt(0);
     }
 
-    static public int send_packet(int packet_size) {
-        SegmentManager sm = SegmentManager.getInstance();
+    static public int send_packet(int packetSize, boolean isControl) {
+        SegmentManager sm = SegmentManager.singleton();
 
-        return sm.send_to_segment_manager(serialized_vector, packet_size);
+        return sm.send_to_segment_manager(sSerializedVector, packetSize, isControl);
     }
 
-    static public int recv_packet(byte[] buf) {
+    static public int recv_packet(byte[] buf, boolean isControl) {
         if (buf == null) throw new AssertionError();
 
-        ProtocolData pd = new ProtocolData();
-        SegmentManager sm = SegmentManager.getInstance();
+        ProtocolData protocolData = new ProtocolData();
+        SegmentManager sm = SegmentManager.singleton();
 
-        byte[] data = sm.recv_from_segment_manager(pd);
+        byte[] data = sm.recv_from_segment_manager(protocolData, isControl);
 
-        System.arraycopy(data, 0, buf, 0, (pd.len < buf.length)? pd.len : buf.length);
+        System.arraycopy(data, 0, buf, 0, (protocolData.len < buf.length) ? protocolData.len :
+                buf.length);
 
 
-        return pd.len;
+        return protocolData.len;
     }
 
 //    private static String kTag = "protocol manager";

@@ -209,20 +209,20 @@ private:
 
 public:
   /* Singleton */
-  static Core *get_instance(void) {
+  static Core *singleton(void) {
     if (singleton == NULL) {
       singleton = new Core();
     }
     return singleton;
   }
 
-  ~Core() { SegmentManager::get_instance()->free_segment_all(); }
+  ~Core() { SegmentManager::singleton()->free_segment_all(); }
 
 private:
   /* Singleton */
   static Core *singleton;
   Core(void) {
-    SegmentManager *sm = SegmentManager::get_instance();
+    SegmentManager *sm = SegmentManager::singleton();
     this->mState = kCoreStateIdle;
     this->mActiveAdapterIndex = 0;
     this->mControlMessageReceiver = new ControlMessageReceiver();

@@ -20,7 +20,6 @@ import com.redcarrottt.sc.api.OnStartSCResult;
 import com.redcarrottt.sc.api.OnStopSCResult;
 import com.redcarrottt.testapp.Logger;
 
-import java.nio.ByteBuffer;
 import java.util.ArrayList;
 
 public class Core {
@@ -32,12 +31,8 @@ public class Core {
             Logger.ERR(kTag, "Core has already started");
             doneStart(false, resultListener);
             return;
-        } else if (this.mControlAdapters.isEmpty()) {
-            Logger.ERR(kTag, "No control adapter is registered!");
-            doneStart(false, resultListener);
-            return;
-        } else if (this.mDataAdapters.isEmpty()) {
-            Logger.ERR(kTag, "No data adapter is registered!");
+        } else if (this.mAdapters.isEmpty()) {
+            Logger.ERR(kTag, "No adapter is registered!");
             doneStart(false, resultListener);
             return;
         }
@@ -66,12 +61,8 @@ public class Core {
             Logger.ERR(kTag, "Core is already idle state!");
             doneStop(false, resultListener);
             return;
-        } else if (this.mControlAdapters.isEmpty()) {
-            Logger.ERR(kTag, "No control adapter is registered!");
-            doneStop(false, resultListener);
-            return;
-        } else if (this.mDataAdapters.isEmpty()) {
-            Logger.ERR(kTag, "No data adapter is registered!");
+        } else if (this.mAdapters.isEmpty()) {
+            Logger.ERR(kTag, "No adapter is registered!");
             doneStop(false, resultListener);
             return;
         }
@@ -91,33 +82,18 @@ public class Core {
         if (resultListener != null) resultListener.onDoneStopSC(isSuccess);
     }
 
-    public void registerControlAdapter(ClientAdapter controlAdapter) {
+    public void registerAdapter(ClientAdapter adapter) {
         if (this.getState() != State.kIdle) {
-            Logger.ERR(kTag, "You can register control adapter on only idle state!");
+            Logger.ERR(kTag, "You can register adapter on only idle state!");
             return;
         }
 
-        synchronized (this.mControlAdapters) {
-            controlAdapter.enableReceiverThread(new ReceiveControlMessageLoop());
-
-            this.mControlAdapters.add(controlAdapter);
+        synchronized (this.mAdapters) {
+            this.mAdapters.add(adapter);
         }
     }
 
-    public void registerDataAdapter(ClientAdapter dataAdapter) {
-        if (this.getState() != State.kIdle) {
-            Logger.ERR(kTag, "You can register data adapter on only idle state!");
-            return;
-        }
-        synchronized (this.mDataAdapters) {
-            dataAdapter.enableReceiverThread();
-            dataAdapter.enableSenderThread();
-
-            this.mDataAdapters.add(dataAdapter);
-        }
-    }
-
-    public int send(byte[] dataBuffer, int dataLength) {
+    public int send(byte[] dataBuffer, int dataLength, boolean isControl) {
         int state = this.getState();
         if (state != State.kReady) {
             Logger.ERR(kTag, "Core is not started yet, so you cannot send the data");
@@ -138,7 +114,7 @@ public class Core {
             throw new AssertionError();
         }
 
-        int sentBytes = ProtocolManager.send_packet(packetSize);
+        int sentBytes = ProtocolManager.send_packet(packetSize, isControl);
         if (sentBytes < 0) {
             Logger.ERR(kTag, "Sending stopped (" + currOffset + "/" + dataLength + ") by " +
                     sentBytes);
@@ -148,179 +124,14 @@ public class Core {
         return sentBytes;
     }
 
-    public int receive(byte[] dataBuffer) {
+    public int receive(byte[] dataBuffer, boolean isControl) {
         int state = this.getState();
         if (state != State.kReady) {
             Logger.ERR(kTag, "Core is not started yet, so you cannot receive data");
             return -1;
         }
 
-        return ProtocolManager.recv_packet(dataBuffer);
-    }
-
-    // Control Message Handling
-    private void sendControlMessage(byte[] dataBuffer, int dataLength) {
-        int state = this.getState();
-        if (state != State.kReady) {
-            Logger.ERR(kTag, "Core is not started yet, so you cannot send the data");
-            return;
-        }
-
-        ClientAdapter controlAdapter = this.getActiveControlAdapter();
-        if (controlAdapter == null) {
-            Logger.ERR(kTag, "Failed to send control message: no active control adapter");
-            return;
-        }
-
-        controlAdapter.send(dataBuffer, dataLength);
-    }
-
-    private void sendRequest(char requestCode, short adapterId) {
-        int state = this.getState();
-        if (state != State.kReady) {
-            Logger.ERR(kTag, "Core is not started yet, so you cannot send the data");
-            return;
-        }
-
-        {
-            ByteBuffer buffer = ByteBuffer.allocate(3);
-            buffer.put((byte) requestCode);
-            buffer.putShort(adapterId);
-            this.sendControlMessage(buffer.array(), 3);
-        }
-    }
-
-    public void sendRequestConnect(short adapterId) {
-        this.sendRequest(CMCode.kConnect, adapterId);
-        Logger.VERB(kTag, "Send(Control Msg): Request(Connect " + adapterId + ")");
-    }
-
-    public void sendRequestDisconnect(short adapterId) {
-        this.sendRequest(CMCode.kDisconnect, adapterId);
-        Logger.VERB(kTag, "Send(Control Msg): Request(Disconnect " + adapterId + ")");
-    }
-
-    public void sendRequestDisconnectAck(short adapterId) {
-        this.sendRequest(CMCode.kDisconnectAck, adapterId);
-        Logger.VERB(kTag, "Send(Control Msg): Request(DisconnectAck " + adapterId + ")");
-    }
-
-    public void sendRequestSleep(short adapterId) {
-        this.sendRequest(CMCode.kSleep, adapterId);
-        Logger.VERB(kTag, "Send(Control Msg): Request(Sleep " + adapterId + ")");
-    }
-
-    public void sendRequestWakeup(short adapterId) {
-        this.sendRequest(CMCode.kWakeup, adapterId);
-        Logger.VERB(kTag, "Send(Control Msg): Request(WakeUp " + adapterId + ")");
-    }
-
-    public void sendNotiPrivateData(short adapterId, byte[] privDataBuffer) {
-        // Not implemented yet
-    }
-
-    class ReceiveControlMessageLoop implements ClientAdapter.ReceiveLoop {
-        @Override
-        public void receiveLoop(ClientAdapter adapter) {
-            byte[] dataBuffer = new byte[512];
-            int res;
-            while (true) {
-                // Receive 1Byte: Control Request Code
-                Logger.DEBUG(kTag, "Control Receiver: receiving request code...");
-                res = adapter.receive(dataBuffer, 1);
-                Logger.DEBUG(kTag, "Control Receiver: RECEIVED request code!");
-                if (res <= 0) {
-                    Logger.VERB(kTag, "Control adapter could be closed");
-                    try {
-                        Thread.sleep(1000);
-                    } catch (InterruptedException e) {
-                        e.printStackTrace();
-                    }
-                    break;
-                }
-
-                Byte reqCode = dataBuffer[0];
-                if (reqCode == CMCode.kConnect || reqCode == CMCode.kSleep || reqCode ==
-                        CMCode.kWakeup || reqCode == CMCode.kDisconnect || reqCode == CMCode
-                        .kDisconnectAck) {
-                    // "Connect Adapter" Request
-                    // Receive 2Byte: Adapter ID
-                    res = adapter.receive(dataBuffer, 2);
-                    if (res <= 0) break;
-                    ByteBuffer buffer = ByteBuffer.allocate(2);
-                    buffer.put(dataBuffer, 0, 2);
-                    short adapterId = buffer.getShort(0);
-
-                    if (reqCode == CMCode.kConnect) {
-                        Logger.VERB(kTag, "Receive(Control Msg): Request(Connect " + adapterId +
-                                ")");
-                        NetworkSwitcher.getInstance().connectAdapterByPeer(adapterId);
-                    } else if (reqCode == CMCode.kSleep) {
-                        Logger.VERB(kTag, "Receive(Control Msg): Request(Sleep " + adapterId + ")");
-                        NetworkSwitcher.getInstance().sleepAdapterByPeer(adapterId);
-                    } else if (reqCode == CMCode.kWakeup) {
-                        Logger.VERB(kTag, "Receive(Control Msg): Request(WakeUp " + adapterId +
-                                ")");
-                        NetworkSwitcher.getInstance().wakeUpAdapterByPeer(adapterId);
-                    } else if (reqCode == CMCode.kDisconnect) {
-                        Logger.VERB(kTag, "Receive(Control Msg): Request(Disconnect " + adapterId
-                                + ")");
-                        NetworkSwitcher.getInstance().disconnectAdapterByPeer(adapterId);
-                    } else if (reqCode == CMCode.kDisconnectAck) {
-                        Logger.VERB(kTag, "Receive(Control Msg): Request(DisconnectAck " +
-                                adapterId + ")");
-                        ClientAdapter disconnect_adapter = findAdapterById(adapterId);
-                        if (disconnect_adapter == null) {
-                            Logger.WARN(kTag, "Cannot find adapter " + adapterId);
-                        } else {
-                            disconnect_adapter.peerKnowsDisconnectingOnPurpose();
-                        }
-                    }
-                } else if (reqCode == CMCode.kPriv) {
-                    // "Priv" Request
-                    int privType;
-                    int privDataLength;
-                    // Receive 4Byte: Priv Type
-                    res = adapter.receive(dataBuffer, 4);
-                    if (res <= 0) {
-                        break;
-                    } else {
-                        Logger.VERB(kTag, "Receive(Control Msg): Request(Priv Noti--Start)");
-                        ByteBuffer tempBuffer = ByteBuffer.allocate(4);
-                        //Logger.DEBUG(kTag, "tempBuffer remaining: " + tempBuffer.remaining());
-                        tempBuffer.put(dataBuffer, 0, 4);
-                        privType = tempBuffer.getInt(0);
-                    }
-
-                    // Receive 4Byte: Private Data Length
-                    res = adapter.receive(dataBuffer, 4);
-                    if (res <= 0) {
-                        break;
-                    } else {
-                        ByteBuffer tempBuffer2 = ByteBuffer.allocate(4);
-                        //Logger.DEBUG(kTag, "tempBuffer2 remaining: " + tempBuffer2.remaining());
-                        tempBuffer2.put(dataBuffer, 0, 4);
-                        privDataLength = tempBuffer2.getInt(0);
-                    }
-                    if (privDataLength > 512) throw new AssertionError();
-
-                    // Receive nByte: Private Data
-                    res = adapter.receive(dataBuffer, privDataLength);
-                    if (res > 0) {
-                        Logger.VERB(kTag, "Receive(Control Msg): Request(Priv Noti '" +
-                                dataBuffer + "'; type=" + privType + ")");
-                        for (ControlMessageListener listener : mControlMessageListeners) {
-                            listener.onReceiveControlMessage(privType, dataBuffer, privDataLength);
-                        }
-                    } else {
-                        break;
-                    }
-                }
-            }
-            Logger.DEBUG(kTag, "Control adapter has been closed");
-
-            NetworkSwitcher.getInstance().reconnectAdapter(adapter);
-        }
+        return ProtocolManager.recv_packet(dataBuffer, isControl);
     }
 
     // Control Request Code
@@ -368,37 +179,20 @@ public class Core {
     }
 
     // Adapters Getter
-    public ClientAdapter findDataAdapterById(int adapterId) {
-        for (ClientAdapter adapter : this.mDataAdapters) {
-            if (adapter.getId() == adapterId) {
-                return adapter;
-            }
-        }
-        return null;
-    }
-
-    public ClientAdapter findControlAdapterById(int adapterId) {
-        for (ClientAdapter adapter : this.mControlAdapters) {
-            if (adapter.getId() == adapterId) {
-                return adapter;
-            }
-        }
-        return null;
-    }
-
     public ClientAdapter findAdapterById(int adapterId) {
-        ClientAdapter adapter = findDataAdapterById(adapterId);
-        if (adapter == null) {
-            adapter = findControlAdapterById(adapterId);
+        for (ClientAdapter adapter : this.mAdapters) {
+            if (adapter.getId() == adapterId) {
+                return adapter;
+            }
         }
-        return adapter;
+        return null;
     }
 
-    public ClientAdapter getActiveControlAdapter() {
-        synchronized (this.mControlAdapters) {
-            for (ClientAdapter controlAdapter : this.mControlAdapters) {
-                if (controlAdapter.getState() == ClientAdapter.State.kActive) {
-                    return controlAdapter;
+    public ClientAdapter getActiveAdapter() {
+        synchronized (this.mAdapters) {
+            for (ClientAdapter adapter : this.mAdapters) {
+                if (adapter.getState() == ClientAdapter.State.kActive) {
+                    return adapter;
                 }
             }
         }
@@ -406,8 +200,7 @@ public class Core {
     }
 
     // Attributes
-    private final ArrayList<ClientAdapter> mDataAdapters;
-    private final ArrayList<ClientAdapter> mControlAdapters;
+    private final ArrayList<ClientAdapter> mAdapters;
     private ArrayList<ControlMessageListener> mControlMessageListeners;
 
     // State
@@ -416,7 +209,7 @@ public class Core {
     // Singleton
     private static Core sSingleton;
 
-    public static Core getInstance() {
+    public static Core singleton() {
         if (sSingleton == null) {
             sSingleton = new Core();
         }
@@ -426,8 +219,7 @@ public class Core {
     // Constructor
     private Core() {
         this.mState = State.kIdle;
-        this.mDataAdapters = new ArrayList<>();
-        this.mControlAdapters = new ArrayList<>();
+        this.mAdapters = new ArrayList<>();
         this.mControlMessageListeners = new ArrayList<>();
     }
 
@@ -475,58 +267,32 @@ public class Core {
         private StartCoreTransaction(Core caller, OnStartSCResult resultListener) {
             this.mCaller = caller;
             this.mResultListener = resultListener;
-            this.onConnectControlAdapter = new OnConnectControlAdapter();
-            this.onConnectFirstDataAdapter = new OnConnectFirstDataAdapter();
+            this.onConnectFirstAdapter = new OnConnectFirstAdapter();
         }
 
         @SuppressWarnings("SynchronizeOnNonFinalField")
         private void start() {
-            // Connect first control adapter
-            ClientAdapter controlAdapter = this.mCaller.mControlAdapters.get(0);
-            if (controlAdapter == null) {
-                Logger.ERR(kTag, "Cannot find first control adapter");
+            // Connect first adapter
+            ClientAdapter firstAdapter = this.mCaller.mAdapters.get(0);
+            if (firstAdapter == null) {
+                Logger.ERR(kTag, "Cannot find first adapter");
                 doneStartCoreTx(mCaller, false, mResultListener);
                 return;
             }
-            controlAdapter.connect(this.onConnectControlAdapter, false);
+            firstAdapter.connect(this.onConnectFirstAdapter, false);
         }
 
-        private OnConnectControlAdapter onConnectControlAdapter;
+        private OnConnectFirstAdapter onConnectFirstAdapter;
 
-        class OnConnectControlAdapter implements ClientAdapter.ConnectResultListener {
+        class OnConnectFirstAdapter implements ClientAdapter.ConnectResultListener {
             @SuppressWarnings("SimplifiableIfStatement")
-            @Override
-            public void onConnectResult(boolean isSuccess) {
-                if (!isSuccess) {
-                    Logger.ERR(kTag, "Connecting control adapter is failed");
-                    doneStartCoreTx(mCaller, false, mResultListener);
-                    return;
-                }
-
-                // Connect first data adapter
-                synchronized (mCaller.mDataAdapters) {
-                    if (mCaller.mDataAdapters.isEmpty()) {
-                        Logger.ERR(kTag, "No data adapter: failed to connect first data adapter");
-                        doneStartCoreTx(mCaller, false, mResultListener);
-                        return;
-                    }
-
-                    ClientAdapter firstDataAdapter = mCaller.mDataAdapters.get(0);
-                    firstDataAdapter.connect(onConnectFirstDataAdapter, false);
-                }
-            }
-        }
-
-        private OnConnectFirstDataAdapter onConnectFirstDataAdapter;
-
-        class OnConnectFirstDataAdapter implements ClientAdapter.ConnectResultListener {
             @Override
             public void onConnectResult(boolean isSuccess) {
                 if (isSuccess) {
                     // Done transaction
                     doneStartCoreTx(mCaller, true, mResultListener);
                 } else {
-                    Logger.ERR(kTag, "Connecting first data adapter is failed");
+                    Logger.ERR(kTag, "Connecting first adapter is failed");
                     doneStartCoreTx(mCaller, false, mResultListener);
                 }
             }
@@ -542,100 +308,51 @@ public class Core {
         private StopCoreTransaction(Core caller, OnStopSCResult resultListener) {
             this.mCaller = caller;
             this.mResultListener = resultListener;
-            this.onDisconnectControlAdapter = new OnDisconnectControlAdapter();
-            this.onDisconnectDataAdapter = new OnDisconnectDataAdapter();
-            this.mControlAdaptersCount = 0;
-            this.mDataAdaptersCount = 0;
+            this.onDisconnectAdapter = new OnDisconnectAdapter();
+            this.mAdaptersCount = 0;
         }
 
         @SuppressWarnings("SynchronizeOnNonFinalField")
         void start() {
-            synchronized (this.mCaller.mDataAdapters) {
-                this.mDataAdaptersCount = this.mCaller.mDataAdapters.size();
-            }
-
-            // Get active control adapter count
-            synchronized (this.mCaller.mControlAdapters) {
-                for (ClientAdapter controlAdapter : this.mCaller.mControlAdapters) {
-                    int adapterState = controlAdapter.getState();
+            // Get active adapter count
+            synchronized (this.mCaller.mAdapters) {
+                for (ClientAdapter adapter : this.mCaller.mAdapters) {
+                    int adapterState = adapter.getState();
                     if (adapterState != ClientAdapter.State.kDisconnected && adapterState !=
                             ClientAdapter.State.kDisconnecting) {
-                        this.mControlAdaptersCount++;
+                        this.mAdaptersCount++;
                     }
                 }
             }
 
             // Disconnect only active control adapters
-            synchronized (this.mCaller.mControlAdapters) {
-                for (ClientAdapter controlAdapter : this.mCaller.mControlAdapters) {
-                    int adapterState = controlAdapter.getState();
+            synchronized (this.mCaller.mAdapters) {
+                for (ClientAdapter adapter : this.mCaller.mAdapters) {
+                    int adapterState = adapter.getState();
                     if (adapterState != ClientAdapter.State.kDisconnected && adapterState !=
                             ClientAdapter.State.kDisconnecting) {
-                        controlAdapter.disconnect(onDisconnectControlAdapter, true, false, true);
+                        adapter.disconnect(onDisconnectAdapter, true, false, true);
                     }
                 }
             }
         }
 
-        private OnDisconnectControlAdapter onDisconnectControlAdapter;
+        private OnDisconnectAdapter onDisconnectAdapter;
 
-        class OnDisconnectControlAdapter implements ClientAdapter.DisconnectResultListener {
+        class OnDisconnectAdapter implements ClientAdapter.DisconnectResultListener {
             @Override
             public void onDisconnectResult(boolean isSuccess) {
                 if (!isSuccess) {
-                    Logger.ERR(kTag, "Disconnecting control adapter is failed");
+                    Logger.ERR(kTag, "Disconnecting adapter is failed");
                     doneStopCoreTx(mCaller, false, mResultListener);
                     return;
                 }
 
-                // Check if all the active control adapters are disconnected
+                // Check if all the active adapters are disconnected
                 boolean doneDisconnectAll = false;
-                synchronized (mControlAdaptersCount) {
-                    mControlAdaptersCount--;
-                    if (mControlAdaptersCount == 0) {
-                        doneDisconnectAll = true;
-                    }
-                }
-
-                if (doneDisconnectAll) {
-                    // Get active data adapter count
-                    synchronized (mCaller.mDataAdapters) {
-                        for (ClientAdapter dataAdapter : mCaller.mDataAdapters) {
-                            int adapterState = dataAdapter.getState();
-                            if (adapterState != ClientAdapter.State.kDisconnected && adapterState
-                                    != ClientAdapter.State.kDisconnecting) {
-                                mDataAdaptersCount++;
-                            }
-                        }
-                    }
-
-                    // Disconnect only active control adapters
-                    synchronized (mCaller.mDataAdapters) {
-                        for (ClientAdapter dataAdapter : mCaller.mDataAdapters) {
-                            dataAdapter.disconnect(onDisconnectDataAdapter, true, false, true);
-                        }
-                    }
-                }
-            }
-        }
-
-        private OnDisconnectDataAdapter onDisconnectDataAdapter;
-
-        class OnDisconnectDataAdapter implements ClientAdapter.DisconnectResultListener {
-            @SuppressWarnings("SynchronizeOnNonFinalField")
-            @Override
-            public void onDisconnectResult(boolean isSuccess) {
-                if (!isSuccess) {
-                    Logger.ERR(kTag, "Connecting data adapter is failed");
-                    doneStopCoreTx(mCaller, false, mResultListener);
-                    return;
-                }
-
-                // Check if all the data control adapters are disconnected
-                boolean doneDisconnectAll = false;
-                synchronized (mDataAdaptersCount) {
-                    mDataAdaptersCount--;
-                    if (mDataAdaptersCount == 0) {
+                synchronized (mAdaptersCount) {
+                    mAdaptersCount--;
+                    if (mAdaptersCount == 0) {
                         doneDisconnectAll = true;
                     }
                 }
@@ -648,8 +365,7 @@ public class Core {
 
         // Attributes
         private Core mCaller;
-        private Integer mDataAdaptersCount;
-        private Integer mControlAdaptersCount;
+        private Integer mAdaptersCount;
         private OnStopSCResult mResultListener;
     }
 }

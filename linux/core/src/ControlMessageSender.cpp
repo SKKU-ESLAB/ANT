@@ -29,7 +29,7 @@ using namespace sc;
 void ControlMessageSender::send_control_message(std::string &message) {
   int message_buffer_size = message.size() + 1;
   char *message_buffer = new char[message_buffer_size];
-  int res = Core::get_instance()->send(message_buffer, message_buffer_size, true);
+  int res = Core::singleton()->send(message_buffer, message_buffer_size, true);
 }
 
 void ControlMessageSender::send_request(CMCode request_code, int adapter_id) {

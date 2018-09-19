@@ -1,6 +1,5 @@
 package com.redcarrottt.sc.internal.wfd;
 
-import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.content.BroadcastReceiver;
 import android.content.Context;
@@ -91,19 +90,8 @@ class WfdDevice extends Device {
         }
     };
 
-    // Singleton
-    public static WfdDevice getSingleton(Activity ownerActivity) {
-        if (sSingleton == null) {
-            sSingleton = new WfdDevice(ownerActivity);
-        }
-        return sSingleton;
-    }
-
-    @SuppressLint("StaticFieldLeak")
-    private static WfdDevice sSingleton = null;
-
     // Constructor
-    private WfdDevice(Activity ownerActivity) {
+    public WfdDevice(Activity ownerActivity) {
         super("Wi-fi Direct");
         this.mOwnerActivity = ownerActivity;
     }
