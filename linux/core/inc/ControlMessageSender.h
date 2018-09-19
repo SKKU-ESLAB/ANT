@@ -23,24 +23,24 @@
 #include "ControlMessageProtocol.h"
 
 #include <stdint.h>
+#include <string>
 
 namespace sc {
 class ControlMessageSender {
 public:
-  // TODO:
   /* Control message handling (External) */
   void send_request_connect(int adapter_id);
   void send_request_disconnect(int adapter_id);
   void send_request_disconnect_ack(int adapter_id);
   void send_request_sleep(int adapter_id);
   void send_request_wake_up(int adapter_id);
-  void send_noti_private_data(PrivType priv_type, char *private_data_buf,
-                              uint32_t private_data_len);
+  void send_noti_private_data(PrivType priv_type, char *priv_data_buffer,
+                              uint32_t priv_data_length);
 
 private:
   /* Control message handling (Internal) */
-  void send_control_message(std::string& message);
-  void send_request(CMCode request_code, uint16_t adapter_id);
+  void send_control_message(std::string &message);
+  void send_request(CMCode request_code, int adapter_id);
 }; /* class ControlMessageSender */
 } /* namespace sc */
 

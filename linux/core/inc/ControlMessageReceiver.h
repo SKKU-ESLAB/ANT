@@ -22,6 +22,7 @@
 
 #include "../inc/ControlMessageProtocol.h"
 
+#include <string>
 #include <thread>
 #include <vector>
 
@@ -29,7 +30,8 @@ namespace sc {
 
 class ControlPrivMessageListener {
 public:
-  virtual void on_receive_control_priv_message(int priv_type, std::string priv_message) = 0;
+  virtual void on_receive_control_priv_message(int priv_type,
+                                               std::string priv_message) = 0;
 }; /* class ControlPrivMessageListener */
 
 class ControlMessageReceiver {

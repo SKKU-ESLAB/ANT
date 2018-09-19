@@ -25,6 +25,8 @@
 #include "APIInternal.h"
 #include "SegmentManager.h"
 #include "ServerAdapter.h"
+#include "ControlMessageReceiver.h"
+#include "ControlMessageSender.h"
 
 #include "../../common/inc/ArrivalTimeCounter.h"
 
@@ -44,8 +46,7 @@ class StartCoreTransaction {
 public:
   static bool run(Core *caller);
   void start();
-  static void connect_first_control_adapter_callback(bool is_success);
-  static void connect_first_data_adapter_callback(bool is_success);
+  static void connect_first_adapter_callback(bool is_success);
 
 private:
   void done(bool is_success);
@@ -60,8 +61,7 @@ class StopCoreTransaction {
 public:
   static bool run(Core *caller);
   void start();
-  static void disconnect_control_adapter_callback(bool is_success);
-  static void disconnect_data_adapter_callback(bool is_success);
+  static void disconnect_adapter_callback(bool is_success);
 
 private:
   void done(bool is_success);
@@ -71,20 +71,17 @@ private:
 
   Core *mCaller;
 
-  int mControlAdaptersCount;
-  std::mutex mControlAdaptersCountLock;
-
-  int mDataAdaptersCount;
-  std::mutex mDataAdaptersCountLock;
+  int mAdaptersCount;
+  std::mutex mAdaptersCountLock;
 }; /* class StopCoreTransaction */
 
 /* Core State */
 typedef enum {
-  kCMStateIdle = 0,
-  kCMStateStarting = 1,
-  kCMStateReady = 2,
-  kCMStateStopping = 3
-} CMState; /* enum CMState */
+  kCoreStateIdle = 0,
+  kCoreStateStarting = 1,
+  kCoreStateReady = 2,
+  kCoreStateStopping = 3
+} CoreState; /* enum CoreState */
 
 class ServerAdapter;
 
@@ -108,10 +105,67 @@ public:
   int receive(void **pDataBuffer, bool is_control);
 
 public:
+  /* Control Message Receiver/Sender Getter */
+  ControlMessageSender* get_control_sender(void) {
+    return this->mControlMessageSender;
+  }
+  ControlMessageReceiver* get_control_receiver(void) {
+    return this->mControlMessageReceiver;
+  }
+
+private:
+/* Control Message Receiver/Sender */
+  ControlMessageSender* mControlMessageSender;
+  ControlMessageReceiver* mControlMessageReceiver;
+
+public:
+  /* Get statistics */
+  int get_total_bandwidth(void) {
+    int num_adapters = 0;
+    int now_total_bandwidth = 0;
+    /* Statistics from adapters */
+    int adapter_count = this->get_adapter_count();
+    for (int i = 0; i < adapter_count; i++) {
+      ServerAdapter *adapter = this->get_adapter(i);
+      if (adapter == NULL)
+        continue;
+      int bandwidth_up = adapter->get_bandwidth_up();
+      int bandwidth_down = adapter->get_bandwidth_down();
+      now_total_bandwidth += (bandwidth_up + bandwidth_down);
+      num_adapters++;
+    }
+    return now_total_bandwidth;
+  }
+  float get_ema_send_request_size() {
+    return this->mSendRequestSize.get_em_average();
+  }
+  float get_ema_send_arrival_time() {
+    return this->mSendArrivalTime.get_em_average();
+  }
+
+public:
+  /* State getter */
+  CoreState get_state(void) {
+    std::unique_lock<std::mutex> lck(this->mStateLock);
+    return this->mState;
+  }
+
+private:
+  /* State setter */
+  void set_state(CoreState new_state) {
+    std::unique_lock<std::mutex> lck(this->mStateLock);
+    this->mState = new_state;
+  }
+
+  /* State */
+  CoreState mState;
+  std::mutex mStateLock;
+
+public:
+  /* Adapter list handling */
   ServerAdapter *find_adapter_by_id(int adapter_id) {
     std::unique_lock<std::mutex> lck(this->mAdaptersLock);
-    for (std::vector<ServerAdapter *>::iterator it =
-             this->mAdapters.begin();
+    for (std::vector<ServerAdapter *>::iterator it = this->mAdapters.begin();
          it != this->mAdapters.end(); it++) {
       ServerAdapter *adapter = *it;
       if (adapter->get_id() == adapter_id) {
@@ -142,65 +196,10 @@ public:
     this->mActiveAdapterIndex = active_control_adapter_index;
   }
 
-public:
-  /* Get statistics */
-  int get_total_bandwidth(void) {
-    int num_adapters = 0;
-    int now_total_bandwidth = 0;
-    /* Statistics from adapters */
-    int adapter_count = this->get_adapter_count();
-    for (int i = 0; i < adapter_count; i++) {
-      ServerAdapter *adapter = this->get_adapter(i);
-      if (adapter == NULL)
-        continue;
-      int bandwidth_up = adapter->get_bandwidth_up();
-      int bandwidth_down = adapter->get_bandwidth_down();
-      now_total_bandwidth += (bandwidth_up + bandwidth_down);
-      num_adapters++;
-    }
-    return now_total_bandwidth;
-  }
-  float get_ema_send_request_size() {
-    return this->mSendRequestSize.get_em_average();
-  }
-  float get_ema_send_arrival_time() {
-    return this->mSendArrivalTime.get_em_average();
-  }
-
-public:
-  /* State getter */
-  CMState get_state(void) {
-    std::unique_lock<std::mutex> lck(this->mStateLock);
-    return this->mState;
-  }
-
 private:
-  /* State setter */
-  void set_state(CMState new_state) {
-    std::unique_lock<std::mutex> lck(this->mStateLock);
-    this->mState = new_state;
-  }
-
-  /* State */
-  CMState mState;
-  std::mutex mStateLock;
-
-private:
-  /*
-   * Adapter List
-   *  - N Adapters (+ access lock)
-   */
+  /* Adapter list */
   std::vector<ServerAdapter *> mAdapters;
   std::mutex mAdaptersLock;
-
-  /*
-   * Active Adapter Index means the index value indicating
-   * 'conencted' or 'connecting' adapter currently.
-   * Only "the current adapter" is 'connected' or 'connecting',
-   * but the others are 'connected(but to-be-disconnected)', 'disconnected' or
-   * 'disconnecting'. This index is changed right before increasing or
-   * decreasing starts.
-   */
   int mActiveAdapterIndex;
 
 private:
@@ -224,14 +223,14 @@ private:
   static Core *singleton;
   Core(void) {
     SegmentManager *sm = SegmentManager::get_instance();
-    this->mState = kCMStateIdle;
+    this->mState = kCoreStateIdle;
     this->mActiveAdapterIndex = 0;
+    this->mControlMessageReceiver = new ControlMessageReceiver();
+    this->mControlMessageSender = new ControlMessageSender();
   }
 
 public:
-  /*
-   * Its private members can be accessed by auxiliary classes
-   */
+  /* Its private members can be accessed by auxiliary classes */
   friend StartCoreTransaction;
   friend StopCoreTransaction;
 }; /* class Core */

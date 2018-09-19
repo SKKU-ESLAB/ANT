@@ -20,9 +20,9 @@
 
 #include "../inc/WfdServerAdapter.h"
 
+#include "../../common/inc/ChildProcess.h"
 #include "../../common/inc/Counter.h"
 #include "../../common/inc/DebugLog.h"
-#include "../../common/inc/ChildProcess.h"
 
 #include "../../core/inc/Core.h"
 
@@ -143,8 +143,8 @@ bool WfdP2PServer::allow_discover_impl(void) {
      *  <Server IP Address>
      */
     LOG_DEBUG("%s: Send WFD Info: %s", this->get_name(), wfdInfo);
-    Core::get_instance()->send_noti_private_data(PrivType::kPrivTypeWFDInfo,
-                                                 wfdInfo, strlen(wfdInfo));
+    Core::get_instance()->get_control_sender()->send_noti_private_data(
+        PrivType::kPrivTypeWFDInfo, wfdInfo, strlen(wfdInfo));
 
     // Notify IP address to the listeners
     for (std::vector<WfdIpAddressListener *>::iterator it =
