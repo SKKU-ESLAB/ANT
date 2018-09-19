@@ -55,7 +55,8 @@ void ServerAdapter::connect(ConnectCallback callback, bool is_send_request) {
 
   // Send request
   if (is_send_request) {
-    Core::get_instance()->send_request_connect(this->get_id());
+    Core::get_instance()->get_control_sender()->send_request_connect(
+        this->get_id());
   }
 
   // Connect
@@ -90,9 +91,11 @@ void ServerAdapter::disconnect(DisconnectCallback callback,
 
   // Send request
   if (is_send_request) {
-    Core::get_instance()->send_request_disconnect(this->get_id());
+    Core::get_instance()->get_control_sender()->send_request_disconnect(
+        this->get_id());
   } else if (is_send_ack) {
-    Core::get_instance()->send_request_disconnect_ack(this->get_id());
+    Core::get_instance()->get_control_sender()->send_request_disconnect_ack(
+        this->get_id());
   }
 
   // Disconnect
@@ -103,8 +106,7 @@ void ServerAdapter::disconnect(DisconnectCallback callback,
 }
 
 void ServerAdapter::connect_thread(void) {
-  LOG_DEBUG("%s's Connect thread spawned(tid: %d)", this->get_name(),
-            (unsigned int)syscall(224));
+  LOG_ADAPTER_THREAD_LAUNCH(this->get_name(), "Connect");
 
   this->set_state(ServerAdapterState::kConnecting);
 
@@ -112,20 +114,18 @@ void ServerAdapter::connect_thread(void) {
 
   if (res) {
     this->set_state(ServerAdapterState::kActive);
+    LOG_ADAPTER_THREAD_FINISH(this->get_name(), "Connect");
     if (this->mConnectCallback != NULL) {
       this->mConnectCallback(true);
       this->mConnectCallback = NULL;
     }
-    LOG_DEBUG("%s's Connect thread finished successfully(tid: %d)",
-              this->get_name(), (unsigned int)syscall(224));
   } else {
     this->set_state(ServerAdapterState::kDisconnected);
+    LOG_ADAPTER_THREAD_FAIL(this->get_name(), "Connect");
     if (this->mConnectCallback != NULL) {
       this->mConnectCallback(false);
       this->mConnectCallback = NULL;
     }
-    LOG_DEBUG("%s's Connect thread failed(tid: %d)", this->get_name(),
-              (unsigned int)syscall(224));
   }
   this->mConnectThread = NULL;
 }
@@ -192,8 +192,7 @@ bool ServerAdapter::__connect_thread(void) {
 }
 
 void ServerAdapter::disconnect_thread(void) {
-  LOG_DEBUG("%s's Disconnect thread spawned(tid: %d)", this->get_name(),
-            (unsigned int)syscall(224));
+  LOG_ADAPTER_THREAD_LAUNCH(this->get_name(), "Disconnect");
 
   ServerAdapterState oldState = this->get_state();
   this->set_state(ServerAdapterState::kDisconnecting);
@@ -209,16 +208,14 @@ void ServerAdapter::disconnect_thread(void) {
 
   if (res) {
     this->set_state(ServerAdapterState::kDisconnected);
+    LOG_ADAPTER_THREAD_FINISH(this->get_name(), "Disconnect");
     if (this->mDisconnectCallback != NULL) {
       this->mDisconnectCallback(true);
       this->mDisconnectCallback = NULL;
     }
-    LOG_DEBUG("%s's Disconnect thread finished successfully(tid: %d)",
-              this->get_name(), (unsigned int)syscall(224));
   } else {
     this->set_state(oldState);
-    LOG_DEBUG("%s's Disconnect thread failed(tid: %d)", this->get_name(),
-              (unsigned int)syscall(224));
+    LOG_ADAPTER_THREAD_FAIL(this->get_name(), "Disconnect");
     if (this->mDisconnectCallback != NULL) {
       this->mDisconnectCallback(false);
       this->mDisconnectCallback = NULL;
@@ -354,14 +351,11 @@ int ServerAdapter::receive(void *buf, size_t len) {
 }
 
 void ServerAdapter::sender_thread(void) {
-  LOG_DEBUG("%s's Sender thread spawned(tid: %d)", this->get_name(),
-            (unsigned int)syscall(224));
+  LOG_ADAPTER_THREAD_LAUNCH(this->get_name(), "Sender");
 
   this->mSenderLoopOn = true;
   this->sender_thread_loop();
 
-  LOG_DEBUG("%s's Sender thread ends(tid: %d)", this->get_name(),
-            (unsigned int)syscall(224));
   this->mSenderLoopOn = false;
   {
     std::unique_lock<std::mutex> lck(this->mSenderSuspendedMutex);
@@ -369,8 +363,14 @@ void ServerAdapter::sender_thread(void) {
   }
   this->mSenderThread = NULL;
 
-  // Reconnect the adapter
-  NetworkSwitcher::get_instance()->reconnect_adapter(this, true);
+  // If it is disconnecting on purpose, do not reconnect it.
+  if (this->is_disconnecting_on_purpose()) {
+    LOG_ADAPTER_THREAD_FINISH(this->get_name(), "Sender");
+  } else {
+    // Reconnect the adapter
+    LOG_ADAPTER_THREAD_FAIL(this->get_name(), "Sender");
+    NetworkSwitcher::get_instance()->reconnect_adapter(this, true);
+  }
 
   this->mWaitSenderThreadCond.notify_all();
 }
@@ -526,8 +526,7 @@ void ServerAdapter::sender_thread_loop(void) {
 }
 
 void ServerAdapter::receiver_thread(void) {
-  LOG_DEBUG("%s: Receiver thread spawned(tid: %d)", this->get_name(),
-            (unsigned int)syscall(224));
+  LOG_ADAPTER_THREAD_LAUNCH(this->get_name(), "Receiver");
 
   this->mReceiverLoopOn = true;
   this->receiver_thread_loop();
@@ -537,8 +536,14 @@ void ServerAdapter::receiver_thread(void) {
   this->mReceiverLoopOn = false;
   this->mReceiverThread = NULL;
 
-  // Reconnect the adapter
-  NetworkSwitcher::get_instance()->reconnect_adapter(this, true);
+  // If it is disconnecting on purpose, do not reconnect it.
+  if (this->is_disconnecting_on_purpose()) {
+    LOG_ADAPTER_THREAD_FINISH(this->get_name(), "Receiver");
+  } else {
+    // Reconnect the adapter
+    LOG_ADAPTER_THREAD_FAIL(this->get_name(), "Receiver");
+    NetworkSwitcher::get_instance()->reconnect_adapter(this, true);
+  }
 
   this->mWaitReceiverThreadCond.notify_all();
 }
@@ -611,7 +616,8 @@ void ServerAdapter::sleep(DisconnectCallback callback, bool is_send_request) {
     } else {
       // Send Request
       if (is_send_request) {
-        Core::get_instance()->send_request_sleep(this->get_id());
+        Core::get_instance()->get_control_sender()->send_request_sleep(
+            this->get_id());
       }
 
       // Sleep
@@ -640,7 +646,8 @@ void ServerAdapter::wake_up(DisconnectCallback callback, bool is_send_request) {
   if (sender_suspended) {
     // Send Request
     if (is_send_request) {
-      Core::get_instance()->send_request_wake_up(this->get_id());
+      Core::get_instance()->get_control_sender()->send_request_wake_up(
+          this->get_id());
     }
 
     // Wake up

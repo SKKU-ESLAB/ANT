@@ -42,33 +42,22 @@ class SwitchAdapterTransaction {
    * 1. Entry
    *    - NetworkSwitcher.switch_adapters()
    *    - SwitchAdapterTransaction.start()
-   * 2-a. Connect/WakeUp Next Data Adapter
-   *    - next_data_adapter.connect()
-   *       or next_data_adapter.wake_up()
+   * 2-a. Connect/WakeUp Next Adapter
+   *    - next_adapter.connect()
+   *       or next_adapter.wake_up()
    * 2-b. Callback (for connect request)
-   *    - SwitchAdapterTransaction.connect_data_callback()
-   * 3-a. Disconnect/Sleep Prev Data Adapter
+   *    - SwitchAdapterTransaction.connect_callback()
+   * 3-a. Disconnect/Sleep Prev Adapter
    *    - prev_adapter.disconnect()
    * 3-b. Callback (for disconnect request)
    *    - SwitchAdapterTransaction.disconnect_callback()
-   * 4-a. Connect/WakeUp Next Control Adapter
-   *    - next_adapter.connect()
-   * 4-b. Callback (for connect request)
-   *    - SwitchAdapterTransaction.connect_callback()
-   * 5-a. Disconnect/Sleep Prev Control Adapter
-   *    - prev_adapter.disconnect()
-   *      or prev_adapter.sleep()
-   * 5-b. Callback (for disconnect request)
-   *    - SwitchAdapterTransaction.disconnect_callback()
-   * 6. NetworkSwitcher.done_switch()
+   * 4. NetworkSwitcher.done_switch()
    */
 public:
   static bool run(int prev_index, int next_index);
   void start(void);
-  static void connect_next_data_callback(bool is_success);
-  static void disconnect_prev_data_callback(bool is_success);
-  static void connect_next_control_callback(bool is_success);
-  static void disconnect_prev_control_callback(bool is_success);
+  static void connect_next_adapter_callback(bool is_success);
+  static void disconnect_prev_adapter_callback(bool is_success);
 
 protected:
   void done(bool is_success);

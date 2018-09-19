@@ -17,7 +17,7 @@ MKDIR_P=mkdir -p
 $(CORE_OBJ_DIR)/%.o: $(CORE_SRC_DIR)/%.cpp
 	$(CC) -o $@ -c $< $(FLAG) $(LIB)
 
-_CORE_OBJ=API.o Core.o Device.o NetworkSwitcher.o NetworkMonitor.o P2PServer.o ProtocolManager.o SegmentManager.o ServerAdapter.o ServerSocket.o
+_CORE_OBJ=API.o Core.o Device.o NetworkSwitcher.o NetworkMonitor.o P2PServer.o ProtocolManager.o SegmentManager.o ServerAdapter.o ServerSocket.o ControlMessageReceiver.o ControlMessageSender.o
 CORE_OBJ=$(patsubst %, $(CORE_OBJ_DIR)/%, $(_CORE_OBJ))
 
 $(COMMON_OBJ_DIR)/%.o: $(COMMON_SRC_DIR)/%.cpp

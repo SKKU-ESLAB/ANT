@@ -21,88 +21,72 @@
 
 #include "../inc/API.h"
 
-#include <string>
 #include <iostream>
+#include <string>
 
 using namespace sc;
 
-void ControlMessageSender::send_control_message(std::string& message) {
-    int message_buffer_size = message.size() + 1;
-    char* message_buffer = new char[message_buffer_size];
-    int res = Core::get_instance()->send(message_buffer, message_buffer_size);
+void ControlMessageSender::send_control_message(std::string &message) {
+  int message_buffer_size = message.size() + 1;
+  char *message_buffer = new char[message_buffer_size];
+  int res = Core::get_instance()->send(message_buffer, message_buffer_size, true);
 }
 
-void ControlMessageSender::send_request(CMCode request_code,
-                                        uint16_t adapter_id) {
+void ControlMessageSender::send_request(CMCode request_code, int adapter_id) {
   std::string message("");
-  message.append(std::to_string());
-  bool retry_check = true;
-  while (retry_check) {
-    ServerAdapter *control_adapter = this->get_active_control_adapter();
-    ServerAdapterState controlAdapterState = control_adapter->get_state();
-    if (controlAdapterState != ServerAdapterState::kActive) {
-      LOG_WARN("Now switching control adapter... adapter_id=%d state=%d",
-               control_adapter->get_id(), controlAdapterState);
-    } else {
-      retry_check = false;
-    }
-  }
 
-  uint8_t net_request_code = (uint8_t)request_code;
-  uint16_t net_adapter_id = htons(adapter_id);
+  // Write first line (request code)
+  message.append(std::to_string(request_code));
+  message.append("\n");
 
-  this->send_control_message(&net_request_code, 1);
-  this->send_control_message(&net_adapter_id, 2);
+  // Write second line (adapter ID)
+  message.append(std::to_string(adapter_id));
+
+  // Send the message
+  this->send_control_message(message);
 }
 
-void ControlMessageSender::send_request_connect(uint16_t adapter_id) {
-  this->send_request(kCMCodeConnect, adapter_id);
+void ControlMessageSender::send_request_connect(int adapter_id) {
+  this->send_request(CMCode::kCMCodeConnect, adapter_id);
   LOG_VERB("Send(Control Msg): Request(Connect %d)", adapter_id);
 }
 
-void ControlMessageSender::send_request_disconnect(uint16_t adapter_id) {
-  this->send_request(kCMCodeDisconnect, adapter_id);
+void ControlMessageSender::send_request_disconnect(int adapter_id) {
+  this->send_request(CMCode::kCMCodeDisconnect, adapter_id);
   LOG_VERB("Send(Control Msg): Request(Disconnect %d)", adapter_id);
 }
 
-void ControlMessageSender::send_request_disconnect_ack(uint16_t adapter_id) {
-  this->send_request(kCMCodeDisconnectAck, adapter_id);
+void ControlMessageSender::send_request_disconnect_ack(int adapter_id) {
+  this->send_request(CMCode::kCMCodeDisconnectAck, adapter_id);
   LOG_VERB("Send(Control Msg): Request(DisconnectAck %d)", adapter_id);
 }
 
-void ControlMessageSender::send_request_sleep(uint16_t adapter_id) {
-  this->send_request(kCMCodeSleep, adapter_id);
+void ControlMessageSender::send_request_sleep(int adapter_id) {
+  this->send_request(CMCode::kCMCodeSleep, adapter_id);
   LOG_VERB("Send(Control Msg): Request(Sleep %d)", adapter_id);
 }
 
-void ControlMessageSender::send_request_wake_up(uint16_t adapter_id) {
-  this->send_request(kCMCodeWakeUp, adapter_id);
+void ControlMessageSender::send_request_wake_up(int adapter_id) {
+  this->send_request(CMCode::kCMCodeWakeUp, adapter_id);
   LOG_VERB("Send(Control Msg): Request(WakeUp %d)", adapter_id);
 }
 
 void ControlMessageSender::send_noti_private_data(PrivType priv_type,
-                                                  char *private_data_buf,
-                                                  uint32_t private_data_len) {
-  bool retry_check = true;
-  while (retry_check) {
-    ServerAdapter *control_adapter = this->get_active_control_adapter();
-    ServerAdapterState controlAdapterState = control_adapter->get_state();
-    if (controlAdapterState != ServerAdapterState::kActive) {
-      LOG_WARN("Now switching control adapter...");
-    } else {
-      retry_check = false;
-    }
-  }
+                                                  char *priv_data_buffer,
+                                                  uint32_t priv_data_length) {
+  std::string message("");
 
-  uint8_t request_code = kCMCodePriv;
-  uint32_t net_priv_type = htonl((unsigned long)priv_type);
-  uint32_t net_private_data_len = htonl(private_data_len);
+  // Write first line (request code)
+  message.append(std::to_string(CMCode::kCMCodePriv));
+  message.append("\n");
 
-  LOG_VERB("Send(Control Msg): Request(Priv Noti--Start)");
-  this->send_control_message(&request_code, 1);
-  this->send_control_message(&net_priv_type, 4);
-  this->send_control_message(&net_private_data_len, 4);
-  this->send_control_message(private_data_buf, private_data_len);
-  LOG_VERB("Send(Control Msg): Request(Priv Noti--End; type=%d)\n%s", priv_type,
-           private_data_buf);
+  // Write second line (priv type)
+  message.append(std::to_string(priv_type));
+  message.append("\n");
+
+  // Write third+ line (priv data)
+  message.append(priv_data_buffer, priv_data_length);
+
+  // Send the message
+  this->send_control_message(message);
 }

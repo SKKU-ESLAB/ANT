@@ -162,6 +162,7 @@ private:
 private:
   /* Attributes */
   char mName[256];
+  
   /*
    * TODO: ID is now defined by user. However, the ID should be maintained by
    * system finally.
@@ -220,7 +221,7 @@ public:
   /* Constructor */
   ServerAdapter(int id, const char *name) {
     this->mState = ServerAdapterState::kDisconnected;
-    snprintf(this->mName, sizeof(this->mName), name);
+    snprintf(this->mName, sizeof(this->mName), "%s", name);
     this->mId = id;
     this->mIsSleepingAllowed = false;
     this->mIsDisconnectingOnPurpose = false;

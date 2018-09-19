@@ -64,7 +64,7 @@ void NetworkMonitor::print_stats(Stats &stats) {
 #ifndef PRINT_NETWORK_MONITOR_STATISTICS
   return;
 #else
-  if (Core::get_instance()->get_state() != CMState::kCMStateReady) {
+  if (Core::get_instance()->get_state() != CoreState::kCoreStateReady) {
     return;
   }
 
@@ -180,7 +180,7 @@ bool NetworkMonitor::check_increase_adapter(const Stats &stats) {
   /* Check the condition of adapter increase based on switching policy */
   if (!this->is_increaseable()) {
     return false;
-  } else if (Core::get_instance()->get_state() != kCMStateReady) {
+  } else if (Core::get_instance()->get_state() != kCoreStateReady) {
     return false;
   } else {
     switch (this->get_mode()) {
@@ -232,7 +232,7 @@ bool NetworkMonitor::check_decrease_adapter(const Stats &stats) {
   /* Check the condition of adapter decrease based on switching policy */
   if (!this->is_decreaseable()) {
     return false;
-  } else if (Core::get_instance()->get_state() != kCMStateReady) {
+  } else if (Core::get_instance()->get_state() != kCoreStateReady) {
     return false;
   } else {
     switch (this->get_mode()) {
@@ -305,23 +305,23 @@ bool NetworkMonitor::is_increaseable(void) {
   /* Check the minimum condition of adapter increase such as adapters' count
    */
   Core *core = Core::get_instance();
-  int data_adapter_count = core->get_data_adapter_count();
+  int adapter_count = core->get_adapter_count();
   int active_data_adapter_index = core->get_active_adapter_index();
-  return ((data_adapter_count > 1) &&
-          (active_data_adapter_index < (data_adapter_count - 1)));
+  return ((adapter_count > 1) &&
+          (active_data_adapter_index < (adapter_count - 1)));
 }
 bool NetworkMonitor::is_decreaseable(void) {
   /* Check the minimum condition of adapter decrease such as adapters' count
    */
   Core *core = Core::get_instance();
-  int data_adapter_count = core->get_data_adapter_count();
+  int adapter_count = core->get_adapter_count();
   int active_data_adapter_index = core->get_active_adapter_index();
-  return ((data_adapter_count > 1) && (active_data_adapter_index > 0));
+  return ((adapter_count > 1) && (active_data_adapter_index > 0));
 }
 
 bool NetworkMonitor::increase_adapter(void) {
   Core *core = Core::get_instance();
-  if (core->get_data_adapter_count() == 0) {
+  if (core->get_adapter_count() == 0) {
     LOG_ERR("No data adapter is registered!");
     return false;
   } else if (!this->is_increaseable()) {
@@ -338,7 +338,7 @@ bool NetworkMonitor::increase_adapter(void) {
 
 bool NetworkMonitor::decrease_adapter(void) {
   Core *core = Core::get_instance();
-  if (core->get_data_adapter_count() == 0) {
+  if (core->get_adapter_count() == 0) {
     LOG_ERR("No data adapter is registered!");
     return false;
   } else if (!this->is_decreaseable()) {

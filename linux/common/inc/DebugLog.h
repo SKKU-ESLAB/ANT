@@ -22,10 +22,11 @@
 #ifndef __DEBUG_LOG_H__
 #define __DEBUG_LOG_H__
 
+#include <assert.h>
 #include <stdarg.h>
 #include <stdio.h>
-
-#include <assert.h>
+#include <sys/types.h>
+#include <unistd.h>
 
 #ifndef likely
 #define likely(x) __builtin_expect(!!(x), 1)
@@ -48,7 +49,7 @@
 #if LOG_LEVEL < 1
 #define LOG_DEBUG(fmt, args...)                                                \
   do {                                                                         \
-    _log(fmt, "D", 9, ##args);                                             \
+    _log(fmt, "D", 9, ##args);                                                 \
   } while (0)
 #else /* LOG_LEVEL >= 1 */
 #define LOG_DEBUG(fmt, args...)
@@ -57,7 +58,7 @@
 #if LOG_LEVEL < 2
 #define LOG_VERB(fmt, args...)                                                 \
   do {                                                                         \
-    _log(fmt, "V", 94, ##args);                                             \
+    _log(fmt, "V", 94, ##args);                                                \
   } while (0)
 #else /* LOG_LEVEL >= 2 */
 #define LOG_VERB(fmt, args...)
@@ -66,7 +67,7 @@
 #if LOG_LEVEL < 3
 #define LOG_WARN(fmt, args...)                                                 \
   do {                                                                         \
-    _log(fmt, "W", 91, ##args);                                             \
+    _log(fmt, "W", 91, ##args);                                                \
   } while (0)
 #else /* LOG_LEVEL >= 3 */
 #define LOG_WARN(fmt, args...)
@@ -75,7 +76,7 @@
 #if LOG_LEVEL < 4
 #define LOG_ERR(fmt, args...)                                                  \
   do {                                                                         \
-    _log(fmt, "E", 101, ##args);                                             \
+    _log(fmt, "E", 101, ##args);                                               \
   } while (0)
 #else /* LOG_LEVEL >= 4 */
 #define LOG_ERR(fmt, args...)
@@ -109,4 +110,35 @@ inline void __func(const char *format, const char *fw, const char *fileName,
   va_end(ap);
   printf("]\033[0m\n");
 }
+
+#define LOG_THREAD_LAUNCH(thread_name)                                         \
+  do {                                                                         \
+    LOG_VERB("Thread(%s;%d) Launch", thread_name, getpid());                   \
+  } while (0)
+
+#define LOG_ADAPTER_THREAD_LAUNCH(adapter_name, thread_name)                   \
+  do {                                                                         \
+    LOG_VERB("Thread(%s-%s;%d) Launch", adapter_name, thread_name, getpid());  \
+  } while (0)
+
+#define LOG_THREAD_FINISH(thread_name)                                         \
+  do {                                                                         \
+    LOG_VERB("Thread(%s;%d) Finish", thread_name, getpid());                   \
+  } while (0)
+
+#define LOG_ADAPTER_THREAD_FINISH(adapter_name, thread_name)                   \
+  do {                                                                         \
+    LOG_VERB("Thread(%s-%s;%d) Finish", adapter_name, thread_name, getpid());  \
+  } while (0)
+
+#define LOG_THREAD_FAIL(thread_name)                                         \
+  do {                                                                         \
+    LOG_VERB("Thread(%s;%d) Failed", thread_name, getpid());                   \
+  } while (0)
+
+#define LOG_ADAPTER_THREAD_FAIL(adapter_name, thread_name)                   \
+  do {                                                                         \
+    LOG_VERB("Thread(%s-%s;%d) Failed", adapter_name, thread_name, getpid());  \
+  } while (0)
+
 #endif /* !defined(__DEBUG_LOG_H__) */

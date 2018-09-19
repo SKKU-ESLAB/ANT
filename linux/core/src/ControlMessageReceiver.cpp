@@ -27,7 +27,11 @@
 #include <iostream>
 #include <string.h>
 #include <string>
+#include <sys/types.h>
 #include <thread>
+#include <unistd.h>
+
+#define THREAD_NAME "Control Message Receiving"
 
 using namespace sc;
 
@@ -43,11 +47,13 @@ void ControlMessageReceiver::stop_receiving_thread(void) {
 
 void ControlMessageReceiver::receiving_thread_loop(void) {
   this->mReceivingThreadOn = true;
+  LOG_THREAD_LAUNCH(THREAD_NAME);
 
   while (this->mReceivingThreadOn) {
     this->receiving_thread_loop_internal();
   }
 
+  LOG_THREAD_FINISH(THREAD_NAME);
   this->mReceivingThreadOn = false;
 }
 
@@ -64,8 +70,8 @@ bool ControlMessageReceiver::receiving_thread_loop_internal(void) {
   std::size_t separator_pos = message.find('\n');
 
   // Divide the message into first line & other lines
-  std::string first_line = message.substr(0, separator_pos);
-  std::string other_lines = message.substr(separator_pos);
+  std::string first_line(message.substr(0, separator_pos));
+  std::string other_lines(message.substr(separator_pos));
 
   int control_message_code = std::stoi(first_line);
 
@@ -137,15 +143,15 @@ void ControlMessageReceiver::on_receive_normal_message(int control_message_code,
   }
 }
 
-void ControlMessageReceiver::on_receive_priv_message(std::string priv_message) {
-  // Find separator location (between first line and other lines)
-  std::size_t separator_pos = priv_message.find('\n');
+void ControlMessageReceiver::on_receive_priv_message(std::string contents) {
+  // Find separator location (between second line and other lines)
+  std::size_t separator_pos = contents.find('\n');
 
-  // Divide the message into first line & other lines
-  std::string first_line = priv_message.substr(0, separator_pos);
-  std::string priv_message = priv_message.substr(separator_pos);
+  // Divide the message into second line & other lines
+  std::string second_line(contents.substr(0, separator_pos));
+  std::string priv_message(contents.substr(separator_pos));
 
-  int priv_type = std::stoi(first_line);
+  int priv_type = std::stoi(second_line);
 
   // Notify the priv message
   for (std::vector<ControlPrivMessageListener *>::iterator it =
