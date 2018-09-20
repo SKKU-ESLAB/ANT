@@ -58,12 +58,23 @@ namespace sc {
  * Queue Type
  */
 typedef enum {
-  kSegSendData = 0,
-  kSegRecvData = 1,
-  kSegSendControl = 2,
-  kSegRecvControl = 3,
-  kSegMaxQueueType = 4
+  kSendData = 0,
+  kRecvData = 1,
+  kSendControl = 2,
+  kRecvControl = 3,
+  kNumSegQueue = 4,
+  kUnknownQueue = 999
 } SegQueueType; /* enum SegQueueType */
+
+/**
+ * Dequeue Type
+ */
+typedef enum {
+  kDeqSendControlData = 0,
+  kDeqRecvData = 1,
+  kDeqRecvControl = 2,
+  kNumSegDequeue = 3
+} SegDequeueType; /* enum SegDequeueType */
 
 /**
  * Types of Flag
@@ -96,8 +107,8 @@ public:
 
   void failed_sending(Segment *seg);
   Segment *get_failed_sending(void);
-  void enqueue(SegQueueType type, Segment *seg);
-  Segment *dequeue(SegQueueType type);
+  void enqueue(SegQueueType queue_type, Segment *seg);
+  Segment *dequeue(SegDequeueType dequeue_type);
   Segment *get_free_segment(void);
   void free_segment(Segment *seg);
   void free_segment_all(void);
@@ -128,7 +139,7 @@ private:
   static SegmentManager *sSingleton;
   SegmentManager(void) {
     this->mNextGlobalSeqNo = 0;
-    for (int i = 0; i < kSegMaxQueueType; i++) {
+    for (int i = 0; i < kNumSegQueue; i++) {
       this->mNextSeqNo[i] = 0;
     }
     this->mFreeSegmentListSize = 0;
@@ -147,18 +158,18 @@ private:
   FILE *fp2;
 
   /* When access to queue, lock should be acquired */
-  std::mutex mQueueLock[kSegMaxQueueType];
+  std::mutex mDequeueLock[kNumSegDequeue];
   std::mutex mSendFailQueueLock;
-  std::condition_variable mCondEnqueued[kSegMaxQueueType];
+  std::condition_variable mDequeueCond[kNumSegDequeue];
 
-  uint32_t mNextSeqNo[kSegMaxQueueType];
-  std::list<Segment *> mQueues[kSegMaxQueueType];
+  uint32_t mNextSeqNo[kNumSegQueue];
+  std::list<Segment *> mQueues[kNumSegQueue];
   std::list<Segment *> mSendFailQueue;
-  std::list<Segment *> mPendingQueues[kSegMaxQueueType];
+  std::list<Segment *> mPendingQueues[kNumSegQueue];
 
   /* Statistics */
   Counter mSendRequest;
-  Counter mQueueLength[kSegMaxQueueType];
+  Counter mQueueLength[kNumSegQueue];
   Counter mFailedSendingQueueLength;
 
   /* Reserved free segment list */
@@ -172,14 +183,6 @@ private:
 
   void reset_send_queue(void);
   void reset_recv_queue(void);
-
-#ifdef EXP_MEASURE_INTERVAL_SEND_QUEUE
-  int mSendCount = 0;
-  /* Milliseconds */
-  int mIntervals[3] = {
-      0,
-  };
-#endif
 }; /* class SegmentManager */
 } /* namespace sc */
 

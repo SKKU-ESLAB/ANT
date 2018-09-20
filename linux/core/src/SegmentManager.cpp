@@ -88,13 +88,13 @@ int SegmentManager::send_to_segment_manager(uint8_t *data, size_t len,
       flag |= kSegFlagControl;
     mSetSegFlagBits(flag, seg->flag_len);
 
-        /* Set segment header to data */
+    /* Set segment header to data */
     this->serialize_segment_header(seg);
 
     if (is_control) {
-      this->enqueue(kSegSendControl, seg);
+      this->enqueue(kSendControl, seg);
     } else {
-      this->enqueue(kSegSendData, seg);
+      this->enqueue(kSendData, seg);
     }
   }
 
@@ -115,9 +115,9 @@ uint8_t *SegmentManager::recv_from_segment_manager(void *proc_data_handle,
 
   while (dequeued == false) {
     if (is_control) {
-      seg = dequeue(kSegRecvControl);
+      seg = dequeue(kDeqRecvControl);
     } else {
-      seg = dequeue(kSegRecvData);
+      seg = dequeue(kDeqRecvData);
     }
     if (seg) {
       dequeued = true;
@@ -142,9 +142,9 @@ uint8_t *SegmentManager::recv_from_segment_manager(void *proc_data_handle,
 
   while (cont) {
     if (is_control) {
-      seg = dequeue(kSegRecvControl);
+      seg = dequeue(kDeqRecvControl);
     } else {
-      seg = dequeue(kSegRecvData);
+      seg = dequeue(kDeqRecvData);
     }
     data_size = mGetSegLenBits(seg->flag_len);
     memcpy(serialized + offset, &(seg->data[kSegHeaderSize]), data_size);
@@ -160,50 +160,68 @@ uint8_t *SegmentManager::recv_from_segment_manager(void *proc_data_handle,
  * This function is the end of the sending logic.
  * It enqeueus the data to the sending queue in order with the sequence number.
  */
-void SegmentManager::enqueue(SegQueueType type, Segment *seg) {
-  assert(type < kSegMaxQueueType);
+void SegmentManager::enqueue(SegQueueType queue_type, Segment *seg) {
+  assert(queue_type < kNumSegQueue);
   // Get lock for the queue
-  std::unique_lock<std::mutex> lck(this->mQueueLock[type]);
+  SegDequeueType dequeue_type;
+  switch (queue_type) {
+  case SegQueueType::kRecvControl:
+    dequeue_type = SegDequeueType::kDeqRecvControl;
+    break;
+  case SegQueueType::kRecvData:
+    dequeue_type = SegDequeueType::kDeqRecvData;
+    break;
+  case SegQueueType::kSendControl:
+  case SegQueueType::kSendData:
+    dequeue_type = SegDequeueType::kDeqSendControlData;
+    break;
+  default:
+    LOG_ERR("Unknown queue type: %d", queue_type);
+    return;
+  }
+
+  std::unique_lock<std::mutex> lck(this->mDequeueLock[dequeue_type]);
   bool segment_enqueued = false;
 
-  if (type == kSegSendControl || type == kSegSendData) {
+  if (queue_type == kSendControl || queue_type == kSendData) {
     this->mSendRequest.add(SEGMENT_DATA_SIZE);
   }
 
-  if (seg->seq_no == this->mNextSeqNo[type]) {
+  if (seg->seq_no == this->mNextSeqNo[queue_type]) {
     /*
      * If the sequence number is the right next one,
      * it executes enqueuing logic normally.
      */
-    this->mNextSeqNo[type]++;
-    this->mQueues[type].push_back(seg);
-    this->mQueueLength[type].increase();
+    this->mNextSeqNo[queue_type]++;
+    this->mQueues[queue_type].push_back(seg);
+    this->mQueueLength[queue_type].increase();
     segment_enqueued = true;
   } else {
     /*
      * If the sequence number is not the next expected one,
      * it enqueues its segments to the pending queue, not normal queue.
      */
-    if (seg->seq_no <= this->mNextSeqNo[type]) {
+    if (seg->seq_no <= this->mNextSeqNo[queue_type]) {
       LOG_ERR("Sequence # Error!: %d > %d (Queue #%d)", seg->seq_no,
-              this->mNextSeqNo[type], (int)type);
+              this->mNextSeqNo[queue_type], (int)queue_type);
     }
-    assert(seg->seq_no > this->mNextSeqNo[type]);
+    assert(seg->seq_no > this->mNextSeqNo[queue_type]);
 
-    std::list<Segment *>::iterator curr_it = this->mPendingQueues[type].begin();
+    std::list<Segment *>::iterator curr_it =
+        this->mPendingQueues[queue_type].begin();
 
     /*
      * If we received a unsequential segment, put it into pending queue.
      * Pending queue should retain segments in order of sequence number.
      */
-    while (curr_it != this->mPendingQueues[type].end()) {
+    while (curr_it != this->mPendingQueues[queue_type].end()) {
       Segment *walker = *curr_it;
       assert(walker->seq_no != seg->seq_no);
       if (walker->seq_no > seg->seq_no)
         break;
       curr_it++;
     }
-    this->mPendingQueues[type].insert(curr_it, seg);
+    this->mPendingQueues[queue_type].insert(curr_it, seg);
   }
 
   /*
@@ -211,103 +229,108 @@ void SegmentManager::enqueue(SegQueueType type, Segment *seg) {
    * If no segment in the pending queue matches to the next seq_no,
    * Then this process is just skipped.
    */
-  std::list<Segment *>::iterator curr_it = this->mPendingQueues[type].begin();
-  while (curr_it != this->mPendingQueues[type].end() &&
-         (*curr_it)->seq_no == this->mNextSeqNo[type]) {
-    this->mNextSeqNo[type]++;
-    this->mQueues[type].push_back(*curr_it);
-    this->mQueueLength[type].increase();
+  std::list<Segment *>::iterator curr_it =
+      this->mPendingQueues[queue_type].begin();
+  while (curr_it != this->mPendingQueues[queue_type].end() &&
+         (*curr_it)->seq_no == this->mNextSeqNo[queue_type]) {
+    this->mNextSeqNo[queue_type]++;
+    this->mQueues[queue_type].push_back(*curr_it);
+    this->mQueueLength[queue_type].increase();
     segment_enqueued = true;
 
     std::list<Segment *>::iterator to_erase = curr_it++;
-    this->mPendingQueues[type].erase(to_erase);
+    this->mPendingQueues[queue_type].erase(to_erase);
   }
 
+  std::unique_lock<std::mutex> lck(this->mDequeueLock[dequeue_type]);
   if (segment_enqueued)
-    this->mCondEnqueued[type].notify_all();
+    this->mDequeueCond[dequeue_type].notify_all();
 }
 
 /*
  * Dequeue the segment from the queue.
  * Note that this function is used for sending & receiving queue.
  */
-Segment *SegmentManager::dequeue(SegQueueType type) {
-#ifdef EXP_MEASURE_INTERVAL_SEND_QUEUE
-  struct timeval times[4];
-  if (type == kSegSend)
-    gettimeofday(&times[0], NULL);
-#endif
-  assert(type < kSegMaxQueueType);
-  std::unique_lock<std::mutex> lck(this->mQueueLock[type]);
+Segment *SegmentManager::dequeue(SegDequeueType dequeue_type) {
+  assert(dequeue_type < kNumSegDequeue);
+  std::unique_lock<std::mutex> dequeue_lock(this->mDequeueLock[dequeue_type]);
 
   /* If queue is empty, wait until some segment is enqueued */
-  int queueLength = this->mQueueLength[type].get_value();
-
-#ifdef EXP_MEASURE_INTERVAL_SEND_QUEUE
-  if (type == kSegSend) {
-    gettimeofday(&times[1], NULL);
-    if (this->mSendCount % 500 == 0) {
-      LOG_DEBUG("Try %d: Queue Length %d", this->mSendCount, queueLength);
-    }
+  bool is_wait_required = false;
+  switch (dequeue_type) {
+  case SegDequeueType::kDeqSendControlData:
+    is_wait_required =
+        ((this->mQueueLength[SegQueueType::kSendControl].get_value() == 0) &&
+         (this->mQueueLength[SegQueueType::kSendData].get_value() == 0));
+    break;
+  case SegDequeueType::kDeqRecvControl:
+    is_wait_required =
+        (this->mQueueLength[SegQueueType::kRecvControl].get_value() == 0);
+    break;
+  case SegDequeueType::kDeqRecvData:
+    is_wait_required =
+        (this->mQueueLength[SegQueueType::kRecvData].get_value() == 0);
+    break;
   }
-#endif
 
-  if (queueLength == 0) {
+  if (is_wait_required) {
 #ifdef VERBOSE_SEGMENT_QUEUE_WAITING
-    if (type == kSegSend) {
+    if (dequeue_type == kDeqSendControlData) {
       LOG_DEBUG("sending queue is empty. wait for another");
     } else {
       LOG_DEBUG("receiving queue is empty. wait for another");
     }
 #endif
 
-#ifdef EXP_MEASURE_INTERVAL_SEND_QUEUE
-    if (type == kSegSend)
-      LOG_DEBUG("Try %d: Queue Length 0 %d %d %d", this->mSendCount,
-                queueLength, this->mQueueLength[kSegSend].get_value(),
-                this->mQueues[type].size());
-#endif
-
-    this->mCondEnqueued[type].wait(lck);
+    this->mDequeueCond[dequeue_type].wait(dequeue_lock);
   }
 
-#ifdef EXP_MEASURE_INTERVAL_SEND_QUEUE
-  if (type == kSegSend)
-    gettimeofday(&times[2], NULL);
-#endif
-
-  /* Dequeue from queue */
-  Segment *ret = this->mQueues[type].front();
-  if (ret == NULL) {
-    LOG_DEBUG("Queue[%s] is NULL(empty)", type == 0 ? "send" : "recv");
+  // Dequeue from queue
+  SegQueueType target_queue_type = SegQueueType::kUnknownQueue;
+  switch (dequeue_type) {
+  case SegDequeueType::kDeqSendControlData: {
+    if (this->mQueueLength[SegQueueType::kSendControl].get_value() != 0) {
+      // Priority 1. Dequeue send control queue
+      target_queue_type = kSendControl;
+    } else if (this->mQueueLength[SegQueueType::kSendData].get_value() != 0) {
+      // Priority 2. Dequeue send data queue
+      target_queue_type = kSendData;
+    }
+    break;
+  }
+  case SegDequeueType::kDeqRecvControl: {
+    target_queue_type = kRecvControl;
+    break;
+  }
+  case SegDequeueType::kDeqRecvData: {
+    target_queue_type = kRecvData;
+    break;
+  }
+  default: {
+    LOG_ERR("Dequeue failed: invalid dequeue type (dequeue=%d)", dequeue_type);
     return NULL;
   }
-  this->mQueues[type].pop_front();
-  this->mQueueLength[type].decrease();
-
-#ifdef EXP_MEASURE_INTERVAL_SEND_QUEUE
-  if (type == kSegSend)
-    gettimeofday(&times[3], NULL);
-#endif
-
-#ifdef EXP_MEASURE_INTERVAL_SEND_QUEUE
-  if (type == kSegSend) {
-    for (int i = 0; i < 3; i++) {
-      this->mIntervals[i] += (times[i + 1].tv_sec - times[i].tv_sec) * 1000 +
-                             (times[i + 1].tv_usec - times[i].tv_usec) / 1000;
-    }
-    this->mSendCount++;
-    if (this->mSendCount % 500 == 0) {
-      LOG_DEBUG("Send Queue: %d / %d / %d", this->mIntervals[0],
-                this->mIntervals[1], this->mIntervals[2]);
-      for (int i = 0; i < 3; i++) {
-        this->mIntervals[i] = 0;
-      }
-    }
   }
-#endif
 
-  return ret;
+  // Check queue type
+  if (target_queue_type >= SegQueueType::kNumSegQueue) {
+    LOG_ERR("Dequeue failed: invalid queue type (dequeue=%d)", dequeue_type);
+    return NULL;
+  }
+
+  // Check the dequeued segment
+  Segment *segment_dequeued = this->mQueues[target_queue_type].front();
+  if (segment_dequeued == NULL) {
+    LOG_ERR("Dequeue failed: empty queue (queue=%d, dequeue=%d)",
+            target_queue_type, dequeue_type);
+    return NULL;
+  }
+
+  // Update queues
+  this->mQueues[target_queue_type].pop_front();
+  this->mQueueLength[target_queue_type].decrease();
+
+  return segment_dequeued;
 }
 
 /*  This function returns a free segment from the list of free segments.

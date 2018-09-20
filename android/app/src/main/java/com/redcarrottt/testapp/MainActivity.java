@@ -169,7 +169,7 @@ public class MainActivity extends AppCompatActivity implements LogReceiver.Callb
                 "150e8400-1234-41d4-a716-446655440000", this);
         API.registerAdapter(bt);
 
-        WfdClientAdapter wfd = WfdClientAdapter.singleton(2, "WFD", 3456, this);
+        WfdClientAdapter wfd = WfdClientAdapter.singleton(2, "WFD", 3455, this);
         API.registerAdapter(wfd);
 
         // Start the selective connection

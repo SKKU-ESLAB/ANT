@@ -352,7 +352,7 @@ int WfdP2PServer::get_wfd_ip_address(char *buf, size_t len) {
   while (ptr != NULL) {
     if (strstr(ptr, "ip_address") || strstr(ptr, "p2p_device_address")) {
       sscanf(ptr, "%*[^=]=%s", buf);
-      LOG_VERB("%s: IP_Device_Addrress = %s", this->get_name(), buf);
+      LOG_VERB("%s: IP Device Address = %s", this->get_name(), buf);
       return 0;
     }
 

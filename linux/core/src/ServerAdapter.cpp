@@ -254,7 +254,8 @@ bool ServerAdapter::__disconnect_thread(void) {
   }
 
   ServerSocketState socketState = this->mServerSocket->get_state();
-  if (socketState != ServerSocketState::kClosed && socketState != ServerSocketState::kClosing) {
+  if (socketState != ServerSocketState::kClosed &&
+      socketState != ServerSocketState::kClosing) {
     socketState = this->mServerSocket->get_state();
     if (socketState != ServerSocketState::kClosed) {
       bool res = this->mServerSocket->close();
@@ -277,7 +278,7 @@ bool ServerAdapter::__disconnect_thread(void) {
   }
 
   P2PServerState p2pServerState = this->mP2PServer->get_state();
-  if(p2pServerState != P2PServerState::kDisallowed) {
+  if (p2pServerState != P2PServerState::kDisallowed) {
     bool res = this->mP2PServer->disallow_discover();
 
     p2pServerState = this->mP2PServer->get_state();
@@ -298,7 +299,7 @@ bool ServerAdapter::__disconnect_thread(void) {
   }
 
   DeviceState deviceState = this->mDevice->get_state();
-  if(deviceState != DeviceState::kOff && deviceState != DeviceState::kOn) {
+  if (deviceState != DeviceState::kOff && deviceState != DeviceState::kOn) {
     bool res = this->mDevice->turn_off();
 
     deviceState = this->mDevice->get_state();
@@ -440,13 +441,9 @@ void ServerAdapter::sender_thread_loop(void) {
 #endif
 
     // Priority 2. Send control queue
-    if (likely(segment_to_send == NULL)) {
-      segment_to_send = sm->dequeue(kSegSendControl);
-    }
-
     // Priority 3. Send data queue
     if (likely(segment_to_send == NULL)) {
-      segment_to_send = sm->dequeue(kSegSendData);
+      segment_to_send = sm->dequeue(kDeqSendControlData);
     }
 
 #ifdef VERBOSE_SEGMENT_DEQUEUE
@@ -604,9 +601,9 @@ void ServerAdapter::receiver_thread_loop(void) {
                         kSegFlagControl) != 0);
 
     if (is_control) {
-      sm->enqueue(kSegRecvControl, segment_to_receive);
+      sm->enqueue(kRecvControl, segment_to_receive);
     } else {
-      sm->enqueue(kSegRecvData, segment_to_receive);
+      sm->enqueue(kRecvData, segment_to_receive);
     }
     segment_to_receive = sm->get_free_segment();
 
