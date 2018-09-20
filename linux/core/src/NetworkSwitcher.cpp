@@ -34,7 +34,7 @@
 
 using namespace sc;
 
-NetworkSwitcher *NetworkSwitcher::singleton = NULL;
+NetworkSwitcher *NetworkSwitcher::sSingleton = NULL;
 
 SwitchAdapterTransaction *SwitchAdapterTransaction::sOngoing = NULL;
 ConnectRequestTransaction *ConnectRequestTransaction::sOngoing = NULL;

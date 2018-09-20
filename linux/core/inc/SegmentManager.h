@@ -118,14 +118,14 @@ public:
 
   /* Singleton */
   static SegmentManager *singleton(void) {
-    if (singleton == NULL)
-      singleton = new SegmentManager();
-    return singleton;
+    if (sSingleton == NULL)
+      sSingleton = new SegmentManager();
+    return sSingleton;
   }
 
 private:
   /* Singleton */
-  static SegmentManager *singleton;
+  static SegmentManager *sSingleton;
   SegmentManager(void) {
     this->mNextGlobalSeqNo = 0;
     for (int i = 0; i < kSegMaxQueueType; i++) {

@@ -210,17 +210,17 @@ private:
 public:
   /* Singleton */
   static Core *singleton(void) {
-    if (singleton == NULL) {
-      singleton = new Core();
+    if (sSingleton == NULL) {
+      sSingleton = new Core();
     }
-    return singleton;
+    return sSingleton;
   }
 
   ~Core() { SegmentManager::singleton()->free_segment_all(); }
 
 private:
   /* Singleton */
-  static Core *singleton;
+  static Core *sSingleton;
   Core(void) {
     SegmentManager *sm = SegmentManager::singleton();
     this->mState = kCoreStateIdle;
