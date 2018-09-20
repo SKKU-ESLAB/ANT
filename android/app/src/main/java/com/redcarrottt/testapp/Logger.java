@@ -87,6 +87,36 @@ public class Logger {
         print(tag, LogLevel.DEBUG, logMessage);
     }
 
+    public static void THREAD_LAUNCH(String threadName) {
+        VERB(threadName, "Thread(" + threadName + "/" + Thread.currentThread().getId() + ") " +
+                "Launch");
+    }
+
+    public static void THREAD_ADAPTER_LAUNCH(String adapterName, String threadName) {
+        VERB(threadName, "Thread(" + adapterName + "-" + threadName + "/" + Thread.currentThread
+                ().getId() + ") Launch");
+    }
+
+    public static void THREAD_FINISH(String threadName) {
+        VERB(threadName, "Thread(" + threadName + "/" + Thread.currentThread().getId() + ") " +
+                "Finish");
+    }
+
+    public static void THREAD_ADAPTER_FINISH(String adapterName, String threadName) {
+        VERB(threadName, "Thread(" + adapterName + "-" + threadName + "/" + Thread.currentThread
+                ().getId() + ") Finish");
+    }
+
+    public static void THREAD_FAIL(String threadName) {
+        ERR(threadName, "Thread(" + threadName + "/" + Thread.currentThread().getId() + ") " +
+                "Fail");
+    }
+
+    public static void THREAD_ADAPTER_FAIL(String adapterName, String threadName) {
+        ERR(threadName, "Thread(" + adapterName + "-" + threadName + "/" + Thread.currentThread
+                ().getId() + ") Fail");
+    }
+
     public static void setDefaultContext(Context context) {
         Logger.defaultContext = context;
     }

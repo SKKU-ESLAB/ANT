@@ -63,7 +63,7 @@ public class NetworkSwitcher {
             return;
         }
         this.setState(State.kSwitching);
-        ClientAdapter adapter = Core.singleton().findDataAdapterById(adapterId);
+        ClientAdapter adapter = Core.singleton().findAdapterById(adapterId);
         adapter.sleep(false);
         this.setState(State.kReady);
     }
@@ -77,7 +77,7 @@ public class NetworkSwitcher {
             return;
         }
         this.setState(State.kSwitching);
-        ClientAdapter adapter = Core.singleton().findDataAdapterById(adapterId);
+        ClientAdapter adapter = Core.singleton().findAdapterById(adapterId);
         adapter.wakeUp(false);
         this.setState(State.kReady);
     }
@@ -212,7 +212,7 @@ public class NetworkSwitcher {
         }
 
         void start() {
-            ClientAdapter adapter = Core.singleton().findDataAdapterById(this.mAdapterId);
+            ClientAdapter adapter = Core.singleton().findAdapterById(this.mAdapterId);
             if (adapter == null) {
                 Logger.ERR(kTag, "Connecting requested data adapter is failed");
                 doneConnectRequestTx(false);

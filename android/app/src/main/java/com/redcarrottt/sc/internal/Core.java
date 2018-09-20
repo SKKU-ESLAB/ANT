@@ -44,6 +44,9 @@ public class Core {
         if (isSuccess) {
             Logger.VERB(kTag, "Succeed to start core!");
             this.setState(State.kReady);
+
+            // Launch control message receiving thread
+            this.mControlMessageReceiver.startReceivingThread();
         } else {
             Logger.ERR(kTag, "Failed to start core!");
             this.setState(State.kIdle);
@@ -75,6 +78,9 @@ public class Core {
         if (isSuccess) {
             Logger.VERB(kTag, "Succeed to stop core!");
             this.setState(State.kIdle);
+
+            // Finish control message receiving thread
+            this.mControlMessageReceiver.stopReceivingThread();
         } else {
             Logger.ERR(kTag, "Failed to stop core!");
             this.setState(State.kReady);
@@ -134,22 +140,6 @@ public class Core {
         return ProtocolManager.recv_packet(dataBuffer, isControl);
     }
 
-    // Control Request Code
-    class CMCode {
-        public static final char kConnect = 1;
-        public static final char kSleep = 2;
-        public static final char kWakeup = 3;
-        public static final char kDisconnect = 4;
-        public static final char kPriv = 10;
-        public static final char kDisconnectAck = 24;
-    }
-
-    // Priv Type Code
-    public class PrivType {
-        public static final char kWFDInfo = 1;
-        public static final char kWFDUnknown = 999;
-    }
-
     // State
     class State {
         public static final int kIdle = 0;
@@ -174,9 +164,6 @@ public class Core {
         }
     }
 
-    public void addControlMessageListener(ControlMessageListener listener) {
-        this.mControlMessageListeners.add(listener);
-    }
 
     // Adapters Getter
     public ClientAdapter findAdapterById(int adapterId) {
@@ -199,9 +186,18 @@ public class Core {
         return null;
     }
 
-    // Attributes
+    public ControlMessageReceiver getControlMessageReceiver() {
+        return this.mControlMessageReceiver;
+    }
+
+    public ControlMessageSender getControlMessageSender() {
+        return this.mControlMessageSender;
+    }
+
+    // Components
     private final ArrayList<ClientAdapter> mAdapters;
-    private ArrayList<ControlMessageListener> mControlMessageListeners;
+    private ControlMessageReceiver mControlMessageReceiver;
+    private ControlMessageSender mControlMessageSender;
 
     // State
     private Integer mState;
@@ -220,7 +216,8 @@ public class Core {
     private Core() {
         this.mState = State.kIdle;
         this.mAdapters = new ArrayList<>();
-        this.mControlMessageListeners = new ArrayList<>();
+        this.mControlMessageReceiver = new ControlMessageReceiver();
+        this.mControlMessageSender = new ControlMessageSender();
     }
 
     // Transactions

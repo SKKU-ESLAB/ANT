@@ -29,10 +29,8 @@ import static com.redcarrottt.sc.internal.ExpConfig.VERBOSE_RECEIVER_TIME;
 import static com.redcarrottt.sc.internal.ExpConfig.VERBOSE_SEGMENT_DEQUEUE;
 import static com.redcarrottt.sc.internal.SegmentManager.kSegFlagControl;
 import static com.redcarrottt.sc.internal.SegmentManager.kSegHeaderSize;
-import static com.redcarrottt.sc.internal.SegmentManager.kSegRecv;
 import static com.redcarrottt.sc.internal.SegmentManager.kSegRecvControl;
 import static com.redcarrottt.sc.internal.SegmentManager.kSegRecvData;
-import static com.redcarrottt.sc.internal.SegmentManager.kSegSend;
 import static com.redcarrottt.sc.internal.SegmentManager.kSegSendControl;
 import static com.redcarrottt.sc.internal.SegmentManager.kSegSendData;
 import static com.redcarrottt.sc.internal.SegmentManager.kSegSize;
@@ -52,7 +50,7 @@ public class ClientAdapter {
         }
 
         if (isSendRequest) {
-            Core.singleton().sendRequestConnect((short) this.getId());
+            Core.singleton().getControlMessageSender().sendRequestConnect(this.getId());
         }
 
         ConnectThread thread = new ConnectThread(listener);
@@ -73,9 +71,9 @@ public class ClientAdapter {
         }
 
         if (isSendRequest) {
-            Core.singleton().sendRequestDisconnect((short) this.getId());
+            Core.singleton().getControlMessageSender().sendRequestDisconnect(this.getId());
         } else if (isSendAck) {
-            Core.singleton().sendRequestDisconnectAck((short) this.getId());
+            Core.singleton().getControlMessageSender().sendRequestDisconnectAck(this.getId());
         }
 
         DisconnectThread thread = new DisconnectThread(listener);
@@ -546,10 +544,9 @@ public class ClientAdapter {
                     Logger.DEBUG(getName(), "Receive Segment: seqno=" + segmentToReceive.seq_no);
                 }
 
-                // TODO: divide into data/control queues
-                boolean is_control = ((SegmentManager.mGetSegFlagBits(segmentToReceive.flag_len) &
-                        kSegFlagControl) != 0);
-                if(is_control) {
+                boolean is_control = ((SegmentManager.mGetSegFlagBits(segmentToReceive.flag_len)
+                        & kSegFlagControl) != 0);
+                if (is_control) {
                     sm.enqueue(kSegRecvControl, segmentToReceive);
                 } else {
                     sm.enqueue(kSegRecvData, segmentToReceive);
@@ -619,7 +616,7 @@ public class ClientAdapter {
             } else {
                 if (isSendRequest) {
                     // Send Request
-                    Core.singleton().sendRequestSleep((short) this.getId());
+                    Core.singleton().getControlMessageSender().sendRequestSleep(this.getId());
                 }
 
                 // Sleep
@@ -643,7 +640,7 @@ public class ClientAdapter {
         }
         if (sender_suspended) {
             // Send Request
-            Core.singleton().sendRequestWakeup((short) this.getId());
+            Core.singleton().getControlMessageSender().sendRequestWakeup(this.getId());
 
             // Wake up
             this.setState(State.kWakingUp);

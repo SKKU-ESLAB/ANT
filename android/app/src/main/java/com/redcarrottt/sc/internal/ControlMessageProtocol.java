@@ -17,4 +17,19 @@ package com.redcarrottt.sc.internal;
  * limitations under the License.
  */
 public class ControlMessageProtocol {
+    // Control Request Code
+    class CMCode {
+        public static final char kConnect = 1;
+        public static final char kSleep = 2;
+        public static final char kWakeup = 3;
+        public static final char kDisconnect = 4;
+        public static final char kPriv = 10;
+        public static final char kDisconnectAck = 24;
+    }
+
+    // Priv Type Code
+    public class PrivType {
+        public static final char kWFDInfo = 1;
+        public static final char kWFDUnknown = 999;
+    }
 }
