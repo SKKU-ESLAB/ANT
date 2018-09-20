@@ -152,15 +152,15 @@ private:
 public:
   /* Singleton */
   static NetworkSwitcher *singleton(void) {
-    if (NetworkSwitcher::singleton == NULL) {
-      NetworkSwitcher::singleton = new NetworkSwitcher();
+    if (NetworkSwitcher::sSingleton == NULL) {
+      NetworkSwitcher::sSingleton = new NetworkSwitcher();
     }
-    return NetworkSwitcher::singleton;
+    return NetworkSwitcher::sSingleton;
   }
 
 private:
   /* Singleton */
-  static NetworkSwitcher *singleton;
+  static NetworkSwitcher *sSingleton;
   NetworkSwitcher() { this->set_state(NSState::kNSStateReady); }
 
 public:

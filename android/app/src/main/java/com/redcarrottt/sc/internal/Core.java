@@ -175,17 +175,6 @@ public class Core {
         return null;
     }
 
-    public ClientAdapter getActiveAdapter() {
-        synchronized (this.mAdapters) {
-            for (ClientAdapter adapter : this.mAdapters) {
-                if (adapter.getState() == ClientAdapter.State.kActive) {
-                    return adapter;
-                }
-            }
-        }
-        return null;
-    }
-
     public ControlMessageReceiver getControlMessageReceiver() {
         return this.mControlMessageReceiver;
     }
@@ -322,7 +311,7 @@ public class Core {
                 }
             }
 
-            // Disconnect only active control adapters
+            // Disconnect only active adapters
             synchronized (this.mCaller.mAdapters) {
                 for (ClientAdapter adapter : this.mCaller.mAdapters) {
                     int adapterState = adapter.getState();

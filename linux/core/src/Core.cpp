@@ -49,7 +49,7 @@
  */
 using namespace sc;
 
-Core *Core::singleton = NULL;
+Core *Core::sSingleton = NULL;
 
 StartCoreTransaction *StartCoreTransaction::sOngoing = NULL;
 StopCoreTransaction *StopCoreTransaction::sOngoing = NULL;

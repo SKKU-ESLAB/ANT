@@ -36,7 +36,7 @@
 using namespace sc;
 
 /* Singleton */
-SegmentManager *SegmentManager::singleton = NULL;
+SegmentManager *SegmentManager::sSingleton = NULL;
 
 uint32_t SegmentManager::get_next_global_seq_no(uint32_t num_segments) {
   uint32_t res;

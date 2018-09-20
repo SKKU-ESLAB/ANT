@@ -109,15 +109,15 @@ private:
 public:
   /* Singleton */
   static NetworkMonitor *singleton(void) {
-    if (NetworkMonitor::singleton == NULL) {
-      NetworkMonitor::singleton = new NetworkMonitor();
+    if (NetworkMonitor::sSingleton == NULL) {
+      NetworkMonitor::sSingleton = new NetworkMonitor();
     }
-    return NetworkMonitor::singleton;
+    return NetworkMonitor::sSingleton;
   }
 
 private:
   /* Singleton */
-  static NetworkMonitor *singleton;
+  static NetworkMonitor *sSingleton;
   NetworkMonitor(void) {
     this->mSwitcherThreadOn = false;
     this->mThread = NULL;
