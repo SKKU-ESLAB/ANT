@@ -2,7 +2,7 @@ package com.redcarrottt.sc.internal;
 
 import com.redcarrottt.testapp.Logger;
 
-import java.nio.ByteBuffer;
+import java.util.ArrayList;
 
 /* Copyright (c) 2018, contributors. All rights reserved.
  *
@@ -21,102 +21,151 @@ import java.nio.ByteBuffer;
  * limitations under the License.
  */
 public class ControlMessageReceiver {
-    // TODO: convert it to ControlMessageReceiver
-    public void receiveLoop(ClientAdapter adapter) {
-        byte[] dataBuffer = new byte[512];
-        int res;
-        while (true) {
-            // Receive 1Byte: Control Request Code
-            Logger.DEBUG(kTag, "Control Receiver: receiving request code...");
-            res = adapter.receive(dataBuffer, 1);
-            Logger.DEBUG(kTag, "Control Receiver: RECEIVED request code!");
+    private static final String kTag = "ControlMessageReceiver";
+    private static final String kThreadName = "Control Message Receiving";
+
+    public void startReceivingThread() {
+        this.mReceivingThread = new ReceivingThread();
+        this.mReceivingThread.start();
+    }
+
+    public void stopReceivingThread() {
+        this.mReceivingThread.finish();
+    }
+
+    // Thread
+    private class ReceivingThread extends Thread {
+        @Override
+        public void run() {
+            this.mIsOn = true;
+            Logger.THREAD_LAUNCH(kThreadName);
+
+            while (this.mIsOn) {
+                this.loopInternal();
+            }
+
+            Logger.THREAD_FINISH(kThreadName);
+            this.mIsOn = false;
+        }
+
+        public boolean loopInternal() {
+            byte[] messageBuffer = new byte[10 * 1024];
+            int res = Core.singleton().receive(messageBuffer, true);
             if (res <= 0) {
-                Logger.VERB(kTag, "Control adapter could be closed");
-                try {
-                    Thread.sleep(1000);
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
+                return false;
+            }
+
+            String message = new String(messageBuffer);
+
+            // Find separator location (between first line and other lines)
+            int separatorPos = message.indexOf('\n');
+
+            // Divide the message into first line & other lines
+            String firstLine = message.substring(0, separatorPos);
+            String otherLines = message.substring(separatorPos);
+
+            int controlMessageCode = Integer.getInteger(firstLine);
+
+            switch (controlMessageCode) {
+                case ControlMessageProtocol.CMCode.kConnect:
+                case ControlMessageProtocol.CMCode.kDisconnect:
+                case ControlMessageProtocol.CMCode.kSleep:
+                case ControlMessageProtocol.CMCode.kWakeup:
+                case ControlMessageProtocol.CMCode.kDisconnectAck: {
+                    // Normal type
+                    int adapterId = Integer.getInteger(otherLines);
+                    onReceiveNormalMessage(controlMessageCode, adapterId);
+                    break;
+                }
+                case ControlMessageProtocol.CMCode.kPriv: {
+                    // Priv type
+                    onReceivePrivateMesesage(otherLines);
+                    break;
+                }
+                default: {
+                    Logger.ERR(kTag, "Unknown control message code (" + controlMessageCode + ")"
+                            + "!\n" + message);
+                    break;
+                }
+            }
+
+            return true;
+        }
+
+        public void finish() {
+            this.mIsOn = false;
+        }
+
+        // Constructor
+        public ReceivingThread() {
+            this.mIsOn = false;
+        }
+
+        // Attributes
+        private boolean mIsOn;
+    }
+
+    private void onReceiveNormalMessage(int controlMessageCode, int adapterId) {
+        switch (controlMessageCode) {
+            case ControlMessageProtocol.CMCode.kConnect: {
+                Logger.VERB(kTag, "Receive(Control Msg): Request(Connect " + adapterId + ")");
+                NetworkSwitcher.singleton().connectAdapterByPeer(adapterId);
+                break;
+            }
+            case ControlMessageProtocol.CMCode.kDisconnect: {
+                Logger.VERB(kTag, "Receive(Control Msg): Request(Disonnect " + adapterId + ")");
+                NetworkSwitcher.singleton().disconnectAdapterByPeer(adapterId);
+                break;
+            }
+            case ControlMessageProtocol.CMCode.kSleep: {
+                Logger.VERB(kTag, "Receive(Control Msg): Request(Sleep " + adapterId + ")");
+                NetworkSwitcher.singleton().sleepAdapterByPeer(adapterId);
+                break;
+            }
+            case ControlMessageProtocol.CMCode.kWakeup: {
+                Logger.VERB(kTag, "Receive(Control Msg): Request(WakeUp " + adapterId + ")");
+                NetworkSwitcher.singleton().wakeUpAdapterByPeer(adapterId);
+                break;
+            }
+            case ControlMessageProtocol.CMCode.kDisconnectAck: {
+                Logger.VERB(kTag, "Receive(Control Msg): Request(DisconenctAck " + adapterId + ")");
+                ClientAdapter disconnectAdapter = Core.singleton().findAdapterById(adapterId);
+                if (disconnectAdapter == null) {
+                    Logger.WARN(kTag, "Cannot find adapter " + adapterId);
+                } else {
+                    disconnectAdapter.peerKnowsDisconnectingOnPurpose();
                 }
                 break;
             }
-
-            Byte reqCode = dataBuffer[0];
-            if (reqCode == CMCode.kConnect || reqCode == CMCode.kSleep || reqCode == CMCode
-                    .kWakeup || reqCode == CMCode.kDisconnect || reqCode == CMCode.kDisconnectAck) {
-                // "Connect Adapter" Request
-                // Receive 2Byte: Adapter ID
-                res = adapter.receive(dataBuffer, 2);
-                if (res <= 0) break;
-                ByteBuffer buffer = ByteBuffer.allocate(2);
-                buffer.put(dataBuffer, 0, 2);
-                short adapterId = buffer.getShort(0);
-
-                if (reqCode == CMCode.kConnect) {
-                    Logger.VERB(kTag, "Receive(Control Msg): Request(Connect " + adapterId + ")");
-                    NetworkSwitcher.singleton().connectAdapterByPeer(adapterId);
-                } else if (reqCode == CMCode.kSleep) {
-                    Logger.VERB(kTag, "Receive(Control Msg): Request(Sleep " + adapterId + ")");
-                    NetworkSwitcher.singleton().sleepAdapterByPeer(adapterId);
-                } else if (reqCode == CMCode.kWakeup) {
-                    Logger.VERB(kTag, "Receive(Control Msg): Request(WakeUp " + adapterId + ")");
-                    NetworkSwitcher.singleton().wakeUpAdapterByPeer(adapterId);
-                } else if (reqCode == CMCode.kDisconnect) {
-                    Logger.VERB(kTag, "Receive(Control Msg): Request(Disconnect " + adapterId +
-                            ")");
-                    NetworkSwitcher.singleton().disconnectAdapterByPeer(adapterId);
-                } else if (reqCode == CMCode.kDisconnectAck) {
-                    Logger.VERB(kTag, "Receive(Control Msg): Request(DisconnectAck " + adapterId
-                            + ")");
-                    ClientAdapter disconnect_adapter = findAdapterById(adapterId);
-                    if (disconnect_adapter == null) {
-                        Logger.WARN(kTag, "Cannot find adapter " + adapterId);
-                    } else {
-                        disconnect_adapter.peerKnowsDisconnectingOnPurpose();
-                    }
-                }
-            } else if (reqCode == CMCode.kPriv) {
-                // "Priv" Request
-                int privType;
-                int privDataLength;
-                // Receive 4Byte: Priv Type
-                res = adapter.receive(dataBuffer, 4);
-                if (res <= 0) {
-                    break;
-                } else {
-                    Logger.VERB(kTag, "Receive(Control Msg): Request(Priv Noti--Start)");
-                    ByteBuffer tempBuffer = ByteBuffer.allocate(4);
-                    //Logger.DEBUG(kTag, "tempBuffer remaining: " + tempBuffer.remaining());
-                    tempBuffer.put(dataBuffer, 0, 4);
-                    privType = tempBuffer.getInt(0);
-                }
-
-                // Receive 4Byte: Private Data Length
-                res = adapter.receive(dataBuffer, 4);
-                if (res <= 0) {
-                    break;
-                } else {
-                    ByteBuffer tempBuffer2 = ByteBuffer.allocate(4);
-                    //Logger.DEBUG(kTag, "tempBuffer2 remaining: " + tempBuffer2.remaining());
-                    tempBuffer2.put(dataBuffer, 0, 4);
-                    privDataLength = tempBuffer2.getInt(0);
-                }
-                if (privDataLength > 512) throw new AssertionError();
-
-                // Receive nByte: Private Data
-                res = adapter.receive(dataBuffer, privDataLength);
-                if (res > 0) {
-                    Logger.VERB(kTag, "Receive(Control Msg): Request(Priv Noti '" + dataBuffer +
-                            "'; type=" + privType + ")");
-                    for (ControlMessageListener listener : mControlMessageListeners) {
-                        listener.onReceiveControlMessage(privType, dataBuffer, privDataLength);
-                    }
-                } else {
-                    break;
-                }
-            }
         }
-        Logger.DEBUG(kTag, "Control adapter has been closed");
-
-        NetworkSwitcher.singleton().reconnectAdapter(adapter);
     }
+
+    private void onReceivePrivateMesesage(String contents) {
+        // Find separator location
+        int separatorPos = contents.indexOf('\n');
+
+        // Divide the message into second line & other lines
+        String secondLine = contents.substring(0, separatorPos);
+        String privateMessage = contents.substring(separatorPos);
+
+        int privateType = Integer.getInteger(secondLine);
+
+        // Notify the private message
+        for (ControlMessageListener listener : mControlMessageListeners) {
+            listener.onReceiveControlMessage(privateType, privateMessage);
+        }
+    }
+
+    public void addControlMessageListener(ControlMessageListener listener) {
+        this.mControlMessageListeners.add(listener);
+    }
+
+    public ControlMessageReceiver() {
+        this.mReceivingThread = null;
+        this.mControlMessageListeners = new ArrayList<>();
+    }
+
+    // Attributes
+    private ReceivingThread mReceivingThread;
+    private ArrayList<ControlMessageListener> mControlMessageListeners;
 }

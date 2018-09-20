@@ -2,8 +2,6 @@ package com.redcarrottt.sc.internal;
 
 import com.redcarrottt.testapp.Logger;
 
-import java.nio.ByteBuffer;
-
 /* Copyright (c) 2018, contributors. All rights reserved.
  *
  * Contributor: Gyeonghwan Hong <redcarrottt@gmail.com>
@@ -21,72 +19,46 @@ import java.nio.ByteBuffer;
  * limitations under the License.
  */
 public class ControlMessageSender {
-    // TODO: convert it to ControlMessageSender
-    // Control Message Handling
-    private void sendControlMessage(byte[] dataBuffer, int dataLength) {
-        int state = this.getState();
-        if (state != State.kReady) {
-            Logger.ERR(kTag, "Core is not started yet, so you cannot send the data");
-            return;
-        }
-        // TODO: use Core API
-//        ClientAdapter controlAdapter = this.getActiveControlAdapter();
-//        if (controlAdapter == null) {
-//            Logger.ERR(kTag, "Failed to send control message: no active control adapter");
-//            return;
-//        }
-//
-//        controlAdapter.send(dataBuffer, dataLength);
-    }
+    private static final String kTag = "ControlMessageSender";
 
-    // TODO: convert it to ControlMessageSender
-    private void sendRequest(char requestCode, short adapterId) {
-        int state = this.getState();
-        if (state != State.kReady) {
-            Logger.ERR(kTag, "Core is not started yet, so you cannot send the data");
-            return;
-        }
-
-        {
-            ByteBuffer buffer = ByteBuffer.allocate(3);
-            buffer.put((byte) requestCode);
-            buffer.putShort(adapterId);
-            this.sendControlMessage(buffer.array(), 3);
-        }
-    }
-
-    // TODO: convert it to ControlMessageSender
-    public void sendRequestConnect(short adapterId) {
-        this.sendRequest(CMCode.kConnect, adapterId);
+    public void sendRequestConnect(int adapterId) {
+        this.sendRequest(ControlMessageProtocol.CMCode.kConnect, adapterId);
         Logger.VERB(kTag, "Send(Control Msg): Request(Connect " + adapterId + ")");
     }
 
-    // TODO: convert it to ControlMessageSender
-    public void sendRequestDisconnect(short adapterId) {
-        this.sendRequest(CMCode.kDisconnect, adapterId);
+    public void sendRequestDisconnect(int adapterId) {
+        this.sendRequest(ControlMessageProtocol.CMCode.kDisconnect, adapterId);
         Logger.VERB(kTag, "Send(Control Msg): Request(Disconnect " + adapterId + ")");
     }
 
-    // TODO: convert it to ControlMessageSender
-    public void sendRequestDisconnectAck(short adapterId) {
-        this.sendRequest(CMCode.kDisconnectAck, adapterId);
+    public void sendRequestDisconnectAck(int adapterId) {
+        this.sendRequest(ControlMessageProtocol.CMCode.kDisconnectAck, adapterId);
         Logger.VERB(kTag, "Send(Control Msg): Request(DisconnectAck " + adapterId + ")");
     }
 
-    // TODO: convert it to ControlMessageSender
-    public void sendRequestSleep(short adapterId) {
-        this.sendRequest(CMCode.kSleep, adapterId);
+    public void sendRequestSleep(int adapterId) {
+        this.sendRequest(ControlMessageProtocol.CMCode.kSleep, adapterId);
         Logger.VERB(kTag, "Send(Control Msg): Request(Sleep " + adapterId + ")");
     }
 
-    // TODO: convert it to ControlMessageSender
-    public void sendRequestWakeup(short adapterId) {
-        this.sendRequest(CMCode.kWakeup, adapterId);
+    public void sendRequestWakeup(int adapterId) {
+        this.sendRequest(ControlMessageProtocol.CMCode.kWakeup, adapterId);
         Logger.VERB(kTag, "Send(Control Msg): Request(WakeUp " + adapterId + ")");
     }
 
-    // TODO: convert it to ControlMessageSender
-    public void sendNotiPrivateData(short adapterId, byte[] privDataBuffer) {
-        // Not implemented yet
+    public void sendNotiPrivateData(int privateType, String privateMessage) {
+        String message = "" + ControlMessageProtocol.CMCode.kPriv + "\n" + privateType + "\n" +
+                privateMessage;
+        this.sendControlMessage(message);
+    }
+
+    private void sendRequest(int requestCode, int adapterId) {
+        String message = "" + requestCode + "\n" + adapterId;
+        this.sendControlMessage(message);
+    }
+
+    private void sendControlMessage(String controlMessage) {
+        byte[] messageBuffer = controlMessage.getBytes();
+        Core.singleton().send(messageBuffer, messageBuffer.length, true);
     }
 }

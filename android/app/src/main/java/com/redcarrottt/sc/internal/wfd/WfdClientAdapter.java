@@ -4,10 +4,9 @@ import android.app.Activity;
 
 import com.redcarrottt.sc.internal.ClientAdapter;
 import com.redcarrottt.sc.internal.ControlMessageListener;
+import com.redcarrottt.sc.internal.ControlMessageProtocol;
 import com.redcarrottt.sc.internal.Core;
 import com.redcarrottt.testapp.Logger;
-
-import java.util.Arrays;
 
 public class WfdClientAdapter extends ClientAdapter implements ControlMessageListener {
     private static final String kTag = "WfdClientAdapter";
@@ -36,15 +35,14 @@ public class WfdClientAdapter extends ClientAdapter implements ControlMessageLis
         this.initialize(device, this.mP2pClient, this.mClientSocket);
 
         // Add WfdP2PClient as a control message listener
-        Core.singleton().addControlMessageListener(this);
+        Core.singleton().getControlMessageReceiver().addControlMessageListener(this);
     }
 
     @Override
-    public void onReceiveControlMessage(int privType, byte[] dataBuffer, int dataLength) {
-        if (privType == Core.PrivType.kWFDInfo) {
-            String message = new String(Arrays.copyOfRange(dataBuffer, 0, dataLength));
-            Logger.DEBUG(kTag, "Received WFD info message: " + message);
-            String wfdInfoLines[] = message.split("\\r?\\n");
+    public void onReceiveControlMessage(int privateType, String privateMessage) {
+        if (privateType == ControlMessageProtocol.PrivType.kWFDInfo) {
+            Logger.DEBUG(kTag, "Received WFD info message: " + privateMessage);
+            String wfdInfoLines[] = privateMessage.split("\\r?\\n");
             if (wfdInfoLines.length < 3) {
                 Logger.ERR(kTag, "WFD info is insufficient: " + wfdInfoLines.length + " < 3");
             }
