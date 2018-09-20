@@ -113,32 +113,32 @@ inline void __func(const char *format, const char *fw, const char *fileName,
 
 #define LOG_THREAD_LAUNCH(thread_name)                                         \
   do {                                                                         \
-    LOG_VERB("Thread(%s;%d) Launch", thread_name, getpid());                   \
+    LOG_VERB("Thread(%s; %d) Launch", thread_name, getpid());                   \
   } while (0)
 
 #define LOG_ADAPTER_THREAD_LAUNCH(adapter_name, thread_name)                   \
   do {                                                                         \
-    LOG_VERB("Thread(%s-%s;%d) Launch", adapter_name, thread_name, getpid());  \
+    LOG_VERB("Thread(%s-%s; %d) Launch", adapter_name, thread_name, getpid());  \
   } while (0)
 
 #define LOG_THREAD_FINISH(thread_name)                                         \
   do {                                                                         \
-    LOG_VERB("Thread(%s;%d) Finish", thread_name, getpid());                   \
+    LOG_VERB("Thread(%s; %d) Finish", thread_name, getpid());                   \
   } while (0)
 
 #define LOG_ADAPTER_THREAD_FINISH(adapter_name, thread_name)                   \
   do {                                                                         \
-    LOG_VERB("Thread(%s-%s;%d) Finish", adapter_name, thread_name, getpid());  \
+    LOG_VERB("Thread(%s-%s; %d) Finish", adapter_name, thread_name, getpid());  \
   } while (0)
 
 #define LOG_THREAD_FAIL(thread_name)                                         \
   do {                                                                         \
-    LOG_ERR("Thread(%s;%d) Failed", thread_name, getpid());                   \
+    LOG_ERR("Thread(%s; %d) Failed", thread_name, getpid());                   \
   } while (0)
 
 #define LOG_ADAPTER_THREAD_FAIL(adapter_name, thread_name)                   \
   do {                                                                         \
-    LOG_ERR("Thread(%s-%s;%d) Failed", adapter_name, thread_name, getpid());  \
+    LOG_ERR("Thread(%s-%s; %d) Failed", adapter_name, thread_name, getpid());  \
   } while (0)
 
 #endif /* !defined(__DEBUG_LOG_H__) */

@@ -54,26 +54,34 @@ class SegmentManager {
     private static final int kSegLenMask = 0x00003fff;
     private static final int kSegFlagMask = 0x0000C000;
 
-    static final int kSegSendData = 0;
-    static final int kSegRecvData = 1;
-    static final int kSegSendControl = 2;
-    static final int kSegRecvControl = 3;
-    private static final int kSegMaxQueueType = 4;
+    static final int kSQSendData = 0;
+    static final int kSQRecvData = 1;
+    static final int kSQSendControl = 2;
+    static final int kSQRecvControl = 3;
+    private static final int kNumSegQueue = 4;
+    static final int kSQUnknown = 999;
+
+    static final int kDeqSendControlData = 0;
+    static final int kDeqRecvData = 1;
+    static final int kDeqRecvControl = 2;
+    private static final int kNumSegDequeue = 3;
 
     static final short kSegFlagMF = 1;
     static final short kSegFlagControl = 2;
 
-    private int seq_no;
-    private int[] next_seq_no;
+    private int mSeqNo;
+    private int[] mNextSeqNo;
 
-    private LinkedList[] queue;
-    private final LinkedList<Segment> failed_queue;
-    private LinkedList[] pending_queue;
-    private int[] queue_size;
+    private LinkedList[] mQueues;
+    private Object[] mDequeueCond;
+    private final LinkedList<Segment> mFailedSendingQueue;
+    private LinkedList[] mPendingQueue;
+    private int[] mQueueLengths;
+
     private static String kTag = "SegmentManager";
 
-    private final LinkedList<Segment> free_list;
-    private int free_list_size;
+    private final LinkedList<Segment> mFreeSegments;
+    private int mFreeSegmentsSize;
 
     // Macro
     private static int mGetSegLenBits(int x) {
@@ -93,29 +101,34 @@ class SegmentManager {
     }
 
     private SegmentManager() {
-        queue = new LinkedList[kSegMaxQueueType];
-        for (int i = 0; i < kSegMaxQueueType; i++) {
-            queue[i] = new LinkedList<Segment>();
+        this.mQueues = new LinkedList[kNumSegQueue];
+        for (int i = 0; i < kNumSegQueue; i++) {
+            this.mQueues[i] = new LinkedList<Segment>();
         }
 
-        failed_queue = new LinkedList<Segment>();
-        pending_queue = new LinkedList[kSegMaxQueueType];
-        for (int i = 0; i < kSegMaxQueueType; i++) {
-            pending_queue[i] = new LinkedList<Segment>();
+        this.mDequeueCond = new Object[kNumSegDequeue];
+        for (int i = 0; i < kNumSegDequeue; i++) {
+            this.mDequeueCond[i] = new Object();
         }
 
-        queue_size = new int[kSegMaxQueueType];
-        for (int i = 0; i < kSegMaxQueueType; i++) {
-            queue_size[i] = 0;
+        this.mFailedSendingQueue = new LinkedList<Segment>();
+        this.mPendingQueue = new LinkedList[kNumSegQueue];
+        for (int i = 0; i < kNumSegQueue; i++) {
+            this.mPendingQueue[i] = new LinkedList<Segment>();
         }
 
-        next_seq_no = new int[kSegMaxQueueType];
-        for (int i = 0; i < kSegMaxQueueType; i++) {
-            next_seq_no[i] = 0;
+        this.mQueueLengths = new int[kNumSegQueue];
+        for (int i = 0; i < kNumSegQueue; i++) {
+            this.mQueueLengths[i] = 0;
         }
 
-        free_list = new LinkedList<Segment>();
-        seq_no = 0;
+        this.mNextSeqNo = new int[kNumSegQueue];
+        for (int i = 0; i < kNumSegQueue; i++) {
+            this.mNextSeqNo[i] = 0;
+        }
+
+        this.mFreeSegments = new LinkedList<Segment>();
+        this.mSeqNo = 0;
     }
 
 
@@ -126,8 +139,8 @@ class SegmentManager {
     }
 
     private int get_seq_no(int length) {
-        int ret = seq_no;
-        seq_no += length;
+        int ret = mSeqNo;
+        mSeqNo += length;
 
         return ret;
     }
@@ -157,9 +170,9 @@ class SegmentManager {
             serialize_segment_header(seg);
 
             if (isControl) {
-                enqueue(kSegSendControl, seg);
+                enqueue(kSQSendControl, seg);
             } else {
-                enqueue(kSegSendData, seg);
+                enqueue(kSQSendData, seg);
             }
         }
 
@@ -189,9 +202,9 @@ class SegmentManager {
 
         Segment seg;
         if (isControl) {
-            seg = dequeue(kSegRecvControl);
+            seg = dequeue(kSQRecvControl);
         } else {
-            seg = dequeue(kSegRecvData);
+            seg = dequeue(kSQRecvData);
         }
         ProtocolManager.parse_header(Arrays.copyOfRange(seg.data, kSegHeaderSize, seg.data
                 .length), protocolData);
@@ -202,8 +215,8 @@ class SegmentManager {
 
         // Handle the first segment of the data bulk, because it contains protocol data
         data_size = mGetSegLenBits(seg.flag_len) - ProtocolManager.kProtocolHeaderSize;
-        System.arraycopy(seg.data, kSegHeaderSize + ProtocolManager.kProtocolHeaderSize, serialized,
-                offset, data_size);
+        System.arraycopy(seg.data, kSegHeaderSize + ProtocolManager.kProtocolHeaderSize,
+                serialized, offset, data_size);
         offset += data_size;
 
         cont = ((mGetSegFlagBits(seg.flag_len) & kSegFlagMF) != 0);
@@ -211,9 +224,9 @@ class SegmentManager {
 
         while (cont) {
             if (isControl) {
-                seg = dequeue(kSegRecvControl);
+                seg = dequeue(kDeqRecvControl);
             } else {
-                seg = dequeue(kSegRecvData);
+                seg = dequeue(kDeqRecvData);
             }
             data_size = mGetSegLenBits(seg.flag_len);
             System.arraycopy(seg.data, kSegHeaderSize, serialized, offset, data_size);
@@ -225,81 +238,146 @@ class SegmentManager {
         return serialized;
     }
 
-    public void enqueue(int type, Segment segment) {
-        if (type >= kSegMaxQueueType) throw new AssertionError();
+    public void enqueue(int queueType, Segment segment) {
+        if (queueType >= kNumSegQueue) throw new AssertionError();
 
-        synchronized (queue[type]) {
-            boolean segment_enqueued = false;
+        int dequeueType;
+        switch (queueType) {
+            case kSQRecvControl:
+                dequeueType = kDeqRecvControl;
+                break;
+            case kSQRecvData:
+                dequeueType = kDeqRecvData;
+                break;
+            case kSQSendControl:
+            case kSQSendData:
+                dequeueType = kDeqSendControlData;
+                break;
+            default:
+                Logger.ERR(kTag, "Enqueue: Unknown queue type: " + queueType);
+                return;
+        }
 
-            if (segment.seq_no == next_seq_no[type]) {
-                next_seq_no[type]++;
-                queue[type].offerLast(segment);
-                queue_size[type]++;
-                segment_enqueued = true;
-            } else {
-                if (segment.seq_no < next_seq_no[type]) {
-                    // If duplicated data comes, ignore it.
-                    Logger.DEBUG(kTag, "Sequence No Error: (" + type + ") incoming=" + segment
-                            .seq_no + " / expected_next=" + next_seq_no[type]);
-                    return;
+        synchronized (mDequeueCond[dequeueType]) {
+            boolean segmentEnqueued = false;
+            synchronized (mQueues[queueType]) {
+                if (segment.seq_no == mNextSeqNo[queueType]) {
+                    mNextSeqNo[queueType]++;
+                    mQueues[queueType].offerLast(segment);
+                    mQueueLengths[queueType]++;
+                    segmentEnqueued = true;
+                } else {
+                    if (segment.seq_no < mNextSeqNo[queueType]) {
+                        // If duplicated data comes, ignore it.
+                        Logger.DEBUG(kTag, "Sequence No Error: (" + queueType + ") incoming=" +
+                                segment.seq_no + " / expected_next=" + mNextSeqNo[queueType]);
+
+                        return;
+                    }
+
+                    ListIterator it = mPendingQueue[queueType].listIterator();
+                    while (it.hasNext()) {
+                        Segment walker = (Segment) it.next();
+                        if (walker.seq_no > segment.seq_no) break;
+                    }
+
+                    it.add(segment);
                 }
 
-                ListIterator it = pending_queue[type].listIterator();
+                ListIterator it = mPendingQueue[queueType].listIterator();
                 while (it.hasNext()) {
                     Segment walker = (Segment) it.next();
 
-                    if (walker.seq_no > segment.seq_no) break;
+                    if (walker.seq_no != mNextSeqNo[queueType]) break;
+
+                    mQueues[queueType].offerLast(walker);
+                    mQueueLengths[queueType]++;
+                    mNextSeqNo[queueType]++;
+                    segmentEnqueued = true;
+
+                    it.remove();
                 }
-
-                it.add(segment);
             }
-
-            ListIterator it = pending_queue[type].listIterator();
-            while (it.hasNext()) {
-                Segment walker = (Segment) it.next();
-
-                if (walker.seq_no != next_seq_no[type]) break;
-
-                queue[type].offerLast(walker);
-                queue_size[type]++;
-                next_seq_no[type]++;
-                segment_enqueued = true;
-
-                it.remove();
-            }
-
-            if (segment_enqueued) {
-                //Logger.DEBUG(kTag, "WakeUP!");
-                queue[type].notifyAll();
+            if (segmentEnqueued) {
+                this.mDequeueCond[dequeueType].notifyAll();
             }
         }
     }
 
-    public Segment dequeue(int type) {
-        synchronized (queue[type]) {
-            if (queue_size[type] == 0) {
+    public Segment dequeue(int dequeueType) {
+        assert (dequeueType < kNumSegDequeue);
+        synchronized (this.mDequeueCond[dequeueType]) {
+            // If queue is empty, wait until some segment is enqueued
+            boolean isWaitRequired = false;
+            switch (dequeueType) {
+                case kDeqSendControlData:
+                    isWaitRequired = ((this.mQueueLengths[kSQSendControl] == 0) && (this
+                            .mQueueLengths[kSQSendData] == 0));
+                    break;
+                case kDeqRecvControl:
+                    isWaitRequired = (this.mQueueLengths[kSQRecvControl] == 0);
+                    break;
+                case kDeqRecvData:
+                    isWaitRequired = (this.mQueueLengths[kSQRecvData] == 0);
+                    break;
+            }
+            if (isWaitRequired) {
                 try {
-                    queue[type].wait();
+                    this.mDequeueCond[dequeueType].wait();
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 }
             }
+        }
 
-            Segment ret = (Segment) queue[type].pollFirst();
-            queue_size[type]--;
+        // Dequeue from queue
+        int targetQueueType = kSQUnknown;
+        switch (dequeueType) {
+            case kDeqSendControlData:
+                if (this.mQueueLengths[kSQSendControl] != 0) {
+                    // Priority 1. Dequeue send control queue
+                    targetQueueType = kSQSendControl;
+                } else if (this.mQueueLengths[kSQSendData] != 0) {
+                    // Priority 2. Dequeue send data queue
+                    targetQueueType = kSQSendData;
+                }
+                break;
+            case kDeqRecvControl:
+                targetQueueType = kSQRecvControl;
+                break;
+            case kDeqRecvData:
+                targetQueueType = kSQRecvData;
+                break;
+            default:
+                Logger.ERR(kTag, "Dequeue failed: invalid dequeue type (Dequeue=" + dequeueType +
+                        ")");
+                return null;
+        }
 
-            return ret;
+        synchronized (this.mQueues[targetQueueType]) {
+            // Check queue type
+            if (targetQueueType >= kNumSegQueue) {
+                Logger.ERR(kTag, "Dequeue failed: invalid queue type (Dequeue=" + dequeueType +
+                        ")");
+                return null;
+            }
+
+            // Check the dequeued segment
+            Segment segmentDequeued = (Segment) this.mQueues[targetQueueType].pollFirst();
+            mQueueLengths[targetQueueType]--;
+
+            return segmentDequeued;
         }
     }
 
     public Segment get_free_segment() {
         Segment ret;
-        synchronized (free_list) {
-            if (free_list_size == 0) {
+        synchronized (mFreeSegments) {
+            if (mFreeSegmentsSize == 0) {
                 ret = new Segment();
             } else {
-                ret = free_list.pop();
-                free_list_size--;
+                ret = mFreeSegments.pop();
+                mFreeSegmentsSize--;
             }
 
             if (ret == null) throw new AssertionError();
@@ -311,33 +389,33 @@ class SegmentManager {
     }
 
     public void free_segment(Segment seg) {
-        synchronized (free_list) {
-            free_list.push(seg);
-            free_list_size++;
+        synchronized (mFreeSegments) {
+            mFreeSegments.push(seg);
+            mFreeSegmentsSize++;
 
-            if (free_list_size > kSegFreeThreshold) {
+            if (mFreeSegmentsSize > kSegFreeThreshold) {
                 release_segment_from_free_list(kSegFreeThreshold / 2);
             }
         }
     }
 
     private void release_segment_from_free_list(int threshold) {
-        while (free_list_size > threshold) {
-            free_list.pop();
-            free_list_size--;
+        while (mFreeSegmentsSize > threshold) {
+            mFreeSegments.pop();
+            mFreeSegmentsSize--;
         }
     }
 
     public void failed_sending(Segment seg) {
-        synchronized (failed_queue) {
-            failed_queue.offerLast(seg);
+        synchronized (mFailedSendingQueue) {
+            mFailedSendingQueue.offerLast(seg);
         }
     }
 
     public Segment get_failed_sending() {
         Segment ret;
-        synchronized (failed_queue) {
-            ret = failed_queue.pollFirst();
+        synchronized (mFailedSendingQueue) {
+            ret = mFailedSendingQueue.pollFirst();
         }
 
         return ret;

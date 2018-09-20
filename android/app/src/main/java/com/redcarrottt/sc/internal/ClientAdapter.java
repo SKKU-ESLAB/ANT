@@ -27,12 +27,11 @@ import java.util.Date;
 import static com.redcarrottt.sc.internal.ExpConfig.VERBOSE_CLIENT_ADAPTER;
 import static com.redcarrottt.sc.internal.ExpConfig.VERBOSE_RECEIVER_TIME;
 import static com.redcarrottt.sc.internal.ExpConfig.VERBOSE_SEGMENT_DEQUEUE;
+import static com.redcarrottt.sc.internal.SegmentManager.kDeqSendControlData;
+import static com.redcarrottt.sc.internal.SegmentManager.kSQRecvControl;
+import static com.redcarrottt.sc.internal.SegmentManager.kSQRecvData;
 import static com.redcarrottt.sc.internal.SegmentManager.kSegFlagControl;
 import static com.redcarrottt.sc.internal.SegmentManager.kSegHeaderSize;
-import static com.redcarrottt.sc.internal.SegmentManager.kSegRecvControl;
-import static com.redcarrottt.sc.internal.SegmentManager.kSegRecvData;
-import static com.redcarrottt.sc.internal.SegmentManager.kSegSendControl;
-import static com.redcarrottt.sc.internal.SegmentManager.kSegSendData;
 import static com.redcarrottt.sc.internal.SegmentManager.kSegSize;
 
 public class ClientAdapter {
@@ -430,12 +429,9 @@ public class ClientAdapter {
                 // Priority 1. Failed sending queue
                 segmentToSend = sm.get_failed_sending();
                 // Priority 2. Send control queue
-                if (segmentToSend == null) {
-                    segmentToSend = sm.dequeue(kSegSendControl);
-                }
                 // Priority 3. Send data queue
                 if (segmentToSend == null) {
-                    segmentToSend = sm.dequeue(kSegSendData);
+                    segmentToSend = sm.dequeue(kDeqSendControlData);
                 }
 
                 // If it is suspended, push the segment to the send-fail queue
@@ -547,9 +543,9 @@ public class ClientAdapter {
                 boolean is_control = ((SegmentManager.mGetSegFlagBits(segmentToReceive.flag_len)
                         & kSegFlagControl) != 0);
                 if (is_control) {
-                    sm.enqueue(kSegRecvControl, segmentToReceive);
+                    sm.enqueue(kSQRecvControl, segmentToReceive);
                 } else {
-                    sm.enqueue(kSegRecvData, segmentToReceive);
+                    sm.enqueue(kSQRecvData, segmentToReceive);
                 }
 
                 if (VERBOSE_RECEIVER_TIME) this.mDates[4] = new Date();
