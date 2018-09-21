@@ -113,6 +113,7 @@ class RfcommClientSocket extends ClientSocket {
                 }
                 receivedBytes += onceReceivedBytes;
             }
+            Logger.DEBUG(kTag, "RFCOMM received " + receivedBytes);
             return dataLength;
         } catch (IOException e) {
             Logger.ERR(kTag, "Receive failed! 2 / " + e.getMessage());
