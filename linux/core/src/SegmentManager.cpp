@@ -86,15 +86,21 @@ int SegmentManager::send_to_segment_manager(uint8_t *data, size_t len,
       flag |= kSegFlagMF;
     if (is_control)
       flag |= kSegFlagControl;
+    uint32_t orig_flag_len = seg->flag_len;
     mSetSegFlagBits(flag, seg->flag_len);
 
     /* Set segment header to data */
     this->serialize_segment_header(seg);
 
     if (is_control) {
-      this->enqueue(kSendControl, seg);
+      LOG_DEBUG(
+          "Enqueue(control) IsControl: %d / flag: %d / SegFlag: %lu -> %lu / SeqNo: %lu,%lu,%lu / len=%d",
+          is_control, flag, orig_flag_len, seg->flag_len, allocated_seq_no, seg->seq_no, this->mNextGlobalSeqNo, len);
+      this->enqueue(kSQSendControl, seg);
     } else {
-      this->enqueue(kSendData, seg);
+      // LOG_DEBUG("Enqueue(data) IsControl: %d / flag: %d / SegFlag: %lu -> %lu",
+      //           is_control, flag, orig_flag_len, seg->flag_len);
+      this->enqueue(kSQSendData, seg);
     }
   }
 
@@ -161,38 +167,42 @@ uint8_t *SegmentManager::recv_from_segment_manager(void *proc_data_handle,
  * It enqeueus the data to the sending queue in order with the sequence number.
  */
 void SegmentManager::enqueue(SegQueueType queue_type, Segment *seg) {
-  assert(queue_type < kNumSegQueue);
+  assert(queue_type < kNumSQ);
   // Get lock for the queue
   SegDequeueType dequeue_type;
+  SegSeqNumType seq_num_type;
   switch (queue_type) {
-  case SegQueueType::kRecvControl:
+  case SegQueueType::kSQRecvControl:
     dequeue_type = SegDequeueType::kDeqRecvControl;
+    seq_num_type = SegSeqNumType::kSNRecv;
     break;
-  case SegQueueType::kRecvData:
+  case SegQueueType::kSQRecvData:
     dequeue_type = SegDequeueType::kDeqRecvData;
+    seq_num_type = SegSeqNumType::kSNRecv;
     break;
-  case SegQueueType::kSendControl:
-  case SegQueueType::kSendData:
+  case SegQueueType::kSQSendControl:
+  case SegQueueType::kSQSendData:
     dequeue_type = SegDequeueType::kDeqSendControlData;
+    seq_num_type = SegSeqNumType::kSNSend;
     break;
   default:
     LOG_ERR("Unknown queue type: %d", queue_type);
     return;
   }
 
-  std::unique_lock<std::mutex> lck(this->mDequeueLock[dequeue_type]);
+  std::unique_lock<std::mutex> dequeue_lock(this->mDequeueLock[dequeue_type]);
   bool segment_enqueued = false;
 
-  if (queue_type == kSendControl || queue_type == kSendData) {
+  if (queue_type == kSQSendControl || queue_type == kSQSendData) {
     this->mSendRequest.add(SEGMENT_DATA_SIZE);
   }
 
-  if (seg->seq_no == this->mNextSeqNo[queue_type]) {
+  if (seg->seq_no == this->mNextSeqNo[seq_num_type]) {
     /*
      * If the sequence number is the right next one,
      * it executes enqueuing logic normally.
      */
-    this->mNextSeqNo[queue_type]++;
+    this->mNextSeqNo[seq_num_type]++;
     this->mQueues[queue_type].push_back(seg);
     this->mQueueLength[queue_type].increase();
     segment_enqueued = true;
@@ -201,11 +211,11 @@ void SegmentManager::enqueue(SegQueueType queue_type, Segment *seg) {
      * If the sequence number is not the next expected one,
      * it enqueues its segments to the pending queue, not normal queue.
      */
-    if (seg->seq_no <= this->mNextSeqNo[queue_type]) {
+    if (seg->seq_no <= this->mNextSeqNo[seq_num_type]) {
       LOG_ERR("Sequence # Error!: %d > %d (Queue #%d)", seg->seq_no,
-              this->mNextSeqNo[queue_type], (int)queue_type);
+              this->mNextSeqNo[seq_num_type], (int)queue_type);
     }
-    assert(seg->seq_no > this->mNextSeqNo[queue_type]);
+    assert(seg->seq_no > this->mNextSeqNo[seq_num_type]);
 
     std::list<Segment *>::iterator curr_it =
         this->mPendingQueues[queue_type].begin();
@@ -232,8 +242,8 @@ void SegmentManager::enqueue(SegQueueType queue_type, Segment *seg) {
   std::list<Segment *>::iterator curr_it =
       this->mPendingQueues[queue_type].begin();
   while (curr_it != this->mPendingQueues[queue_type].end() &&
-         (*curr_it)->seq_no == this->mNextSeqNo[queue_type]) {
-    this->mNextSeqNo[queue_type]++;
+         (*curr_it)->seq_no == this->mNextSeqNo[seq_num_type]) {
+    this->mNextSeqNo[seq_num_type]++;
     this->mQueues[queue_type].push_back(*curr_it);
     this->mQueueLength[queue_type].increase();
     segment_enqueued = true;
@@ -242,7 +252,6 @@ void SegmentManager::enqueue(SegQueueType queue_type, Segment *seg) {
     this->mPendingQueues[queue_type].erase(to_erase);
   }
 
-  std::unique_lock<std::mutex> lck(this->mDequeueLock[dequeue_type]);
   if (segment_enqueued)
     this->mDequeueCond[dequeue_type].notify_all();
 }
@@ -252,7 +261,7 @@ void SegmentManager::enqueue(SegQueueType queue_type, Segment *seg) {
  * Note that this function is used for sending & receiving queue.
  */
 Segment *SegmentManager::dequeue(SegDequeueType dequeue_type) {
-  assert(dequeue_type < kNumSegDequeue);
+  assert(dequeue_type < kNumDeq);
   std::unique_lock<std::mutex> dequeue_lock(this->mDequeueLock[dequeue_type]);
 
   /* If queue is empty, wait until some segment is enqueued */
@@ -260,16 +269,16 @@ Segment *SegmentManager::dequeue(SegDequeueType dequeue_type) {
   switch (dequeue_type) {
   case SegDequeueType::kDeqSendControlData:
     is_wait_required =
-        ((this->mQueueLength[SegQueueType::kSendControl].get_value() == 0) &&
-         (this->mQueueLength[SegQueueType::kSendData].get_value() == 0));
+        ((this->mQueueLength[SegQueueType::kSQSendControl].get_value() == 0) &&
+         (this->mQueueLength[SegQueueType::kSQSendData].get_value() == 0));
     break;
   case SegDequeueType::kDeqRecvControl:
     is_wait_required =
-        (this->mQueueLength[SegQueueType::kRecvControl].get_value() == 0);
+        (this->mQueueLength[SegQueueType::kSQRecvControl].get_value() == 0);
     break;
   case SegDequeueType::kDeqRecvData:
     is_wait_required =
-        (this->mQueueLength[SegQueueType::kRecvData].get_value() == 0);
+        (this->mQueueLength[SegQueueType::kSQRecvData].get_value() == 0);
     break;
   }
 
@@ -286,24 +295,24 @@ Segment *SegmentManager::dequeue(SegDequeueType dequeue_type) {
   }
 
   // Dequeue from queue
-  SegQueueType target_queue_type = SegQueueType::kUnknownQueue;
+  SegQueueType target_queue_type = SegQueueType::kSQUnknown;
   switch (dequeue_type) {
   case SegDequeueType::kDeqSendControlData: {
-    if (this->mQueueLength[SegQueueType::kSendControl].get_value() != 0) {
+    if (this->mQueueLength[SegQueueType::kSQSendControl].get_value() != 0) {
       // Priority 1. Dequeue send control queue
-      target_queue_type = kSendControl;
-    } else if (this->mQueueLength[SegQueueType::kSendData].get_value() != 0) {
+      target_queue_type = kSQSendControl;
+    } else if (this->mQueueLength[SegQueueType::kSQSendData].get_value() != 0) {
       // Priority 2. Dequeue send data queue
-      target_queue_type = kSendData;
+      target_queue_type = kSQSendData;
     }
     break;
   }
   case SegDequeueType::kDeqRecvControl: {
-    target_queue_type = kRecvControl;
+    target_queue_type = kSQRecvControl;
     break;
   }
   case SegDequeueType::kDeqRecvData: {
-    target_queue_type = kRecvData;
+    target_queue_type = kSQRecvData;
     break;
   }
   default: {
@@ -313,7 +322,7 @@ Segment *SegmentManager::dequeue(SegDequeueType dequeue_type) {
   }
 
   // Check queue type
-  if (target_queue_type >= SegQueueType::kNumSegQueue) {
+  if (target_queue_type >= SegQueueType::kNumSQ) {
     LOG_ERR("Dequeue failed: invalid queue type (dequeue=%d)", dequeue_type);
     return NULL;
   }

@@ -89,4 +89,5 @@ void ControlMessageSender::send_noti_private_data(PrivType priv_type,
 
   // Send the message
   this->send_control_message(message);
+  LOG_VERB("Send(Control Msg): Request(Priv %d)\n%s", priv_type, priv_data_buffer);
 }

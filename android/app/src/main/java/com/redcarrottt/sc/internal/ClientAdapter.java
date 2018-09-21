@@ -662,6 +662,9 @@ public class ClientAdapter {
         this.mIsDisconnectingOnPurposePeer = false;
         this.mIsWaitReceiverThread = false;
         this.mIsWaitSenderThread = false;
+
+        this.mSenderThread = new SenderThread();
+        this.mReceiverThread = new ReceiverThread();
     }
 
     protected void initialize(Device device, P2PClient p2pClient, ClientSocket clientSocket) {

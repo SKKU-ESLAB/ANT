@@ -37,19 +37,19 @@
 #define LOG_LEVEL 0
 #endif
 
-#define _log(format, fw, color, args...)                                       \
+#define _log(format, color, args...)                                           \
   do {                                                                         \
-    __log(format, fw, __FILE__, __func__, color, __LINE__, ##args);            \
+    __log(format, __FILE__, __func__, color, __LINE__, ##args);                \
   } while (0)
-#define _func(format, fw, args...)                                             \
+#define _func(format, args...)                                                 \
   do {                                                                         \
-    __func(format, fw, __FILE__, __func__, __LINE__, ##args);                  \
+    __func(format, __FILE__, __func__, __LINE__, ##args);                      \
   } while (0)
 
 #if LOG_LEVEL < 1
 #define LOG_DEBUG(fmt, args...)                                                \
   do {                                                                         \
-    _log(fmt, "D", 9, ##args);                                                 \
+    _log(fmt, 9, ##args);                                                      \
   } while (0)
 #else /* LOG_LEVEL >= 1 */
 #define LOG_DEBUG(fmt, args...)
@@ -58,7 +58,7 @@
 #if LOG_LEVEL < 2
 #define LOG_VERB(fmt, args...)                                                 \
   do {                                                                         \
-    _log(fmt, "V", 94, ##args);                                                \
+    _log(fmt, 94, ##args);                                                     \
   } while (0)
 #else /* LOG_LEVEL >= 2 */
 #define LOG_VERB(fmt, args...)
@@ -67,7 +67,7 @@
 #if LOG_LEVEL < 3
 #define LOG_WARN(fmt, args...)                                                 \
   do {                                                                         \
-    _log(fmt, "W", 91, ##args);                                                \
+    _log(fmt, 91, ##args);                                                     \
   } while (0)
 #else /* LOG_LEVEL >= 3 */
 #define LOG_WARN(fmt, args...)
@@ -76,7 +76,7 @@
 #if LOG_LEVEL < 4
 #define LOG_ERR(fmt, args...)                                                  \
   do {                                                                         \
-    _log(fmt, "E", 101, ##args);                                               \
+    _log(fmt, 101, ##args);                                                    \
   } while (0)
 #else /* LOG_LEVEL >= 4 */
 #define LOG_ERR(fmt, args...)
@@ -91,52 +91,38 @@
     _func("EXIT");                                                             \
   } while (0)
 
-inline void __log(const char *format, const char *fw, const char *fileName,
-                  const char *funcName, int color, int lineNo, ...) {
-  va_list ap;
-  printf("\033[%dm%s %s:%d (%s())  ", color, fw, fileName, lineNo, funcName);
-  va_start(ap, lineNo);
-  vprintf(format, ap);
-  va_end(ap);
-  printf("\033[0m\n");
-}
+void __log(const char *format, const char *fileName, const char *funcName,
+           int color, int lineNo, ...);
 
-inline void __func(const char *format, const char *fw, const char *fileName,
-                   const char *funcName, int lineNo, ...) {
-  va_list ap;
-  printf("\033[2m%s %s:%d (%s())  ", fw, fileName, lineNo, funcName);
-  va_start(ap, lineNo);
-  vprintf(format, ap);
-  va_end(ap);
-  printf("]\033[0m\n");
-}
+void __func(const char *format, const char *fileName, const char *funcName,
+            int lineNo, ...);
 
 #define LOG_THREAD_LAUNCH(thread_name)                                         \
   do {                                                                         \
-    LOG_VERB("Thread(%s; %d) Launch", thread_name, getpid());                   \
+    LOG_VERB("Thread(%s; %d) Launch", thread_name, getpid());                  \
   } while (0)
 
 #define LOG_ADAPTER_THREAD_LAUNCH(adapter_name, thread_name)                   \
   do {                                                                         \
-    LOG_VERB("Thread(%s-%s; %d) Launch", adapter_name, thread_name, getpid());  \
+    LOG_VERB("Thread(%s-%s; %d) Launch", adapter_name, thread_name, getpid()); \
   } while (0)
 
 #define LOG_THREAD_FINISH(thread_name)                                         \
   do {                                                                         \
-    LOG_VERB("Thread(%s; %d) Finish", thread_name, getpid());                   \
+    LOG_VERB("Thread(%s; %d) Finish", thread_name, getpid());                  \
   } while (0)
 
 #define LOG_ADAPTER_THREAD_FINISH(adapter_name, thread_name)                   \
   do {                                                                         \
-    LOG_VERB("Thread(%s-%s; %d) Finish", adapter_name, thread_name, getpid());  \
+    LOG_VERB("Thread(%s-%s; %d) Finish", adapter_name, thread_name, getpid()); \
   } while (0)
 
-#define LOG_THREAD_FAIL(thread_name)                                         \
+#define LOG_THREAD_FAIL(thread_name)                                           \
   do {                                                                         \
     LOG_ERR("Thread(%s; %d) Failed", thread_name, getpid());                   \
   } while (0)
 
-#define LOG_ADAPTER_THREAD_FAIL(adapter_name, thread_name)                   \
+#define LOG_ADAPTER_THREAD_FAIL(adapter_name, thread_name)                     \
   do {                                                                         \
     LOG_ERR("Thread(%s-%s; %d) Failed", adapter_name, thread_name, getpid());  \
   } while (0)

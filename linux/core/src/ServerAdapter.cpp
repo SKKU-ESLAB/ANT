@@ -449,7 +449,6 @@ void ServerAdapter::sender_thread_loop(void) {
 #ifdef VERBOSE_SEGMENT_DEQUEUE
     bool is_control =
         ((mGetSegFlagBits(segment_to_send->flag_len) & kSegFlagControl) != 0);
-
     LOG_DEBUG("%s: %s Segment (type=%s, seqno=%d)", this->get_name(),
               (is_get_failed_segment ? "Failed" : "Normal"),
               (is_control ? "Ctrl" : "Data"), segment_to_send->seq_no);
@@ -601,9 +600,9 @@ void ServerAdapter::receiver_thread_loop(void) {
                         kSegFlagControl) != 0);
 
     if (is_control) {
-      sm->enqueue(kRecvControl, segment_to_receive);
+      sm->enqueue(kSQRecvControl, segment_to_receive);
     } else {
-      sm->enqueue(kRecvData, segment_to_receive);
+      sm->enqueue(kSQRecvData, segment_to_receive);
     }
     segment_to_receive = sm->get_free_segment();
 

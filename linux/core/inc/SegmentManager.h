@@ -58,12 +58,12 @@ namespace sc {
  * Queue Type
  */
 typedef enum {
-  kSendData = 0,
-  kRecvData = 1,
-  kSendControl = 2,
-  kRecvControl = 3,
-  kNumSegQueue = 4,
-  kUnknownQueue = 999
+  kSQSendData = 0,
+  kSQRecvData = 1,
+  kSQSendControl = 2,
+  kSQRecvControl = 3,
+  kNumSQ = 4,
+  kSQUnknown = 999
 } SegQueueType; /* enum SegQueueType */
 
 /**
@@ -73,8 +73,17 @@ typedef enum {
   kDeqSendControlData = 0,
   kDeqRecvData = 1,
   kDeqRecvControl = 2,
-  kNumSegDequeue = 3
+  kNumDeq = 3
 } SegDequeueType; /* enum SegDequeueType */
+
+/**
+ * Sequence Number Type
+ */
+typedef enum {
+  kSNSend = 0,
+  kSNRecv = 1,
+  kNumSN = 2
+} SegSeqNumType; /* enum SegSeqNumType */
 
 /**
  * Types of Flag
@@ -139,7 +148,7 @@ private:
   static SegmentManager *sSingleton;
   SegmentManager(void) {
     this->mNextGlobalSeqNo = 0;
-    for (int i = 0; i < kNumSegQueue; i++) {
+    for (int i = 0; i < kNumSN; i++) {
       this->mNextSeqNo[i] = 0;
     }
     this->mFreeSegmentListSize = 0;
@@ -158,18 +167,18 @@ private:
   FILE *fp2;
 
   /* When access to queue, lock should be acquired */
-  std::mutex mDequeueLock[kNumSegDequeue];
+  std::mutex mDequeueLock[kNumDeq];
   std::mutex mSendFailQueueLock;
-  std::condition_variable mDequeueCond[kNumSegDequeue];
+  std::condition_variable mDequeueCond[kNumDeq];
 
-  uint32_t mNextSeqNo[kNumSegQueue];
-  std::list<Segment *> mQueues[kNumSegQueue];
+  uint32_t mNextSeqNo[kNumSN];
+  std::list<Segment *> mQueues[kNumSQ];
   std::list<Segment *> mSendFailQueue;
-  std::list<Segment *> mPendingQueues[kNumSegQueue];
+  std::list<Segment *> mPendingQueues[kNumSQ];
 
   /* Statistics */
   Counter mSendRequest;
-  Counter mQueueLength[kNumSegQueue];
+  Counter mQueueLength[kNumSQ];
   Counter mFailedSendingQueueLength;
 
   /* Reserved free segment list */

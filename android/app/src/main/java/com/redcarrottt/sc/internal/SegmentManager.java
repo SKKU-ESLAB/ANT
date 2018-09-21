@@ -58,13 +58,17 @@ class SegmentManager {
     static final int kSQRecvData = 1;
     static final int kSQSendControl = 2;
     static final int kSQRecvControl = 3;
-    private static final int kNumSegQueue = 4;
+    private static final int kNumSQ = 4;
     static final int kSQUnknown = 999;
 
     static final int kDeqSendControlData = 0;
     static final int kDeqRecvData = 1;
     static final int kDeqRecvControl = 2;
-    private static final int kNumSegDequeue = 3;
+    private static final int kNumDeq = 3;
+
+    static final int kSNSend = 0;
+    static final int kSNRecv = 1;
+    private static final int kNumSN = 2;
 
     static final short kSegFlagMF = 1;
     static final short kSegFlagControl = 2;
@@ -101,29 +105,29 @@ class SegmentManager {
     }
 
     private SegmentManager() {
-        this.mQueues = new LinkedList[kNumSegQueue];
-        for (int i = 0; i < kNumSegQueue; i++) {
+        this.mQueues = new LinkedList[kNumSQ];
+        for (int i = 0; i < kNumSQ; i++) {
             this.mQueues[i] = new LinkedList<Segment>();
         }
 
-        this.mDequeueCond = new Object[kNumSegDequeue];
-        for (int i = 0; i < kNumSegDequeue; i++) {
+        this.mDequeueCond = new Object[kNumDeq];
+        for (int i = 0; i < kNumDeq; i++) {
             this.mDequeueCond[i] = new Object();
         }
 
         this.mFailedSendingQueue = new LinkedList<Segment>();
-        this.mPendingQueue = new LinkedList[kNumSegQueue];
-        for (int i = 0; i < kNumSegQueue; i++) {
+        this.mPendingQueue = new LinkedList[kNumSQ];
+        for (int i = 0; i < kNumSQ; i++) {
             this.mPendingQueue[i] = new LinkedList<Segment>();
         }
 
-        this.mQueueLengths = new int[kNumSegQueue];
-        for (int i = 0; i < kNumSegQueue; i++) {
+        this.mQueueLengths = new int[kNumSQ];
+        for (int i = 0; i < kNumSQ; i++) {
             this.mQueueLengths[i] = 0;
         }
 
-        this.mNextSeqNo = new int[kNumSegQueue];
-        for (int i = 0; i < kNumSegQueue; i++) {
+        this.mNextSeqNo = new int[kNumSN];
+        for (int i = 0; i < kNumSN; i++) {
             this.mNextSeqNo[i] = 0;
         }
 
@@ -202,9 +206,9 @@ class SegmentManager {
 
         Segment seg;
         if (isControl) {
-            seg = dequeue(kSQRecvControl);
+            seg = dequeue(kDeqRecvControl);
         } else {
-            seg = dequeue(kSQRecvData);
+            seg = dequeue(kDeqRecvData);
         }
         ProtocolManager.parse_header(Arrays.copyOfRange(seg.data, kSegHeaderSize, seg.data
                 .length), protocolData);
@@ -239,19 +243,23 @@ class SegmentManager {
     }
 
     public void enqueue(int queueType, Segment segment) {
-        if (queueType >= kNumSegQueue) throw new AssertionError();
+        if (queueType >= kNumSQ) throw new AssertionError();
 
         int dequeueType;
+        int seqNumType;
         switch (queueType) {
             case kSQRecvControl:
                 dequeueType = kDeqRecvControl;
+                seqNumType = kSNRecv;
                 break;
             case kSQRecvData:
                 dequeueType = kDeqRecvData;
+                seqNumType = kSNRecv;
                 break;
             case kSQSendControl:
             case kSQSendData:
                 dequeueType = kDeqSendControlData;
+                seqNumType = kSNSend;
                 break;
             default:
                 Logger.ERR(kTag, "Enqueue: Unknown queue type: " + queueType);
@@ -260,44 +268,43 @@ class SegmentManager {
 
         synchronized (mDequeueCond[dequeueType]) {
             boolean segmentEnqueued = false;
-            synchronized (mQueues[queueType]) {
-                if (segment.seq_no == mNextSeqNo[queueType]) {
-                    mNextSeqNo[queueType]++;
-                    mQueues[queueType].offerLast(segment);
-                    mQueueLengths[queueType]++;
-                    segmentEnqueued = true;
-                } else {
-                    if (segment.seq_no < mNextSeqNo[queueType]) {
-                        // If duplicated data comes, ignore it.
-                        Logger.DEBUG(kTag, "Sequence No Error: (" + queueType + ") incoming=" +
-                                segment.seq_no + " / expected_next=" + mNextSeqNo[queueType]);
+            if (segment.seq_no == mNextSeqNo[seqNumType]) {
+                mNextSeqNo[seqNumType]++;
+                mQueues[queueType].offerLast(segment);
+                mQueueLengths[queueType]++;
+                segmentEnqueued = true;
+            } else {
+                if (segment.seq_no < mNextSeqNo[seqNumType]) {
+                    // If duplicated data comes, ignore it.
+                    Logger.DEBUG(kTag, "Sequence No Error: (" + queueType + ") incoming=" +
+                            segment.seq_no + " / expected_next=" + mNextSeqNo[seqNumType]);
 
-                        return;
-                    }
-
-                    ListIterator it = mPendingQueue[queueType].listIterator();
-                    while (it.hasNext()) {
-                        Segment walker = (Segment) it.next();
-                        if (walker.seq_no > segment.seq_no) break;
-                    }
-
-                    it.add(segment);
+                    return;
                 }
 
                 ListIterator it = mPendingQueue[queueType].listIterator();
                 while (it.hasNext()) {
                     Segment walker = (Segment) it.next();
-
-                    if (walker.seq_no != mNextSeqNo[queueType]) break;
-
-                    mQueues[queueType].offerLast(walker);
-                    mQueueLengths[queueType]++;
-                    mNextSeqNo[queueType]++;
-                    segmentEnqueued = true;
-
-                    it.remove();
+                    if (walker.seq_no > segment.seq_no) break;
                 }
+
+                it.add(segment);
             }
+
+            ListIterator it = mPendingQueue[queueType].listIterator();
+            while (it.hasNext()) {
+                Segment walker = (Segment) it.next();
+
+                if (walker.seq_no != mNextSeqNo[seqNumType]) break;
+
+                mQueues[queueType].offerLast(walker);
+                mQueueLengths[queueType]++;
+                mNextSeqNo[seqNumType]++;
+                segmentEnqueued = true;
+
+                it.remove();
+            }
+
             if (segmentEnqueued) {
                 this.mDequeueCond[dequeueType].notifyAll();
             }
@@ -305,7 +312,7 @@ class SegmentManager {
     }
 
     public Segment dequeue(int dequeueType) {
-        assert (dequeueType < kNumSegDequeue);
+        assert (dequeueType < kNumDeq);
         synchronized (this.mDequeueCond[dequeueType]) {
             // If queue is empty, wait until some segment is enqueued
             boolean isWaitRequired = false;
@@ -328,35 +335,34 @@ class SegmentManager {
                     e.printStackTrace();
                 }
             }
-        }
 
-        // Dequeue from queue
-        int targetQueueType = kSQUnknown;
-        switch (dequeueType) {
-            case kDeqSendControlData:
-                if (this.mQueueLengths[kSQSendControl] != 0) {
-                    // Priority 1. Dequeue send control queue
-                    targetQueueType = kSQSendControl;
-                } else if (this.mQueueLengths[kSQSendData] != 0) {
-                    // Priority 2. Dequeue send data queue
-                    targetQueueType = kSQSendData;
-                }
-                break;
-            case kDeqRecvControl:
-                targetQueueType = kSQRecvControl;
-                break;
-            case kDeqRecvData:
-                targetQueueType = kSQRecvData;
-                break;
-            default:
-                Logger.ERR(kTag, "Dequeue failed: invalid dequeue type (Dequeue=" + dequeueType +
-                        ")");
-                return null;
-        }
 
-        synchronized (this.mQueues[targetQueueType]) {
+            // Dequeue from queue
+            int targetQueueType = kSQUnknown;
+            switch (dequeueType) {
+                case kDeqSendControlData:
+                    if (this.mQueueLengths[kSQSendControl] != 0) {
+                        // Priority 1. Dequeue send control queue
+                        targetQueueType = kSQSendControl;
+                    } else if (this.mQueueLengths[kSQSendData] != 0) {
+                        // Priority 2. Dequeue send data queue
+                        targetQueueType = kSQSendData;
+                    }
+                    break;
+                case kDeqRecvControl:
+                    targetQueueType = kSQRecvControl;
+                    break;
+                case kDeqRecvData:
+                    targetQueueType = kSQRecvData;
+                    break;
+                default:
+                    Logger.ERR(kTag, "Dequeue failed: invalid dequeue type (Dequeue=" +
+                            dequeueType + ")");
+                    return null;
+            }
+
             // Check queue type
-            if (targetQueueType >= kNumSegQueue) {
+            if (targetQueueType >= kNumSQ) {
                 Logger.ERR(kTag, "Dequeue failed: invalid queue type (Dequeue=" + dequeueType +
                         ")");
                 return null;

@@ -23,7 +23,7 @@ CORE_OBJ=$(patsubst %, $(CORE_OBJ_DIR)/%, $(_CORE_OBJ))
 $(COMMON_OBJ_DIR)/%.o: $(COMMON_SRC_DIR)/%.cpp
 	$(CC) -o $@ -c $< $(FLAG) $(LIB)
 
-_COMMON_OBJ=ChildProcess.o
+_COMMON_OBJ=ChildProcess.o DebugLog.o
 COMMON_OBJ=$(patsubst %, $(COMMON_OBJ_DIR)/%, $(_COMMON_OBJ))
 
 $(DEV_OBJ_DIR)/%.o: $(DEV_SRC_DIR)/%.cpp
