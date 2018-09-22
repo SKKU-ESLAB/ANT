@@ -77,21 +77,21 @@ typedef enum {
 } SegDequeueType; /* enum SegDequeueType */
 
 /**
- * Sequence Number Type
- */
-typedef enum {
-  kSNSend = 0,
-  kSNRecv = 1,
-  kNumSN = 2
-} SegSeqNumType; /* enum SegSeqNumType */
-
-/**
  * Types of Flag
  */
 typedef enum {
   kSegFlagMF = 1,
   kSegFlagControl = 2
 } SegFlagVal; /* enum SegFlagVal */
+
+/**
+ * Types of Sequence Number
+ */
+typedef enum {
+  kSNData = 0,
+  kSNControl = 1,
+  kNumSN = 2
+} SegSeqNumType; /* enum SegSeqNumType */
 
 /**
  * < Data Structure of Segment > - Handled by Segment Manager
@@ -147,19 +147,17 @@ private:
   /* Singleton */
   static SegmentManager *sSingleton;
   SegmentManager(void) {
-    this->mNextGlobalSeqNo = 0;
-    for (int i = 0; i < kNumSN; i++) {
+    for(int i = 0; i < kNumSN; i++) {
       this->mNextSeqNo[i] = 0;
+    }
+    for (int i = 0; i < kNumSQ; i++) {
+      this->mExpectedSeqNo[i] = 0;
     }
     this->mFreeSegmentListSize = 0;
 
     is_start = 0;
     is_finish = 0;
   }
-
-  std::mutex mNextGlobalSeqNoLock;
-  uint32_t mNextGlobalSeqNo;
-  uint32_t get_next_global_seq_no(uint32_t num_segments);
 
   // for experiment
   int is_start, is_finish;
@@ -171,7 +169,11 @@ private:
   std::mutex mSendFailQueueLock;
   std::condition_variable mDequeueCond[kNumDeq];
 
+  std::mutex mNextSeqNoLock[kNumSN];
   uint32_t mNextSeqNo[kNumSN];
+  uint32_t get_next_seq_no(SegSeqNumType seq_num_type, uint32_t num_segments);
+
+  uint32_t mExpectedSeqNo[kNumSQ];
   std::list<Segment *> mQueues[kNumSQ];
   std::list<Segment *> mSendFailQueue;
   std::list<Segment *> mPendingQueues[kNumSQ];

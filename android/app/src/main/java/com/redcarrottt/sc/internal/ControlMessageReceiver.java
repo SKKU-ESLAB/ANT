@@ -1,5 +1,7 @@
 package com.redcarrottt.sc.internal;
 
+import android.util.Log;
+
 import com.redcarrottt.testapp.Logger;
 
 import java.util.ArrayList;
@@ -58,6 +60,7 @@ public class ControlMessageReceiver {
             String message = new String(messageBuffer);
 
             // Find separator location (between first line and other lines)
+            Log.d(kTag, "Control message incoming: " + message);
             int separatorPos = message.indexOf('\n');
 
             // Divide the message into first line & other lines

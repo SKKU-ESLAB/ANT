@@ -38,12 +38,13 @@ using namespace sc;
 /* Singleton */
 SegmentManager *SegmentManager::sSingleton = NULL;
 
-uint32_t SegmentManager::get_next_global_seq_no(uint32_t num_segments) {
+uint32_t SegmentManager::get_next_seq_no(SegSeqNumType seq_num_type,
+                                         uint32_t num_segments) {
   uint32_t res;
-  mNextGlobalSeqNoLock.lock();
-  res = this->mNextGlobalSeqNo;
-  this->mNextGlobalSeqNo += num_segments;
-  mNextGlobalSeqNoLock.unlock();
+  this->mNextSeqNoLock[seq_num_type].lock();
+  res = this->mNextSeqNo[seq_num_type];
+  this->mNextSeqNo[seq_num_type] += num_segments;
+  this->mNextSeqNoLock[seq_num_type].unlock();
   return res;
 }
 
@@ -62,8 +63,10 @@ int SegmentManager::send_to_segment_manager(uint8_t *data, size_t len,
   uint32_t num_of_segments = ((len + kSegSize - 1) / kSegSize);
   assert((len + kSegSize - 1) / kSegSize < UINT32_MAX);
 
+  SegSeqNumType seq_num_type = (is_control) ? kSNControl : kSNData;
+
   /* Reserve sequence numbers to this thread */
-  uint32_t allocated_seq_no = get_next_global_seq_no(num_of_segments);
+  uint32_t allocated_seq_no = get_next_seq_no(seq_num_type, num_of_segments);
 
   int seg_idx;
   for (seg_idx = 0; seg_idx < num_of_segments; seg_idx++) {
@@ -93,13 +96,12 @@ int SegmentManager::send_to_segment_manager(uint8_t *data, size_t len,
     this->serialize_segment_header(seg);
 
     if (is_control) {
-      LOG_DEBUG(
-          "Enqueue(control) IsControl: %d / flag: %d / SegFlag: %lu -> %lu / SeqNo: %lu,%lu,%lu / len=%d",
-          is_control, flag, orig_flag_len, seg->flag_len, allocated_seq_no, seg->seq_no, this->mNextGlobalSeqNo, len);
+      LOG_DEBUG("Enqueue(control) IsControl: %d / SeqNo: %lu / Data: %s / len: %d",
+                is_control, seg->seq_no, data, len);
       this->enqueue(kSQSendControl, seg);
     } else {
-      // LOG_DEBUG("Enqueue(data) IsControl: %d / flag: %d / SegFlag: %lu -> %lu",
-      //           is_control, flag, orig_flag_len, seg->flag_len);
+      LOG_DEBUG("Enqueue(data) IsControl: %d / SeqNo: %lu", is_control,
+                seg->seq_no);
       this->enqueue(kSQSendData, seg);
     }
   }
@@ -170,20 +172,16 @@ void SegmentManager::enqueue(SegQueueType queue_type, Segment *seg) {
   assert(queue_type < kNumSQ);
   // Get lock for the queue
   SegDequeueType dequeue_type;
-  SegSeqNumType seq_num_type;
   switch (queue_type) {
   case SegQueueType::kSQRecvControl:
     dequeue_type = SegDequeueType::kDeqRecvControl;
-    seq_num_type = SegSeqNumType::kSNRecv;
     break;
   case SegQueueType::kSQRecvData:
     dequeue_type = SegDequeueType::kDeqRecvData;
-    seq_num_type = SegSeqNumType::kSNRecv;
     break;
   case SegQueueType::kSQSendControl:
   case SegQueueType::kSQSendData:
     dequeue_type = SegDequeueType::kDeqSendControlData;
-    seq_num_type = SegSeqNumType::kSNSend;
     break;
   default:
     LOG_ERR("Unknown queue type: %d", queue_type);
@@ -197,12 +195,12 @@ void SegmentManager::enqueue(SegQueueType queue_type, Segment *seg) {
     this->mSendRequest.add(SEGMENT_DATA_SIZE);
   }
 
-  if (seg->seq_no == this->mNextSeqNo[seq_num_type]) {
+  if (seg->seq_no == this->mExpectedSeqNo[queue_type]) {
     /*
      * If the sequence number is the right next one,
      * it executes enqueuing logic normally.
      */
-    this->mNextSeqNo[seq_num_type]++;
+    this->mExpectedSeqNo[queue_type]++;
     this->mQueues[queue_type].push_back(seg);
     this->mQueueLength[queue_type].increase();
     segment_enqueued = true;
@@ -211,11 +209,11 @@ void SegmentManager::enqueue(SegQueueType queue_type, Segment *seg) {
      * If the sequence number is not the next expected one,
      * it enqueues its segments to the pending queue, not normal queue.
      */
-    if (seg->seq_no <= this->mNextSeqNo[seq_num_type]) {
+    if (seg->seq_no <= this->mExpectedSeqNo[queue_type]) {
       LOG_ERR("Sequence # Error!: %d > %d (Queue #%d)", seg->seq_no,
-              this->mNextSeqNo[seq_num_type], (int)queue_type);
+              this->mExpectedSeqNo[queue_type], (int)queue_type);
     }
-    assert(seg->seq_no > this->mNextSeqNo[seq_num_type]);
+    assert(seg->seq_no > this->mExpectedSeqNo[queue_type]);
 
     std::list<Segment *>::iterator curr_it =
         this->mPendingQueues[queue_type].begin();
@@ -242,8 +240,8 @@ void SegmentManager::enqueue(SegQueueType queue_type, Segment *seg) {
   std::list<Segment *>::iterator curr_it =
       this->mPendingQueues[queue_type].begin();
   while (curr_it != this->mPendingQueues[queue_type].end() &&
-         (*curr_it)->seq_no == this->mNextSeqNo[seq_num_type]) {
-    this->mNextSeqNo[seq_num_type]++;
+         (*curr_it)->seq_no == this->mExpectedSeqNo[queue_type]) {
+    this->mExpectedSeqNo[queue_type]++;
     this->mQueues[queue_type].push_back(*curr_it);
     this->mQueueLength[queue_type].increase();
     segment_enqueued = true;
