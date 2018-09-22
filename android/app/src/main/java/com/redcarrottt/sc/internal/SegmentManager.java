@@ -66,15 +66,15 @@ class SegmentManager {
     static final int kDeqRecvControl = 2;
     private static final int kNumDeq = 3;
 
-    static final int kSNSend = 0;
-    static final int kSNRecv = 1;
+    static final int kSNData = 0;
+    static final int kSNControl = 1;
     private static final int kNumSN = 2;
 
     static final short kSegFlagMF = 1;
     static final short kSegFlagControl = 2;
 
-    private int mSeqNo;
     private int[] mNextSeqNo;
+    private int[] mExpectedSeqNo;
 
     private LinkedList[] mQueues;
     private Object[] mDequeueCond;
@@ -126,13 +126,17 @@ class SegmentManager {
             this.mQueueLengths[i] = 0;
         }
 
+        this.mExpectedSeqNo = new int[kNumSQ];
+        for (int i = 0; i < kNumSQ; i++) {
+            this.mExpectedSeqNo[i] = 0;
+        }
+
         this.mNextSeqNo = new int[kNumSN];
         for (int i = 0; i < kNumSN; i++) {
             this.mNextSeqNo[i] = 0;
         }
 
         this.mFreeSegments = new LinkedList<Segment>();
-        this.mSeqNo = 0;
     }
 
 
@@ -142,10 +146,9 @@ class SegmentManager {
         return instance;
     }
 
-    private int get_seq_no(int length) {
-        int ret = mSeqNo;
-        mSeqNo += length;
-
+    private int get_next_seq_no(int seq_num_type, int length) {
+        int ret = mNextSeqNo[seq_num_type];
+        mNextSeqNo[seq_num_type] += length;
         return ret;
     }
 
@@ -154,7 +157,8 @@ class SegmentManager {
 
         int offset = 0;
         int num_of_segments = (length + kSegSize - 1) / kSegSize;
-        int allocated_seq_no = get_seq_no(num_of_segments);
+        int seq_num_type = (isControl) ? kSNControl : kSNData;
+        int allocated_seq_no = get_next_seq_no(seq_num_type, num_of_segments);
         int seg_idx;
         for (seg_idx = 0; seg_idx < num_of_segments; seg_idx++) {
             int seg_len = (length - offset < kSegSize) ? (length - offset) : kSegSize;
@@ -246,20 +250,16 @@ class SegmentManager {
         if (queueType >= kNumSQ) throw new AssertionError();
 
         int dequeueType;
-        int seqNumType;
         switch (queueType) {
             case kSQRecvControl:
                 dequeueType = kDeqRecvControl;
-                seqNumType = kSNRecv;
                 break;
             case kSQRecvData:
                 dequeueType = kDeqRecvData;
-                seqNumType = kSNRecv;
                 break;
             case kSQSendControl:
             case kSQSendData:
                 dequeueType = kDeqSendControlData;
-                seqNumType = kSNSend;
                 break;
             default:
                 Logger.ERR(kTag, "Enqueue: Unknown queue type: " + queueType);
@@ -268,16 +268,16 @@ class SegmentManager {
 
         synchronized (mDequeueCond[dequeueType]) {
             boolean segmentEnqueued = false;
-            if (segment.seq_no == mNextSeqNo[seqNumType]) {
-                mNextSeqNo[seqNumType]++;
+            if (segment.seq_no == mExpectedSeqNo[queueType]) {
+                mExpectedSeqNo[queueType]++;
                 mQueues[queueType].offerLast(segment);
                 mQueueLengths[queueType]++;
                 segmentEnqueued = true;
             } else {
-                if (segment.seq_no < mNextSeqNo[seqNumType]) {
+                if (segment.seq_no < mExpectedSeqNo[queueType]) {
                     // If duplicated data comes, ignore it.
                     Logger.DEBUG(kTag, "Sequence No Error: (" + queueType + ") incoming=" +
-                            segment.seq_no + " / expected_next=" + mNextSeqNo[seqNumType]);
+                            segment.seq_no + " / expected_next=" + mExpectedSeqNo[queueType]);
 
                     return;
                 }
@@ -295,11 +295,11 @@ class SegmentManager {
             while (it.hasNext()) {
                 Segment walker = (Segment) it.next();
 
-                if (walker.seq_no != mNextSeqNo[seqNumType]) break;
+                if (walker.seq_no != mExpectedSeqNo[queueType]) break;
 
                 mQueues[queueType].offerLast(walker);
                 mQueueLengths[queueType]++;
-                mNextSeqNo[seqNumType]++;
+                mExpectedSeqNo[queueType]++;
                 segmentEnqueued = true;
 
                 it.remove();
