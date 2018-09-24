@@ -23,12 +23,15 @@
 
 #include <iostream>
 #include <string>
+#include <string.h>
 
 using namespace sc;
 
 void ControlMessageSender::send_control_message(std::string &message) {
   int message_buffer_size = message.size() + 1;
   char *message_buffer = new char[message_buffer_size];
+  strncpy(message_buffer, message.c_str(), message_buffer_size);
+  message_buffer[message_buffer_size - 1] = '\0';
   int res = Core::singleton()->send(message_buffer, message_buffer_size, true);
 }
 

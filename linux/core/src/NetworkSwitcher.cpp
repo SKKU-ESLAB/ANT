@@ -191,9 +191,15 @@ void SwitchAdapterTransaction::start(void) {
            sOngoing->mPrevIndex, sOngoing->mNextIndex,
            next_adapter->get_name());
 
-  // Connect or wake up the next adapter
+// Connect or wake up the next adapter
+#ifdef EXP_DONT_SEND_CONNECT_CONTROL_MESSAGE
+  // For debugging
+  next_adapter->connect_or_wake_up(
+      SwitchAdapterTransaction::connect_next_adapter_callback, false);
+#else
   next_adapter->connect_or_wake_up(
       SwitchAdapterTransaction::connect_next_adapter_callback, true);
+#endif
 }
 
 void SwitchAdapterTransaction::connect_next_adapter_callback(bool is_success) {
@@ -206,8 +212,7 @@ void SwitchAdapterTransaction::connect_next_adapter_callback(bool is_success) {
     return;
   }
 
-  ServerAdapter *prev_adapter =
-      core->get_adapter(sOngoing->mPrevIndex);
+  ServerAdapter *prev_adapter = core->get_adapter(sOngoing->mPrevIndex);
   if (prev_adapter == NULL) {
     LOG_ERR("Disconnecting previous adapter is failed");
     sOngoing->done(false);

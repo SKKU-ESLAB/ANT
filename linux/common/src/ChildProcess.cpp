@@ -20,17 +20,36 @@
 
 #include "../../common/inc/DebugLog.h"
 
+#include "../../configs/ExpConfig.h"
+
 #include <errno.h>
 #include <string.h>
 #include <unistd.h>
 
+#ifdef VERBOSE_CHILD_PROCESS_RUN
+#include <string>
+#endif
+
 using namespace sc;
 
 int ChildProcess::run(const char *path, char *const params[], char *res_buf,
-                     size_t len) {
+                      size_t len) {
   int fd[2];
   int pid;
   int bk;
+
+#ifdef VERBOSE_CHILD_PROCESS_RUN
+  {
+    std::string args_string("");
+    int i = 0;
+    while (params[i] != NULL) {
+      args_string.append(params[i]);
+      args_string.append(" ");
+      i++;
+    }
+    LOG_VERB("Run command: %s", args_string.c_str());
+  }
+#endif
 
   if (pipe(fd) < 0) {
     LOG_ERR("pipe open error");

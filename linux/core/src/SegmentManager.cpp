@@ -96,12 +96,16 @@ int SegmentManager::send_to_segment_manager(uint8_t *data, size_t len,
     this->serialize_segment_header(seg);
 
     if (is_control) {
-      LOG_DEBUG("Enqueue(control) IsControl: %d / SeqNo: %lu / Data: %s / len: %d",
-                is_control, seg->seq_no, data, len);
+#ifdef VERBOSE_SEGMENT_ENQUEUE
+      LOG_DEBUG("Enqueue(control) IsControl: %d / SeqNo: %lu / len: %d",
+                is_control, seg->seq_no, len);
+#endif
       this->enqueue(kSQSendControl, seg);
     } else {
+#ifdef VERBOSE_SEGMENT_ENQUEUE
       LOG_DEBUG("Enqueue(data) IsControl: %d / SeqNo: %lu", is_control,
                 seg->seq_no);
+#endif
       this->enqueue(kSQSendData, seg);
     }
   }
