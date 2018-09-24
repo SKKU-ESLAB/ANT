@@ -4,6 +4,7 @@ import android.util.Log;
 
 import com.redcarrottt.testapp.Logger;
 
+import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
 
 /* Copyright (c) 2018, contributors. All rights reserved.
@@ -57,7 +58,7 @@ public class ControlMessageReceiver {
                 return false;
             }
 
-            String message = new String(messageBuffer);
+            String message = new String(messageBuffer).trim();
 
             // Find separator location (between first line and other lines)
             Log.d(kTag, "Control message incoming: " + message);
@@ -65,9 +66,9 @@ public class ControlMessageReceiver {
 
             // Divide the message into first line & other lines
             String firstLine = message.substring(0, separatorPos);
-            String otherLines = message.substring(separatorPos);
+            String otherLines = message.substring(separatorPos + 1);
 
-            int controlMessageCode = Integer.getInteger(firstLine);
+            int controlMessageCode = Integer.parseInt(firstLine);
 
             switch (controlMessageCode) {
                 case ControlMessageProtocol.CMCode.kConnect:
@@ -76,7 +77,7 @@ public class ControlMessageReceiver {
                 case ControlMessageProtocol.CMCode.kWakeup:
                 case ControlMessageProtocol.CMCode.kDisconnectAck: {
                     // Normal type
-                    int adapterId = Integer.getInteger(otherLines);
+                    int adapterId = Integer.parseInt(otherLines);
                     onReceiveNormalMessage(controlMessageCode, adapterId);
                     break;
                 }
@@ -151,7 +152,7 @@ public class ControlMessageReceiver {
         String secondLine = contents.substring(0, separatorPos);
         String privateMessage = contents.substring(separatorPos);
 
-        int privateType = Integer.getInteger(secondLine);
+        int privateType = Integer.parseInt(secondLine);
 
         // Notify the private message
         for (ControlMessageListener listener : mControlMessageListeners) {
