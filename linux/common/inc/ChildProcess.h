@@ -28,8 +28,8 @@ namespace sc {
 class ChildProcess {
 public:
   static int run(const char *path, char *const params[], char *res_buf,
-                        size_t len);
-  static int run(const char *path, char *const params[]);
+                 size_t len, bool is_wait_child);
+  static int run(const char *path, char *const params[], bool is_wait_child);
 }; /* class ChildProcess */
 
 } /* namespace sc */

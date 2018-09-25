@@ -4,7 +4,6 @@ import android.util.Log;
 
 import com.redcarrottt.testapp.Logger;
 
-import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
 
 /* Copyright (c) 2018, contributors. All rights reserved.
@@ -150,7 +149,7 @@ public class ControlMessageReceiver {
 
         // Divide the message into second line & other lines
         String secondLine = contents.substring(0, separatorPos);
-        String privateMessage = contents.substring(separatorPos);
+        String privateMessage = contents.substring(separatorPos + 1);
 
         int privateType = Integer.parseInt(secondLine);
 

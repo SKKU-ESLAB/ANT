@@ -23,7 +23,11 @@
 #include "../../configs/ExpConfig.h"
 
 #include <errno.h>
+#include <fcntl.h>
 #include <string.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <sys/wait.h>
 #include <unistd.h>
 
 #ifdef VERBOSE_CHILD_PROCESS_RUN
@@ -33,42 +37,42 @@
 using namespace sc;
 
 int ChildProcess::run(const char *path, char *const params[], char *res_buf,
-                      size_t len) {
-  int fd[2];
-  int pid;
-  int bk;
+                      size_t len, bool is_wait_child) {
+  int internal_pipe[2];
+  int pid, bk, res;
 
 #ifdef VERBOSE_CHILD_PROCESS_RUN
-  {
-    std::string args_string("");
-    int i = 0;
-    while (params[i] != NULL) {
-      args_string.append(params[i]);
-      args_string.append(" ");
-      i++;
-    }
-    LOG_VERB("Run command: %s", args_string.c_str());
+  std::string command_string("");
+  int i = 0;
+  while (params[i] != NULL) {
+    command_string.append(params[i]);
+    command_string.append(" ");
+    i++;
   }
+  LOG_VERB("Run command: %s", command_string.c_str());
 #endif
 
-  if (pipe(fd) < 0) {
+  res = pipe(internal_pipe);
+  if (res < 0) {
     LOG_ERR("pipe open error");
     return errno;
   }
+
   dup2(1, bk);
 
-  if ((pid = fork()) < 0) {
-    LOG_ERR("fork error");
+  pid = fork();
+  if (pid < 0) {
+    LOG_ERR("Fork error");
     return errno;
   } else if (pid > 0) { // LOG_VERB("Forked PID : %d", pid);
     /* Parent process */
-    close(fd[1]);
+    close(internal_pipe[1]);
 
     char buf[1024];
     const int kMaxTries = 5;
     int read_bytes;
     for (int tries = 0; tries < kMaxTries; tries++) {
-      read_bytes = read(fd[0], buf, 1024);
+      read_bytes = read(internal_pipe[0], buf, 1024);
 
       if (read_bytes < 0) {
         LOG_DEBUG("%s(pid %d): read error(%s) / retry %d", path, pid,
@@ -81,32 +85,62 @@ int ChildProcess::run(const char *path, char *const params[], char *res_buf,
       return errno;
     }
 
+    if (is_wait_child) {
+      int status;
+      waitpid(pid, &status, 0);
+      LOG_VERB("Done (%s): %d", command_string.c_str(), status);
+    } else {
+      LOG_VERB("Daemon (%s)", command_string.c_str());
+    }
+
     memcpy(res_buf, buf, read_bytes < len ? read_bytes : len);
     dup2(bk, 1);
 
-    close(fd[0]);
+    close(internal_pipe[0]);
 
     return pid;
   } else {
     /* Child process */
-    close(fd[0]);
-    dup2(fd[1], 1);
+    close(internal_pipe[0]);
+    dup2(internal_pipe[1], 1);
 
     execv(path, params);
     return 0;
   }
 }
 
-int ChildProcess::run(const char *path, char *const params[]) {
+int ChildProcess::run(const char *path, char *const params[],
+                      bool is_wait_child) {
   int pid;
+
+#ifdef VERBOSE_CHILD_PROCESS_RUN
+  std::string command_string("");
+  int i = 0;
+  while (params[i] != NULL) {
+    command_string.append(params[i]);
+    command_string.append(" ");
+    i++;
+  }
+  LOG_VERB("Run command: %s", command_string.c_str());
+#endif
 
   if ((pid = fork()) < 0) {
     LOG_ERR("fork error");
     return errno;
   } else if (pid > 0) { // LOG_VERB("Forked PID : %d", pid);
     /* Parent process */
+    if (is_wait_child) {
+      int status;
+      waitpid(pid, &status, 0);
+      LOG_VERB("Done (%s): %d", command_string.c_str(), status);
+    } else {
+      LOG_VERB("Daemon (%s)", command_string.c_str());
+    }
     return pid;
   } else {
+    int zero_fd = ::open("/dev/zero", O_WRONLY);
+    dup2(zero_fd, 1);
+    dup2(zero_fd, 2);
     execv(path, params);
     return 0;
   }

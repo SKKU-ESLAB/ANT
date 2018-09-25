@@ -73,7 +73,7 @@ private:
   bool retrieve_wpa_interface_name(void);
   int ping_wpa_cli(char ret[], size_t len);
   int set_wfd_ip_addr(char *ip_addr);
-  int set_dhcpd_config(void);
+  int launch_dhcpd(void);
   int get_wfd_p2p_device_addr(char *dev_addr, size_t len);
   int get_wfd_status(char ret[], size_t len);
   int reset_wfd_server(char *pin, size_t len);

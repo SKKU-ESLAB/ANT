@@ -276,7 +276,7 @@ class SegmentManager {
             } else {
                 if (segment.seq_no < mExpectedSeqNo[queueType]) {
                     // If duplicated data comes, ignore it.
-                    Logger.DEBUG(kTag, "Sequence No Error: (" + queueType + ") incoming=" +
+                    Logger.WARN(kTag, "Sequence No Error: (" + queueType + ") incoming=" +
                             segment.seq_no + " / expected_next=" + mExpectedSeqNo[queueType]);
 
                     return;
@@ -287,6 +287,8 @@ class SegmentManager {
                     Segment walker = (Segment) it.next();
                     if (walker.seq_no > segment.seq_no) break;
                 }
+                Logger.DEBUG(kTag, "Insert to pending queue: (" + queueType + ") incoming=" +
+                        segment.seq_no + " / expected_next=" + mExpectedSeqNo[queueType]);
 
                 it.add(segment);
             }
