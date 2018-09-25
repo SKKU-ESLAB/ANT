@@ -54,7 +54,7 @@ void CommInitializer::initialize(void) {
   // Step 3. Wi-fi Direct OFF
   LOG_VERB("Init Step 3. Wi-fi Direct OFF");
 
-  snprintf(cmdLine, 500, "killall udhcpd");
+  snprintf(cmdLine, 500, "killall udhcpd 2> /dev/null");
   system(cmdLine);
 
   snprintf(cmdLine, 500, "%s %s", IFDOWN_PATH, DEFAULT_WFD_DEVICE_NAME);
@@ -85,7 +85,7 @@ void CommInitializer::initialize(void) {
 int CommInitializer::ping_wpa_cli(char ret[], size_t len) {
   char *const params[] = {"wpa_cli", "ping", NULL};
 
-  return ChildProcess::run(WPA_CLI_PATH, params, ret, len);
+  return ChildProcess::run(WPA_CLI_PATH, params, ret, len, true);
 }
 
 void CommInitializer::retrieve_wpa_interface_name(std::string &wpaIntfName) {

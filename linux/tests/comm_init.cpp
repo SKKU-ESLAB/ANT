@@ -87,7 +87,7 @@ int main(void) {
 int ping_wpa_cli(char ret[], size_t len) {
   char *const params[] = {"wpa_cli", "ping", NULL};
 
-  return ChildProcess::run(WPA_CLI_PATH, params, ret, len);
+  return ChildProcess::run(WPA_CLI_PATH, params, ret, len, true);
 }
 
 void retrieve_wpa_interface_name(std::string &wpaIntfName) {

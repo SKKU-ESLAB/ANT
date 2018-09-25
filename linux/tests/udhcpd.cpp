@@ -44,11 +44,11 @@ void sighandler_monitor_udhcpd(int signo, siginfo_t *sinfo, void *context) {
     if (signo != SIGCHLD || sDhcpdPid == 0)
       break;
 
-    if (sinfo->si_pid == sDhcpdPid) {
+    if (signo == SIGCHLD && sinfo->si_pid == sDhcpdPid) {
       int status;
-      int res = waitpid(sDhcpdPid, &status, WNOHANG);
-      if (res == 0)
-        sDhcpdPid = 0;
+      while (waitpid(sDhcpdPid, &status, WNOHANG) > 0) {
+      }
+      sDhcpdPid = 0;
     }
   } while (0);
 }
@@ -63,7 +63,6 @@ int set_dhcpd_config(const char *intfName) {
   }
 
   char *const params[] = {"udhcpd", UDHCPD_CONFIG_PATH, "-f", NULL};
-  char buf[256];
 
   // Generate dhcp configuration
   int config_fd = open(UDHCPD_CONFIG_PATH, O_CREAT | O_WRONLY | O_TRUNC, 0644);
@@ -83,9 +82,7 @@ int set_dhcpd_config(const char *intfName) {
   write(config_fd, script, strlen(script) + 1);
   close(config_fd);
 
-  ChildProcess::run(UDHCPD_PATH, params, buf, 256);
-
-  printf("Print: %s\n", buf);
+  ChildProcess::run(UDHCPD_PATH, params, false);
 
   return 0;
 }

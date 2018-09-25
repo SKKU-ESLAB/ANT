@@ -436,7 +436,8 @@ void ServerAdapter::sender_thread_loop(void) {
     // Dequeue from a queue (one of the three queues)
     // Priority 1. Failed sending queue
     segment_to_send = sm->get_failed_sending();
-#ifdef VERBOSE_SEGMENT_DEQUEUE
+#if defined(VERBOSE_SEGMENT_DEQUEUE_CONTROL) ||                                \
+    defined(VERBOSE_SEGMENT_DEQUEUE_DATA)
     bool is_get_failed_segment = (segment_to_send != NULL);
 #endif
 
@@ -446,12 +447,24 @@ void ServerAdapter::sender_thread_loop(void) {
       segment_to_send = sm->dequeue(kDeqSendControlData);
     }
 
-#ifdef VERBOSE_SEGMENT_DEQUEUE
+#if defined(VERBOSE_SEGMENT_DEQUEUE_CONTROL) ||                                \
+    defined(VERBOSE_SEGMENT_DEQUEUE_DATA)
     bool is_control =
         ((mGetSegFlagBits(segment_to_send->flag_len) & kSegFlagControl) != 0);
-    LOG_DEBUG("%s: %s Segment (type=%s, seqno=%d)", this->get_name(),
-              (is_get_failed_segment ? "Failed" : "Normal"),
-              (is_control ? "Ctrl" : "Data"), segment_to_send->seq_no);
+#endif
+#ifdef VERBOSE_SEGMENT_DEQUEUE_CONTROL
+    if (is_control) {
+      LOG_DEBUG("%s: %s Segment (type=Ctrl, seqno=%d)", this->get_name(),
+                (is_get_failed_segment ? "Failed" : "Normal"),
+                segment_to_send->seq_no);
+    }
+#endif
+#ifdef VERBOSE_SEGMENT_DEQUEUE_DATA
+    if (is_control) {
+      LOG_DEBUG("%s: %s Segment (type=Data, seqno=%d)", this->get_name(),
+                (is_get_failed_segment ? "Failed" : "Normal"),
+                segment_to_send->seq_no);
+    }
 #endif
 
 #ifdef EXP_MEASURE_INTERVAL_SENDER

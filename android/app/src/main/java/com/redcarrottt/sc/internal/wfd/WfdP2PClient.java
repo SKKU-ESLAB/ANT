@@ -141,7 +141,7 @@ class WfdP2PClient extends P2PClient {
                             try {
                                 synchronized (mIsPeerFound) {
                                     if (!mIsPeerFound) {
-                                        Logger.DEBUG(kTag, "Got peer list");
+                                        Logger.DEBUG(kTag, "Got peer list (Target=" + getTargetMacAddress() + ")");
                                         for (WifiP2pDevice p2pDevice : kPeers.getDeviceList()) {
                                             Logger.DEBUG(kTag, "Peer: " + p2pDevice.deviceAddress
                                                     + " / " + p2pDevice.deviceName + " / " +
