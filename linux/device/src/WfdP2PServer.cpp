@@ -106,6 +106,7 @@ bool WfdP2PServer::allow_discover_impl(void) {
       LOG_ERR("%s: Cannot retrieve WFD Server MAC Address", this->get_name());
       return false;
     }
+    
     LOG_VERB("%s: WFD Server MAC Address: %s", this->get_name(), buf);
     int adapter_id = ((WfdServerAdapter *)this->mOwner)->get_id();
     snprintf(wfdInfo, 1024, "%s", buf);
@@ -143,7 +144,7 @@ bool WfdP2PServer::allow_discover_impl(void) {
  *  <Server IP Address>
  */
 #ifndef EXP_DONT_SEND_PRIV_CONTROL_MESSAGE
-    LOG_DEBUG("%s: Send WFD Info: %s", this->get_name(), wfdInfo);
+    LOG_DEBUG("%s: Send WFD Info:\n%s", this->get_name(), wfdInfo);
     Core::singleton()->get_control_sender()->send_noti_private_data(
         PrivType::kPrivTypeWFDInfo, wfdInfo, strlen(wfdInfo));
 #endif
@@ -279,20 +280,22 @@ int WfdP2PServer::get_wfd_p2p_device_addr(char *dev_addr, size_t len) {
   if (ret < 0)
     return ret;
 
-  char *ptrptr;
-  char *ptr = strtok_r(buf, "\t \n\'", &ptrptr);
-  while (ptr != NULL) {
-    if (strstr(ptr, "p2p_device_address")) {
-      // p2p_device_address=XX
-      sscanf(ptr, "%*[^=]=%s", dev_addr);
-      break;
-    } else if (strstr(ptr, "FAIL")) {
-      LOG_WARN("%s: Get p2p device address failed", this->get_name());
-      return -1;
-    }
+  std::string buf_str(buf);
 
-    ptr = strtok_r(NULL, "\t \n\'", &ptrptr);
+  int header_pos = buf_str.find("p2p_device_address=");
+  if(header_pos == std::string::npos) {
+    LOG_WARN("%s: Get p2p device address failed", this->get_name());
+    return -1;
   }
+
+  int target_pos = header_pos + strlen("p2p_device_address=");
+  int end_pos = buf_str.find("\n", target_pos);
+  int target_length = end_pos - target_pos;
+  std::string target_str = buf_str.substr(target_pos, target_length);
+
+  strncpy(dev_addr, target_str.c_str(), target_str.size());
+  dev_addr[target_length] = '\0';
+
   return 0;
 }
 

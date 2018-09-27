@@ -39,19 +39,19 @@ class NetworkSwitcher;
 class SwitchAdapterTransaction {
   /*
    * Switch Adapter Transaction: Order
-   * 1. Entry
+   * 0. Entry
    *    - NetworkSwitcher.switch_adapters()
    *    - SwitchAdapterTransaction.start()
-   * 2-a. Connect/WakeUp Next Adapter
+   * 1-a. Connect/WakeUp Next Adapter
    *    - next_adapter.connect()
    *       or next_adapter.wake_up()
-   * 2-b. Callback (for connect request)
+   * 1-b. Callback (for connect request)
    *    - SwitchAdapterTransaction.connect_callback()
-   * 3-a. Disconnect/Sleep Prev Adapter
+   * 2-a. Disconnect/Sleep Prev Adapter
    *    - prev_adapter.disconnect()
-   * 3-b. Callback (for disconnect request)
+   * 2-b. Callback (for disconnect request)
    *    - SwitchAdapterTransaction.disconnect_callback()
-   * 4. NetworkSwitcher.done_switch()
+   * 3. NetworkSwitcher.done_switch()
    */
 public:
   static bool run(int prev_index, int next_index);

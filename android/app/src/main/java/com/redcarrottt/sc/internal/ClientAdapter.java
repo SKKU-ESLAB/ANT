@@ -430,7 +430,7 @@ public class ClientAdapter {
                 segmentToSend = sm.get_failed_sending();
                 // Priority 2. Send control queue
                 // Priority 3. Send data queue
-                if (segmentToSend == null) {
+                while (segmentToSend == null) {
                     segmentToSend = sm.dequeue(kDeqSendControlData);
                 }
 

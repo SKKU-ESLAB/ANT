@@ -22,8 +22,8 @@
 #include "../inc/API.h"
 
 #include <iostream>
-#include <string>
 #include <string.h>
+#include <string>
 
 using namespace sc;
 
@@ -56,8 +56,29 @@ void ControlMessageSender::send_request_connect(int adapter_id) {
 
 void ControlMessageSender::send_request_disconnect(int adapter_id) {
   this->send_request(CMCode::kCMCodeDisconnect, adapter_id);
-  LOG_VERB("Send(Control Msg): Request(Disconnect %d)", adapter_id);
+  LOG_VERB("Send(Control Msg): Request(Disconnect %d)",
+           adapter_id);
 }
+
+// void ControlMessageSender::send_request_disconnect(int adapter_id,
+//                                                    int final_req_no) {
+//   std::string message("");
+
+//   // Write first line (request code)
+//   message.append(std::to_string(CMCode::kCMCodeDisconnect));
+//   message.append("\n");
+
+//   // Write second line (adapter ID)
+//   message.append(std::to_string(adapter_id));
+
+//   // Write third line (final req_no)
+//   message.append(std::to_string(final_req_no));
+
+//   // Send the message
+//   this->send_control_message(message);
+//   LOG_VERB("Send(Control Msg): Request(Disconnect %d; final_req_no=%d)",
+//            adapter_id, final_req_no);
+// }
 
 void ControlMessageSender::send_request_disconnect_ack(int adapter_id) {
   this->send_request(CMCode::kCMCodeDisconnectAck, adapter_id);
@@ -92,5 +113,6 @@ void ControlMessageSender::send_noti_private_data(PrivType priv_type,
 
   // Send the message
   this->send_control_message(message);
-  LOG_VERB("Send(Control Msg): Request(Priv %d)\n%s", priv_type, priv_data_buffer);
+  LOG_VERB("Send(Control Msg): Request(Priv %d)\n%s", priv_type,
+           priv_data_buffer);
 }

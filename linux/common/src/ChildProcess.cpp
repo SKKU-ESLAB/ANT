@@ -138,9 +138,6 @@ int ChildProcess::run(const char *path, char *const params[],
     }
     return pid;
   } else {
-    int zero_fd = ::open("/dev/zero", O_WRONLY);
-    dup2(zero_fd, 1);
-    dup2(zero_fd, 2);
     execv(path, params);
     return 0;
   }
