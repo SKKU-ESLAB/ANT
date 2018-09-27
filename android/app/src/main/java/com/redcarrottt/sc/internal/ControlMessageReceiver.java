@@ -116,7 +116,7 @@ public class ControlMessageReceiver {
                 break;
             }
             case ControlMessageProtocol.CMCode.kDisconnect: {
-                Logger.VERB(kTag, "Receive(Control Msg): Request(Disonnect " + adapterId + ")");
+                Logger.VERB(kTag, "Receive(Control Msg): Request(Disconnect " + adapterId + ")");
                 NetworkSwitcher.singleton().disconnectAdapterByPeer(adapterId);
                 break;
             }

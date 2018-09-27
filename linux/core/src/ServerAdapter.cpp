@@ -436,8 +436,7 @@ void ServerAdapter::sender_thread_loop(void) {
     // Dequeue from a queue (one of the three queues)
     // Priority 1. Failed sending queue
     segment_to_send = sm->get_failed_sending();
-#if defined(VERBOSE_SEGMENT_DEQUEUE_CONTROL) ||                                \
-    defined(VERBOSE_SEGMENT_DEQUEUE_DATA)
+#if defined(VERBOSE_DEQUEUE_SEND_CONTROL) || defined(VERBOSE_DEQUEUE_SEND_DATA)
     bool is_get_failed_segment = (segment_to_send != NULL);
 #endif
 
@@ -447,21 +446,20 @@ void ServerAdapter::sender_thread_loop(void) {
       segment_to_send = sm->dequeue(kDeqSendControlData);
     }
 
-#if defined(VERBOSE_SEGMENT_DEQUEUE_CONTROL) ||                                \
-    defined(VERBOSE_SEGMENT_DEQUEUE_DATA)
+#if defined(VERBOSE_DEQUEUE_SEND_CONTROL) || defined(VERBOSE_DEQUEUE_SEND_DATA)
     bool is_control =
         ((mGetSegFlagBits(segment_to_send->flag_len) & kSegFlagControl) != 0);
 #endif
-#ifdef VERBOSE_SEGMENT_DEQUEUE_CONTROL
+#ifdef VERBOSE_DEQUEUE_SEND_CONTROL
     if (is_control) {
-      LOG_DEBUG("%s: %s Segment (type=Ctrl, seqno=%d)", this->get_name(),
+      LOG_DEBUG("%s: Send %s Segment (type=Ctrl, seqno=%d)", this->get_name(),
                 (is_get_failed_segment ? "Failed" : "Normal"),
                 segment_to_send->seq_no);
     }
 #endif
-#ifdef VERBOSE_SEGMENT_DEQUEUE_DATA
-    if (is_control) {
-      LOG_DEBUG("%s: %s Segment (type=Data, seqno=%d)", this->get_name(),
+#ifdef VERBOSE_DEQUEUE_SEND_DATA
+    if (!is_control) {
+      LOG_DEBUG("%s: Send %s Segment (type=Data, seqno=%d)", this->get_name(),
                 (is_get_failed_segment ? "Failed" : "Normal"),
                 segment_to_send->seq_no);
     }
@@ -613,8 +611,16 @@ void ServerAdapter::receiver_thread_loop(void) {
                         kSegFlagControl) != 0);
 
     if (is_control) {
+#ifdef VERBOSE_ENQUEUE_RECV
+      LOG_DEBUG("%s: Receive Segment (type=Ctrl, seqno=%d)", this->get_name(),
+                segment_to_receive->seq_no);
+#endif
       sm->enqueue(kSQRecvControl, segment_to_receive);
     } else {
+#ifdef VERBOSE_ENQUEUE_RECV
+      LOG_DEBUG("%s: Receive Segment (type=Data, seqno=%d)", this->get_name(),
+                segment_to_receive->seq_no);
+#endif
       sm->enqueue(kSQRecvData, segment_to_receive);
     }
     segment_to_receive = sm->get_free_segment();
