@@ -66,39 +66,104 @@ void ServerAdapter::connect(ConnectCallback callback, bool is_send_request) {
   this->mConnectThread->detach();
 }
 
-void ServerAdapter::disconnect(DisconnectCallback callback,
-                               bool is_send_request, bool is_send_ack,
-                               bool is_on_purpose) {
+void ServerAdapter::disconnect_on_command(DisconnectCallback callback) {
+  // Check if the adapter is not sleeping
   ServerAdapterState state = this->get_state();
-  if (state == ServerAdapterState::kDisconnected ||
-      state == ServerAdapterState::kDisconnecting) {
-    LOG_ERR("It is already disconnected or connection/disconnection is in "
-            "progress.");
+  if (state == ServerAdapterState::kGoingSleeping) {
+    LOG_VERB("%s: Disconnect - waiting for sleeping...", this->get_name());
+    while(state != ServerAdapterState::kSleeping) {
+      ::sleep(1);
+      state = this->get_state();
+    }
+  } else if (state != ServerAdapterState::kSleeping) {
+    LOG_ERR("%s: Disconnect fail - not sleeping (state=%d)", this->get_name(), state);
     callback(false);
     return;
   }
 
+  // Check if the disconnect thread has already been spawn
   if (this->mDisconnectThread != NULL) {
     LOG_ERR("Disconnect thread not finished!");
     callback(false);
     return;
   }
 
-  // Check if the disconnection is on purpose
-  if (is_on_purpose) {
-    this->start_disconnecting_on_purpose();
+  // Set this disconnection is on purpose
+  this->start_disconnecting_on_purpose();
+
+  // Get my final seq_no
+  SegmentManager *sm = SegmentManager::singleton();
+  uint32_t my_final_seq_no_control = sm->get_last_seq_no_control();
+  uint32_t my_final_seq_no_data = sm->get_last_seq_no_data();
+
+  // Send disconnect request
+  Core::singleton()->get_control_sender()->send_request_disconnect(
+      this->get_id(), my_final_seq_no_control, my_final_seq_no_data);
+
+  this->disconnect_internal(callback);
+}
+
+void ServerAdapter::disconnect_on_peer_command(
+    DisconnectCallback callback, uint32_t peer_final_seq_no_control,
+    uint32_t peer_final_seq_no_data) {
+  // Check if the adapter is not sleeping
+  ServerAdapterState state = this->get_state();
+  if (state == ServerAdapterState::kGoingSleeping) {
+    LOG_VERB("%s: Disconnect - waiting for sleeping...", this->get_name());
+    while(state != ServerAdapterState::kSleeping) {
+      ::sleep(1);
+      state = this->get_state();
+    }
+  } else if (state != ServerAdapterState::kSleeping) {
+    LOG_ERR("%s: Disconnect fail - not sleeping", this->get_name());
+    callback(false);
+    return;
   }
 
-  // Send request
-  if (is_send_request) {
-    Core::singleton()->get_control_sender()->send_request_disconnect(
-        this->get_id());
-  } else if (is_send_ack) {
-    Core::singleton()->get_control_sender()->send_request_disconnect_ack(
-        this->get_id());
+  // Check if the disconnect thread has already been spawn
+  if (this->mDisconnectThread != NULL) {
+    LOG_ERR("Disconnect thread not finished!");
+    callback(false);
+    return;
   }
 
-  // Disconnect
+  // Set this disconnection is on purpose
+  this->start_disconnecting_on_purpose();
+
+  // Start wait receiving
+  SegmentManager *sm = SegmentManager::singleton();
+  sm->wait_receiving(peer_final_seq_no_control, peer_final_seq_no_data);
+
+  // Send disconnect ack
+  Core::singleton()->get_control_sender()->send_request_disconnect_ack(
+      this->get_id());
+
+  this->disconnect_internal(callback);
+}
+
+void ServerAdapter::disconnect_on_failure(DisconnectCallback callback) {
+  // Check if the adapter is already disconencted
+  ServerAdapterState state = this->get_state();
+  if (state == ServerAdapterState::kDisconnected ||
+      state == ServerAdapterState::kDisconnecting) {
+    LOG_ERR("%s: Disconnect fail - already disconnecting or disconnected",
+            this->get_name());
+    callback(false);
+    return;
+  }
+
+  // Check if the disconnect thread has already been spawn
+  if (this->mDisconnectThread != NULL) {
+    LOG_ERR("Disconnect thread not finished!");
+    callback(false);
+    return;
+  }
+
+  this->disconnect_internal(callback);
+}
+
+void ServerAdapter::disconnect_internal(DisconnectCallback callback) {
+  // Spawn disconnect thread
   this->mDisconnectCallback = callback;
   this->mDisconnectThread =
       new std::thread(std::bind(&ServerAdapter::disconnect_thread, this));
@@ -421,10 +486,13 @@ void ServerAdapter::sender_thread_loop(void) {
         }
         LOG_VERB("Sender thread suspended: %s", this->get_name());
         this->set_state(ServerAdapterState::kSleeping);
+
+        // Suspended due to sleeping
         {
           std::unique_lock<std::mutex> lck2b(this->mSenderSuspendedMutex);
           this->mSenderSuspendedCond.wait(lck2b);
         }
+
         this->set_state(ServerAdapterState::kActive);
       } while (true);
     }
@@ -492,6 +560,7 @@ void ServerAdapter::sender_thread_loop(void) {
     int len = kSegHeaderSize + kSegSize;
     const void *data = segment_to_send->data;
 
+    // Send data
     int res = this->send(data, len);
 
 #ifdef EXP_MEASURE_INTERVAL_SENDER
@@ -706,14 +775,6 @@ void ServerAdapter::connect_or_wake_up(ConnectCallback callback,
     this->connect(callback, is_send_request);
   } else if (state == ServerAdapterState::kSleeping) {
     this->wake_up(callback, is_send_request);
-  }
-}
-void ServerAdapter::disconnect_or_sleep(DisconnectCallback callback,
-                                        bool is_send_request) {
-  if (this->is_sleeping_allowed()) {
-    this->sleep(callback, is_send_request);
-  } else {
-    this->disconnect(callback, is_send_request, false, true);
   }
 }
 

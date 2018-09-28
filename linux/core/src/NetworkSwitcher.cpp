@@ -51,7 +51,9 @@ void NetworkSwitcher::connect_adapter_by_peer(int adapter_id) {
   ConnectRequestTransaction::run(adapter_id);
 }
 
-void NetworkSwitcher::disconnect_adapter_by_peer(int adapter_id) {
+void NetworkSwitcher::disconnect_adapter_by_peer(int adapter_id,
+                                                 uint32_t last_seq_no_control,
+                                                 uint32_t last_seq_no_data) {
   NSState state = this->get_state();
   if (state == NSState::kNSStateSwitching) {
     LOG_VERB("It's now switching. Cannot connect to adapter %d.", adapter_id);
@@ -67,7 +69,7 @@ void NetworkSwitcher::disconnect_adapter_by_peer(int adapter_id) {
 
   this->set_state(NSState::kNSStateSwitching);
 
-  adapter->disconnect(NULL, false, true, true);
+  adapter->disconnect_on_peer_command(NULL, last_seq_no_control, last_seq_no_data);
 }
 
 void NetworkSwitcher::sleep_adapter_by_peer(int adapter_id) {
@@ -285,9 +287,8 @@ void SwitchAdapterTransaction::sleep_prev_adapter_callback(bool is_success) {
            sOngoing->mPrevIndex, sOngoing->mNextIndex,
            prev_adapter->get_name());
 
-  prev_adapter->disconnect(
-      SwitchAdapterTransaction::disconnect_prev_adapter_callback, true, false,
-      true);
+  prev_adapter->disconnect_on_command(
+      SwitchAdapterTransaction::disconnect_prev_adapter_callback);
 }
 
 void SwitchAdapterTransaction::disconnect_prev_adapter_callback(
@@ -379,8 +380,8 @@ bool ReconnectAdapterTransaction::start() {
     this->done(true);
     return false;
   }
-  this->mTargetAdapter->disconnect(
-      ReconnectAdapterTransaction::disconnect_callback, false, false, false);
+  this->mTargetAdapter->disconnect_on_failure(
+      ReconnectAdapterTransaction::disconnect_callback);
   return true;
 }
 

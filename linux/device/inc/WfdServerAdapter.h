@@ -57,7 +57,7 @@ protected:
     WfdP2PServer *p2pServer = new WfdP2PServer(wfd_device_name, (void *)this);
     TcpServerSocket *serverSocket = new TcpServerSocket(name, port);
     p2pServer->add_wfd_ip_address_listener(serverSocket);
-    this->initialize(device, p2pServer, serverSocket, false);
+    this->initialize(device, p2pServer, serverSocket);
   }
 }; /* class WfdServerAdapter */
 } /* namespace sc */

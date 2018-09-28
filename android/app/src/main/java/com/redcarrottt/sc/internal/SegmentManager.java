@@ -146,11 +146,52 @@ class SegmentManager {
         return instance;
     }
 
-    private int get_next_seq_no(int seq_num_type, int length) {
+    private int getNextSeqNo(int seq_num_type, int length) {
         int ret = mNextSeqNo[seq_num_type];
         mNextSeqNo[seq_num_type] += length;
         return ret;
     }
+
+    // Wait data before disconnection
+    public void waitReceiving(int wait_seq_no_control, int wait_seq_no_data) {
+        synchronized (this.mWaitReceiving) {
+            this.mIsWaitReceiving = true;
+            this.mWaitSeqNoControl = wait_seq_no_control;
+            this.mWaitSeqNoData = wait_seq_no_data;
+            try {
+                this.mWaitReceiving.wait();
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
+    public int getLastSeqNoControl() {
+        return this.mNextSeqNo[kSNControl] - 1;
+    }
+
+    public int getLastSeqNoData() {
+        return this.mNextSeqNo[kSNData] - 1;
+    }
+
+    private void checkReceivingDone() {
+        boolean is_wakeup = false;
+        synchronized (this.mWaitReceiving) {
+            if (this.mIsWaitReceiving && this.mExpectedSeqNo[kSQRecvControl] >= this
+                    .mWaitSeqNoControl && this.mExpectedSeqNo[kSQRecvData] >= this.mWaitSeqNoData) {
+                is_wakeup = true;
+            }
+        }
+        if (is_wakeup) {
+            this.mWaitReceiving.notifyAll();
+            this.mIsWaitReceiving = false;
+        }
+    }
+
+    boolean mIsWaitReceiving = false;
+    int mWaitSeqNoControl = 0;
+    int mWaitSeqNoData = 0;
+    Object mWaitReceiving = new Object();
 
     public int send_to_segment_manager(byte[] data, int length, boolean isControl) {
         if (data == null || length <= 0) throw new AssertionError();
@@ -158,7 +199,7 @@ class SegmentManager {
         int offset = 0;
         int num_of_segments = (length + kSegSize - 1) / kSegSize;
         int seq_num_type = (isControl) ? kSNControl : kSNData;
-        int allocated_seq_no = get_next_seq_no(seq_num_type, num_of_segments);
+        int allocated_seq_no = getNextSeqNo(seq_num_type, num_of_segments);
         int seg_idx;
         for (seg_idx = 0; seg_idx < num_of_segments; seg_idx++) {
             int seg_len = (length - offset < kSegSize) ? (length - offset) : kSegSize;
@@ -215,7 +256,7 @@ class SegmentManager {
             } else {
                 seg = dequeue(kDeqRecvData);
             }
-        } while(seg == null);
+        } while (seg == null);
         ProtocolManager.parse_header(Arrays.copyOfRange(seg.data, kSegHeaderSize, seg.data
                 .length), protocolData);
         if (protocolData.len == 0) return null;
@@ -239,7 +280,7 @@ class SegmentManager {
                 } else {
                     seg = dequeue(kDeqRecvData);
                 }
-            } while(seg == null);
+            } while (seg == null);
             data_size = mGetSegLenBits(seg.flag_len);
             System.arraycopy(seg.data, kSegHeaderSize, serialized, offset, data_size);
             cont = ((mGetSegFlagBits(seg.flag_len) & kSegFlagMF) != 0);
@@ -273,7 +314,7 @@ class SegmentManager {
         synchronized (mDequeueCond[dequeueType]) {
             boolean segmentEnqueued = false;
 
-            synchronized(this.mQueues[queueType]) {
+            synchronized (this.mQueues[queueType]) {
                 if (segment.seq_no == mExpectedSeqNo[queueType]) {
                     mExpectedSeqNo[queueType]++;
                     mQueues[queueType].offerLast(segment);
@@ -282,7 +323,8 @@ class SegmentManager {
                 } else {
                     if (segment.seq_no < mExpectedSeqNo[queueType]) {
                         // If duplicated data comes, ignore it.
-                        Logger.WARN(kTag, "Sequence No Error: (" + queueType + ") incoming=" + segment.seq_no + " / expected_next=" + mExpectedSeqNo[queueType]);
+                        Logger.WARN(kTag, "Sequence No Error: (" + queueType + ") incoming=" +
+                                segment.seq_no + " / expected_next=" + mExpectedSeqNo[queueType]);
 
 
                         return;
@@ -293,7 +335,8 @@ class SegmentManager {
                         Segment walker = (Segment) it.next();
                         if (walker.seq_no > segment.seq_no) break;
                     }
-                    Logger.DEBUG(kTag, "Insert to pending queue: (" + queueType + ") incoming=" + segment.seq_no + " / expected_next=" + mExpectedSeqNo[queueType]);
+                    Logger.DEBUG(kTag, "Insert to pending queue: (" + queueType + ") incoming=" +
+                            segment.seq_no + " / expected_next=" + mExpectedSeqNo[queueType]);
 
                     it.add(segment);
                 }
@@ -316,6 +359,8 @@ class SegmentManager {
             if (segmentEnqueued) {
                 this.mDequeueCond[dequeueType].notifyAll();
             }
+
+            this.checkReceivingDone();
         }
     }
 
@@ -378,7 +423,7 @@ class SegmentManager {
                 return null;
             }
 
-            synchronized(this.mQueues[targetQueueType]) {
+            synchronized (this.mQueues[targetQueueType]) {
                 // Check the dequeued segment
                 Segment segmentDequeued = (Segment) this.mQueues[targetQueueType].pollFirst();
                 mQueueLengths[targetQueueType]--;

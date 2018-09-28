@@ -31,6 +31,8 @@
 #include <thread>
 #include <vector>
 
+#include <stdint.h>
+
 namespace sc {
 class Core;
 class NetworkSwitcher;
@@ -121,7 +123,7 @@ class NetworkSwitcher {
 public:
   /* APIs called by peer through Core */
   void connect_adapter_by_peer(int adapter_id);
-  void disconnect_adapter_by_peer(int adapter_id);
+  void disconnect_adapter_by_peer(int adapter_id, uint32_t last_seq_no_control, uint32_t last_seq_no_data);
   void sleep_adapter_by_peer(int adapter_id);
   void wake_up_adapter_by_peer(int adapter_id);
 

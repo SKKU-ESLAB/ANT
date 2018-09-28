@@ -58,7 +58,7 @@ private:
     BtP2PServer *p2pServer = new BtP2PServer();
     RfcommServerSocket *serverSocket =
         new RfcommServerSocket(name, service_uuid);
-    this->initialize(device, p2pServer, serverSocket, false);
+    this->initialize(device, p2pServer, serverSocket);
   }
 }; /* class BtServerAdapter */
 } /* namespace sc */

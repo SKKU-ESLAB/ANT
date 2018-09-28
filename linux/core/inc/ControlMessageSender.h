@@ -30,7 +30,8 @@ class ControlMessageSender {
 public:
   /* Control message handling (External) */
   void send_request_connect(int adapter_id);
-  void send_request_disconnect(int adapter_id, int final_req_no);
+  void send_request_disconnect(int adapter_id, uint32_t last_seq_no_control,
+                               uint32_t last_seq_no_data);
   void send_request_disconnect_ack(int adapter_id);
   void send_request_sleep(int adapter_id);
   void send_request_wake_up(int adapter_id);

@@ -55,7 +55,7 @@ void ControlMessageSender::send_request_connect(int adapter_id) {
 }
 
 void ControlMessageSender::send_request_disconnect(int adapter_id,
-                                                   int final_req_no) {
+                                                   uint32_t final_seq_no_control, uint32_t final_seq_no_data) {
   std::string message("");
 
   // Write first line (request code)
@@ -64,14 +64,19 @@ void ControlMessageSender::send_request_disconnect(int adapter_id,
 
   // Write second line (adapter ID)
   message.append(std::to_string(adapter_id));
+  message.append("\n");
 
-  // Write third line (final req_no)
-  message.append(std::to_string(final_req_no));
+  // Write third line (final seq_no of control segments)
+  message.append(std::to_string(final_seq_no_control));
+  message.append("\n");
+
+  // Write fourth line (final seq_no of data segments)
+  message.append(std::to_string(final_seq_no_data));
 
   // Send the message
   this->send_control_message(message);
-  LOG_VERB("Send(Control Msg): Request(Disconnect %d; final_req_no=%d)",
-           adapter_id, final_req_no);
+  LOG_VERB("Send(Control Msg): Request(Disconnect %d; final_seq_no_control=%lu; final_seq_no_data=%lu)",
+           adapter_id, final_seq_no_control, final_seq_no_data);
 }
 
 void ControlMessageSender::send_request_disconnect_ack(int adapter_id) {

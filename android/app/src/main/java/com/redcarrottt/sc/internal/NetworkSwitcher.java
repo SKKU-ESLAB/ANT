@@ -35,7 +35,7 @@ public class NetworkSwitcher {
 
     // Disconnect adapter command.
     // It is called by peer through Core.
-    void disconnectAdapterByPeer(int adapterId) {
+    void disconnectAdapterByPeer(int adapterId, int finalSeqNoControl, int finalSeqNoData) {
         int state = this.getState();
         if (state == State.kSwitching) {
             Logger.VERB(kTag, "It's now switching. Cannot disconnect to adapter " + adapterId);
@@ -51,7 +51,7 @@ public class NetworkSwitcher {
 
         this.setState(State.kSwitching);
 
-        adapter.disconnect(null, false, true, true);
+        adapter.disconnectOnPeerCommand(null, finalSeqNoControl, finalSeqNoData);
     }
 
     // Sleep adapter command.
@@ -254,7 +254,7 @@ public class NetworkSwitcher {
                 restartReconnectAdapterTx(mTargetAdapter);
                 return;
             }
-            this.mTargetAdapter.disconnect(onDisconnectAdapter, false, false, false);
+            this.mTargetAdapter.disconnectOnFailure(onDisconnectAdapter);
         }
 
         private OnDisconnectAdapter onDisconnectAdapter;

@@ -26,9 +26,14 @@ public class ControlMessageSender {
         Logger.VERB(kTag, "Send(Control Msg): Request(Connect " + adapterId + ")");
     }
 
-    public void sendRequestDisconnect(int adapterId) {
-        this.sendRequest(ControlMessageProtocol.CMCode.kDisconnect, adapterId);
-        Logger.VERB(kTag, "Send(Control Msg): Request(Disconnect " + adapterId + ")");
+    public void sendRequestDisconnect(int adapterId, int final_seq_no_control, int
+            final_seq_no_data) {
+        String message = "" + ControlMessageProtocol.CMCode.kDisconnect + "\n" + adapterId + "\n"
+                + final_seq_no_control + "\n" + final_seq_no_data;
+        this.sendControlMessage(message);
+        Logger.VERB(kTag, "Send(Control Msg): Request(Disconnect " + adapterId + "; " +
+                "final_seq_no_control=" + final_seq_no_control + "; final_seq_no_data=" +
+                final_seq_no_data + ")");
     }
 
     public void sendRequestDisconnectAck(int adapterId) {

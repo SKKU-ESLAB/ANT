@@ -49,6 +49,9 @@ protected:
   void receiving_thread_loop(void);
   bool receiving_thread_loop_internal(void);
   void on_receive_normal_message(int control_message_code, int adapter_id);
+  void on_receive_disconnect_message(int adapter_id,
+                                     uint32_t final_seq_no_control,
+                                     uint32_t final_seq_no_data);
   void on_receive_priv_message(std::string contents);
   std::thread *mReceivingThread = NULL;
   bool mReceivingThreadOn = false;
