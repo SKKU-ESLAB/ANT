@@ -147,7 +147,7 @@ private:
   /* Singleton */
   static SegmentManager *sSingleton;
   SegmentManager(void) {
-    for(int i = 0; i < kNumSN; i++) {
+    for (int i = 0; i < kNumSN; i++) {
       this->mNextSeqNo[i] = 0;
     }
     for (int i = 0; i < kNumSQ; i++) {
@@ -188,6 +188,44 @@ private:
   std::list<Segment *> mFreeList;
   uint32_t mFreeSegmentListSize;
 
+  /* Wait data before disconnection */
+public:
+  void wait_receiving(uint32_t wait_seq_no_control, uint32_t wait_seq_no_data) {
+    std::unique_lock<std::mutex> lck(this->mWaitReceivingMutex);
+    this->mIsWaitReceiving = true;
+    this->mWaitSeqNoControl = wait_seq_no_control;
+    this->mWaitSeqNoData = wait_seq_no_data;
+    this->mWaitReceivingCond.wait(lck);
+  }
+
+  uint32_t get_last_seq_no_control(void) {
+    return this->mNextSeqNo[kSNControl] - 1;
+  }
+  uint32_t get_last_seq_no_data(void) { return this->mNextSeqNo[kSNData] - 1; }
+
+private:
+  void check_receiving_done() {
+    bool is_wakeup = false;
+    {
+      std::unique_lock<std::mutex> lck(this->mWaitReceivingMutex);
+      if (this->mIsWaitReceiving &&
+          this->mExpectedSeqNo[kSQRecvControl] >= this->mWaitSeqNoControl &&
+          this->mExpectedSeqNo[kSQRecvData] >= this->mWaitSeqNoData) {
+        is_wakeup = true;
+      }
+    }
+    if (is_wakeup) {
+      this->mWaitReceivingCond.notify_all();
+      this->mIsWaitReceiving = false;
+    }
+  }
+  bool mIsWaitReceiving = false;
+  uint32_t mWaitSeqNoControl = 0;
+  uint32_t mWaitSeqNoData = 0;
+  std::mutex mWaitReceivingMutex;
+  std::condition_variable mWaitReceivingCond;
+
+private:
   void serialize_segment_header(Segment *seg);
 
   void release_segment_from_free_list(uint32_t threshold);

@@ -317,7 +317,7 @@ public class Core {
                     int adapterState = adapter.getState();
                     if (adapterState != ClientAdapter.State.kDisconnected && adapterState !=
                             ClientAdapter.State.kDisconnecting) {
-                        adapter.disconnect(onDisconnectAdapter, true, false, true);
+                        adapter.disconnectOnCommand(onDisconnectAdapter);
                     }
                 }
             }

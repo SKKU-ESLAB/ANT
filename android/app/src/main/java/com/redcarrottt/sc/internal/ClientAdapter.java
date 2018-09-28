@@ -56,25 +56,88 @@ public class ClientAdapter {
         thread.start();
     }
 
-    public void disconnect(DisconnectResultListener listener, boolean isSendRequest, boolean
-            isSendAck, boolean isOnPurpose) {
-        if (this.getState() == State.kDisconnected || this.getState() == State.kDisconnecting) {
-            Logger.ERR(kTag, "Disconnect Failed: Already disconnected or connect/disconnection "
-                    + "is" + " in progress: " + this.getName() + " / " + this.getState());
+    public void disconnectOnCommand(DisconnectResultListener listener) {
+        // Check if the adapter is not sleeping
+        int state = this.getState();
+        if (state == State.kGoingSleep) {
+            Logger.VERB(kTag, this.getName() + ": Disconnect - waiting for sleeping...");
+            while (state != State.kSleeping) {
+                try {
+                    Thread.sleep(1000);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+                state = this.getState();
+            }
+        } else if (state != State.kSleeping) {
+            Logger.ERR(kTag, this.getName() + ": Disconnect fail - not sleeping - " + state);
             listener.onDisconnectResult(false);
             return;
         }
 
-        if (isOnPurpose) {
-            this.startDisconnectingOnPurpose();
+        // Set this disconnection is on purpose
+        this.startDisconnectingOnPurpose();
+
+        // Get my final seq_no
+        SegmentManager sm = SegmentManager.singleton();
+        int my_final_seq_no_control = sm.getLastSeqNoControl();
+        int my_final_seq_no_data = sm.getLastSeqNoData();
+
+        // Send disconnect request
+        Core.singleton().getControlMessageSender().sendRequestDisconnect(this.getId(),
+                my_final_seq_no_control, my_final_seq_no_data);
+
+        disconnectInternal(listener);
+    }
+
+    public void disconnectOnPeerCommand(DisconnectResultListener listener, int
+            peerFinalSeqNoControl, int peerFinalSeqNoData) {
+        // Check if the adapter is not sleeping
+        int state = this.getState();
+        if (state == State.kGoingSleep) {
+            Logger.VERB(kTag, this.getName() + ": Disconnect - waiting for sleeping...");
+            while (state != State.kSleeping) {
+                try {
+                    Thread.sleep(1000);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+                state = this.getState();
+            }
+        } else if (state != State.kSleeping) {
+            Logger.ERR(kTag, this.getName() + ": Disconnect fail - not sleeping - " + state);
+            listener.onDisconnectResult(false);
+            return;
         }
 
-        if (isSendRequest) {
-            Core.singleton().getControlMessageSender().sendRequestDisconnect(this.getId());
-        } else if (isSendAck) {
-            Core.singleton().getControlMessageSender().sendRequestDisconnectAck(this.getId());
+        // Set this disconnection is on purpose
+        this.startDisconnectingOnPurpose();
+
+        // Start wait receiving
+        SegmentManager sm = SegmentManager.singleton();
+        sm.waitReceiving(peerFinalSeqNoControl, peerFinalSeqNoData);
+
+        // Send disconnect ack
+        Core.singleton().getControlMessageSender().sendRequestDisconnectAck(this.getId());
+
+        disconnectInternal(listener);
+    }
+
+    public void disconnectOnFailure(DisconnectResultListener listener) {
+        // Check if the adapter is not sleeping
+        int state = this.getState();
+        if (state == State.kDisconnected || state == State.kDisconnecting) {
+            Logger.VERB(kTag, this.getName() + ": Disconnect - already disconnecting or " +
+                    "disconnected  - " + state);
+            listener.onDisconnectResult(false);
+            return;
         }
 
+        disconnectInternal(listener);
+    }
+
+    private void disconnectInternal(DisconnectResultListener listener) {
+        // Spawn disconnect thread
         DisconnectThread thread = new DisconnectThread(listener);
         thread.start();
     }
@@ -715,6 +778,15 @@ public class ClientAdapter {
         this.mIsDisconnectingOnPurposePeer = false;
     }
 
+    // Attributes
+    private int mId;
+    private String mName;
+
+    // Disconnecting on purpose by a device
+    private boolean mIsDisconnectingOnPurpose;
+    private boolean mIsDisconnectingOnPurposePeer;
+    private Object mWaitForDisconnectAck = new Object();
+
     // State
     class State {
         public static final int kDisconnected = 0;
@@ -760,15 +832,6 @@ public class ClientAdapter {
             this.mListeners.add(listener);
         }
     }
-
-    // Attributes
-    private int mId;
-    private String mName;
-
-    // Disconnecting on purpose by a device
-    private boolean mIsDisconnectingOnPurpose;
-    private boolean mIsDisconnectingOnPurposePeer;
-    private Object mWaitForDisconnectAck = new Object();
 
     // State
     private Integer mState;

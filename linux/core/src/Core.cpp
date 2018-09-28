@@ -219,8 +219,7 @@ void StartCoreTransaction::start() {
       StartCoreTransaction::connect_first_adapter_callback, false);
 }
 
-void StartCoreTransaction::connect_first_adapter_callback(
-    bool is_success) {
+void StartCoreTransaction::connect_first_adapter_callback(bool is_success) {
   if (is_success) {
     // Done transaction
     sOngoing->done(true);
@@ -275,9 +274,8 @@ void StopCoreTransaction::start() {
     ServerAdapterState state = adapter->get_state();
     if (state != ServerAdapterState::kDisconnected &&
         state != ServerAdapterState::kDisconnecting) {
-      adapter->disconnect(
-          StopCoreTransaction::disconnect_adapter_callback, true, false,
-          true);
+      adapter->disconnect_on_command(
+          StopCoreTransaction::disconnect_adapter_callback);
     }
   }
 }

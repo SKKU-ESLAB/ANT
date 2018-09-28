@@ -33,6 +33,7 @@
 #include <thread>
 #include <vector>
 
+#include <stdint.h>
 #include <stdio.h>
 
 namespace sc {
@@ -65,12 +66,14 @@ public:
    */
   /* Basic APIs related to connection/sleeping */
   void connect(ConnectCallback callback, bool is_send_request);
-  void disconnect(DisconnectCallback callback, bool is_send_request,
-                  bool is_send_ack, bool is_on_purpose);
+  void disconnect_on_command(DisconnectCallback callback);
+  void disconnect_on_peer_command(DisconnectCallback callback,
+                                  uint32_t peer_last_seq_no_control,
+                                  uint32_t peer_last_seq_no_data);
+  void disconnect_on_failure(DisconnectCallback callback);
   void sleep(DisconnectCallback callback, bool is_send_request);
   void wake_up(ConnectCallback callback, bool is_send_request);
   void connect_or_wake_up(ConnectCallback callback, bool is_send_request);
-  void disconnect_or_sleep(DisconnectCallback callback, bool is_send_request);
 
   /* Basic APIs related to data transmission */
   int send(const void *buf, size_t len);
@@ -84,27 +87,30 @@ private:
   ConnectCallback mConnectCallback = NULL;
 
   /* Disconnect Thread */
+  void disconnect_internal(DisconnectCallback callback);
   void disconnect_thread(void);
   bool __disconnect_thread(void);
   std::thread *mDisconnectThread = NULL;
+  DisconnectCallback mDisconnectCallback = NULL;
 
   /* Sender Thread */
   void sender_thread(void);
   void sender_thread_loop(void);
   std::thread *mSenderThread = NULL;
   bool mSenderLoopOn = false;
+  std::mutex mWaitSenderThreadMutex;
+  std::condition_variable mWaitSenderThreadCond;
+
+  /* Sender Thread Sleeping */
   bool mSenderSuspended = false;
   std::mutex mSenderSuspendedMutex;
   std::condition_variable mSenderSuspendedCond;
-  std::mutex mWaitSenderThreadMutex;
-  std::condition_variable mWaitSenderThreadCond;
 
   /* Receiver Thread */
   void receiver_thread(void);
   void receiver_thread_loop(void);
   std::thread *mReceiverThread = NULL;
   bool mReceiverLoopOn = false;
-  DisconnectCallback mDisconnectCallback = NULL;
   std::mutex mWaitReceiverThreadMutex;
   std::condition_variable mWaitReceiverThreadCond;
 
@@ -122,7 +128,6 @@ public:
   /* Attribute getters */
   char *get_name(void) { return this->mName; }
   int get_id(void) { return this->mId; }
-  bool is_sleeping_allowed(void) { return this->mIsSleepingAllowed; }
   bool is_disconnecting_on_purpose(void) {
     return this->mIsDisconnectingOnPurpose;
   }
@@ -160,13 +165,12 @@ private:
 private:
   /* Attributes */
   char mName[256];
-  
+
   /*
    * TODO: ID is now defined by user. However, the ID should be maintained by
    * system finally.
    */
   int mId;
-  bool mIsSleepingAllowed;
   bool mIsDisconnectingOnPurpose;     /* Disconnecting on purpose by a device */
   bool mIsDisconnectingOnPurposePeer; /* Peer knows disconnecting on purpose */
   std::mutex mWaitForDisconnectAckLock;
@@ -221,7 +225,6 @@ public:
     this->mState = ServerAdapterState::kDisconnected;
     snprintf(this->mName, sizeof(this->mName), "%s", name);
     this->mId = id;
-    this->mIsSleepingAllowed = false;
     this->mIsDisconnectingOnPurpose = false;
     this->mIsDisconnectingOnPurposePeer = false;
   }
@@ -238,11 +241,10 @@ public:
 protected:
   /* Initializer called by child classes */
   void initialize(Device *device, P2PServer *p2pServer,
-                  ServerSocket *serverSocket, bool is_sleeping_allowed) {
+                  ServerSocket *serverSocket) {
     this->mDevice = device;
     this->mP2PServer = p2pServer;
     this->mServerSocket = serverSocket;
-    this->mIsSleepingAllowed = is_sleeping_allowed;
   }
 }; /* class ServerAdapter */
 } /* namespace sc */

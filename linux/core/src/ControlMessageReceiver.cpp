@@ -77,7 +77,6 @@ bool ControlMessageReceiver::receiving_thread_loop_internal(void) {
 
   switch (control_message_code) {
   case CMCode::kCMCodeConnect:
-  case CMCode::kCMCodeDisconnect:
   case CMCode::kCMCodeSleep:
   case CMCode::kCMCodeWakeUp:
   case CMCode::kCMCodeDisconnectAck: {
@@ -85,6 +84,23 @@ bool ControlMessageReceiver::receiving_thread_loop_internal(void) {
     int adapter_id = std::stoi(other_lines);
     this->on_receive_normal_message(control_message_code, adapter_id);
     break;
+  }
+  case CMCode::kCMCodeDisconnect: {
+    // Disconnect type
+    // Divide the message into second line, third line, fourth line
+    separator_pos = other_lines.find('\n');
+    std::string second_line(other_lines.substr(0, separator_pos));
+    std::string third_fourth_line(other_lines.substr(separator_pos));
+    separator_pos = third_fourth_line.find('\n');
+    std::string third_line(third_fourth_line.substr(0, separator_pos));
+    std::string fourth_line(third_fourth_line.substr(separator_pos));
+
+    int adapter_id = std::stoi(second_line);
+    uint32_t final_seq_no_control = std::stoul(third_line);
+    uint32_t final_seq_no_data = std::stoul(fourth_line);
+
+    this->on_receive_disconnect_message(adapter_id, final_seq_no_control,
+                                        final_seq_no_data);
   }
   case CMCode::kCMCodePriv: {
     // Priv type
@@ -104,25 +120,21 @@ bool ControlMessageReceiver::receiving_thread_loop_internal(void) {
 
 void ControlMessageReceiver::on_receive_normal_message(int control_message_code,
                                                        int adapter_id) {
+  NetworkSwitcher *ns = NetworkSwitcher::singleton();
   switch (control_message_code) {
   case CMCode::kCMCodeConnect: {
     LOG_VERB("Receive(Control Msg): Request(Connect %d)", adapter_id);
-    NetworkSwitcher::singleton()->connect_adapter_by_peer(adapter_id);
-    break;
-  }
-  case CMCode::kCMCodeDisconnect: {
-    LOG_VERB("Receive(Control Msg): Request(Disconnect %d)", adapter_id);
-    NetworkSwitcher::singleton()->disconnect_adapter_by_peer(adapter_id);
+    ns->connect_adapter_by_peer(adapter_id);
     break;
   }
   case CMCode::kCMCodeSleep: {
     LOG_VERB("Receive(Control Msg): Request(Sleep %d)", adapter_id);
-    NetworkSwitcher::singleton()->sleep_adapter_by_peer(adapter_id);
+    ns->sleep_adapter_by_peer(adapter_id);
     break;
   }
   case CMCode::kCMCodeWakeUp: {
     LOG_VERB("Receive(Control Msg): Request(WakeUp %d)", adapter_id);
-    NetworkSwitcher::singleton()->wake_up_adapter_by_peer(adapter_id);
+    ns->wake_up_adapter_by_peer(adapter_id);
     break;
   }
   case CMCode::kCMCodeDisconnectAck: {
@@ -141,6 +153,16 @@ void ControlMessageReceiver::on_receive_normal_message(int control_message_code,
     break;
   }
   }
+}
+
+void ControlMessageReceiver::on_receive_disconnect_message(
+    int adapter_id, uint32_t final_seq_no_control, uint32_t final_seq_no_data) {
+  LOG_VERB("Receive(Control Msg): Request(Disconnect %d / "
+           "final_seq_no_control=%lu / final_seq_no_data=%lu)",
+           adapter_id, final_seq_no_control, final_seq_no_data);
+  NetworkSwitcher *ns = NetworkSwitcher::singleton();
+  ns->disconnect_adapter_by_peer(adapter_id, final_seq_no_control,
+                                 final_seq_no_data);
 }
 
 void ControlMessageReceiver::on_receive_priv_message(std::string contents) {

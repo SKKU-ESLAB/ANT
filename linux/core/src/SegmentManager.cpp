@@ -256,6 +256,8 @@ void SegmentManager::enqueue(SegQueueType queue_type, Segment *seg) {
 
   if (segment_enqueued)
     this->mDequeueCond[dequeue_type].notify_all();
+
+  this->check_receiving_done();
 }
 
 /*

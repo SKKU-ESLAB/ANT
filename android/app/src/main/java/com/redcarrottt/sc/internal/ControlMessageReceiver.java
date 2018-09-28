@@ -71,7 +71,6 @@ public class ControlMessageReceiver {
 
             switch (controlMessageCode) {
                 case ControlMessageProtocol.CMCode.kConnect:
-                case ControlMessageProtocol.CMCode.kDisconnect:
                 case ControlMessageProtocol.CMCode.kSleep:
                 case ControlMessageProtocol.CMCode.kWakeup:
                 case ControlMessageProtocol.CMCode.kDisconnectAck: {
@@ -80,9 +79,25 @@ public class ControlMessageReceiver {
                     onReceiveNormalMessage(controlMessageCode, adapterId);
                     break;
                 }
+                case ControlMessageProtocol.CMCode.kDisconnect: {
+                    // Disconnect type
+                    // Divide the message into second line, third line, fourth line
+                    separatorPos = otherLines.indexOf('\n');
+                    String secondLine = otherLines.substring(0, separatorPos);
+                    String thirdFourthLine = otherLines.substring(separatorPos + 1);
+                    separatorPos = thirdFourthLine.indexOf('\n');
+                    String thirdLine = thirdFourthLine.substring(0, separatorPos);
+                    String fourthLine = thirdFourthLine.substring(separatorPos + 1);
+
+                    int adapterId = Integer.parseInt(secondLine);
+                    int finalSeqNoControl = Integer.parseInt(thirdLine);
+                    int finalSeqNoData = Integer.parseInt(fourthLine);
+
+                    onReceiveDisconnectMessage(adapterId, finalSeqNoControl, finalSeqNoData);
+                }
                 case ControlMessageProtocol.CMCode.kPriv: {
                     // Priv type
-                    onReceivePrivateMesesage(otherLines);
+                    onReceivePrivateMessage(otherLines);
                     break;
                 }
                 default: {
@@ -115,11 +130,6 @@ public class ControlMessageReceiver {
                 NetworkSwitcher.singleton().connectAdapterByPeer(adapterId);
                 break;
             }
-            case ControlMessageProtocol.CMCode.kDisconnect: {
-                Logger.VERB(kTag, "Receive(Control Msg): Request(Disconnect " + adapterId + ")");
-                NetworkSwitcher.singleton().disconnectAdapterByPeer(adapterId);
-                break;
-            }
             case ControlMessageProtocol.CMCode.kSleep: {
                 Logger.VERB(kTag, "Receive(Control Msg): Request(Sleep " + adapterId + ")");
                 NetworkSwitcher.singleton().sleepAdapterByPeer(adapterId);
@@ -143,7 +153,16 @@ public class ControlMessageReceiver {
         }
     }
 
-    private void onReceivePrivateMesesage(String contents) {
+    private void onReceiveDisconnectMessage(int adapterId, int finalSeqNoControl, int
+            finalSeqNoData) {
+        Logger.VERB(kTag, "Receive(Control Msg): Request(Disconnect " + adapterId + " / " +
+                "final_seq_no_control=" + finalSeqNoControl + " / final_seq_no_data=" +
+                finalSeqNoData + ")");
+        NetworkSwitcher.singleton().disconnectAdapterByPeer(adapterId, finalSeqNoControl,
+                finalSeqNoData);
+    }
+
+    private void onReceivePrivateMessage(String contents) {
         // Find separator location
         int separatorPos = contents.indexOf('\n');
 
