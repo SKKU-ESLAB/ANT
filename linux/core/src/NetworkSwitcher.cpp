@@ -69,7 +69,8 @@ void NetworkSwitcher::disconnect_adapter_by_peer(int adapter_id,
 
   this->set_state(NSState::kNSStateSwitching);
 
-  adapter->disconnect_on_peer_command(NULL, last_seq_no_control, last_seq_no_data);
+  adapter->disconnect_on_peer_command(NULL, last_seq_no_control,
+                                      last_seq_no_data);
 }
 
 void NetworkSwitcher::sleep_adapter_by_peer(int adapter_id) {
@@ -157,8 +158,8 @@ void SwitchAdapterTransaction::done(bool is_success) {
              sOngoing->mNextIndex);
     Core::singleton()->set_active_adapter_index(sOngoing->mNextIndex);
   } else {
-    LOG_VERB("Switch (%d->%d): Failed", sOngoing->mPrevIndex,
-             sOngoing->mNextIndex);
+    LOG_ERR("Switch (%d->%d): Failed", sOngoing->mPrevIndex,
+            sOngoing->mNextIndex);
   }
   NetworkSwitcher::singleton()->done_switch();
   sOngoing = NULL;
@@ -177,8 +178,8 @@ void SwitchAdapterTransaction::start(void) {
 
   ServerAdapterState adapter_state = next_adapter->get_state();
   if (adapter_state == ServerAdapterState::kActive) {
-    LOG_ERR("Next adapter is already active");
-    this->done(false);
+    LOG_WARN("Next adapter is already active");
+    SwitchAdapterTransaction::connect_next_adapter_callback(true);
     return;
   } else if (adapter_state == ServerAdapterState::kConnecting ||
              adapter_state == ServerAdapterState::kDisconnecting ||
@@ -208,12 +209,15 @@ void SwitchAdapterTransaction::connect_next_adapter_callback(bool is_success) {
   // Switch Step 1-b, 2-a
   Core *core = Core::singleton();
   NetworkSwitcher *switcher = NetworkSwitcher::singleton();
+
+  // Check if the connection result is successful
   if (!is_success) {
     LOG_ERR("Connecting next adapter is failed");
     sOngoing->done(false);
     return;
   }
 
+  // Get previous adapter
   ServerAdapter *prev_adapter = core->get_adapter(sOngoing->mPrevIndex);
   if (prev_adapter == NULL) {
     LOG_ERR("Disconnecting previous adapter is failed");
@@ -221,19 +225,20 @@ void SwitchAdapterTransaction::connect_next_adapter_callback(bool is_success) {
     return;
   }
 
+  // Check previous adapter's state
   ServerAdapterState adapter_state = prev_adapter->get_state();
   if (adapter_state == ServerAdapterState::kDisconnected) {
     LOG_WARN("Prev adapter is already disconnected");
     // Proceed to Step 4
     sOngoing->done(true);
     return;
-  } else if (adapter_state == ServerAdapterState::kSleeping) {
-    LOG_WARN("Prev adapter is already sleeping");
+  } else if (adapter_state == ServerAdapterState::kSleeping ||
+             adapter_state == ServerAdapterState::kGoingSleeping) {
+    LOG_WARN("Prev adapter is already sleeping or going to sleeping");
     // Proceed to Step 3-a
     sOngoing->sleep_prev_adapter_callback(true);
   } else if (adapter_state == ServerAdapterState::kConnecting ||
              adapter_state == ServerAdapterState::kDisconnecting ||
-             adapter_state == ServerAdapterState::kGoingSleeping ||
              adapter_state == ServerAdapterState::kWakingUp) {
     // Failure
     LOG_ERR("Switching is already in progress");
@@ -273,9 +278,14 @@ void SwitchAdapterTransaction::sleep_prev_adapter_callback(bool is_success) {
     LOG_WARN("Prev adapter is already disconnected");
     sOngoing->done(true);
     return;
+  } else if (adapter_state == ServerAdapterState::kGoingSleeping) {
+    // Wait until the adapter become sleeping state
+    do {
+      adapter_state = prev_adapter->get_state();
+      ::sleep(1);
+    } while (adapter_state != ServerAdapterState::kSleeping);
   } else if (adapter_state == ServerAdapterState::kConnecting ||
              adapter_state == ServerAdapterState::kDisconnecting ||
-             adapter_state == ServerAdapterState::kGoingSleeping ||
              adapter_state == ServerAdapterState::kWakingUp) {
     // Failure
     LOG_ERR("Switching is already in progress");

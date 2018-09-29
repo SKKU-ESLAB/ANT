@@ -122,6 +122,10 @@ public:
   void free_segment(Segment *seg);
   void free_segment_all(void);
 
+  void wake_up_dequeue_waiting(SegDequeueType dequeue_type) {
+    this->mDequeueCond[dequeue_type].notify_all();
+  }
+
   int get_queue_length(int type) {
     return this->mQueueLength[type].get_value();
   }

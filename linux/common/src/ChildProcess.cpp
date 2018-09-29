@@ -46,10 +46,12 @@ int ChildProcess::run(const char *path, char *const params[], char *res_buf,
   int i = 0;
   while (params[i] != NULL) {
     command_string.append(params[i]);
-    command_string.append(" ");
+    if(params[i+1] != NULL) {
+      command_string.append(" ");
+    }
     i++;
   }
-  LOG_VERB("Run command: %s", command_string.c_str());
+  LOG_DEBUG("Run command: %s", command_string.c_str());
 #endif
 
   res = pipe(internal_pipe);
@@ -88,9 +90,9 @@ int ChildProcess::run(const char *path, char *const params[], char *res_buf,
     if (is_wait_child) {
       int status;
       waitpid(pid, &status, 0);
-      LOG_VERB("Done (%s): %d", command_string.c_str(), status);
+      LOG_DEBUG("Done (%s): %d", command_string.c_str(), status);
     } else {
-      LOG_VERB("Daemon (%s)", command_string.c_str());
+      LOG_DEBUG("Daemon (%s)", command_string.c_str());
     }
 
     memcpy(res_buf, buf, read_bytes < len ? read_bytes : len);

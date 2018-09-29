@@ -44,7 +44,8 @@ typedef enum {
   kDisconnecting = 3,
   kGoingSleeping = 4,
   kSleeping = 5,
-  kWakingUp = 6
+  kWakingUp = 6,
+  kASNum = 7
 } ServerAdapterState; /* enum ServerAdapterState */
 
 class ServerAdapter;
@@ -214,6 +215,18 @@ public:
 private:
   /* State setter */
   void set_state(ServerAdapterState new_state);
+
+  std::string server_adapter_state_to_string(ServerAdapterState state) {
+    char *const state_string[] = {"Disconnected",  "Connecting",    "Active",
+                                  "Disconnecting", "GoingSleeping", "Sleeping",
+                                  "WakingUp"};
+    int state_index = (int)state;
+    if (state_index >= ServerAdapterState::kASNum || state_index < 0) {
+      return std::string("");
+    } else {
+      return std::string(state_string[state_index]);
+    }
+  }
 
   /* State */
   ServerAdapterState mState;

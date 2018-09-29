@@ -71,12 +71,13 @@ void ServerAdapter::disconnect_on_command(DisconnectCallback callback) {
   ServerAdapterState state = this->get_state();
   if (state == ServerAdapterState::kGoingSleeping) {
     LOG_VERB("%s: Disconnect - waiting for sleeping...", this->get_name());
-    while(state != ServerAdapterState::kSleeping) {
+    while (state != ServerAdapterState::kSleeping) {
       ::sleep(1);
       state = this->get_state();
     }
   } else if (state != ServerAdapterState::kSleeping) {
-    LOG_ERR("%s: Disconnect fail - not sleeping (state=%d)", this->get_name(), state);
+    LOG_ERR("%s: Disconnect fail - not sleeping (state=%d)", this->get_name(),
+            state);
     callback(false);
     return;
   }
@@ -110,7 +111,7 @@ void ServerAdapter::disconnect_on_peer_command(
   ServerAdapterState state = this->get_state();
   if (state == ServerAdapterState::kGoingSleeping) {
     LOG_VERB("%s: Disconnect - waiting for sleeping...", this->get_name());
-    while(state != ServerAdapterState::kSleeping) {
+    while (state != ServerAdapterState::kSleeping) {
       ::sleep(1);
       state = this->get_state();
     }
@@ -514,15 +515,23 @@ void ServerAdapter::sender_thread_loop(void) {
       segment_to_send = sm->dequeue(kDeqSendControlData);
     }
 
+    if (unlikely(segment_to_send == NULL)) {
+      // Nothing to send.
+      // SegmentManager::wake_up_dequeue_waiting() function may make this case
+      continue;
+    }
+
 #if defined(VERBOSE_DEQUEUE_SEND_CONTROL) || defined(VERBOSE_DEQUEUE_SEND_DATA)
     bool is_control =
         ((mGetSegFlagBits(segment_to_send->flag_len) & kSegFlagControl) != 0);
 #endif
 #ifdef VERBOSE_DEQUEUE_SEND_CONTROL
     if (is_control) {
-      LOG_DEBUG("%s: Send %s Segment (type=Ctrl, seqno=%d)", this->get_name(),
-                (is_get_failed_segment ? "Failed" : "Normal"),
-                segment_to_send->seq_no);
+      LOG_DEBUG("%s: Send %s Segment (type=Ctrl, seqno=%d, len=%d)\n%s",
+                this->get_name(), (is_get_failed_segment ? "Failed" : "Normal"),
+                segment_to_send->seq_no,
+                (int)mGetSegLenBits(segment_to_send->flag_len),
+                segment_to_send->data);
     }
 #endif
 #ifdef VERBOSE_DEQUEUE_SEND_DATA
@@ -572,27 +581,33 @@ void ServerAdapter::sender_thread_loop(void) {
       if (is_disconnecting_on_purpose()) {
         // Now disconnecting on purpose... Send this segment by another
         // adapter.
-        LOG_DEBUG("%s: Disconnecting on purpose", this->get_name());
+        LOG_DEBUG("%s: Disconnecting on purpose (type=%d, seq_no=%lu)",
+                  this->get_name(), (int)is_control, segment_to_send->seq_no);
         sm->failed_sending(segment_to_send);
         break;
       } else if (errno == 0) {
-        // Successful. Do nothing.
-        LOG_DEBUG("%s: Send successful, but res=0", this->get_name());
+        LOG_DEBUG("%s: Unknown error occured (type=%d, seq_no=%lu)",
+                  this->get_name(), (int)is_control, segment_to_send->seq_no);
+        sm->failed_sending(segment_to_send);
+        continue;
       } else if (errno == EINTR) {
         // Handling interrupted system call
-        LOG_DEBUG("%s: Send interrupted (%dB)", this->get_name(), len);
+        LOG_DEBUG("%s: Send interrupted (type=%d, seq_no=%lu)",
+                  this->get_name(), (int)is_control, segment_to_send->seq_no);
         sm->failed_sending(segment_to_send);
         continue;
       } else if (errno == EAGAIN) {
         // Kernel I/O buffer is full
-        LOG_WARN("%s: Send fail (%dB) - Kernel I/O buffer is full",
-                 this->get_name(), len);
+        LOG_WARN(
+            "%s: Send fail - Kernel I/O buffer is full (type=%d, seq_no=%lu)",
+            this->get_name(), (int)is_control, segment_to_send->seq_no);
         sm->failed_sending(segment_to_send);
         continue;
       } else {
         // Other errors
-        LOG_WARN("%s: Send fail (%dB) - res=%d errno=%d(%s)", this->get_name(),
-                 len, res, errno, strerror(errno));
+        LOG_WARN("%s: Send fail - res=%d errno=%d(%s) (type=%d, seq_no=%lu)",
+                 this->get_name(), res, errno, strerror(errno), (int)is_control,
+                 segment_to_send->seq_no);
         sm->failed_sending(segment_to_send);
         break;
       }
@@ -709,6 +724,7 @@ void ServerAdapter::sleep(DisconnectCallback callback, bool is_send_request) {
     return;
   }
 
+  bool sender_suspended = false;
   {
     std::unique_lock<std::mutex> lck(this->mSenderSuspendedMutex);
     if (this->mSenderSuspended) {
@@ -725,10 +741,16 @@ void ServerAdapter::sleep(DisconnectCallback callback, bool is_send_request) {
       // Sleep
       this->set_state(ServerAdapterState::kGoingSleeping);
       this->mSenderSuspended = true;
-      if (callback != NULL)
-        callback(true);
+
+      // Wake up sender thread waiting segment queue
+      SegmentManager *sm = SegmentManager::singleton();
+      sm->wake_up_dequeue_waiting(kDeqSendControlData);
     }
   }
+
+  // Execute callback
+  if (callback != NULL)
+    callback(true);
 }
 
 void ServerAdapter::wake_up(DisconnectCallback callback, bool is_send_request) {
@@ -787,7 +809,11 @@ void ServerAdapter::set_state(ServerAdapterState new_state) {
     this->mState = new_state;
   }
 
-  LOG_DEBUG("%s: State(%d->%d)", this->get_name(), old_state, new_state);
+  std::string old_state_str(server_adapter_state_to_string(old_state));
+  std::string new_state_str(server_adapter_state_to_string(new_state));
+
+  LOG_DEBUG("%s: State(%s->%s)", this->get_name(), old_state_str.c_str(),
+            new_state_str.c_str());
 
   for (std::vector<ServerAdapterStateListener *>::iterator it =
            this->mStateListeners.begin();

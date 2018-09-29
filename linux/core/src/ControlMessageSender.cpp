@@ -32,6 +32,7 @@ void ControlMessageSender::send_control_message(std::string &message) {
   char *message_buffer = new char[message_buffer_size];
   strncpy(message_buffer, message.c_str(), message_buffer_size);
   message_buffer[message_buffer_size - 1] = '\0';
+  LOG_VERB("Send(Control Msg) RAW (len=%d)::\n%s", message_buffer_size, message_buffer);
   int res = Core::singleton()->send(message_buffer, message_buffer_size, true);
 }
 

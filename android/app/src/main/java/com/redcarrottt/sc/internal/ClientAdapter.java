@@ -26,7 +26,8 @@ import java.util.Date;
 
 import static com.redcarrottt.sc.internal.ExpConfig.VERBOSE_CLIENT_ADAPTER;
 import static com.redcarrottt.sc.internal.ExpConfig.VERBOSE_RECEIVER_TIME;
-import static com.redcarrottt.sc.internal.ExpConfig.VERBOSE_SEGMENT_DEQUEUE;
+import static com.redcarrottt.sc.internal.ExpConfig.VERBOSE_SEGMENT_DEQUEUE_CTRL;
+import static com.redcarrottt.sc.internal.ExpConfig.VERBOSE_SEGMENT_DEQUEUE_DATA;
 import static com.redcarrottt.sc.internal.SegmentManager.kDeqSendControlData;
 import static com.redcarrottt.sc.internal.SegmentManager.kSQRecvControl;
 import static com.redcarrottt.sc.internal.SegmentManager.kSQRecvData;
@@ -493,8 +494,14 @@ public class ClientAdapter {
                 segmentToSend = sm.get_failed_sending();
                 // Priority 2. Send control queue
                 // Priority 3. Send data queue
-                while (segmentToSend == null) {
+                if (segmentToSend == null) {
                     segmentToSend = sm.dequeue(kDeqSendControlData);
+                }
+
+                if (segmentToSend == null) {
+                    // Nothing to send.
+                    // SegmentManager::wake_up_dequeue_waiting() function may make this case
+                    continue;
                 }
 
                 // If it is suspended, push the segment to the send-fail queue
@@ -599,12 +606,18 @@ public class ClientAdapter {
 
                 if (VERBOSE_RECEIVER_TIME) this.mDates[3] = new Date();
 
-                if (VERBOSE_SEGMENT_DEQUEUE) {
-                    Logger.DEBUG(getName(), "Receive Segment: seqno=" + segmentToReceive.seq_no);
-                }
-
                 boolean is_control = ((SegmentManager.mGetSegFlagBits(segmentToReceive.flag_len)
                         & kSegFlagControl) != 0);
+
+                if (VERBOSE_SEGMENT_DEQUEUE_CTRL && is_control) {
+                    Logger.DEBUG(getName(), "Receive Segment: seqno=" + segmentToReceive.seq_no +
+                            " / type=ctrl");
+                }
+                if (VERBOSE_SEGMENT_DEQUEUE_DATA && !is_control) {
+                    Logger.DEBUG(getName(), "Receive Segment: seqno=" + segmentToReceive.seq_no +
+                            " / type=data");
+                }
+
                 if (is_control) {
                     sm.enqueue(kSQRecvControl, segmentToReceive);
                 } else {
@@ -681,6 +694,10 @@ public class ClientAdapter {
                 // Sleep
                 this.setState(State.kGoingSleep);
                 this.mSenderSuspended = true;
+
+                // Wake up sender thread waiting segment queue
+                SegmentManager sm = SegmentManager.singleton();
+                sm.wakeUpDequeueWaiting(kDeqSendControlData);
                 return true;
             }
         }
@@ -796,6 +813,17 @@ public class ClientAdapter {
         public static final int kGoingSleep = 4;
         public static final int kSleeping = 5;
         public static final int kWakingUp = 6;
+        public static final int kASNum = 7;
+    }
+
+    private static String stateToString(int state) {
+        final String[] stateStr = {"Disconnected", "Connecting", "Active", "Disconnecting",
+                "GoingSleep", "Sleeping", "WakingUp"};
+        if (state >= State.kASNum || state < 0) {
+            return "";
+        } else {
+            return stateStr[state];
+        }
     }
 
     @SuppressWarnings("SynchronizeOnNonFinalField")
@@ -815,7 +843,8 @@ public class ClientAdapter {
             this.mState = newState;
         }
 
-        Logger.DEBUG(this.getName(), "State(" + oldState + "->" + newState + ")");
+        Logger.DEBUG(this.getName(), "State(" + stateToString(oldState) + "->" + stateToString
+                (newState) + ")");
 
         for (StateListener listener : this.mListeners) {
             listener.onUpdateClientAdapterState(this, oldState, newState);
