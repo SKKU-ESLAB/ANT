@@ -255,7 +255,7 @@ void SegmentManager::enqueue(SegQueueType queue_type, Segment *seg) {
   }
 
   if (segment_enqueued)
-    this->mDequeueCond[dequeue_type].notify_all();
+    this->wake_up_dequeue_waiting(dequeue_type);
 
   this->check_receiving_done();
 }
@@ -334,7 +334,7 @@ Segment *SegmentManager::dequeue(SegDequeueType dequeue_type) {
   // Check the dequeued segment
   Segment *segment_dequeued = this->mQueues[target_queue_type].front();
   if (segment_dequeued == NULL) {
-    LOG_ERR("Dequeue failed: empty queue (queue=%d, dequeue=%d)",
+    LOG_DEBUG("Dequeue interrupted: empty queue (queue=%d, dequeue=%d)",
             target_queue_type, dequeue_type);
     return NULL;
   }

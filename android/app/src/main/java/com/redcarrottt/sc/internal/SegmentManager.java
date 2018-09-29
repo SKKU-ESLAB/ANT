@@ -188,6 +188,12 @@ class SegmentManager {
         }
     }
 
+    public void wakeUpDequeueWaiting(int dequeueType) {
+        synchronized (mDequeueCond[dequeueType]) {
+            this.mDequeueCond[dequeueType].notifyAll();
+        }
+    }
+
     boolean mIsWaitReceiving = false;
     int mWaitSeqNoControl = 0;
     int mWaitSeqNoData = 0;
@@ -311,57 +317,56 @@ class SegmentManager {
                 return;
         }
 
-        synchronized (mDequeueCond[dequeueType]) {
-            boolean segmentEnqueued = false;
 
-            synchronized (this.mQueues[queueType]) {
-                if (segment.seq_no == mExpectedSeqNo[queueType]) {
-                    mExpectedSeqNo[queueType]++;
-                    mQueues[queueType].offerLast(segment);
-                    mQueueLengths[queueType]++;
-                    segmentEnqueued = true;
-                } else {
-                    if (segment.seq_no < mExpectedSeqNo[queueType]) {
-                        // If duplicated data comes, ignore it.
-                        Logger.WARN(kTag, "Sequence No Error: (" + queueType + ") incoming=" +
-                                segment.seq_no + " / expected_next=" + mExpectedSeqNo[queueType]);
+        boolean segmentEnqueued = false;
 
-
-                        return;
-                    }
-
-                    ListIterator it = mPendingQueue[queueType].listIterator();
-                    while (it.hasNext()) {
-                        Segment walker = (Segment) it.next();
-                        if (walker.seq_no > segment.seq_no) break;
-                    }
-                    Logger.DEBUG(kTag, "Insert to pending queue: (" + queueType + ") incoming=" +
+        synchronized (this.mQueues[queueType]) {
+            if (segment.seq_no == mExpectedSeqNo[queueType]) {
+                mExpectedSeqNo[queueType]++;
+                mQueues[queueType].offerLast(segment);
+                mQueueLengths[queueType]++;
+                segmentEnqueued = true;
+            } else {
+                if (segment.seq_no < mExpectedSeqNo[queueType]) {
+                    // If duplicated data comes, ignore it.
+                    Logger.WARN(kTag, "Sequence No Error: (" + queueType + ") incoming=" +
                             segment.seq_no + " / expected_next=" + mExpectedSeqNo[queueType]);
 
-                    it.add(segment);
+
+                    return;
                 }
 
                 ListIterator it = mPendingQueue[queueType].listIterator();
                 while (it.hasNext()) {
                     Segment walker = (Segment) it.next();
-
-                    if (walker.seq_no != mExpectedSeqNo[queueType]) break;
-
-                    mQueues[queueType].offerLast(walker);
-                    mQueueLengths[queueType]++;
-                    mExpectedSeqNo[queueType]++;
-                    segmentEnqueued = true;
-
-                    it.remove();
+                    if (walker.seq_no > segment.seq_no) break;
                 }
+                Logger.DEBUG(kTag, "Insert to pending queue: (" + queueType + ") incoming=" +
+                        segment.seq_no + " / expected_next=" + mExpectedSeqNo[queueType]);
+
+                it.add(segment);
             }
 
-            if (segmentEnqueued) {
-                this.mDequeueCond[dequeueType].notifyAll();
-            }
+            ListIterator it = mPendingQueue[queueType].listIterator();
+            while (it.hasNext()) {
+                Segment walker = (Segment) it.next();
 
-            this.checkReceivingDone();
+                if (walker.seq_no != mExpectedSeqNo[queueType]) break;
+
+                mQueues[queueType].offerLast(walker);
+                mQueueLengths[queueType]++;
+                mExpectedSeqNo[queueType]++;
+                segmentEnqueued = true;
+
+                it.remove();
+            }
         }
+
+        if (segmentEnqueued) {
+            this.wakeUpDequeueWaiting(dequeueType);
+        }
+
+        this.checkReceivingDone();
     }
 
     public Segment dequeue(int dequeueType) {
@@ -426,6 +431,11 @@ class SegmentManager {
             synchronized (this.mQueues[targetQueueType]) {
                 // Check the dequeued segment
                 Segment segmentDequeued = (Segment) this.mQueues[targetQueueType].pollFirst();
+                if (segmentDequeued == null) {
+                    Logger.DEBUG(kTag, "Dequeue interrupted: empty queue (queue=" +
+                            targetQueueType + ", dequeue=" + dequeueType + ")");
+                    return null;
+                }
                 mQueueLengths[targetQueueType]--;
                 return segmentDequeued;
             }

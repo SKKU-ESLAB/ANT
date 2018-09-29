@@ -97,7 +97,7 @@ class TcpClientSocket extends ClientSocket {
                 receivedBytes += onceReceivedBytes;
             }
 
-            Logger.DEBUG(kTag, "TCP received " + receivedBytes);
+//            Logger.DEBUG(kTag, "TCP received " + receivedBytes);
             return dataLength;
         } catch (IOException e) {
             Logger.ERR(kTag, "Receive failed! 2 / " + e.getMessage());
