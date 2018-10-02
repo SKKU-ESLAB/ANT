@@ -50,9 +50,11 @@ uint32_t SegmentManager::get_next_seq_no(SegSeqNumType seq_num_type,
 
 void SegmentManager::serialize_segment_header(Segment *seg) {
   uint32_t net_seq_no = htonl(seg->seq_no);
-  uint32_t net_flag_len = htonl(seg->flag_len);
+  uint32_t net_len = htonl(seg->len);
+  uint32_t net_flag = htonl(seg->flag);
   memcpy(seg->data, &net_seq_no, sizeof(uint32_t));
-  memcpy(seg->data + 4, &net_flag_len, sizeof(uint32_t));
+  memcpy(seg->data + 4, &net_len, sizeof(uint32_t));
+  memcpy(seg->data + 8, &net_flag, sizeof(uint32_t));
 }
 
 int SegmentManager::send_to_segment_manager(uint8_t *data, size_t len,
@@ -73,27 +75,26 @@ int SegmentManager::send_to_segment_manager(uint8_t *data, size_t len,
     uint32_t seg_len = (len - offset < kSegSize) ? len - offset : kSegSize;
     Segment *seg = this->get_free_segment();
 
-    /* Set segment length */
-    mSetSegLenBits(seg_len, seg->flag_len);
-
     /* Set segment sequence number */
     seg->seq_no = allocated_seq_no++;
 
-    /* Set segment data */
-    memcpy(&(seg->data[kSegHeaderSize]), data + offset, seg_len);
-    offset += seg_len;
+    /* Set segment length */
+    seg->len = seg_len;
 
     /* Set segment MF flag and/or control segment flag */
-    int flag = 0;
-    if (offset < len)
-      flag |= kSegFlagMF;
+    uint32_t flag = 0;
+    if (offset + seg_len < len)
+      flag = flag | kSegFlagMF;
     if (is_control)
-      flag |= kSegFlagControl;
-    uint32_t orig_flag_len = seg->flag_len;
-    mSetSegFlagBits(flag, seg->flag_len);
-
+      flag = flag | kSegFlagControl;
+    seg->flag = flag;
+    
     /* Set segment header to data */
     this->serialize_segment_header(seg);
+
+    /* Set segment data */
+    memcpy(seg->data + kSegHeaderSize, data + offset, seg_len);
+    offset += seg_len;
 
     if (is_control) {
 #ifdef VERBOSE_ENQUEUE_SEND
@@ -143,12 +144,12 @@ uint8_t *SegmentManager::recv_from_segment_manager(void *proc_data_handle,
 
   serialized = reinterpret_cast<uint8_t *>(calloc(pd->len, sizeof(uint8_t)));
 
-  data_size = mGetSegLenBits(seg->flag_len) - kProtHeaderSize;
+  data_size = seg->len - kProtHeaderSize;
   memcpy(serialized + offset, &(seg->data[kSegHeaderSize]) + kProtHeaderSize,
          data_size);
   offset += data_size;
 
-  cont = ((mGetSegFlagBits(seg->flag_len) & kSegFlagMF) != 0);
+  cont = ((seg->flag & kSegFlagMF) != 0);
 
   free_segment(seg);
 
@@ -158,9 +159,9 @@ uint8_t *SegmentManager::recv_from_segment_manager(void *proc_data_handle,
     } else {
       seg = dequeue(kDeqRecvData);
     }
-    data_size = mGetSegLenBits(seg->flag_len);
+    data_size = seg->len;
     memcpy(serialized + offset, &(seg->data[kSegHeaderSize]), data_size);
-    cont = ((mGetSegFlagBits(seg->flag_len) & kSegFlagMF) != 0);
+    cont = ((seg->flag & kSegFlagMF) != 0);
     offset += data_size;
     free_segment(seg);
   }
@@ -335,7 +336,7 @@ Segment *SegmentManager::dequeue(SegDequeueType dequeue_type) {
   Segment *segment_dequeued = this->mQueues[target_queue_type].front();
   if (segment_dequeued == NULL) {
     LOG_DEBUG("Dequeue interrupted: empty queue (queue=%d, dequeue=%d)",
-            target_queue_type, dequeue_type);
+              target_queue_type, dequeue_type);
     return NULL;
   }
 
@@ -361,7 +362,8 @@ Segment *SegmentManager::get_free_segment(void) {
   }
 
   ret->seq_no = 0;
-  ret->flag_len = 0;
+  ret->len = 0;
+  ret->flag = 0;
   assert(ret != NULL);
   return ret;
 }

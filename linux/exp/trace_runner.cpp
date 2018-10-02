@@ -73,8 +73,9 @@ static char *rand_string(char *str, size_t size) {
   if (size) {
     --size;
     for (size_t n = 0; n < size; n++) {
-      int key = rand() % (int)(sizeof charset - 1);
-      str[n] = charset[key];
+      //int key = rand() % (int)(sizeof charset - 1);
+      //str[n] = charset[key];
+      str[n] = (char)255;
     }
     str[size] = '\0';
   }
@@ -132,8 +133,8 @@ void on_connect(bool is_success) {
 #define TEST_DATA_SIZE (5 * 1024)
   printf("Step 2. Send Test Data (%dB)\n", TEST_DATA_SIZE);
   int i;
-  printf("Wait for 2 seconds...\n");
-  sleep(2);
+  printf("Wait for 5 seconds...\n");
+  sleep(5);
 
   temp_buf = (char *)calloc(TEST_DATA_SIZE, sizeof(char));
   sc::send(temp_buf, TEST_DATA_SIZE);

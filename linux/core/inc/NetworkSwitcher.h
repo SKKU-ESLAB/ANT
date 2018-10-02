@@ -45,19 +45,19 @@ class SwitchAdapterTransaction {
    *    - NetworkSwitcher.switch_adapters()
    *    - SwitchAdapterTransaction.start()
    * 1-a. Connect/WakeUp Next Adapter
-   *    - next_adapter.connect()
-   *       or next_adapter.wake_up()
+   *    - next_adapter.connect_or_wake_up()
    * 1-b. Callback (for connect request)
-   *    - SwitchAdapterTransaction.connect_callback()
+   *    - SwitchAdapterTransaction.connect_next_adapter_callback()
    * 2-a. Sleep Prev Adapter
    *    - prev_adapter.sleep()
    * 2-b. Callback (for sleep request)
-   *    - SwitchAdapterTransaction.sleep_callback()
+   *    - SwitchAdapterTransaction.sleep_prev_adapter_callback()
    * 3-a. Disconnect Prev Adapter
    *    - prev_adapter.disconnect()
    * 3-b. Callback (for disconnect request)
-   *    - SwitchAdapterTransaction.disconnect_callback()
-   * 4. NetworkSwitcher.done_switch()
+   *    - SwitchAdapterTransaction.disconnect_prev_adapter_callback()
+   * 4. SwitchAdapterTransaction.done()
+   *    NetworkSwitcher.done_switch()
    */
 public:
   static bool run(int prev_index, int next_index);
@@ -123,7 +123,8 @@ class NetworkSwitcher {
 public:
   /* APIs called by peer through Core */
   void connect_adapter_by_peer(int adapter_id);
-  void disconnect_adapter_by_peer(int adapter_id, uint32_t last_seq_no_control, uint32_t last_seq_no_data);
+  void disconnect_adapter_by_peer(int adapter_id, uint32_t last_seq_no_control,
+                                  uint32_t last_seq_no_data);
   void sleep_adapter_by_peer(int adapter_id);
   void wake_up_adapter_by_peer(int adapter_id);
 

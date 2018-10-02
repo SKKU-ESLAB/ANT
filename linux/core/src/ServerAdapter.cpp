@@ -522,16 +522,20 @@ void ServerAdapter::sender_thread_loop(void) {
     }
 
 #if defined(VERBOSE_DEQUEUE_SEND_CONTROL) || defined(VERBOSE_DEQUEUE_SEND_DATA)
-    bool is_control =
-        ((mGetSegFlagBits(segment_to_send->flag_len) & kSegFlagControl) != 0);
+    bool is_control = ((segment_to_send->flag & kSegFlagControl) != 0);
 #endif
 #ifdef VERBOSE_DEQUEUE_SEND_CONTROL
     if (is_control) {
-      LOG_DEBUG("%s: Send %s Segment (type=Ctrl, seqno=%d, len=%d)\n%s",
+      LOG_DEBUG("%s: Send %s Segment (type=Ctrl, seqno=%d, len=%d)",
                 this->get_name(), (is_get_failed_segment ? "Failed" : "Normal"),
-                segment_to_send->seq_no,
-                (int)mGetSegLenBits(segment_to_send->flag_len),
-                segment_to_send->data);
+                segment_to_send->seq_no, (int)segment_to_send->len);
+      LOG_DEBUG("SEND C: %lu %lu %lu %lu %lu %lu %lu %lu %lu %lu %lu %lu",
+                segment_to_send->data[0], segment_to_send->data[1],
+                segment_to_send->data[2], segment_to_send->data[3],
+                segment_to_send->data[4], segment_to_send->data[5],
+                segment_to_send->data[6], segment_to_send->data[7],
+                segment_to_send->data[8], segment_to_send->data[9],
+                segment_to_send->data[10], segment_to_send->data[11]);
     }
 #endif
 #ifdef VERBOSE_DEQUEUE_SEND_DATA
@@ -611,6 +615,13 @@ void ServerAdapter::sender_thread_loop(void) {
         sm->failed_sending(segment_to_send);
         break;
       }
+    } else if (res != len) {
+      LOG_WARN("%s: Send fail - sent_bytes are not accurate (type=%d, "
+               "seq_no=%lu, expected=%d, sent=%d) - %d %s",
+               this->get_name(), (int)is_control, segment_to_send->seq_no, len,
+               res, errno, strerror(errno));
+      sm->failed_sending(segment_to_send);
+      break;
     }
 
     sm->free_segment(segment_to_send);
@@ -684,15 +695,15 @@ void ServerAdapter::receiver_thread_loop(void) {
       break;
     }
 
-    uint32_t net_seq_no, net_flag_len;
+    uint32_t net_seq_no, net_len, net_flag;
     memcpy(&net_seq_no, buf, sizeof(uint32_t));
-    memcpy(&net_flag_len, (reinterpret_cast<uint8_t *>(buf) + 4),
-           sizeof(uint32_t));
+    memcpy(&net_len, (reinterpret_cast<uint8_t *>(buf) + 4), sizeof(uint32_t));
+    memcpy(&net_flag, (reinterpret_cast<uint8_t *>(buf) + 8), sizeof(uint32_t));
     segment_to_receive->seq_no = ntohl(net_seq_no);
-    segment_to_receive->flag_len = ntohl(net_flag_len);
+    segment_to_receive->len = ntohl(net_len);
+    segment_to_receive->flag = ntohl(net_flag);
 
-    bool is_control = ((mGetSegFlagBits(segment_to_receive->flag_len) &
-                        kSegFlagControl) != 0);
+    bool is_control = ((segment_to_receive->flag & kSegFlagControl) != 0);
 
     if (is_control) {
 #ifdef VERBOSE_ENQUEUE_RECV

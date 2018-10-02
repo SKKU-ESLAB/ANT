@@ -369,6 +369,7 @@ int WfdP2PServer::get_wfd_ip_address(char *buf, size_t len) {
 
 void WfdP2PServer::sighandler_monitor_udhcpd(int signo, siginfo_t *sinfo,
                                              void *context) {
+  LOG_WARN("Signal detected: %d", signo);
   if (signo != SIGCHLD || WfdP2PServer::sDhcpdPid == 0)
     return;
 
