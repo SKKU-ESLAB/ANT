@@ -38,21 +38,7 @@ namespace sc {
 #define kSegSize 512
 
 #define kSegFreeThreshold 256
-#define kSegHeaderSize 8
-
-#define kSegLenOffset 0
-#define kSegLenMask 0x00003FFF
-#define kSegFlagOffset 14
-#define kSegFlagMask 0x0000C000
-#define mGetSegLenBits(x) (((x)&kSegLenMask) >> kSegLenOffset)
-#define mGetSegFlagBits(x) (((x)&kSegFlagMask) >> kSegFlagOffset)
-#define mSetSegBits(x, dest, offset, mask)                                     \
-  do {                                                                         \
-    dest |= ((x << offset) & mask);                                            \
-  } while (0)
-#define mSetSegLenBits(x, dest) mSetSegBits(x, dest, kSegLenOffset, kSegLenMask)
-#define mSetSegFlagBits(x, dest)                                               \
-  mSetSegBits(x, dest, kSegFlagOffset, kSegFlagMask)
+#define kSegHeaderSize 12
 
 /**
  * Queue Type
@@ -104,7 +90,8 @@ typedef enum {
 #define SEGMENT_DATA_SIZE (kSegSize + kSegHeaderSize)
 typedef struct {
   uint32_t seq_no;
-  uint32_t flag_len; // To present the size of the segment(consider the flag)
+  uint32_t len; // To present the size of the segment(consider the flag)
+  uint32_t flag;
   uint8_t data[SEGMENT_DATA_SIZE];
 } Segment; /* struct Segment */
 

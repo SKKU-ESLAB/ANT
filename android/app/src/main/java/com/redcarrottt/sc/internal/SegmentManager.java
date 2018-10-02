@@ -31,12 +31,14 @@ import java.util.ListIterator;
  */
 class Segment {
     int seq_no;
-    int flag_len;
+    int len;
+    int flag;
     byte[] data;
 
     Segment() {
         seq_no = -1;
-        flag_len = 0;
+        len = 0;
+        flag = 0;
         data = new byte[SegmentManager.kSegSize + SegmentManager.kSegHeaderSize];
     }
 }
@@ -46,13 +48,7 @@ class SegmentManager {
     static public final int kSegSize = 512;
     private static final int kSegFreeThreshold = 256;
 
-    static public final int kSegHeaderSize = 8;
-
-    // kSegLenOffset: not used
-    // private static final int kSegLenOffset = 0;
-    private static final int kSegFlagOffset = 14;
-    private static final int kSegLenMask = 0x00003fff;
-    private static final int kSegFlagMask = 0x0000C000;
+    static public final int kSegHeaderSize = 12;
 
     static final int kSQSendData = 0;
     static final int kSQRecvData = 1;
@@ -86,23 +82,6 @@ class SegmentManager {
 
     private final LinkedList<Segment> mFreeSegments;
     private int mFreeSegmentsSize;
-
-    // Macro
-    private static int mGetSegLenBits(int x) {
-        return (x & kSegLenMask);
-    }
-
-    public static int mGetSegFlagBits(int x) {
-        return (x & kSegFlagMask) >> kSegFlagOffset;
-    }
-
-    private static int mSetSegLenBits(int x, int dest) {
-        return (dest | (x & kSegLenMask));
-    }
-
-    private static int mSetSegFlagBits(int x, int dest) {
-        return (dest | ((x << kSegFlagOffset) & kSegFlagMask));
-    }
 
     private SegmentManager() {
         this.mQueues = new LinkedList[kNumSQ];
@@ -177,14 +156,14 @@ class SegmentManager {
     private void checkReceivingDone() {
         boolean is_wakeup = false;
         synchronized (this.mWaitReceiving) {
-            if (this.mIsWaitReceiving && this.mExpectedSeqNo[kSQRecvControl] >= this
-                    .mWaitSeqNoControl && this.mExpectedSeqNo[kSQRecvData] >= this.mWaitSeqNoData) {
+            if (this.mIsWaitReceiving && this.mExpectedSeqNo[kSQRecvControl] >= this.mWaitSeqNoControl && this.mExpectedSeqNo[kSQRecvData] >= this.mWaitSeqNoData) {
                 is_wakeup = true;
             }
-        }
-        if (is_wakeup) {
-            this.mWaitReceiving.notifyAll();
-            this.mIsWaitReceiving = false;
+
+            if (is_wakeup) {
+                this.mWaitReceiving.notifyAll();
+                this.mIsWaitReceiving = false;
+            }
         }
     }
 
@@ -211,16 +190,21 @@ class SegmentManager {
             int seg_len = (length - offset < kSegSize) ? (length - offset) : kSegSize;
             Segment seg = get_free_segment();
 
-            seg.flag_len = mSetSegLenBits(seg_len, seg.flag_len);
+            // 0~3: seq_no
             seg.seq_no = allocated_seq_no++;
 
+            // 4~7: len
+            seg.len = seg_len;
+
+            // 8~11: flag
+            int flag = 0;
+            if (offset + seg_len < length) flag |= kSegFlagMF;
+            if (isControl) flag |= kSegFlagControl;
+            seg.flag = flag;
+
+            // 12~: data
             System.arraycopy(data, offset, seg.data, kSegHeaderSize, seg_len);
             offset += seg_len;
-
-            int flag = 0;
-            if (offset < length) flag |= kSegFlagMF;
-            if (isControl) flag |= kSegFlagControl;
-            seg.flag_len = mSetSegFlagBits(flag, seg.flag_len);
 
             serialize_segment_header(seg);
 
@@ -240,7 +224,11 @@ class SegmentManager {
         byte[] net_seq_no = buffer.array();
 
         buffer = ByteBuffer.allocate(4);
-        buffer.putInt(segment.flag_len);
+        buffer.putInt(segment.len);
+
+        buffer = ByteBuffer.allocate(8);
+        buffer.putInt(segment.flag);
+
         byte[] net_flag_len = buffer.array();
 
         System.arraycopy(net_seq_no, 0, segment.data, 0, 4);
@@ -271,12 +259,12 @@ class SegmentManager {
         serialized = new byte[protocolData.len];
 
         // Handle the first segment of the data bulk, because it contains protocol data
-        data_size = mGetSegLenBits(seg.flag_len) - ProtocolManager.kProtocolHeaderSize;
+        data_size = seg.len - ProtocolManager.kProtocolHeaderSize;
         System.arraycopy(seg.data, kSegHeaderSize + ProtocolManager.kProtocolHeaderSize,
                 serialized, offset, data_size);
         offset += data_size;
 
-        cont = ((mGetSegFlagBits(seg.flag_len) & kSegFlagMF) != 0);
+        cont = ((seg.flag & kSegFlagMF) != 0);
         free_segment(seg);
 
         while (cont) {
@@ -287,9 +275,9 @@ class SegmentManager {
                     seg = dequeue(kDeqRecvData);
                 }
             } while (seg == null);
-            data_size = mGetSegLenBits(seg.flag_len);
+            data_size = seg.len;
             System.arraycopy(seg.data, kSegHeaderSize, serialized, offset, data_size);
-            cont = ((mGetSegFlagBits(seg.flag_len) & kSegFlagMF) != 0);
+            cont = ((seg.flag & kSegFlagMF) != 0);
             offset += data_size;
             free_segment(seg);
         }
@@ -455,7 +443,8 @@ class SegmentManager {
             if (ret == null) throw new AssertionError();
 
             ret.seq_no = -1;
-            ret.flag_len = 0;
+            ret.flag = 0;
+            ret.len = 0;
         }
         return ret;
     }

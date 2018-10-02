@@ -280,6 +280,7 @@ void SwitchAdapterTransaction::sleep_prev_adapter_callback(bool is_success) {
     return;
   } else if (adapter_state == ServerAdapterState::kGoingSleeping) {
     // Wait until the adapter become sleeping state
+    LOG_VERB("Wait for going to sleeping");
     do {
       adapter_state = prev_adapter->get_state();
       ::sleep(1);

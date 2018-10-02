@@ -575,6 +575,8 @@ public class ClientAdapter {
         private long mIntervals[] = new long[4];
 
         public void receiverThreadLoop(ClientAdapter adapter) {
+            byte prevData[] = new byte[SegmentManager.kSegSize + SegmentManager.kSegHeaderSize];
+
             while (this.isOn()) {
                 if (VERBOSE_RECEIVER_TIME) this.mDates[0] = new Date();
 
@@ -602,12 +604,17 @@ public class ClientAdapter {
 
                 buffer = ByteBuffer.allocate(4);
                 buffer.put(segmentToReceive.data, 4, 4);
-                segmentToReceive.flag_len = buffer.getInt(0);
+                segmentToReceive.len = buffer.getInt(0);
+
+                buffer = ByteBuffer.allocate(4);
+                buffer.put(segmentToReceive.data, 8, 4);
+                segmentToReceive.flag = buffer.getInt(0);
+
+                Logger.DEBUG(kTag, "RECEIVE " + segmentToReceive.seq_no + " / " + segmentToReceive.len + " / " + segmentToReceive.flag);
 
                 if (VERBOSE_RECEIVER_TIME) this.mDates[3] = new Date();
 
-                boolean is_control = ((SegmentManager.mGetSegFlagBits(segmentToReceive.flag_len)
-                        & kSegFlagControl) != 0);
+                boolean is_control = ((segmentToReceive.flag & kSegFlagControl) != 0);
 
                 if (VERBOSE_SEGMENT_DEQUEUE_CTRL && is_control) {
                     Logger.DEBUG(getName(), "Receive Segment: seqno=" + segmentToReceive.seq_no +
