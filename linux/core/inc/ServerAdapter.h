@@ -81,17 +81,14 @@ public:
   int receive(void *buf, size_t len);
 
 private:
-  /* Connect Thread */
-  void connect_thread(void);
-  bool __connect_thread(void);
-  std::thread *mConnectThread = NULL;
+  /* Connect */
+  void connect_internal(ConnectCallback callback);
+  bool __connect_internal(void);
   ConnectCallback mConnectCallback = NULL;
 
-  /* Disconnect Thread */
+  /* Disconnect */
   void disconnect_internal(DisconnectCallback callback);
-  void disconnect_thread(void);
-  bool __disconnect_thread(void);
-  std::thread *mDisconnectThread = NULL;
+  bool __disconnect_internal(void);
   DisconnectCallback mDisconnectCallback = NULL;
 
   /* Sender Thread */
