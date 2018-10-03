@@ -29,44 +29,56 @@ using namespace sc;
 
 std::mutex g_wait_lock_start_sc;
 std::condition_variable g_wait_cond_start_sc;
+bool g_is_start_sc_done;
 bool g_start_sc_success;
 
 std::mutex g_wait_lock_stop_sc;
 std::condition_variable g_wait_cond_stop_sc;
+bool g_is_stop_sc_done;
 bool g_stop_sc_success;
 
+// TODO: make it into synchronous call
 void sc::start_sc(StartCallback startCallback) {
   // Core start procedure
+  g_is_start_sc_done = false;
   Core::singleton()->start();
   NetworkMonitor::singleton()->start();
 
   // Wait until core start thread ends
-  std::unique_lock<std::mutex> lck(g_wait_lock_start_sc);
-  g_wait_cond_start_sc.wait(lck);
+  if(!g_is_start_sc_done) {
+    std::unique_lock<std::mutex> lck(g_wait_lock_start_sc);
+    g_wait_cond_start_sc.wait(lck);
+  }
 
   // Execute callback
   startCallback(g_start_sc_success);
 }
 
 void sc::start_sc_done(bool is_success) {
+  g_is_start_sc_done = true;
   g_start_sc_success = is_success;
   g_wait_cond_start_sc.notify_all();
 }
 
+// TODO: make it into synchronous call
 void sc::stop_sc(StopCallback stopCallback) {
   // Core stop procedure
+  g_is_stop_sc_done = false;
   NetworkMonitor::singleton()->stop();
   Core::singleton()->stop();
 
   // Wait until core stop thread ends
-  std::unique_lock<std::mutex> lck(g_wait_lock_stop_sc);
-  g_wait_cond_stop_sc.wait(lck);
+  if(!g_is_stop_sc_done) {
+    std::unique_lock<std::mutex> lck(g_wait_lock_stop_sc);
+    g_wait_cond_stop_sc.wait(lck);
+  }
 
   // Execute callback
   stopCallback(g_stop_sc_success);
 }
 
 void sc::stop_sc_done(bool is_success) {
+  g_is_stop_sc_done = true;
   g_stop_sc_success = is_success;
   g_wait_cond_stop_sc.notify_all();
 }

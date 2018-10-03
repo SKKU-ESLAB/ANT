@@ -39,6 +39,7 @@ public class ControlMessageReceiver {
     private class ReceivingThread extends Thread {
         @Override
         public void run() {
+            this.setName("ControlMsgReceiver");
             this.mIsOn = true;
             Logger.THREAD_LAUNCH(kThreadName);
 
@@ -94,6 +95,7 @@ public class ControlMessageReceiver {
                     int finalSeqNoData = Integer.parseInt(fourthLine);
 
                     onReceiveDisconnectMessage(adapterId, finalSeqNoControl, finalSeqNoData);
+                    break;
                 }
                 case ControlMessageProtocol.CMCode.kPriv: {
                     // Priv type

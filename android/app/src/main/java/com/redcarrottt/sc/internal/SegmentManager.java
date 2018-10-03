@@ -27,7 +27,7 @@ import java.util.ListIterator;
 
 /*
     Segment is the minimum unit of the sending data through the network.
-    Segment header (sequence # + flag_len) is 8bytes (4bytes + 4bytes)
+    Segment header (sequence # + len + flag) is 16bytes (4bytes + 4bytes + 4bytes)
  */
 class Segment {
     int seq_no;
@@ -167,7 +167,8 @@ class SegmentManager {
         }
     }
 
-    public void wakeUpDequeueWaiting(int dequeueType) {
+    public void
+    wakeUpDequeueWaiting(int dequeueType) {
         synchronized (mDequeueCond[dequeueType]) {
             this.mDequeueCond[dequeueType].notifyAll();
         }
@@ -198,8 +199,8 @@ class SegmentManager {
 
             // 8~11: flag
             int flag = 0;
-            if (offset + seg_len < length) flag |= kSegFlagMF;
-            if (isControl) flag |= kSegFlagControl;
+            if (offset + seg_len < length) flag = flag | kSegFlagMF;
+            if (isControl) flag = flag | kSegFlagControl;
             seg.flag = flag;
 
             // 12~: data
@@ -225,14 +226,15 @@ class SegmentManager {
 
         buffer = ByteBuffer.allocate(4);
         buffer.putInt(segment.len);
+        byte[] net_len = buffer.array();
 
-        buffer = ByteBuffer.allocate(8);
+        buffer = ByteBuffer.allocate(4);
         buffer.putInt(segment.flag);
-
-        byte[] net_flag_len = buffer.array();
+        byte[] net_flag = buffer.array();
 
         System.arraycopy(net_seq_no, 0, segment.data, 0, 4);
-        System.arraycopy(net_flag_len, 0, segment.data, 4, 4);
+        System.arraycopy(net_len, 0, segment.data, 4, 4);
+        System.arraycopy(net_flag, 0, segment.data, 8, 4);
     }
 
     public byte[] recv_from_segment_manager(ProtocolData protocolData, boolean isControl) {
@@ -420,8 +422,8 @@ class SegmentManager {
                 // Check the dequeued segment
                 Segment segmentDequeued = (Segment) this.mQueues[targetQueueType].pollFirst();
                 if (segmentDequeued == null) {
-                    Logger.DEBUG(kTag, "Dequeue interrupted: empty queue (queue=" +
-                            targetQueueType + ", dequeue=" + dequeueType + ")");
+//                    Logger.DEBUG(kTag, "Dequeue interrupted: empty queue (queue=" +
+//                            targetQueueType + ", dequeue=" + dequeueType + ")");
                     return null;
                 }
                 mQueueLengths[targetQueueType]--;

@@ -47,19 +47,22 @@ void ReceiverThread::run(void) {
     // Wait until enable loop (Initially, the loop is disabled)
     this->wait_until_enable_loop();
 
+    // Set state before receiver loop
+    this->set_is_loop_ends(false);
+
     // Execute receiver loop
+    LOG_DEBUG("%s: Receiver loop starts", this->mAdapter->get_name());
     this->receiver_loop();
+    LOG_DEBUG("%s: Receiver loop ends", this->mAdapter->get_name());
 
     // Set state after receiver loop
     this->set_is_loop_enabled(false);
+    this->set_is_loop_ends(true);
 
     // Reconnect the adapter if it is disconnected on failure
     if (!this->mAdapter->is_disconnecting_on_purpose()) {
       NetworkSwitcher::singleton()->reconnect_adapter(this->mAdapter, true);
     }
-
-    // Notify that the receiver loop ends!
-    this->notify_loop_ends();
   }
 
   // Set state for thread end
@@ -83,10 +86,13 @@ void ReceiverThread::receiver_loop(void) {
     int res = this->mAdapter->receive(buf, len);
     if (errno == EINTR) {
       continue;
-    } else if (errno == EAGAIN) {
-      LOG_WARN("Kernel I/O buffer is full at %s", this->mAdapter->get_name());
+    } else if (errno == EAGAIN || errno == EWOULDBLOCK ||
+               errno == EINPROGRESS) {
+      // Receive timeout
       continue;
-    } else if (res < len && errno != 0) {
+    } else if (res == -999) {
+      continue;
+    } else if (res != len) {
       if (!this->mAdapter->is_disconnecting_on_purpose()) {
         LOG_WARN("Receiving failed at %s (%d / %d; %s)",
                  this->mAdapter->get_name(), errno, res, strerror(errno));
@@ -109,14 +115,16 @@ void ReceiverThread::receiver_loop(void) {
 
     if (is_control) {
 #ifdef VERBOSE_ENQUEUE_RECV
-      LOG_DEBUG("%s: Receive Segment (type=Ctrl, seqno=%d)",
-                this->mAdapter->get_name(), segment_to_receive->seq_no);
+      LOG_DEBUG("%s: Receive Segment (type=Ctrl, seqno=%d, len=%d, flag=%d)",
+                this->mAdapter->get_name(), segment_to_receive->seq_no,
+                segment_to_receive->len, segment_to_receive->flag);
 #endif
       sm->enqueue(kSQRecvControl, segment_to_receive);
     } else {
 #ifdef VERBOSE_ENQUEUE_RECV
-      LOG_DEBUG("%s: Receive Segment (type=Data, seqno=%d)",
-                this->mAdapter->get_name(), segment_to_receive->seq_no);
+      LOG_DEBUG("%s: Receive Segment (type=Data, seqno=%d, len=%d, flag=%d)",
+                this->mAdapter->get_name(), segment_to_receive->seq_no,
+                segment_to_receive->len, segment_to_receive->flag);
 #endif
       sm->enqueue(kSQRecvData, segment_to_receive);
     }

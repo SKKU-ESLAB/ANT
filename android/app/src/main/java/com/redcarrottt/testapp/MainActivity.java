@@ -257,6 +257,7 @@ public class MainActivity extends AppCompatActivity implements LogReceiver.Callb
         @SuppressWarnings("InfiniteLoopStatement")
         @Override
         public void run() {
+            this.setName("SpeedWatcher");
             this.mPrevValue = 0;
             this.mTotalDataSize = 0;
             this.mLastAccessedTS = new Date();
@@ -294,6 +295,7 @@ public class MainActivity extends AppCompatActivity implements LogReceiver.Callb
 
         @Override
         public void run() {
+            this.setName("AppReceiving");
             this.mIsAlive = true;
             byte[] buf = new byte[100 * 1024 * 1024];
             String sending_buf = "ACK"; /* Ack Message */

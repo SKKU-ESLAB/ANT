@@ -60,7 +60,7 @@ void ServerAdapter::connect(ConnectCallback callback, bool is_send_request) {
   if (this->get_state() != ServerAdapterState::kDisconnected) {
     LOG_ERR(
         "It is already connected or connection/disconnection is in progress.");
-    callback(false);
+    callback(this, false);
     return;
   }
 
@@ -87,7 +87,7 @@ void ServerAdapter::disconnect_on_command(DisconnectCallback callback) {
   } else if (state != ServerAdapterState::kSleeping) {
     LOG_ERR("%s: Disconnect fail - not sleeping (state=%d)", this->get_name(),
             state);
-    callback(false);
+    callback(this, false);
     return;
   }
 
@@ -120,7 +120,7 @@ void ServerAdapter::disconnect_on_peer_command(
     }
   } else if (state != ServerAdapterState::kSleeping) {
     LOG_ERR("%s: Disconnect fail - not sleeping", this->get_name());
-    callback(false);
+    callback(this, false);
     return;
   }
 
@@ -146,7 +146,7 @@ void ServerAdapter::disconnect_on_failure(DisconnectCallback callback) {
       state == ServerAdapterState::kDisconnecting) {
     LOG_ERR("%s: Disconnect fail - already disconnecting or disconnected",
             this->get_name());
-    callback(false);
+    callback(this, false);
     return;
   }
 
@@ -163,13 +163,13 @@ void ServerAdapter::connect_internal(ConnectCallback callback) {
   if (res) {
     this->set_state(ServerAdapterState::kActive);
     if (this->mConnectCallback != NULL) {
-      this->mConnectCallback(true);
+      this->mConnectCallback(this, true);
       this->mConnectCallback = NULL;
     }
   } else {
     this->set_state(ServerAdapterState::kDisconnected);
     if (this->mConnectCallback != NULL) {
-      this->mConnectCallback(false);
+      this->mConnectCallback(this, false);
       this->mConnectCallback = NULL;
     }
   }
@@ -250,33 +250,35 @@ void ServerAdapter::disconnect_internal(DisconnectCallback callback) {
     this->wait_for_disconnecting_on_purpose_peer();
   }
 
-  bool res = this->__disconnect_internal();
+  bool res = this->__disconnect_internal(oldState);
 
   this->finish_disconnecting_on_purpose();
 
   if (res) {
     this->set_state(ServerAdapterState::kDisconnected);
     if (this->mDisconnectCallback != NULL) {
-      this->mDisconnectCallback(true);
+      this->mDisconnectCallback(this, true);
       this->mDisconnectCallback = NULL;
     }
   } else {
     this->set_state(oldState);
     if (this->mDisconnectCallback != NULL) {
-      this->mDisconnectCallback(false);
+      this->mDisconnectCallback(this, false);
       this->mDisconnectCallback = NULL;
     }
   }
 }
 
-bool ServerAdapter::__disconnect_internal(void) {
+bool ServerAdapter::__disconnect_internal(ServerAdapterState oldState) {
   // Disable sender thread's sender loop
   if (this->mSenderThread != NULL) {
     this->mSenderThread->disable_loop();
+
     // If this adapter is already sleeping(sender thread is paused),
     //   resume the sender thread
-    if (this->get_state() == ServerAdapterState::kSleeping) {
-      this->wake_up(NULL, false);
+    if (oldState == ServerAdapterState::kSleeping) {
+      // Since it does not need state checking, it directly wakes up.
+      this->wake_up_internal();
     }
   }
   // Disable receiver thread's receiver loop
@@ -336,7 +338,8 @@ bool ServerAdapter::__disconnect_internal(void) {
   }
 
   DeviceState deviceState = this->mDevice->get_state();
-  if (deviceState != DeviceState::kOff && deviceState != DeviceState::kOn) {
+  if (deviceState != DeviceState::kOff &&
+      deviceState != DeviceState::kTurningOff) {
     bool res = this->mDevice->turn_off();
 
     deviceState = this->mDevice->get_state();
@@ -351,12 +354,14 @@ bool ServerAdapter::__disconnect_internal(void) {
 
   // Wait for sender/receiver thread
   if (this->mSenderThread != NULL) {
-    LOG_DEBUG("Waiting for sender thread: %s", this->get_name());
+    LOG_DEBUG("Waiting for sender loop: %s", this->get_name());
     this->mSenderThread->wait_until_disable_loop_done();
+    LOG_DEBUG("End of sender loop: %s", this->get_name());
   }
   if (this->mReceiverThread != NULL) {
     LOG_DEBUG("Waiting for receiver thread: %s", this->get_name());
     this->mReceiverThread->wait_until_disable_loop_done();
+    LOG_DEBUG("End of receiver loop: %s", this->get_name());
   }
 
   return true;
@@ -409,7 +414,7 @@ void ServerAdapter::sleep(DisconnectCallback callback, bool is_send_request) {
   if (state != ServerAdapterState::kActive) {
     LOG_ERR("Failed to sleep: %s (state: %d)", this->get_name(), state);
     if (callback != NULL)
-      callback(false);
+      callback(this, false);
     return;
   }
 
@@ -419,7 +424,7 @@ void ServerAdapter::sleep(DisconnectCallback callback, bool is_send_request) {
     if (this->mSenderThread->is_loop_paused()) {
       LOG_ERR("Sender has already been paused!: %s", this->get_name());
       if (callback != NULL)
-        callback(false);
+        callback(this, false);
     } else {
       // Send Request
       if (is_send_request) {
@@ -439,7 +444,7 @@ void ServerAdapter::sleep(DisconnectCallback callback, bool is_send_request) {
 
   // Execute callback
   if (callback != NULL)
-    callback(true);
+    callback(this, true);
 }
 
 void ServerAdapter::wake_up(DisconnectCallback callback, bool is_send_request) {
@@ -447,7 +452,7 @@ void ServerAdapter::wake_up(DisconnectCallback callback, bool is_send_request) {
   if (state != ServerAdapterState::kSleeping) {
     LOG_ERR("Failed to wake up: %s (state: %d)", this->get_name(), state);
     if (callback != NULL)
-      callback(false);
+      callback(this, false);
     return;
   }
 
@@ -461,15 +466,20 @@ void ServerAdapter::wake_up(DisconnectCallback callback, bool is_send_request) {
     this->set_state(ServerAdapterState::kWakingUp);
 
     // Resume sender thread's sender loop
-    this->mSenderThread->resume_loop();
+    this->wake_up_internal();
 
     if (callback != NULL)
-      callback(true);
+      callback(this, true);
   } else {
     LOG_ERR("Sender has not been suspended!: %s", this->get_name());
     if (callback != NULL)
-      callback(false);
+      callback(this, false);
   }
+}
+
+void ServerAdapter::wake_up_internal(void) {
+  // Resume sender thread's sender loop
+  this->mSenderThread->resume_loop();
 }
 
 void ServerAdapter::connect_or_wake_up(ConnectCallback callback,
