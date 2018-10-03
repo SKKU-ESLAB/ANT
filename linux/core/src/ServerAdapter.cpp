@@ -23,21 +23,37 @@
 
 #include "../inc/Core.h"
 #include "../inc/NetworkSwitcher.h"
+#include "../inc/SenderThread.h"
 
 #include "../../common/inc/DebugLog.h"
 
 #include "../../configs/ExpConfig.h"
 
-#include <arpa/inet.h>
 #include <mutex>
-#include <string.h>
-#include <thread>
 
 #ifdef EXP_MEASURE_INTERVAL_SENDER
 #include <sys/time.h>
 #endif
 
 using namespace sc;
+
+void ServerAdapter::launch_threads(void) {
+  // Launch sender/receiver threads (initially, running but disabled state)
+  // It is called by StartCoreTransaction.
+  if (this->mSenderThread == NULL)
+    this->mSenderThread = new SenderThread(this);
+  this->mSenderThread->launch_thread();
+  if (this->mReceiverThread == NULL)
+    this->mReceiverThread = new ReceiverThread(this);
+  this->mReceiverThread->launch_thread();
+}
+
+void ServerAdapter::finish_thread(void) {
+  // Finish sender/receiver threads
+  // It is called by StopCoreTransaction.
+  this->mSenderThread->finish_thread();
+  this->mReceiverThread->finish_thread();
+}
 
 void ServerAdapter::connect(ConnectCallback callback, bool is_send_request) {
   // Check adapter's state
@@ -214,17 +230,11 @@ bool ServerAdapter::__connect_internal(void) {
     LOG_VERB("%s: Already socket opened or opening", this->get_name());
   }
 
-  // Run sender/receiver threads
-  if (this->mSenderThread == NULL) {
-    this->mSenderThread =
-        new std::thread(std::bind(&ServerAdapter::sender_thread, this));
-    this->mSenderThread->detach();
-  }
-  if (this->mReceiverThread == NULL) {
-    this->mReceiverThread =
-        new std::thread(std::bind(&ServerAdapter::receiver_thread, this));
-    this->mReceiverThread->detach();
-  }
+  // Enable sender thread's sender loop
+  this->mSenderThread->enable_loop();
+
+  // Enable receiver thread's receiver loop
+  this->mReceiverThread->enable_loop();
 
   return true;
 }
@@ -260,17 +270,18 @@ void ServerAdapter::disconnect_internal(DisconnectCallback callback) {
 }
 
 bool ServerAdapter::__disconnect_internal(void) {
-  // Finish sender & receiver threads
+  // Disable sender thread's sender loop
   if (this->mSenderThread != NULL) {
-    // If this adapter is already sleeping, wake up and finish the sender
-    // thread
-    this->mSenderLoopOn = false;
+    this->mSenderThread->disable_loop();
+    // If this adapter is already sleeping(sender thread is paused),
+    //   resume the sender thread
     if (this->get_state() == ServerAdapterState::kSleeping) {
       this->wake_up(NULL, false);
     }
   }
+  // Disable receiver thread's receiver loop
   if (this->mReceiverThread != NULL) {
-    this->mReceiverLoopOn = false;
+    this->mReceiverThread->disable_loop();
   }
 
   // Close server socket
@@ -341,13 +352,11 @@ bool ServerAdapter::__disconnect_internal(void) {
   // Wait for sender/receiver thread
   if (this->mSenderThread != NULL) {
     LOG_DEBUG("Waiting for sender thread: %s", this->get_name());
-    std::unique_lock<std::mutex> senderLock(this->mWaitSenderThreadMutex);
-    this->mWaitSenderThreadCond.wait(senderLock);
+    this->mSenderThread->wait_until_disable_loop_done();
   }
   if (this->mReceiverThread != NULL) {
     LOG_DEBUG("Waiting for receiver thread: %s", this->get_name());
-    std::unique_lock<std::mutex> receiverLock(this->mWaitReceiverThreadMutex);
-    this->mWaitReceiverThreadCond.wait(receiverLock);
+    this->mReceiverThread->wait_until_disable_loop_done();
   }
 
   return true;
@@ -395,297 +404,6 @@ int ServerAdapter::receive(void *buf, size_t len) {
   return ret;
 }
 
-void ServerAdapter::sender_thread(void) {
-  LOG_ADAPTER_THREAD_LAUNCH(this->get_name(), "Sender");
-
-  this->mSenderLoopOn = true;
-  this->sender_thread_loop();
-
-  this->mSenderLoopOn = false;
-  {
-    std::unique_lock<std::mutex> lck(this->mSenderSuspendedMutex);
-    this->mSenderSuspended = false;
-  }
-  this->mSenderThread = NULL;
-
-  // If it is disconnecting on purpose, do not reconnect it.
-  if (this->is_disconnecting_on_purpose()) {
-    LOG_ADAPTER_THREAD_FINISH(this->get_name(), "Sender");
-  } else {
-    // Reconnect the adapter
-    LOG_ADAPTER_THREAD_FAIL(this->get_name(), "Sender");
-    NetworkSwitcher::singleton()->reconnect_adapter(this, true);
-  }
-
-  this->mWaitSenderThreadCond.notify_all();
-}
-
-void ServerAdapter::sender_thread_loop(void) {
-  {
-    std::unique_lock<std::mutex> lck(this->mSenderSuspendedMutex);
-    this->mSenderSuspended = false;
-  }
-  while (this->mSenderLoopOn) {
-#ifdef EXP_MEASURE_INTERVAL_SENDER
-    struct timeval times[5];
-    gettimeofday(&times[0], NULL);
-#endif
-
-    SegmentManager *sm = SegmentManager::singleton();
-    Segment *segment_to_send = NULL;
-
-    // If this sender is set to be suspended, wait until it wakes up
-    {
-      bool sender_suspended;
-      do {
-        {
-          std::unique_lock<std::mutex> lck2a(this->mSenderSuspendedMutex);
-          sender_suspended = this->mSenderSuspended;
-          if (!sender_suspended) {
-            break;
-          }
-        }
-        LOG_VERB("Sender thread suspended: %s", this->get_name());
-        this->set_state(ServerAdapterState::kSleeping);
-
-        // Suspended due to sleeping
-        {
-          std::unique_lock<std::mutex> lck2b(this->mSenderSuspendedMutex);
-          this->mSenderSuspendedCond.wait(lck2b);
-        }
-
-        this->set_state(ServerAdapterState::kActive);
-      } while (true);
-    }
-
-#ifdef EXP_MEASURE_INTERVAL_SENDER
-    gettimeofday(&times[1], NULL);
-#endif
-
-    // Dequeue from a queue (one of the three queues)
-    // Priority 1. Failed sending queue
-    segment_to_send = sm->get_failed_sending();
-#if defined(VERBOSE_DEQUEUE_SEND_CONTROL) || defined(VERBOSE_DEQUEUE_SEND_DATA)
-    bool is_get_failed_segment = (segment_to_send != NULL);
-#endif
-
-    // Priority 2. Send control queue
-    // Priority 3. Send data queue
-    if (likely(segment_to_send == NULL)) {
-      segment_to_send = sm->dequeue(kDeqSendControlData);
-    }
-
-    if (unlikely(segment_to_send == NULL)) {
-      // Nothing to send.
-      // SegmentManager::wake_up_dequeue_waiting() function may make this case
-      continue;
-    }
-
-#if defined(VERBOSE_DEQUEUE_SEND_CONTROL) || defined(VERBOSE_DEQUEUE_SEND_DATA)
-    bool is_control = ((segment_to_send->flag & kSegFlagControl) != 0);
-#endif
-#ifdef VERBOSE_DEQUEUE_SEND_CONTROL
-    if (is_control) {
-      LOG_DEBUG("%s: Send %s Segment (type=Ctrl, seqno=%d, len=%d)",
-                this->get_name(), (is_get_failed_segment ? "Failed" : "Normal"),
-                segment_to_send->seq_no, (int)segment_to_send->len);
-      LOG_DEBUG("SEND C: %lu %lu %lu %lu %lu %lu %lu %lu %lu %lu %lu %lu",
-                segment_to_send->data[0], segment_to_send->data[1],
-                segment_to_send->data[2], segment_to_send->data[3],
-                segment_to_send->data[4], segment_to_send->data[5],
-                segment_to_send->data[6], segment_to_send->data[7],
-                segment_to_send->data[8], segment_to_send->data[9],
-                segment_to_send->data[10], segment_to_send->data[11]);
-    }
-#endif
-#ifdef VERBOSE_DEQUEUE_SEND_DATA
-    if (!is_control) {
-      LOG_DEBUG("%s: Send %s Segment (type=Data, seqno=%d)", this->get_name(),
-                (is_get_failed_segment ? "Failed" : "Normal"),
-                segment_to_send->seq_no);
-    }
-#endif
-
-#ifdef EXP_MEASURE_INTERVAL_SENDER
-    gettimeofday(&times[2], NULL);
-#endif
-
-    // If it is suspended, push the segment to the send-fail queue
-    {
-      bool sender_suspended;
-      {
-        std::unique_lock<std::mutex> lck3(this->mSenderSuspendedMutex);
-        sender_suspended = this->mSenderSuspended;
-      }
-      if (sender_suspended) {
-        LOG_VERB("Sending segment is pushed to failed queue at %s (suspended)",
-                 this->get_name());
-
-        sm->failed_sending(segment_to_send);
-        continue;
-      }
-    }
-
-#ifdef EXP_MEASURE_INTERVAL_SENDER
-    gettimeofday(&times[3], NULL);
-#endif
-
-    int len = kSegHeaderSize + kSegSize;
-    const void *data = segment_to_send->data;
-
-    // Send data
-    int res = this->send(data, len);
-
-#ifdef EXP_MEASURE_INTERVAL_SENDER
-    gettimeofday(&times[4], NULL);
-#endif
-
-    // Error handling
-    if (res <= 0) {
-      if (is_disconnecting_on_purpose()) {
-        // Now disconnecting on purpose... Send this segment by another
-        // adapter.
-        LOG_DEBUG("%s: Disconnecting on purpose (type=%d, seq_no=%lu)",
-                  this->get_name(), (int)is_control, segment_to_send->seq_no);
-        sm->failed_sending(segment_to_send);
-        break;
-      } else if (errno == 0) {
-        LOG_DEBUG("%s: Unknown error occured (type=%d, seq_no=%lu)",
-                  this->get_name(), (int)is_control, segment_to_send->seq_no);
-        sm->failed_sending(segment_to_send);
-        continue;
-      } else if (errno == EINTR) {
-        // Handling interrupted system call
-        LOG_DEBUG("%s: Send interrupted (type=%d, seq_no=%lu)",
-                  this->get_name(), (int)is_control, segment_to_send->seq_no);
-        sm->failed_sending(segment_to_send);
-        continue;
-      } else if (errno == EAGAIN) {
-        // Kernel I/O buffer is full
-        LOG_WARN(
-            "%s: Send fail - Kernel I/O buffer is full (type=%d, seq_no=%lu)",
-            this->get_name(), (int)is_control, segment_to_send->seq_no);
-        sm->failed_sending(segment_to_send);
-        continue;
-      } else {
-        // Other errors
-        LOG_WARN("%s: Send fail - res=%d errno=%d(%s) (type=%d, seq_no=%lu)",
-                 this->get_name(), res, errno, strerror(errno), (int)is_control,
-                 segment_to_send->seq_no);
-        sm->failed_sending(segment_to_send);
-        break;
-      }
-    } else if (res != len) {
-      LOG_WARN("%s: Send fail - sent_bytes are not accurate (type=%d, "
-               "seq_no=%lu, expected=%d, sent=%d) - %d %s",
-               this->get_name(), (int)is_control, segment_to_send->seq_no, len,
-               res, errno, strerror(errno));
-      sm->failed_sending(segment_to_send);
-      break;
-    }
-
-    sm->free_segment(segment_to_send);
-
-#ifdef EXP_MEASURE_INTERVAL_SENDER
-    gettimeofday(&times[5], NULL);
-
-    for (int i = 0; i < 4; i++) {
-      this->mIntervals[i] += (times[i + 1].tv_sec - times[i].tv_sec) * 1000 +
-                             (times[i + 1].tv_usec - times[i].tv_usec) / 1000;
-    }
-    this->mSendCount++;
-    if (this->mSendCount % 500 == 0) {
-      LOG_DEBUG("Send Time: %d / %d / %d / %d", this->mIntervals[0],
-                this->mIntervals[1], this->mIntervals[2], this->mIntervals[3]);
-      for (int i = 0; i < 4; i++) {
-        this->mIntervals[i] = 0;
-      }
-    }
-#endif
-  }
-}
-
-void ServerAdapter::receiver_thread(void) {
-  LOG_ADAPTER_THREAD_LAUNCH(this->get_name(), "Receiver");
-
-  this->mReceiverLoopOn = true;
-  this->receiver_thread_loop();
-
-  LOG_DEBUG("%s: Receiver thread ends(tid: %d)", this->get_name(),
-            (unsigned int)syscall(224));
-  this->mReceiverLoopOn = false;
-  this->mReceiverThread = NULL;
-
-  // If it is disconnecting on purpose, do not reconnect it.
-  if (this->is_disconnecting_on_purpose()) {
-    LOG_ADAPTER_THREAD_FINISH(this->get_name(), "Receiver");
-  } else {
-    // Reconnect the adapter
-    LOG_ADAPTER_THREAD_FAIL(this->get_name(), "Receiver");
-    NetworkSwitcher::singleton()->reconnect_adapter(this, true);
-  }
-
-  this->mWaitReceiverThreadCond.notify_all();
-}
-
-void ServerAdapter::receiver_thread_loop(void) {
-  while (this->mReceiverLoopOn) {
-    SegmentManager *sm = SegmentManager::singleton();
-    Segment *segment_to_receive = sm->get_free_segment();
-    void *buf = reinterpret_cast<void *>(segment_to_receive->data);
-    int len = kSegSize + kSegHeaderSize;
-
-#ifdef VERBOSE_SERVER_ADAPTER_RECEIVING
-    LOG_DEBUG("%s: Receiving...", this->get_name());
-#endif
-    int res = this->receive(buf, len);
-    if (errno == EINTR) {
-      continue;
-    } else if (errno == EAGAIN) {
-      LOG_WARN("Kernel I/O buffer is full at %s", this->get_name());
-      continue;
-    } else if (res < len && errno != 0) {
-      if (!this->is_disconnecting_on_purpose()) {
-        LOG_WARN("Receiving failed at %s (%d / %d; %s)", this->get_name(),
-                 errno, res, strerror(errno));
-      } else {
-        LOG_DEBUG("Receiving broken at %s (%d / %d; %s)", this->get_name(),
-                  errno, res, strerror(errno));
-      }
-      break;
-    }
-
-    uint32_t net_seq_no, net_len, net_flag;
-    memcpy(&net_seq_no, buf, sizeof(uint32_t));
-    memcpy(&net_len, (reinterpret_cast<uint8_t *>(buf) + 4), sizeof(uint32_t));
-    memcpy(&net_flag, (reinterpret_cast<uint8_t *>(buf) + 8), sizeof(uint32_t));
-    segment_to_receive->seq_no = ntohl(net_seq_no);
-    segment_to_receive->len = ntohl(net_len);
-    segment_to_receive->flag = ntohl(net_flag);
-
-    bool is_control = ((segment_to_receive->flag & kSegFlagControl) != 0);
-
-    if (is_control) {
-#ifdef VERBOSE_ENQUEUE_RECV
-      LOG_DEBUG("%s: Receive Segment (type=Ctrl, seqno=%d)", this->get_name(),
-                segment_to_receive->seq_no);
-#endif
-      sm->enqueue(kSQRecvControl, segment_to_receive);
-    } else {
-#ifdef VERBOSE_ENQUEUE_RECV
-      LOG_DEBUG("%s: Receive Segment (type=Data, seqno=%d)", this->get_name(),
-                segment_to_receive->seq_no);
-#endif
-      sm->enqueue(kSQRecvData, segment_to_receive);
-    }
-    segment_to_receive = sm->get_free_segment();
-
-#ifdef VERBOSE_SERVER_ADAPTER_RECEIVING
-    LOG_DEBUG("%s: Received: %d", this->get_name(), res);
-#endif
-  }
-}
-
 void ServerAdapter::sleep(DisconnectCallback callback, bool is_send_request) {
   ServerAdapterState state = this->get_state();
   if (state != ServerAdapterState::kActive) {
@@ -695,11 +413,11 @@ void ServerAdapter::sleep(DisconnectCallback callback, bool is_send_request) {
     return;
   }
 
-  bool sender_suspended = false;
+  // Set sender thread paused
+  bool sender_paused = false;
   {
-    std::unique_lock<std::mutex> lck(this->mSenderSuspendedMutex);
-    if (this->mSenderSuspended) {
-      LOG_ERR("Sender has already been suspended!: %s", this->get_name());
+    if (this->mSenderThread->is_loop_paused()) {
+      LOG_ERR("Sender has already been paused!: %s", this->get_name());
       if (callback != NULL)
         callback(false);
     } else {
@@ -709,9 +427,9 @@ void ServerAdapter::sleep(DisconnectCallback callback, bool is_send_request) {
             this->get_id());
       }
 
-      // Sleep
+      // Pause sender thread's sender loop
       this->set_state(ServerAdapterState::kGoingSleeping);
-      this->mSenderSuspended = true;
+      this->mSenderThread->pause_loop();
 
       // Wake up sender thread waiting segment queue
       SegmentManager *sm = SegmentManager::singleton();
@@ -733,25 +451,18 @@ void ServerAdapter::wake_up(DisconnectCallback callback, bool is_send_request) {
     return;
   }
 
-  bool sender_suspended;
-  {
-    std::unique_lock<std::mutex> lck(this->mSenderSuspendedMutex);
-    sender_suspended = this->mSenderSuspended;
-  }
-  if (sender_suspended) {
-    // Send Request
+  if (this->mSenderThread->is_loop_paused()) {
+    // Send Wakeup Request
     if (is_send_request) {
       Core::singleton()->get_control_sender()->send_request_wake_up(
           this->get_id());
     }
 
-    // Wake up
     this->set_state(ServerAdapterState::kWakingUp);
-    {
-      std::unique_lock<std::mutex> lck2(this->mSenderSuspendedMutex);
-      this->mSenderSuspended = false;
-    }
-    this->mSenderSuspendedCond.notify_all();
+
+    // Resume sender thread's sender loop
+    this->mSenderThread->resume_loop();
+
     if (callback != NULL)
       callback(true);
   } else {

@@ -22,6 +22,8 @@
 
 #include "Device.h"
 #include "P2PServer.h"
+#include "ReceiverThread.h"
+#include "SenderThread.h"
 #include "ServerSocket.h"
 
 #include "../../common/inc/Counter.h"
@@ -30,7 +32,6 @@
 
 #include <condition_variable>
 #include <mutex>
-#include <thread>
 #include <vector>
 
 #include <stdint.h>
@@ -59,12 +60,20 @@ public:
 typedef void (*ConnectCallback)(bool is_success);
 typedef void (*DisconnectCallback)(bool is_success);
 
+class ReceiverThread;
+class SenderThread;
+
 class ServerAdapter {
 public:
   /* Basic APIs
+   *  - launch/finish sender/receiver threads
    *  - connect, disconnect, sleep, wake up
    *  - send, receive
    */
+  /* Basic APIs related to launching/finishing sender/receiver threads */
+  void launch_threads(void);
+  void finish_thread(void);
+
   /* Basic APIs related to connection/sleeping */
   void connect(ConnectCallback callback, bool is_send_request);
   void disconnect_on_command(DisconnectCallback callback);
@@ -91,26 +100,13 @@ private:
   bool __disconnect_internal(void);
   DisconnectCallback mDisconnectCallback = NULL;
 
+private:
   /* Sender Thread */
-  void sender_thread(void);
-  void sender_thread_loop(void);
-  std::thread *mSenderThread = NULL;
-  bool mSenderLoopOn = false;
-  std::mutex mWaitSenderThreadMutex;
-  std::condition_variable mWaitSenderThreadCond;
-
-  /* Sender Thread Sleeping */
-  bool mSenderSuspended = false;
-  std::mutex mSenderSuspendedMutex;
-  std::condition_variable mSenderSuspendedCond;
+  SenderThread *mSenderThread = NULL;
+  friend SenderThread;
 
   /* Receiver Thread */
-  void receiver_thread(void);
-  void receiver_thread_loop(void);
-  std::thread *mReceiverThread = NULL;
-  bool mReceiverLoopOn = false;
-  std::mutex mWaitReceiverThreadMutex;
-  std::condition_variable mWaitReceiverThreadCond;
+  ReceiverThread *mReceiverThread = NULL;
 
 public:
   /* Statistics getters */
