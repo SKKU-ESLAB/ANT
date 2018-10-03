@@ -40,15 +40,10 @@
 using namespace sc;
 
 void ServerAdapter::connect(ConnectCallback callback, bool is_send_request) {
+  // Check adapter's state
   if (this->get_state() != ServerAdapterState::kDisconnected) {
     LOG_ERR(
         "It is already connected or connection/disconnection is in progress.");
-    callback(false);
-    return;
-  }
-
-  if (this->mConnectThread != NULL) {
-    LOG_ERR("Connect thread not finished!");
     callback(false);
     return;
   }
@@ -60,13 +55,11 @@ void ServerAdapter::connect(ConnectCallback callback, bool is_send_request) {
   }
 
   // Connect
-  this->mConnectCallback = callback;
-  this->mConnectThread =
-      new std::thread(std::bind(&ServerAdapter::connect_thread, this));
-  this->mConnectThread->detach();
+  this->connect_internal(callback);
 }
 
 void ServerAdapter::disconnect_on_command(DisconnectCallback callback) {
+  // Check adapter's state
   // Check if the adapter is not sleeping
   ServerAdapterState state = this->get_state();
   if (state == ServerAdapterState::kGoingSleeping) {
@@ -78,13 +71,6 @@ void ServerAdapter::disconnect_on_command(DisconnectCallback callback) {
   } else if (state != ServerAdapterState::kSleeping) {
     LOG_ERR("%s: Disconnect fail - not sleeping (state=%d)", this->get_name(),
             state);
-    callback(false);
-    return;
-  }
-
-  // Check if the disconnect thread has already been spawn
-  if (this->mDisconnectThread != NULL) {
-    LOG_ERR("Disconnect thread not finished!");
     callback(false);
     return;
   }
@@ -107,6 +93,7 @@ void ServerAdapter::disconnect_on_command(DisconnectCallback callback) {
 void ServerAdapter::disconnect_on_peer_command(
     DisconnectCallback callback, uint32_t peer_final_seq_no_control,
     uint32_t peer_final_seq_no_data) {
+  // Check adapter's state
   // Check if the adapter is not sleeping
   ServerAdapterState state = this->get_state();
   if (state == ServerAdapterState::kGoingSleeping) {
@@ -117,13 +104,6 @@ void ServerAdapter::disconnect_on_peer_command(
     }
   } else if (state != ServerAdapterState::kSleeping) {
     LOG_ERR("%s: Disconnect fail - not sleeping", this->get_name());
-    callback(false);
-    return;
-  }
-
-  // Check if the disconnect thread has already been spawn
-  if (this->mDisconnectThread != NULL) {
-    LOG_ERR("Disconnect thread not finished!");
     callback(false);
     return;
   }
@@ -143,6 +123,7 @@ void ServerAdapter::disconnect_on_peer_command(
 }
 
 void ServerAdapter::disconnect_on_failure(DisconnectCallback callback) {
+  // Check adapter's state
   // Check if the adapter is already disconencted
   ServerAdapterState state = this->get_state();
   if (state == ServerAdapterState::kDisconnected ||
@@ -153,50 +134,32 @@ void ServerAdapter::disconnect_on_failure(DisconnectCallback callback) {
     return;
   }
 
-  // Check if the disconnect thread has already been spawn
-  if (this->mDisconnectThread != NULL) {
-    LOG_ERR("Disconnect thread not finished!");
-    callback(false);
-    return;
-  }
-
   this->disconnect_internal(callback);
 }
 
-void ServerAdapter::disconnect_internal(DisconnectCallback callback) {
-  // Spawn disconnect thread
-  this->mDisconnectCallback = callback;
-  this->mDisconnectThread =
-      new std::thread(std::bind(&ServerAdapter::disconnect_thread, this));
-  this->mDisconnectThread->detach();
-}
-
-void ServerAdapter::connect_thread(void) {
-  LOG_ADAPTER_THREAD_LAUNCH(this->get_name(), "Connect");
-
+void ServerAdapter::connect_internal(ConnectCallback callback) {
+  // Set callback and adapter's state
+  this->mConnectCallback = callback;
   this->set_state(ServerAdapterState::kConnecting);
 
-  bool res = this->__connect_thread();
+  bool res = this->__connect_internal();
 
   if (res) {
     this->set_state(ServerAdapterState::kActive);
-    LOG_ADAPTER_THREAD_FINISH(this->get_name(), "Connect");
     if (this->mConnectCallback != NULL) {
       this->mConnectCallback(true);
       this->mConnectCallback = NULL;
     }
   } else {
     this->set_state(ServerAdapterState::kDisconnected);
-    LOG_ADAPTER_THREAD_FAIL(this->get_name(), "Connect");
     if (this->mConnectCallback != NULL) {
       this->mConnectCallback(false);
       this->mConnectCallback = NULL;
     }
   }
-  this->mConnectThread = NULL;
 }
 
-bool ServerAdapter::__connect_thread(void) {
+bool ServerAdapter::__connect_internal(void) {
   if (this->mDevice == NULL || this->mP2PServer == NULL ||
       this->mServerSocket == NULL) {
     return false;
@@ -266,9 +229,9 @@ bool ServerAdapter::__connect_thread(void) {
   return true;
 }
 
-void ServerAdapter::disconnect_thread(void) {
-  LOG_ADAPTER_THREAD_LAUNCH(this->get_name(), "Disconnect");
-
+void ServerAdapter::disconnect_internal(DisconnectCallback callback) {
+  // Set callback and adapter's state
+  this->mDisconnectCallback = callback;
   ServerAdapterState oldState = this->get_state();
   this->set_state(ServerAdapterState::kDisconnecting);
 
@@ -277,29 +240,26 @@ void ServerAdapter::disconnect_thread(void) {
     this->wait_for_disconnecting_on_purpose_peer();
   }
 
-  bool res = this->__disconnect_thread();
+  bool res = this->__disconnect_internal();
 
   this->finish_disconnecting_on_purpose();
 
   if (res) {
     this->set_state(ServerAdapterState::kDisconnected);
-    LOG_ADAPTER_THREAD_FINISH(this->get_name(), "Disconnect");
     if (this->mDisconnectCallback != NULL) {
       this->mDisconnectCallback(true);
       this->mDisconnectCallback = NULL;
     }
   } else {
     this->set_state(oldState);
-    LOG_ADAPTER_THREAD_FAIL(this->get_name(), "Disconnect");
     if (this->mDisconnectCallback != NULL) {
       this->mDisconnectCallback(false);
       this->mDisconnectCallback = NULL;
     }
   }
-  this->mDisconnectThread = NULL;
 }
 
-bool ServerAdapter::__disconnect_thread(void) {
+bool ServerAdapter::__disconnect_internal(void) {
   // Finish sender & receiver threads
   if (this->mSenderThread != NULL) {
     // If this adapter is already sleeping, wake up and finish the sender
