@@ -179,7 +179,7 @@ void SwitchAdapterTransaction::start(void) {
   ServerAdapterState adapter_state = next_adapter->get_state();
   if (adapter_state == ServerAdapterState::kActive) {
     LOG_WARN("Next adapter is already active");
-    SwitchAdapterTransaction::connect_next_adapter_callback(true);
+    SwitchAdapterTransaction::connect_next_adapter_callback(NULL, true);
     return;
   } else if (adapter_state == ServerAdapterState::kConnecting ||
              adapter_state == ServerAdapterState::kDisconnecting ||
@@ -205,7 +205,8 @@ void SwitchAdapterTransaction::start(void) {
 #endif
 }
 
-void SwitchAdapterTransaction::connect_next_adapter_callback(bool is_success) {
+void SwitchAdapterTransaction::connect_next_adapter_callback(
+    ServerAdapter *adapter, bool is_success) {
   // Switch Step 1-b, 2-a
   Core *core = Core::singleton();
   NetworkSwitcher *switcher = NetworkSwitcher::singleton();
@@ -236,7 +237,7 @@ void SwitchAdapterTransaction::connect_next_adapter_callback(bool is_success) {
              adapter_state == ServerAdapterState::kGoingSleeping) {
     LOG_WARN("Prev adapter is already sleeping or going to sleeping");
     // Proceed to Step 3-a
-    sOngoing->sleep_prev_adapter_callback(true);
+    sOngoing->sleep_prev_adapter_callback(NULL, true);
   } else if (adapter_state == ServerAdapterState::kConnecting ||
              adapter_state == ServerAdapterState::kDisconnecting ||
              adapter_state == ServerAdapterState::kWakingUp) {
@@ -251,11 +252,15 @@ void SwitchAdapterTransaction::connect_next_adapter_callback(bool is_success) {
            prev_adapter->get_name());
 
   // Disconnect or sleep previous adapter
+  // TODO: Actually, it needs sleep request. For now, since sleep does not
+  // support ACK message, sleep request message makes out-of-order of sleep()
+  // and disconnect().
   prev_adapter->sleep(SwitchAdapterTransaction::sleep_prev_adapter_callback,
-                      true);
+                      false);
 }
 
-void SwitchAdapterTransaction::sleep_prev_adapter_callback(bool is_success) {
+void SwitchAdapterTransaction::sleep_prev_adapter_callback(
+    ServerAdapter *adapter, bool is_success) {
   // Switch Step 2-b, 3-a
   Core *core = Core::singleton();
   NetworkSwitcher *switcher = NetworkSwitcher::singleton();
@@ -303,7 +308,7 @@ void SwitchAdapterTransaction::sleep_prev_adapter_callback(bool is_success) {
 }
 
 void SwitchAdapterTransaction::disconnect_prev_adapter_callback(
-    bool is_success) {
+    ServerAdapter *adapter, bool is_success) {
   // Switch Step 3-b, 4
   if (!is_success) {
     LOG_ERR("Disconnecting prev adapter is failed");
@@ -348,7 +353,8 @@ bool ConnectRequestTransaction::start() {
   return true;
 }
 
-void ConnectRequestTransaction::connect_callback(bool is_success) {
+void ConnectRequestTransaction::connect_callback(ServerAdapter *adapter,
+                                                 bool is_success) {
   if (!is_success) {
     LOG_ERR("Connecting requested adapter is failed");
     sOngoing->done();
@@ -396,7 +402,8 @@ bool ReconnectAdapterTransaction::start() {
   return true;
 }
 
-void ReconnectAdapterTransaction::disconnect_callback(bool is_success) {
+void ReconnectAdapterTransaction::disconnect_callback(ServerAdapter *adapter,
+                                                      bool is_success) {
   if (!is_success) {
     LOG_ERR("Reconnecting adapter is failed: retry");
     sOngoing->done(true);
@@ -412,7 +419,8 @@ void ReconnectAdapterTransaction::disconnect_callback(bool is_success) {
       ReconnectAdapterTransaction::disconnect_callback, false);
 }
 
-void ReconnectAdapterTransaction::connect_callback(bool is_success) {
+void ReconnectAdapterTransaction::connect_callback(ServerAdapter *adapter,
+                                                   bool is_success) {
   if (!is_success) {
     LOG_ERR("Reconnecting adapter is failed 6: retry");
     sOngoing->done(true);

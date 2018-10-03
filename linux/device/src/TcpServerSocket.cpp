@@ -23,6 +23,7 @@
 
 #include <arpa/inet.h>
 #include <errno.h>
+#include <poll.h>
 #include <stdio.h>
 #include <string.h>
 #include <sys/socket.h>
@@ -49,20 +50,20 @@ bool TcpServerSocket::open_impl(void) {
 
   if (setsockopt(this->mServerSocket, SOL_SOCKET, SO_REUSEADDR, (char *)&reuse,
                  sizeof(int)) == -1) {
-    LOG_ERR("%s: Socket setup failed", this->get_name());
+    LOG_ERR("%s: WFD socket self address setting failed", this->get_name());
     return false;
   }
 
   int err = ::bind(this->mServerSocket, (struct sockaddr *)&server_address,
                    sizeof(server_address));
   if (err < 0) {
-    LOG_ERR("%s: Socket bind failed", this->get_name());
+    LOG_ERR("%s: WFD socket bind failed", this->get_name());
     return false;
   }
 
   err = ::listen(this->mServerSocket, 5);
   if (err < 0) {
-    LOG_ERR("%s: Socket listen failed", this->get_name());
+    LOG_ERR("%s: WFD socket listen failed", this->get_name());
     return false;
   }
 
@@ -128,6 +129,20 @@ int TcpServerSocket::receive_impl(void *data_buffer, size_t data_length) {
   if (this->mClientSocket <= 0)
     return -1;
 
+  // Polling
+  struct pollfd poll_fd;
+  poll_fd.fd = this->mClientSocket;
+  poll_fd.events = POLLIN;
+  int ret = poll(&poll_fd, 1, 1000);
+  if (ret == -1) {
+    LOG_ERR("%s: Polling error", this->get_name());
+    return -1;
+  } else if (ret == 0) {
+    // Receive timeout
+    return -999;
+  }
+
+  // Read
   while (received_bytes < data_length) {
     int once_received_bytes =
         ::read(this->mClientSocket, data_buffer, data_length);

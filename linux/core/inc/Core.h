@@ -46,7 +46,7 @@ class StartCoreTransaction {
 public:
   static bool run(Core *caller);
   void start();
-  static void connect_first_adapter_callback(bool is_success);
+  static void connect_first_adapter_callback(ServerAdapter* adapter, bool is_success);
 
 private:
   void done(bool is_success);
@@ -61,7 +61,7 @@ class StopCoreTransaction {
 public:
   static bool run(Core *caller);
   void start();
-  static void disconnect_adapter_callback(bool is_success);
+  static void disconnect_adapter_callback(ServerAdapter* adapter, bool is_success);
 
 private:
   void done(bool is_success);

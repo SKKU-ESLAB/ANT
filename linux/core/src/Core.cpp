@@ -136,6 +136,8 @@ void Core::register_adapter(ServerAdapter *adapter) {
   }
   std::unique_lock<std::mutex> lck(this->mAdaptersLock);
   this->mAdapters.push_back(adapter);
+  
+  adapter->launch_threads();
 }
 
 int Core::send(const void *dataBuffer, uint32_t dataLength, bool is_control) {
@@ -219,7 +221,7 @@ void StartCoreTransaction::start() {
       StartCoreTransaction::connect_first_adapter_callback, false);
 }
 
-void StartCoreTransaction::connect_first_adapter_callback(bool is_success) {
+void StartCoreTransaction::connect_first_adapter_callback(ServerAdapter* adapter, bool is_success) {
   if (is_success) {
     // Done transaction
     sOngoing->done(true);
@@ -280,7 +282,7 @@ void StopCoreTransaction::start() {
   }
 }
 
-void StopCoreTransaction::disconnect_adapter_callback(bool is_success) {
+void StopCoreTransaction::disconnect_adapter_callback(ServerAdapter* adapter, bool is_success) {
   if (!is_success) {
     if (sOngoing != NULL) {
       LOG_ERR("Disconnecting adapter is failed 2");
@@ -288,6 +290,8 @@ void StopCoreTransaction::disconnect_adapter_callback(bool is_success) {
     }
     return;
   }
+
+  adapter->finish_thread();
 
   /* check if all the adapters are disconnected */
   bool done_disconnect_all = false;

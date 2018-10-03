@@ -70,14 +70,20 @@ private:
 private:
   /* Receiver loop end condition */
   void wait_until_loop_ends(void) {
-    std::unique_lock<std::mutex> lck(this->mLoopEndsCondMutex);
-    this->mLoopEndsCond.wait(lck);
+    std::unique_lock<std::mutex> lck(this->mIsLoopEndsMutex);
+    if (!this->mIsLoopEnds) {
+      this->mLoopEndsCond.wait(lck);
+    }
   }
-  void notify_loop_ends(void) {
-    std::unique_lock<std::mutex> lck(this->mLoopEndsCondMutex);
-    this->mLoopEndsCond.notify_all();
+  void set_is_loop_ends(bool is_loop_ends) {
+    std::unique_lock<std::mutex> lck(this->mIsLoopEndsMutex);
+    this->mIsLoopEnds = is_loop_ends;
+    if (this->mIsLoopEnds) {
+      this->mLoopEndsCond.notify_all();
+    }
   }
-  std::mutex mLoopEndsCondMutex;
+  bool mIsLoopEnds;
+  std::mutex mIsLoopEndsMutex;
   std::condition_variable mLoopEndsCond;
 
 private:
@@ -95,7 +101,9 @@ private:
   }
   void wait_until_enable_loop(void) {
     std::unique_lock<std::mutex> lck(this->mIsLoopEnabledMutex);
-    this->mEnableLoopCond.wait(lck);
+    if(!this->mIsLoopEnabled) {
+      this->mEnableLoopCond.wait(lck);
+    }
   }
 
   bool mIsLoopEnabled;

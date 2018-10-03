@@ -62,9 +62,9 @@ class SwitchAdapterTransaction {
 public:
   static bool run(int prev_index, int next_index);
   void start(void);
-  static void connect_next_adapter_callback(bool is_success);
-  static void sleep_prev_adapter_callback(bool is_success);
-  static void disconnect_prev_adapter_callback(bool is_success);
+  static void connect_next_adapter_callback(ServerAdapter* adapter, bool is_success);
+  static void sleep_prev_adapter_callback(ServerAdapter* adapter, bool is_success);
+  static void disconnect_prev_adapter_callback(ServerAdapter* adapter, bool is_success);
 
 protected:
   void done(bool is_success);
@@ -83,7 +83,7 @@ class ConnectRequestTransaction {
 public:
   static bool run(int adapter_id);
   bool start(void);
-  static void connect_callback(bool is_success);
+  static void connect_callback(ServerAdapter* adapter, bool is_success);
 
 protected:
   void done();
@@ -98,8 +98,8 @@ class ReconnectAdapterTransaction {
 public:
   static bool run(ServerAdapter *targetAdapter);
   bool start();
-  static void disconnect_callback(bool is_success);
-  static void connect_callback(bool is_success);
+  static void disconnect_callback(ServerAdapter* adapter, bool is_success);
+  static void connect_callback(ServerAdapter* adapter, bool is_success);
 
 protected:
   void done(bool require_restart);

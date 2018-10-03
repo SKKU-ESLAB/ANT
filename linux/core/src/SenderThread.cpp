@@ -47,20 +47,23 @@ void SenderThread::run(void) {
     // Wait until enable loop (Initially, the loop is disabled)
     this->wait_until_enable_loop();
 
+    // Set state before sender loop
+    this->set_is_loop_ends(false);
+
     // Execute sender loop
+    LOG_DEBUG("%s: Sender loop starts", this->mAdapter->get_name());
     this->sender_loop();
+    LOG_DEBUG("%s: Sender loop ends", this->mAdapter->get_name());
 
     // Set state after sender loop
     this->set_is_loop_enabled(false);
     this->set_is_loop_paused(false);
+    this->set_is_loop_ends(true);
 
     // Reconnect the adapter if it is disconnected on failure
     if (!this->mAdapter->is_disconnecting_on_purpose()) {
       NetworkSwitcher::singleton()->reconnect_adapter(this->mAdapter, true);
     }
-
-    // Notify that the sender loop ends!
-    this->notify_loop_ends();
   }
 
   // Set state for thread end
@@ -109,9 +112,7 @@ void SenderThread::sender_loop(void) {
       continue;
     }
 
-#if defined(VERBOSE_DEQUEUE_SEND_CONTROL) || defined(VERBOSE_DEQUEUE_SEND_DATA)
     bool is_control = ((segment_to_send->flag & kSegFlagControl) != 0);
-#endif
 #ifdef VERBOSE_DEQUEUE_SEND_CONTROL
     if (is_control) {
       LOG_DEBUG("%s: Send %s Segment (type=Ctrl, seqno=%d, len=%d)",

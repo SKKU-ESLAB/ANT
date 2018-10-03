@@ -189,6 +189,7 @@ public class ClientAdapter {
             DiscoverAndConnectResultListener {
         @Override
         public void run() {
+            this.setName(self.getName() + "/Connect");
             Logger.VERB(kTag, self.getName() + "'s Connect Thread Spawned! (id:" + this.getId() +
                     ")");
             setState(ClientAdapter.State.kConnecting);
@@ -242,6 +243,7 @@ public class ClientAdapter {
             @Override
             public void run() {
                 // Open client socket
+                this.setName(self.getName() + "/SocketOpen");
                 int socketState = self.mClientSocket.getState();
                 if (socketState != ClientSocket.State.kOpened) {
                     boolean res = self.mClientSocket.open();
@@ -298,15 +300,17 @@ public class ClientAdapter {
             .DisconnectResultListener, TurnOffResultListener {
         @Override
         public void run() {
+            this.setName(self.getName() + "/Disconnect");
             Logger.VERB(kTag, self.getName() + "'s Disconnect Thread Spawned! (id:" + this.getId
                     () + ")");
+            int oldState = self.getState();
             setState(ClientAdapter.State.kDisconnecting);
 
             if (isDisconnectingOnPurpose() && !isDisconnectingOnPurposePeer()) {
                 waitForDisconnectingOnPurposePeer();
             }
 
-            boolean res = this.__disconnect_thread();
+            boolean res = this.__disconnect_thread(oldState);
 
             finishDisconnectingOnPurpose();
 
@@ -319,10 +323,13 @@ public class ClientAdapter {
         }
 
         @SuppressWarnings("SynchronizeOnNonFinalField")
-        private boolean __disconnect_thread() {
+        private boolean __disconnect_thread(int oldState) {
             // Finish sender & receiver threads
             if (self.mSenderThread != null) {
                 self.mSenderThread.finish();
+                if(oldState == ClientAdapter.State.kSleeping) {
+                    self.wakeUpInternal();
+                }
             }
             if (self.mReceiverThread != null) {
                 self.mReceiverThread.finish();
@@ -438,6 +445,7 @@ public class ClientAdapter {
     class SenderThread extends Thread {
         @Override
         public void run() {
+            this.setName(self.getName() + "/Sender");
             synchronized (this.mIsOn) {
                 this.mIsOn = true;
             }
@@ -518,6 +526,8 @@ public class ClientAdapter {
                     }
                 }
 
+                Logger.DEBUG(kTag, "SEND " + segmentToSend.seq_no + " / " + segmentToSend.len + " / " + segmentToSend.flag);
+
                 int res = send(segmentToSend.data, kSegHeaderSize + kSegSize);
                 if (res < 0) {
                     Logger.WARN(kTag, "Sending failed at " + ClientAdapter.this.getName());
@@ -554,6 +564,7 @@ public class ClientAdapter {
     class ReceiverThread extends Thread {
         @Override
         public void run() {
+            this.setName(self.getName() + "/Receiver");
             synchronized (this.mIsOn) {
                 this.mIsOn = true;
             }
@@ -610,7 +621,7 @@ public class ClientAdapter {
                 buffer.put(segmentToReceive.data, 8, 4);
                 segmentToReceive.flag = buffer.getInt(0);
 
-                Logger.DEBUG(kTag, "RECEIVE " + segmentToReceive.seq_no + " / " + segmentToReceive.len + " / " + segmentToReceive.flag);
+                //Logger.DEBUG(kTag, "RECEIVE " + segmentToReceive.seq_no + " / " + segmentToReceive.len + " / " + segmentToReceive.flag);
 
                 if (VERBOSE_RECEIVER_TIME) this.mDates[3] = new Date();
 
@@ -727,15 +738,20 @@ public class ClientAdapter {
 
             // Wake up
             this.setState(State.kWakingUp);
-            synchronized (this.mSenderSuspended) {
-                this.mSenderSuspended = false;
-            }
-            this.mSenderSuspended.notifyAll();
+            this.wakeUpInternal();
+
             return true;
         } else {
             Logger.ERR(kTag, "Sender has not been suspended!: " + this.getName());
             return false;
         }
+    }
+
+    private void wakeUpInternal() {
+        synchronized (this.mSenderSuspended) {
+            this.mSenderSuspended = false;
+        }
+        this.mSenderSuspended.notifyAll();
     }
 
     // Initialize
