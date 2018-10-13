@@ -95,21 +95,8 @@ public class ClientAdapter {
             peerFinalSeqNoControl, int peerFinalSeqNoData) {
         // Check if the adapter is not sleeping
         int state = this.getState();
-        if (state == State.kGoingSleep) {
-            Logger.VERB(kTag, this.getName() + ": Disconnect - waiting for sleeping...");
-            while (state != State.kSleeping) {
-                try {
-                    Thread.sleep(1000);
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
-                state = this.getState();
-            }
-        } else if (state != State.kSleeping) {
-            Logger.ERR(kTag, this.getName() + ": Disconnect fail - not sleeping - " + state);
-            listener.onDisconnectResult(false);
-            return;
-        }
+
+        // TODO: wait for sleeping should be implemented
 
         // Set this disconnection is on purpose
         this.startDisconnectingOnPurpose();
@@ -327,7 +314,7 @@ public class ClientAdapter {
             // Finish sender & receiver threads
             if (self.mSenderThread != null) {
                 self.mSenderThread.finish();
-                if(oldState == ClientAdapter.State.kSleeping) {
+                if (oldState == ClientAdapter.State.kSleeping) {
                     self.wakeUpInternal();
                 }
             }
@@ -512,6 +499,13 @@ public class ClientAdapter {
                     continue;
                 }
 
+                int state = self.getState();
+                if (state == ClientAdapter.State.kDisconnecting || state == ClientAdapter.State
+                        .kDisconnected) {
+                    sm.failed_sending(segmentToSend);
+                    continue;
+                }
+
                 // If it is suspended, push the segment to the send-fail queue
                 {
                     boolean sender_suspended;
@@ -526,7 +520,8 @@ public class ClientAdapter {
                     }
                 }
 
-                Logger.DEBUG(kTag, "SEND " + segmentToSend.seq_no + " / " + segmentToSend.len + " / " + segmentToSend.flag);
+                Logger.DEBUG(kTag, "SEND " + segmentToSend.seq_no + " / " + segmentToSend.len +
+                        "" + " / " + segmentToSend.flag);
 
                 int res = send(segmentToSend.data, kSegHeaderSize + kSegSize);
                 if (res < 0) {
@@ -621,7 +616,8 @@ public class ClientAdapter {
                 buffer.put(segmentToReceive.data, 8, 4);
                 segmentToReceive.flag = buffer.getInt(0);
 
-                //Logger.DEBUG(kTag, "RECEIVE " + segmentToReceive.seq_no + " / " + segmentToReceive.len + " / " + segmentToReceive.flag);
+                //Logger.DEBUG(kTag, "RECEIVE " + segmentToReceive.seq_no + " / " +
+                // segmentToReceive.len + " / " + segmentToReceive.flag);
 
                 if (VERBOSE_RECEIVER_TIME) this.mDates[3] = new Date();
 

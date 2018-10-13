@@ -472,6 +472,7 @@ class SegmentManager {
     public void failed_sending(Segment seg) {
         synchronized (mFailedSendingQueue) {
             mFailedSendingQueue.offerLast(seg);
+            this.wakeUpDequeueWaiting(kDeqSendControlData);
         }
     }
 
