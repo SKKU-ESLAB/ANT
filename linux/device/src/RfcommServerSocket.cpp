@@ -28,6 +28,7 @@
 #include <poll.h>
 #include <stdio.h>
 #include <string.h>
+#include <sys/types.h>
 #include <sys/socket.h>
 #include <unistd.h>
 
@@ -202,7 +203,7 @@ int RfcommServerSocket::send_impl(const void *data_buffer, size_t data_length) {
 
   while (sent_bytes < data_length) {
     int once_sent_bytes =
-        ::write(this->mClientSocket, data_buffer, data_length);
+        ::send(this->mClientSocket, data_buffer, data_length, MSG_NOSIGNAL);
     if (once_sent_bytes <= 0) {
       return once_sent_bytes;
     }
@@ -237,7 +238,7 @@ int RfcommServerSocket::receive_impl(void *data_buffer, size_t data_length) {
   // Read
   while (received_bytes < data_length) {
     int once_received_bytes =
-        ::read(this->mClientSocket, data_buffer, data_length);
+        ::recv(this->mClientSocket, data_buffer, data_length, 0);
     if (once_received_bytes <= 0) {
       return once_received_bytes;
     }
