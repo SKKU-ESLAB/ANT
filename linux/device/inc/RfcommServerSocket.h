@@ -54,6 +54,7 @@ public:
     char buffer[100];
     snprintf(buffer, 100, "%s", service_uuid);
     this->str2uuid(buffer, &(this->mServiceUUID));
+    this->mPort = -1;
   }
 
   ~RfcommServerSocket(void) {}

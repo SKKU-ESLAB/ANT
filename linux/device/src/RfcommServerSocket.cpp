@@ -28,8 +28,8 @@
 #include <poll.h>
 #include <stdio.h>
 #include <string.h>
-#include <sys/types.h>
 #include <sys/socket.h>
+#include <sys/types.h>
 #include <unistd.h>
 
 #define VERBOSE_BT_MSG 0
@@ -119,7 +119,7 @@ int RfcommServerSocket::bt_register_service() {
   char service_name[256];
   char service_dsc[256];
   char service_prov[256];
-  sdp_session_t *sdp_session = 0;
+  this->mSdpSession = NULL;
   uuid_t root_uuid, l2cap_uuid, rfcomm_uuid;
   sdp_list_t *l2cap_list = 0, *rfcomm_list = 0, *root_list = 0, *proto_list = 0,
              *access_proto_list = 0;
@@ -159,15 +159,15 @@ int RfcommServerSocket::bt_register_service() {
     // disconnect
     bdaddr_t my_bdaddr_any = {0, 0, 0, 0, 0, 0};
     bdaddr_t my_bdaddr_local = {0, 0, 0, 0xff, 0xff, 0xff};
-    sdp_session =
+    this->mSdpSession =
         sdp_connect(&my_bdaddr_any, &my_bdaddr_local, SDP_RETRY_IF_BUSY);
-    if (NULL == sdp_session) {
+    if (NULL == this->mSdpSession) {
       LOG_ERR("%s: Cannot connect to bluetooth sdp server", this->get_name());
       res = -1;
       break;
     }
 
-    res = sdp_record_register(sdp_session, record, 0);
+    res = sdp_record_register(this->mSdpSession, record, 0);
 
   } while (0);
 
@@ -184,9 +184,11 @@ int RfcommServerSocket::bt_register_service() {
 bool RfcommServerSocket::close_impl(void) {
   ::close(this->mClientSocket);
   ::close(this->mServerSocket);
+  sdp_close(this->mSdpSession);
 
   this->mClientSocket = 0;
   this->mServerSocket = 0;
+  this->mSdpSession = NULL;
 
   LOG_VERB("%s: RFCOMM Socket closed", this->get_name());
 

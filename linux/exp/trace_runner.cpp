@@ -149,24 +149,30 @@ void on_connect(bool is_success) {
   printf("Step 3. Send Workload (%s)\n", g_trace_file_name);
 
   /* Initialize CSV Parser */
-  io::CSVReader<3, io::trim_chars<>, io::double_quote_escape<',', '\"'>> in(
+  io::CSVReader<4, io::trim_chars<>, io::double_quote_escape<',', '\"'>> in(
       g_trace_file_name);
-  in.read_header(io::ignore_extra_column, "Time", "Source", "Payload");
+  in.read_header(io::ignore_extra_column, "Time", "Source", "PayloadBT", "PayloadTCP");
   std::string timestr;
   std::string source;
-  int payload_length;
+  std::string payload_bt;
+  std::string payload_tcp;
 
   /* Read CSV File */
   int recent_sent_sec = 0;
   int recent_sent_usec = 0;
-  while (in.read_row(timestr, source, payload_length)) {
+  while (in.read_row(timestr, source, payload_bt, payload_tcp)) {
+    int payload_length;
+    if(payload_bt.length() != 0) {
+      payload_length = std::stoi(payload_bt);
+    } else if(payload_tcp.length() != 0) {
+      payload_length = std::stoi(payload_tcp);
+    } else {
+      continue;
+    }
+
 #if DEBUG_SHOW_DATA == 1
     printf("%s %s %d\n", timestr.c_str(), source.c_str(), payload_length);
 #endif
-    if (payload_length == 0) {
-      /* In case of ACK message */
-      continue;
-    }
 
     if (source.find(SOURCE_LOCALHOST_BT) == std::string::npos &&
         source.find(SOURCE_LOCALHOST_WFD) == std::string::npos) {
@@ -222,7 +228,19 @@ void on_connect(bool is_success) {
     iter++;
   }
 
-  printf("Finish Workload. Sleep 600 secs...\n");
+  printf("Finish Workload... Send Small Tail Data...\n");
+
+#define TAIL_DATA_SIZE (100)
+#define NUM_TAIL_DATA 100
+  for(int i=0; i<NUM_TAIL_DATA; i++) {
+    printf("Send Small Tail Data (%d/%d)\n", i, NUM_TAIL_DATA);
+    temp_buf = (char *)calloc(TAIL_DATA_SIZE, sizeof(char));
+    sc::send(temp_buf, TAIL_DATA_SIZE);
+    free(temp_buf);
+    sleep(1);
+  }
+
+  printf("Sleep 600 secs...\n");
 
   sleep(600);
 

@@ -46,7 +46,7 @@ int ChildProcess::run(const char *path, char *const params[], char *res_buf,
   int i = 0;
   while (params[i] != NULL) {
     command_string.append(params[i]);
-    if(params[i+1] != NULL) {
+    if (params[i + 1] != NULL) {
       command_string.append(" ");
     }
     i++;
@@ -90,9 +90,13 @@ int ChildProcess::run(const char *path, char *const params[], char *res_buf,
     if (is_wait_child) {
       int status;
       waitpid(pid, &status, 0);
+#ifdef VERBOSE_CHILD_PROCESS_RUN
       LOG_DEBUG("Done (%s): %d", command_string.c_str(), status);
+#endif
     } else {
+#ifdef VERBOSE_CHILD_PROCESS_RUN
       LOG_DEBUG("Daemon (%s)", command_string.c_str());
+#endif
     }
 
     memcpy(res_buf, buf, read_bytes < len ? read_bytes : len);
@@ -134,9 +138,13 @@ int ChildProcess::run(const char *path, char *const params[],
     if (is_wait_child) {
       int status;
       waitpid(pid, &status, 0);
+#ifdef VERBOSE_CHILD_PROCESS_RUN
       LOG_VERB("Done (%s): %d", command_string.c_str(), status);
+#endif
     } else {
+#ifdef VERBOSE_CHILD_PROCESS_RUN
       LOG_VERB("Daemon (%s)", command_string.c_str());
+#endif
     }
     return pid;
   } else {

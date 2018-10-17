@@ -37,9 +37,9 @@ bool BtDevice::turn_on_impl(void) {
 }
 
 bool BtDevice::turn_off_impl(void) {
-  char buf[512];
-  char *const params[] = {"hciconfig", "hci0", "down", NULL};
+  // char buf[512];
+  // char *const params[] = {"hciconfig", "hci0", "down", NULL};
 
-  int res = ChildProcess::run(HCICONFIG_PATH, params, buf, 512, true);
-  return (res >= 0);
+  // int res = ChildProcess::run(HCICONFIG_PATH, params, buf, 512, true);
+  return true;
 }

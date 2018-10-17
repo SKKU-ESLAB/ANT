@@ -51,7 +51,9 @@ void sc::start_sc(StartCallback startCallback) {
   }
 
   // Execute callback
-  startCallback(g_start_sc_success);
+  if(startCallback != NULL) {
+    startCallback(g_start_sc_success);
+  }
 }
 
 void sc::start_sc_done(bool is_success) {
@@ -74,7 +76,9 @@ void sc::stop_sc(StopCallback stopCallback) {
   }
 
   // Execute callback
-  stopCallback(g_stop_sc_success);
+  if(stopCallback != NULL) {
+    stopCallback(g_stop_sc_success);
+  }
 }
 
 void sc::stop_sc_done(bool is_success) {

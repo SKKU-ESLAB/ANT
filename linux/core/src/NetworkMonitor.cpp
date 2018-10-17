@@ -227,7 +227,7 @@ bool NetworkMonitor::check_increase_adapter(const Stats &stats) {
   }
 }
 
-#define CHECK_DECREASING_OK_COUNT 2
+#define CHECK_DECREASING_OK_COUNT 10
 bool NetworkMonitor::check_decrease_adapter(const Stats &stats) {
   /* Check the condition of adapter decrease based on switching policy */
   if (!this->is_decreaseable()) {
@@ -252,7 +252,7 @@ bool NetworkMonitor::check_decrease_adapter(const Stats &stats) {
         int next_request_size = stats.ema_send_request_size;
         int idle_energy_payoff_point =
             get_idle_energy_payoff_point(stats.ema_arrival_time_us);
-        if (next_request_size > idle_energy_payoff_point) {
+        if (next_request_size < idle_energy_payoff_point) {
           wfd_off = true;
         } else {
           wfd_off = false;
@@ -262,6 +262,7 @@ bool NetworkMonitor::check_decrease_adapter(const Stats &stats) {
       if (wfd_off) {
         if (stats.ema_send_request_size <
             this->get_idle_energy_payoff_point(stats.ema_arrival_time_us)) {
+          LOG_DEBUG("DecreasingCheckCount=%d", this->mDecreasingCheckCount);
           this->mDecreasingCheckCount++;
           if (this->mDecreasingCheckCount >= CHECK_DECREASING_OK_COUNT) {
             this->mDecreasingCheckCount = 0;
@@ -270,9 +271,11 @@ bool NetworkMonitor::check_decrease_adapter(const Stats &stats) {
             return false;
           }
         } else {
+          this->mDecreasingCheckCount = 0;
           return false;
         }
       } else {
+        this->mDecreasingCheckCount = 0;
         return false;
       }
       break;

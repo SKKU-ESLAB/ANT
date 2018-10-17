@@ -401,6 +401,9 @@ bool WfdP2PServer::disallow_discover_impl(void) {
   // Remove Wi-fi Direct P2P Group
   ret = this->wfd_remove_p2p_group(buf, 1024);
 
+  // TODO: debug
+  LOG_DEBUG("%s\n", buf);
+
   char *ptrptr;
   char *ptr = strtok_r(buf, "\t \n\'", &ptrptr);
   while (ptr != NULL) {
@@ -411,6 +414,8 @@ bool WfdP2PServer::disallow_discover_impl(void) {
       LOG_VERB("%s: Failed to remove p2p group", this->get_name());
       return false;
     }
+
+    ptr = strtok_r(NULL, "\t \n\'", &ptrptr);
   }
 
   LOG_ERR("%s: Assertion: Must not reach here", this->get_name());

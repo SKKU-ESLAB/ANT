@@ -100,6 +100,7 @@ public class ClientAdapter {
 
         // Set this disconnection is on purpose
         this.startDisconnectingOnPurpose();
+        this.peerKnowsDisconnectingOnPurpose();
 
         // Start wait receiving
         SegmentManager sm = SegmentManager.singleton();
@@ -147,6 +148,8 @@ public class ClientAdapter {
         if (this.mClientSocket == null) {
             return -2;
         }
+
+        Logger.VERB(this.getName(), "Send data: length=" + dataLength);
 
         // Omit Implementing Statistics: SendDataSize
         return this.mClientSocket.send(dataBuffer, dataLength);
@@ -321,6 +324,10 @@ public class ClientAdapter {
             if (self.mReceiverThread != null) {
                 self.mReceiverThread.finish();
             }
+
+            // Wake up sender thread waiting segment queue
+            SegmentManager sm = SegmentManager.singleton();
+            sm.wakeUpDequeueWaiting(kDeqSendControlData);
 
             // Close client socket
             if (self.mClientSocket == null) {
@@ -501,7 +508,7 @@ public class ClientAdapter {
 
                 int state = self.getState();
                 if (state == ClientAdapter.State.kDisconnecting || state == ClientAdapter.State
-                        .kDisconnected) {
+                        .kDisconnected || isDisconnectingOnPurpose()) {
                     sm.failed_sending(segmentToSend);
                     continue;
                 }
@@ -746,8 +753,8 @@ public class ClientAdapter {
     private void wakeUpInternal() {
         synchronized (this.mSenderSuspended) {
             this.mSenderSuspended = false;
+            this.mSenderSuspended.notifyAll();
         }
-        this.mSenderSuspended.notifyAll();
     }
 
     // Initialize
@@ -806,7 +813,9 @@ public class ClientAdapter {
 
     public void peerKnowsDisconnectingOnPurpose() {
         this.mIsDisconnectingOnPurposePeer = true;
-        this.mWaitForDisconnectAck.notifyAll();
+        synchronized(this.mWaitForDisconnectAck) {
+            this.mWaitForDisconnectAck.notifyAll();
+        }
     }
 
     private void finishDisconnectingOnPurpose() {

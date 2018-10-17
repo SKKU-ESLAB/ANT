@@ -312,6 +312,9 @@ class SegmentManager {
 
         synchronized (this.mQueues[queueType]) {
             if (segment.seq_no == mExpectedSeqNo[queueType]) {
+                if(segment.seq_no <= 2 || mExpectedSeqNo[queueType] <= 2) {
+                    Logger.VERB(kTag, "Sequence No COMING: " + segment.seq_no + " / " + mExpectedSeqNo[queueType]);
+                }
                 mExpectedSeqNo[queueType]++;
                 mQueues[queueType].offerLast(segment);
                 mQueueLengths[queueType]++;
