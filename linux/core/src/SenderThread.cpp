@@ -90,7 +90,11 @@ void SenderThread::sender_loop(void) {
       // Wait until resume loop
       this->wait_until_resume_loop();
 
-      this->mAdapter->set_state(ServerAdapterState::kActive);
+      int adapterState = this->mAdapter->get_state();
+      if (adapterState != ServerAdapterState::kDisconnecting &&
+          adapterState != ServerAdapterState::kDisconnected) {
+        this->mAdapter->set_state(ServerAdapterState::kActive);
+      }
     } while (true);
 
     // Dequeue from a queue (one of the three queues)

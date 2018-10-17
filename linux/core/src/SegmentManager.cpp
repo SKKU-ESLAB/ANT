@@ -88,7 +88,7 @@ int SegmentManager::send_to_segment_manager(uint8_t *data, size_t len,
     if (is_control)
       flag = flag | kSegFlagControl;
     seg->flag = flag;
-    
+
     /* Set segment header to data */
     this->serialize_segment_header(seg);
 
@@ -328,7 +328,8 @@ Segment *SegmentManager::dequeue(SegDequeueType dequeue_type) {
 
   // Check queue type
   if (target_queue_type >= SegQueueType::kNumSQ) {
-    LOG_ERR("Dequeue failed: invalid queue type (dequeue=%d)", dequeue_type);
+    LOG_ERR("Dequeue failed: invalid queue type (dequeue=%d, queue=%d)",
+            dequeue_type, target_queue_type);
     return NULL;
   }
 

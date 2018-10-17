@@ -51,8 +51,17 @@ public class NetworkSwitcher {
 
         this.setState(State.kSwitching);
 
-        adapter.disconnectOnPeerCommand(null, finalSeqNoControl, finalSeqNoData);
+        adapter.disconnectOnPeerCommand(onResultDisconnectAdapterByPeer, finalSeqNoControl, finalSeqNoData);
     }
+
+    ClientAdapter.DisconnectResultListener onResultDisconnectAdapterByPeer = new ClientAdapter
+            .DisconnectResultListener() {
+        @Override
+        public void onDisconnectResult(boolean isSuccess) {
+            NetworkSwitcher switcher = NetworkSwitcher.singleton();
+            switcher.doneSwitch();
+        }
+    };
 
     // Sleep adapter command.
     // It is called by peer through Core.
@@ -92,7 +101,8 @@ public class NetworkSwitcher {
 
         int state = this.getState();
         if (state == State.kSwitching) {
-            Logger.VERB(kTag, "It's now switching. Cannot reconnect adapter.");
+            Logger.VERB(kTag, adapter.getName() + ": It's now switching. Cannot reconnect " +
+                    "adapter" + ".");
             try {
                 Thread.sleep(1000);
             } catch (InterruptedException e) {
