@@ -156,7 +156,8 @@ class SegmentManager {
     private void checkReceivingDone() {
         boolean is_wakeup = false;
         synchronized (this.mWaitReceiving) {
-            if (this.mIsWaitReceiving && this.mExpectedSeqNo[kSQRecvControl] >= this.mWaitSeqNoControl && this.mExpectedSeqNo[kSQRecvData] >= this.mWaitSeqNoData) {
+            if (this.mIsWaitReceiving && this.mExpectedSeqNo[kSQRecvControl] >= this
+                    .mWaitSeqNoControl && this.mExpectedSeqNo[kSQRecvData] >= this.mWaitSeqNoData) {
                 is_wakeup = true;
             }
 
@@ -167,8 +168,7 @@ class SegmentManager {
         }
     }
 
-    public void
-    wakeUpDequeueWaiting(int dequeueType) {
+    public void wakeUpDequeueWaiting(int dequeueType) {
         synchronized (mDequeueCond[dequeueType]) {
             this.mDequeueCond[dequeueType].notifyAll();
         }
@@ -312,23 +312,21 @@ class SegmentManager {
 
         synchronized (this.mQueues[queueType]) {
             if (segment.seq_no == mExpectedSeqNo[queueType]) {
-                if(segment.seq_no <= 2 || mExpectedSeqNo[queueType] <= 2) {
-                    Logger.VERB(kTag, "Sequence No COMING: " + segment.seq_no + " / " + mExpectedSeqNo[queueType]);
+                // Case 1. this seq no. = expected seq no.
+                if (segment.seq_no <= 2 || mExpectedSeqNo[queueType] <= 2) {
+                    Logger.VERB(kTag, "Sequence No COMING: " + segment.seq_no + " / " +
+                            mExpectedSeqNo[queueType]);
                 }
                 mExpectedSeqNo[queueType]++;
                 mQueues[queueType].offerLast(segment);
                 mQueueLengths[queueType]++;
                 segmentEnqueued = true;
+            } else if (segment.seq_no < mExpectedSeqNo[queueType]) {
+                // Case 2. this seq no. < expected seq no.
+                // If duplicated data comes, ignore it.
+                return;
             } else {
-                if (segment.seq_no < mExpectedSeqNo[queueType]) {
-                    // If duplicated data comes, ignore it.
-                    Logger.WARN(kTag, "Sequence No Error: (" + queueType + ") incoming=" +
-                            segment.seq_no + " / expected_next=" + mExpectedSeqNo[queueType]);
-
-
-                    return;
-                }
-
+                // Case 3. this seq no. > expected seq no.
                 ListIterator it = mPendingQueue[queueType].listIterator();
                 while (it.hasNext()) {
                     Segment walker = (Segment) it.next();
