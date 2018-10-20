@@ -287,6 +287,7 @@ class SegmentManager {
         return serialized;
     }
 
+    @SuppressWarnings("unchecked")
     public void enqueue(int queueType, Segment segment) {
         if (queueType >= kNumSQ) throw new AssertionError();
 
@@ -311,42 +312,43 @@ class SegmentManager {
         boolean segmentEnqueued = false;
 
         synchronized (this.mQueues[queueType]) {
-            if (segment.seq_no == mExpectedSeqNo[queueType]) {
+            if (segment.seq_no == this.mExpectedSeqNo[queueType]) {
                 // Case 1. this seq no. = expected seq no.
-                if (segment.seq_no <= 2 || mExpectedSeqNo[queueType] <= 2) {
-                    Logger.VERB(kTag, "Sequence No COMING: " + segment.seq_no + " / " +
-                            mExpectedSeqNo[queueType]);
-                }
-                mExpectedSeqNo[queueType]++;
-                mQueues[queueType].offerLast(segment);
-                mQueueLengths[queueType]++;
+                // In-order segments -> enqueue to the target queue
+                this.mExpectedSeqNo[queueType]++;
+
+                this.mQueues[queueType].offerLast(segment);
+                this.mQueueLengths[queueType]++;
                 segmentEnqueued = true;
-            } else if (segment.seq_no < mExpectedSeqNo[queueType]) {
+
+                // TODO: search pending queue and move the in-order elements in pending queue to the target queue
+            } else if (segment.seq_no < this.mExpectedSeqNo[queueType]) {
                 // Case 2. this seq no. < expected seq no.
-                // If duplicated data comes, ignore it.
+                // Duplicated segments -> ignore
                 return;
             } else {
                 // Case 3. this seq no. > expected seq no.
-                ListIterator it = mPendingQueue[queueType].listIterator();
+                // Out-of-order segments -> insert at the proper position of pending queue
+                ListIterator it = this.mPendingQueue[queueType].listIterator();
                 while (it.hasNext()) {
                     Segment walker = (Segment) it.next();
                     if (walker.seq_no > segment.seq_no) break;
                 }
-                Logger.DEBUG(kTag, "Insert to pending queue: (" + queueType + ") incoming=" +
-                        segment.seq_no + " / expected_next=" + mExpectedSeqNo[queueType]);
-
                 it.add(segment);
+                Logger.DEBUG(kTag, "Pending Queue: (" + queueType + ") incoming=" +
+                        segment.seq_no + " / expected_next=" + this.mExpectedSeqNo[queueType]);
             }
 
-            ListIterator it = mPendingQueue[queueType].listIterator();
+            // TODO: why do that?
+            ListIterator it = this.mPendingQueue[queueType].listIterator();
             while (it.hasNext()) {
                 Segment walker = (Segment) it.next();
 
-                if (walker.seq_no != mExpectedSeqNo[queueType]) break;
+                if (walker.seq_no != this.mExpectedSeqNo[queueType]) break;
 
-                mQueues[queueType].offerLast(walker);
-                mQueueLengths[queueType]++;
-                mExpectedSeqNo[queueType]++;
+                this.mQueues[queueType].offerLast(walker);
+                this.mQueueLengths[queueType]++;
+                this.mExpectedSeqNo[queueType]++;
                 segmentEnqueued = true;
 
                 it.remove();
@@ -385,8 +387,7 @@ class SegmentManager {
                 }
             }
 
-
-            // Dequeue from queue
+            // Set target queue type
             int targetQueueType = kSQUnknown;
             switch (dequeueType) {
                 case kDeqSendControlData:
@@ -419,6 +420,7 @@ class SegmentManager {
                 return null;
             }
 
+            // Dequeue from queue
             synchronized (this.mQueues[targetQueueType]) {
                 // Check the dequeued segment
                 Segment segmentDequeued = (Segment) this.mQueues[targetQueueType].pollFirst();

@@ -418,8 +418,25 @@ bool WfdP2PServer::disallow_discover_impl(void) {
     ptr = strtok_r(NULL, "\t \n\'", &ptrptr);
   }
 
-  LOG_ERR("%s: Assertion: Must not reach here", this->get_name());
-  return false;
+  LOG_ERR("%s: wpa_supplicant crash detected", this->get_name());
+  /* Revive wfd interface */
+  this->turn_off_wfd_interface();
+  this->turn_on_wfd_interface();
+  return true;
+}
+
+bool WfdP2PServer::turn_off_wfd_interface() {
+  char *const params[] = {"ifdown", DEFAULT_WFD_DEVICE_NAME,
+                          NULL};
+
+  return ChildProcess::run(IFDOWN_PATH, params, true);
+}
+
+bool WfdP2PServer::turn_on_wfd_interface() {
+  char *const params[] = {"ifup", DEFAULT_WFD_DEVICE_NAME,
+                          NULL};
+
+  return ChildProcess::run(IFUP_PATH, params, true);
 }
 
 int WfdP2PServer::wfd_remove_p2p_group(char ret[], size_t len) {
