@@ -309,6 +309,9 @@ Segment *SegmentManager::dequeue(SegDequeueType dequeue_type) {
     } else if (this->mQueueLength[SegQueueType::kSQSendData].get_value() != 0) {
       // Priority 2. Dequeue send data queue
       target_queue_type = kSQSendData;
+    } else {
+      // No segments in both two send queues
+      return NULL;
     }
     break;
   }

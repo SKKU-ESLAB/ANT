@@ -60,10 +60,12 @@ void SenderThread::run(void) {
     this->set_is_loop_paused(false);
     this->set_is_loop_ends(true);
 
-    // Reconnect the adapter if it is disconnected on failure
+// Reconnect the adapter if it is disconnected on failure
+#ifdef EXP_RECONNECT_ADAPTER_ENABLED
     if (!this->mAdapter->is_disconnecting_on_purpose()) {
       NetworkSwitcher::singleton()->reconnect_adapter(this->mAdapter, true);
     }
+#endif
   }
 
   // Set state for thread end
