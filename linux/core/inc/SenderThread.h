@@ -142,6 +142,28 @@ private:
   std::condition_variable mResumeLoopCond;
 
 public:
+  /* Sender loop last sequence number */
+  uint32_t get_last_seq_no_control() {
+    return this->mLastSeqNoControl;
+  }
+  uint32_t get_last_seq_no_data() {
+    return this->mLastSeqNoData;
+  }
+
+private:
+  /* Sender loop last sequence number */
+  void set_last_seq_no_control(uint32_t last_seq_no_control) {
+    this->mLastSeqNoControl = last_seq_no_control;
+  }
+
+  void set_last_seq_no_data(uint32_t last_seq_no_data) {
+    this->mLastSeqNoData = last_seq_no_data;
+  }
+
+  uint32_t mLastSeqNoControl;
+  uint32_t mLastSeqNoData;
+
+public:
   /* Constructor */
   SenderThread(ServerAdapter *motherAdapter) {
     this->mThread = NULL;

@@ -201,6 +201,14 @@ void SenderThread::sender_loop(void) {
       break;
     }
 
+    // If successful, update the last sequence number
+    // Last sequence number is used to wait remaining segments on disconnection
+    if(is_control) {
+      this->set_last_seq_no_control(segment_to_send->seq_no);
+    } else {
+      this->set_last_seq_no_data(segment_to_send->seq_no);
+    }
+
     sm->free_segment(segment_to_send);
   }
 }
