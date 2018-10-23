@@ -82,6 +82,7 @@ bool RfcommServerSocket::open_impl(void) {
             strerror(errno));
     return false;
   }
+  LOG_DEBUG("%s: Bluetooth accept / fd=%d", this->get_name(), this->mClientSocket);
 
   return true;
 }
@@ -249,6 +250,10 @@ int RfcommServerSocket::receive_impl(void *data_buffer, size_t data_length) {
 #if VERBOSE_BT_MSG != 0
     LOG_DEBUG("%s: Receive : %d", this->get_name(), once_received_bytes);
 #endif
+  }
+
+  if(received_bytes < 0) {
+    LOG_ERR("Receive error: fd=%d", this->mClientSocket);
   }
 
   return received_bytes;

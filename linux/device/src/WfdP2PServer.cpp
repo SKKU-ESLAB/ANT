@@ -421,6 +421,7 @@ bool WfdP2PServer::disallow_discover_impl(void) {
   LOG_ERR("%s: wpa_supplicant crash detected", this->get_name());
   /* Revive wfd interface */
   this->turn_off_wfd_interface();
+  sleep(1);
   this->turn_on_wfd_interface();
   return true;
 }

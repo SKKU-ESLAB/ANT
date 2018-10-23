@@ -96,8 +96,8 @@ void ServerAdapter::disconnect_on_command(DisconnectCallback callback) {
 
   // Get my final seq_no
   SegmentManager *sm = SegmentManager::singleton();
-  uint32_t my_final_seq_no_control = sm->get_last_seq_no_control();
-  uint32_t my_final_seq_no_data = sm->get_last_seq_no_data();
+  uint32_t my_final_seq_no_control = this->mSenderThread->get_last_seq_no_control();
+  uint32_t my_final_seq_no_data = this->mSenderThread->get_last_seq_no_data();
 
   // Send disconnect request
   Core::singleton()->get_control_sender()->send_request_disconnect(

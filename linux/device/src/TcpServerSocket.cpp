@@ -78,6 +78,8 @@ bool TcpServerSocket::open_impl(void) {
         ::accept(this->mServerSocket, (struct sockaddr *)&client_address,
                  (socklen_t *)&client_address_len);
     if (this->mClientSocket >= 0) {
+      LOG_DEBUG("%s: Wi-fi direct accept / fd=%d", this->get_name(), this->mClientSocket);
+      
       return true;
     } else {
       if (errno == EINTR) {
@@ -89,7 +91,8 @@ bool TcpServerSocket::open_impl(void) {
       }
     }
   }
-  return true;
+  
+  return false;
 }
 
 bool TcpServerSocket::close_impl(void) {
@@ -155,6 +158,10 @@ int TcpServerSocket::receive_impl(void *data_buffer, size_t data_length) {
 #if VERBOSE_WFD_MSG != 0
     LOG_DEBUG("%s: Receive : %d", this->get_name(), once_received_bytes);
 #endif
+  }
+
+  if(received_bytes < 0) {
+    LOG_ERR("Receive error: fd=%d", this->mClientSocket);
   }
 
   return received_bytes;

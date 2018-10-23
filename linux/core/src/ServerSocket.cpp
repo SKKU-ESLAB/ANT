@@ -23,6 +23,9 @@
 
 #include "../../common/inc/DebugLog.h"
 
+#include <errno.h>
+#include <string.h>
+
 using namespace sc;
 
 bool ServerSocket::open(void) {
@@ -80,7 +83,7 @@ int ServerSocket::receive(void *data_buffer, size_t data_length) {
 
   int res = this->receive_impl(data_buffer, data_length);
   if (errno != EINTR && errno != EAGAIN && errno != 0 && res < 0) {
-    LOG_ERR("%s: ServerSocket closed", this->get_name());
+    LOG_ERR("%s: ServerSocket closed: %d / %s", this->get_name(), errno, strerror(errno));
     this->set_state(ServerSocketState::kClosed);
   }
   return res;

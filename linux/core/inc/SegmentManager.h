@@ -22,6 +22,9 @@
 #ifndef __SEGMENT_MANAGER_H__
 #define __SEGMENT_MANAGER_H__
 
+#include "Segment.h"
+#include "SegmentQueue.h"
+
 #include "../../common/inc/Counter.h"
 
 #include "../../configs/ExpConfig.h"
@@ -30,15 +33,12 @@
 #include <list>
 #include <mutex>
 #include <stdint.h>
-
 #include <sys/time.h>
 #include <unistd.h>
 
 namespace sc {
-#define kSegSize 512
 
 #define kSegFreeThreshold 256
-#define kSegHeaderSize 12
 
 /**
  * Queue Type
@@ -59,7 +59,8 @@ typedef enum {
   kDeqSendControlData = 0,
   kDeqRecvData = 1,
   kDeqRecvControl = 2,
-  kNumDeq = 3
+  kNumDeq = 3,
+  kDeqUnknown = 999
 } SegDequeueType; /* enum SegDequeueType */
 
 /**
@@ -78,22 +79,6 @@ typedef enum {
   kSNControl = 1,
   kNumSN = 2
 } SegSeqNumType; /* enum SegSeqNumType */
-
-/**
- * < Data Structure of Segment > - Handled by Segment Manager
- * Segment is the minimum unit of sending data through the network.
- * The partial of the segment cannot be sent.
- *
- * (*c.f.) Segment Header (seq_no + flag_len) is delicate to memroy alignment.
- *    You need to be careful with the segment header.
- */
-#define SEGMENT_DATA_SIZE (kSegSize + kSegHeaderSize)
-typedef struct {
-  uint32_t seq_no;
-  uint32_t len; // To present the size of the segment(consider the flag)
-  uint32_t flag;
-  uint8_t data[SEGMENT_DATA_SIZE];
-} Segment; /* struct Segment */
 
 class SegmentManager {
 public:
@@ -114,11 +99,11 @@ public:
   }
 
   int get_queue_length(int type) {
-    return this->mQueueLength[type].get_value();
+    return this->mSegmentQueues[type].get_queue_length();
   }
 
   int get_queue_data_size(int type) {
-    return this->mQueueLength[type].get_value() * SEGMENT_DATA_SIZE;
+    return this->mSegmentQueues[type].get_queue_length() * SEGMENT_DATA_SIZE;
   }
 
   int get_failed_sending_queue_data_size() {
@@ -135,14 +120,18 @@ public:
   }
 
 private:
+  SegDequeueType queue_type_to_dequeue_type(SegQueueType queue_type);
+  SegQueueType get_target_queue_type(SegDequeueType dequeue_type);
+
+  void wait_for_dequeue_locked(SegDequeueType dequeue_type,
+                               std::unique_lock<std::mutex> &dequeue_lock);
+
+private:
   /* Singleton */
   static SegmentManager *sSingleton;
   SegmentManager(void) {
     for (int i = 0; i < kNumSN; i++) {
       this->mNextSeqNo[i] = 0;
-    }
-    for (int i = 0; i < kNumSQ; i++) {
-      this->mExpectedSeqNo[i] = 0;
     }
     this->mFreeSegmentListSize = 0;
 
@@ -164,14 +153,11 @@ private:
   uint32_t mNextSeqNo[kNumSN];
   uint32_t get_next_seq_no(SegSeqNumType seq_num_type, uint32_t num_segments);
 
-  uint32_t mExpectedSeqNo[kNumSQ];
-  std::list<Segment *> mQueues[kNumSQ];
+  SegmentQueue mSegmentQueues[kNumSQ];
   std::list<Segment *> mSendFailQueue;
-  std::list<Segment *> mPendingQueues[kNumSQ];
 
   /* Statistics */
   Counter mSendRequest;
-  Counter mQueueLength[kNumSQ];
   Counter mFailedSendingQueueLength;
 
   /* Reserved free segment list */
@@ -189,19 +175,18 @@ public:
     this->mWaitReceivingCond.wait(lck);
   }
 
-  uint32_t get_last_seq_no_control(void) {
-    return this->mNextSeqNo[kSNControl] - 1;
-  }
-  uint32_t get_last_seq_no_data(void) { return this->mNextSeqNo[kSNData] - 1; }
-
 private:
   void check_receiving_done() {
     bool is_wakeup = false;
     {
       std::unique_lock<std::mutex> lck(this->mWaitReceivingMutex);
+      uint32_t expected_seq_no_control =
+          this->mSegmentQueues[kSQRecvControl].get_expected_seq_no();
+      uint32_t expected_seq_no_data =
+          this->mSegmentQueues[kSQRecvData].get_expected_seq_no();
       if (this->mIsWaitReceiving &&
-          this->mExpectedSeqNo[kSQRecvControl] >= this->mWaitSeqNoControl &&
-          this->mExpectedSeqNo[kSQRecvData] >= this->mWaitSeqNoData) {
+          expected_seq_no_control >= this->mWaitSeqNoControl &&
+          expected_seq_no_data >= this->mWaitSeqNoData) {
         is_wakeup = true;
       }
     }
@@ -210,6 +195,7 @@ private:
       this->mIsWaitReceiving = false;
     }
   }
+
   bool mIsWaitReceiving = false;
   uint32_t mWaitSeqNoControl = 0;
   uint32_t mWaitSeqNoData = 0;
