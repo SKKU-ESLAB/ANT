@@ -453,7 +453,7 @@ public class ClientAdapter {
 
             this.senderThreadLoop();
 
-            NetworkSwitcher.singleton().reconnectAdapter(ClientAdapter.this);
+//            NetworkSwitcher.singleton().reconnectAdapter(ClientAdapter.this);
             Logger.VERB(kTag, ClientAdapter.this.getName() + "'s Sender thread ends");
 
             synchronized (self.mIsWaitSenderThread) {
@@ -664,7 +664,7 @@ public class ClientAdapter {
                 }
             }
 
-            NetworkSwitcher.singleton().reconnectAdapter(ClientAdapter.this);
+//            NetworkSwitcher.singleton().reconnectAdapter(ClientAdapter.this);
             Logger.VERB(kTag, ClientAdapter.this.getName() + "'s Receiver thread ends");
         }
 
