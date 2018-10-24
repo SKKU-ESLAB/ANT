@@ -252,8 +252,8 @@ int RfcommServerSocket::receive_impl(void *data_buffer, size_t data_length) {
 #endif
   }
 
-  if(received_bytes < 0) {
-    LOG_ERR("Receive error: fd=%d", this->mClientSocket);
+  if(received_bytes <= 0) {
+    LOG_ERR("Receive error: res=%d, fd=%d", received_bytes, this->mClientSocket);
   }
 
   return received_bytes;

@@ -24,6 +24,7 @@
 #include "P2PServer.h"
 #include "ReceiverThread.h"
 #include "SenderThread.h"
+#include "ServerAdapterState.h"
 #include "ServerSocket.h"
 
 #include "../../common/inc/Counter.h"
@@ -37,37 +38,16 @@
 #include <stdint.h>
 #include <stdio.h>
 
-namespace sc
-{
-typedef enum
-{
-  kDisconnected = 0,
-  kConnecting = 1,
-  kActive = 2,
-  kDisconnecting = 3,
-  kGoingSleeping = 4,
-  kSleeping = 5,
-  kWakingUp = 6,
-  kASNum = 7
-} ServerAdapterState; /* enum ServerAdapterState */
-
-class ServerAdapter;
-class ServerAdapterStateListener
-{
-public:
-  virtual void onUpdateServerAdapterState(ServerAdapter *adapter,
-                                          ServerAdapterState old_state,
-                                          ServerAdapterState new_state) = 0;
-}; /* class ServerAdapterStateListener */
+namespace sc {
 
 typedef void (*ConnectCallback)(ServerAdapter *adapter, bool is_success);
 typedef void (*DisconnectCallback)(ServerAdapter *adapter, bool is_success);
 
+class ServerAdapterStateListener;
 class ReceiverThread;
 class SenderThread;
 
-class ServerAdapter
-{
+class ServerAdapter {
 public:
   /* Basic APIs
    *  - launch/finish sender/receiver threads
@@ -129,12 +109,10 @@ public:
   /* Attribute getters */
   char *get_name(void) { return this->mName; }
   int get_id(void) { return this->mId; }
-  bool is_disconnecting_on_purpose(void)
-  {
+  bool is_disconnecting_on_purpose(void) {
     return this->mIsDisconnectingOnPurpose;
   }
-  bool is_disconnecting_on_purpose_peer(void)
-  {
+  bool is_disconnecting_on_purpose_peer(void) {
     return this->mIsDisconnectingOnPurposePeer;
   }
 
@@ -144,27 +122,23 @@ public:
   ServerSocket *get_server_socket(void) { return this->mServerSocket; }
 
   /* Attribute setters */
-  void start_disconnecting_on_purpose()
-  {
+  void start_disconnecting_on_purpose() {
     this->mIsDisconnectingOnPurpose = true;
   }
 
-  void wait_for_disconnecting_on_purpose_peer(void)
-  {
+  void wait_for_disconnecting_on_purpose_peer(void) {
     std::unique_lock<std::mutex> lck(this->mWaitForDisconnectAckLock);
     this->mWaitForDisconnectAckCond.wait(lck);
   }
 
-  void peer_knows_disconnecting_on_purpose()
-  {
+  void peer_knows_disconnecting_on_purpose() {
     this->mIsDisconnectingOnPurposePeer = true;
     this->mWaitForDisconnectAckCond.notify_all();
   }
 
 private:
   /* Attribute setters */
-  void finish_disconnecting_on_purpose()
-  {
+  void finish_disconnecting_on_purpose() {
     this->mIsDisconnectingOnPurpose = false;
     this->mIsDisconnectingOnPurposePeer = false;
   }
@@ -204,15 +178,13 @@ private:
 
 public:
   /* State getter */
-  ServerAdapterState get_state(void)
-  {
+  ServerAdapterState get_state(void) {
     std::unique_lock<std::mutex> lck(this->mStateLock);
     return this->mState;
   }
 
   /* Add state listener */
-  void listen_state(ServerAdapterStateListener *listener)
-  {
+  void listen_state(ServerAdapterStateListener *listener) {
     std::unique_lock<std::mutex> lck(this->mStateLock);
 
     if (listener == NULL)
@@ -220,25 +192,21 @@ public:
     this->mStateListeners.push_back(listener);
   }
 
-private:
-  /* State setter */
-  void set_state(ServerAdapterState new_state);
-
-  std::string server_adapter_state_to_string(ServerAdapterState state)
-  {
-    char *const state_string[] = {"Disconnected", "Connecting", "Active",
+  static std::string server_adapter_state_to_string(ServerAdapterState state) {
+    char *const state_string[] = {"Disconnected",  "Connecting",    "Active",
                                   "Disconnecting", "GoingSleeping", "Sleeping",
                                   "WakingUp"};
     int state_index = (int)state;
-    if (state_index >= ServerAdapterState::kASNum || state_index < 0)
-    {
+    if (state_index >= ServerAdapterState::kASNum || state_index < 0) {
       return std::string("");
-    }
-    else
-    {
+    } else {
       return std::string(state_string[state_index]);
     }
   }
+
+private:
+  /* State setter */
+  void set_state(ServerAdapterState new_state);
 
   /* State */
   ServerAdapterState mState;
@@ -246,8 +214,7 @@ private:
 
 public:
   /* Constructor */
-  ServerAdapter(int id, const char *name)
-  {
+  ServerAdapter(int id, const char *name) {
     this->mState = ServerAdapterState::kDisconnected;
     snprintf(this->mName, sizeof(this->mName), "%s", name);
     this->mId = id;
@@ -255,14 +222,11 @@ public:
     this->mIsDisconnectingOnPurposePeer = false;
   }
 
-  ~ServerAdapter()
-  {
-    if (this->mP2PServer != NULL)
-    {
+  ~ServerAdapter() {
+    if (this->mP2PServer != NULL) {
       delete this->mP2PServer;
     }
-    if (this->mServerSocket != NULL)
-    {
+    if (this->mServerSocket != NULL) {
       delete this->mServerSocket;
     }
   }
@@ -270,8 +234,7 @@ public:
 protected:
   /* Initializer called by child classes */
   void initialize(Device *device, P2PServer *p2pServer,
-                  ServerSocket *serverSocket)
-  {
+                  ServerSocket *serverSocket) {
     this->mDevice = device;
     this->mP2PServer = p2pServer;
     this->mServerSocket = serverSocket;

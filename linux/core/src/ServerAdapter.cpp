@@ -19,6 +19,7 @@
  * limitations under the License.
  */
 
+#include "../inc/ServerAdapterStateListener.h"
 #include "../inc/ServerAdapter.h"
 
 #include "../inc/Core.h"
@@ -368,7 +369,14 @@ bool ServerAdapter::__disconnect_internal(ServerAdapterState oldState) {
 }
 
 int ServerAdapter::send(const void *buf, size_t len) {
-  if (this->get_state() != ServerAdapterState::kActive) {
+  ServerAdapterState state = this->get_state();
+  if(state == ServerAdapterState::kConnecting) {
+    LOG_VERB("Send blocked: waiting for connection... (%d)", state);
+    do {
+      state = this->get_state();
+      ::sleep(1);
+    } while(state != ServerAdapterState::kActive);
+  } else if (state != ServerAdapterState::kActive) {
     return -1;
   }
 
@@ -388,15 +396,21 @@ int ServerAdapter::send(const void *buf, size_t len) {
 
 int ServerAdapter::receive(void *buf, size_t len) {
   ServerAdapterState state = this->get_state();
-  if (state != ServerAdapterState::kActive &&
+  if(state == ServerAdapterState::kConnecting) {
+    LOG_VERB("Receive blocked: waiting for connection... (%d)", state);
+    do {
+      state = this->get_state();
+      ::sleep(1);
+    } while(state != ServerAdapterState::kActive);
+  } else if (state != ServerAdapterState::kActive &&
       state != ServerAdapterState::kGoingSleeping &&
       state != ServerAdapterState::kSleeping &&
       state != ServerAdapterState::kWakingUp) {
-    return false;
+    return -1;
   }
 
   if (this->mServerSocket == NULL) {
-    return false;
+    return -2;
   }
 
   // Receive

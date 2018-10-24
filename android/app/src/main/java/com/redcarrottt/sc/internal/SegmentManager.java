@@ -319,8 +319,6 @@ class SegmentManager {
             if (segment.seq_no == this.mExpectedSeqNo[queueType]) {
                 // Case 1. this seq no. = expected seq no.
                 // In-order segments -> enqueue to the target queue
-                Logger.DEBUG(kTag, "Success Queue: (" + queueType + ") incoming=" + segment
-                        .seq_no + " / expected_next=" + this.mExpectedSeqNo[queueType]);
                 this.mExpectedSeqNo[queueType]++;
 
                 this.mQueues[queueType].offerLast(segment);

@@ -18,6 +18,7 @@
  */
 
 #include "../core/inc/API.h"
+#include "../core/inc/ServerAdapterStateListener.h"
 
 #include "../device/inc/BtServerAdapter.h"
 #include "../device/inc/CommInitializer.h"
@@ -43,8 +44,29 @@ using namespace sc;
 struct timeval start, end;
 #endif
 
-FILE *fp;
-std::condition_variable end_lock;
+FILE *g_file_pointer;
+
+char g_trace_file_name[512];
+
+sc::BtServerAdapter *g_bt_adapter;
+sc::WfdServerAdapter *g_wfd_adapter;
+
+class MyAdapterStateListener : ServerAdapterStateListener {
+public:
+  virtual void onUpdateServerAdapterState(ServerAdapter *adapter,
+                                          ServerAdapterState old_state,
+                                          ServerAdapterState new_state) {
+    ServerAdapterState bt_state = g_bt_adapter->get_state();
+    ServerAdapterState wfd_state = g_wfd_adapter->get_state();
+    std::string bt_state_str(
+        ServerAdapter::server_adapter_state_to_string(bt_state));
+    std::string wfd_state_str(
+        ServerAdapter::server_adapter_state_to_string(wfd_state));
+
+    LOG_VERB("[STATE] BT: %s / WFD: %s", bt_state_str.c_str(),
+             wfd_state_str.c_str());
+  }
+}; /* class ServerAdapterStateListener */
 
 void receiving_thread() {
   void *buf = NULL;
@@ -64,7 +86,6 @@ void receiving_thread() {
 
     if (buf)
       free(buf);
-    end_lock.notify_one();
   }
 }
 
@@ -73,8 +94,8 @@ static char *rand_string(char *str, size_t size) {
   if (size) {
     --size;
     for (size_t n = 0; n < size; n++) {
-      //int key = rand() % (int)(sizeof charset - 1);
-      //str[n] = charset[key];
+      // int key = rand() % (int)(sizeof charset - 1);
+      // str[n] = charset[key];
       str[n] = (char)255;
     }
     str[size] = '\0';
@@ -83,11 +104,6 @@ static char *rand_string(char *str, size_t size) {
 }
 
 void on_connect(bool is_success);
-
-char g_trace_file_name[512];
-
-sc::BtServerAdapter *bt;
-sc::WfdServerAdapter *wfd;
 
 int main(int argc, char **argv) {
   /* Parse arguments */
@@ -103,16 +119,16 @@ int main(int argc, char **argv) {
   snprintf(g_trace_file_name, 512, "%s", argv[1]);
   printf("Trace File: %s\n", g_trace_file_name);
 
-  bt = sc::BtServerAdapter::singleton(
+  g_bt_adapter = sc::BtServerAdapter::singleton(
       1, "Bt", "150e8400-1234-41d4-a716-446655440000");
-  wfd = sc::WfdServerAdapter::singleton(2, "Wfd", 3455, "SelCon");
+  g_wfd_adapter = sc::WfdServerAdapter::singleton(2, "Wfd", 3455, "SelCon");
 
   printf("Step 1. Initializing Network Adapters\n");
 
   printf("  Adapter 1: RFCOMM over Bluetooth\n");
-  sc::register_adapter(bt);
+  sc::register_adapter(g_bt_adapter);
   printf("  Adapter 2: TCP over Wi-fi Direct\n");
-  sc::register_adapter(wfd);
+  sc::register_adapter(g_wfd_adapter);
 
   sc::start_sc(on_connect);
   return 0;
@@ -151,7 +167,8 @@ void on_connect(bool is_success) {
   /* Initialize CSV Parser */
   io::CSVReader<4, io::trim_chars<>, io::double_quote_escape<',', '\"'>> in(
       g_trace_file_name);
-  in.read_header(io::ignore_extra_column, "Time", "Source", "PayloadBT", "PayloadTCP");
+  in.read_header(io::ignore_extra_column, "Time", "Source", "PayloadBT",
+                 "PayloadTCP");
   std::string timestr;
   std::string source;
   std::string payload_bt;
@@ -162,9 +179,9 @@ void on_connect(bool is_success) {
   int recent_sent_usec = 0;
   while (in.read_row(timestr, source, payload_bt, payload_tcp)) {
     int payload_length;
-    if(payload_bt.length() != 0) {
+    if (payload_bt.length() != 0) {
       payload_length = std::stoi(payload_bt);
-    } else if(payload_tcp.length() != 0) {
+    } else if (payload_tcp.length() != 0) {
       payload_length = std::stoi(payload_tcp);
     } else {
       continue;
@@ -232,7 +249,7 @@ void on_connect(bool is_success) {
 
 #define TAIL_DATA_SIZE (100)
 #define NUM_TAIL_DATA 100
-  for(int i=0; i<NUM_TAIL_DATA; i++) {
+  for (int i = 0; i < NUM_TAIL_DATA; i++) {
     printf("Send Small Tail Data (%d/%d)\n", i, NUM_TAIL_DATA);
     temp_buf = (char *)calloc(TAIL_DATA_SIZE, sizeof(char));
     sc::send(temp_buf, TAIL_DATA_SIZE);

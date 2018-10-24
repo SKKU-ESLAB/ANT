@@ -40,6 +40,8 @@ import android.widget.TextView;
 import com.redcarrottt.sc.api.API;
 import com.redcarrottt.sc.api.OnStartSCResult;
 import com.redcarrottt.sc.api.OnStopSCResult;
+import com.redcarrottt.sc.internal.ClientAdapter;
+import com.redcarrottt.sc.internal.ClientAdapterStateListener;
 import com.redcarrottt.sc.internal.bt.BtClientAdapter;
 import com.redcarrottt.sc.internal.wfd.WfdClientAdapter;
 
@@ -106,7 +108,7 @@ public class MainActivity extends AppCompatActivity implements LogReceiver.Callb
             Button startButton = (Button) findViewById(R.id.startButton);
             startButton.setEnabled(true);
         } else {
-            Logger.VERB(kTag, "Initialization failed");
+            Logger.ERR(kTag, "Initialization failed");
         }
     }
 
@@ -165,12 +167,14 @@ public class MainActivity extends AppCompatActivity implements LogReceiver.Callb
 
 
         // Setting adapters
-        BtClientAdapter bt = BtClientAdapter.singleton(1, "BT", btAddress,
+        this.mBtClientAdapter = BtClientAdapter.singleton(1, "BT", btAddress,
                 "150e8400-1234-41d4-a716-446655440000", this);
-        API.registerAdapter(bt);
+        this.mBtClientAdapter.listenState(this.mClientAdapterStateListener);
+        API.registerAdapter(this.mBtClientAdapter);
 
-        WfdClientAdapter wfd = WfdClientAdapter.singleton(2, "WFD", 3455, this);
-        API.registerAdapter(wfd);
+        this.mWfdClientAdapter = WfdClientAdapter.singleton(2, "WFD", 3455, this);
+        this.mWfdClientAdapter.listenState(this.mClientAdapterStateListener);
+        API.registerAdapter(this.mWfdClientAdapter);
 
         // Start the selective connection
         API.startSC(onStartSCResult);
@@ -191,6 +195,47 @@ public class MainActivity extends AppCompatActivity implements LogReceiver.Callb
         super.onDestroy();
         API.stopSC(onStopSCResult);
     }
+
+    // ClientAdapters
+    private BtClientAdapter mBtClientAdapter;
+    private WfdClientAdapter mWfdClientAdapter;
+
+    private int mBtClientAdapterState;
+    private int mWfdClientAdapterState;
+
+    private ClientAdapterStateListener mClientAdapterStateListener = new
+            ClientAdapterStateListener() {
+
+        @Override
+        public void onUpdateClientAdapterState(ClientAdapter adapter, int oldState, int newState) {
+            // Update local state variable
+            if (adapter == mBtClientAdapter) {
+                mBtClientAdapterState = newState;
+            } else if (adapter == mWfdClientAdapter) {
+                mWfdClientAdapterState = newState;
+            }
+
+            // Update state text
+            final String btClientAdapterState = ClientAdapter.stateToString(mBtClientAdapterState);
+            final String wfdClientAdapterState = ClientAdapter.stateToString
+                    (mWfdClientAdapterState);
+            final String stateString = "BT: " + btClientAdapterState + " / WFD: " +
+                    wfdClientAdapterState;
+
+            runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    // Update UI
+                    TextView adapterStateTextView = (TextView) findViewById(R.id
+                            .adapterStateTextView);
+                    adapterStateTextView.setText(stateString);
+
+                    // Add Log
+                    Logger.VERB("Adapters", stateString);
+                }
+            });
+        }
+    };
 
     private OnStartSCResult onStartSCResult = new OnStartSCResult() {
         private int mRetries = 0;

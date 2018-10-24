@@ -63,13 +63,13 @@ bool ServerSocket::close(void) {
 
 int ServerSocket::send(const void *data_buffer, size_t data_length) {
   if (this->get_state() != ServerSocketState::kOpened) {
-    LOG_ERR("%s: ServerSocket not opened", this->get_name());
+    LOG_ERR("%s: Socket not opened", this->get_name());
     return -1;
   }
 
   int res = this->send_impl(data_buffer, data_length);
   if (errno != EINTR && errno != EAGAIN && errno != 0 && res < 0) {
-    LOG_ERR("%s: ServerSocket closed", this->get_name());
+    LOG_WARN("%s: Socket closed", this->get_name());
     this->set_state(ServerSocketState::kClosed);
   }
   return res;
@@ -77,13 +77,13 @@ int ServerSocket::send(const void *data_buffer, size_t data_length) {
 
 int ServerSocket::receive(void *data_buffer, size_t data_length) {
   if (this->get_state() != ServerSocketState::kOpened) {
-    LOG_ERR("%s: ServerSocket not opened", this->get_name());
+    LOG_ERR("%s: Socket not opened", this->get_name());
     return -1;
   }
 
   int res = this->receive_impl(data_buffer, data_length);
-  if (errno != EINTR && errno != EAGAIN && errno != 0 && res < 0) {
-    LOG_ERR("%s: ServerSocket closed: %d / %s", this->get_name(), errno, strerror(errno));
+  if (errno != EINTR && errno != EAGAIN && errno != 0 && res != -999 && res < 0) {
+    LOG_WARN("%s: Socket closed: %d / %s", this->get_name(), errno, strerror(errno));
     this->set_state(ServerSocketState::kClosed);
   }
   return res;

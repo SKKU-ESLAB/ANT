@@ -37,6 +37,14 @@
         android:textSize="24sp"
         android:textStyle="bold"/>
 
+    <TextView
+        android:id="@+id/adapterStateTextView"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Adapters not ready"
+        android:textSize="16sp"
+        android:textStyle="bold"/>
+
     <ListView
         android:id="@+id/logListView"
         android:layout_width="match_parent"

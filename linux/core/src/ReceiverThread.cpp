@@ -86,13 +86,13 @@ void ReceiverThread::receiver_loop(void) {
     LOG_DEBUG("%s: Receiving...", this->get_name());
 #endif
     int res = this->mAdapter->receive(buf, len);
-    if (errno == EINTR) {
+    if (res == -999) {
+      continue;
+    } else if (errno == EINTR) {
       continue;
     } else if (errno == EAGAIN || errno == EWOULDBLOCK ||
                errno == EINPROGRESS) {
       // Receive timeout
-      continue;
-    } else if (res == -999) {
       continue;
     } else if (res != len) {
       if (!this->mAdapter->is_disconnecting_on_purpose()) {
