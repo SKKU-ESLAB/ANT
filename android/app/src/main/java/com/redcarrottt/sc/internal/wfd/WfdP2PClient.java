@@ -141,7 +141,8 @@ class WfdP2PClient extends P2PClient {
                             try {
                                 synchronized (mIsPeerFound) {
                                     if (!mIsPeerFound) {
-                                        Logger.DEBUG(kTag, "Got peer list (Target=" + getTargetMacAddress() + ")");
+                                        Logger.DEBUG(kTag, "Got peer list (Target=" +
+                                                getTargetMacAddress() + ")");
                                         for (WifiP2pDevice p2pDevice : kPeers.getDeviceList()) {
                                             Logger.DEBUG(kTag, "Peer: " + p2pDevice.deviceAddress
                                                     + " / " + p2pDevice.deviceName + " / " +
@@ -229,6 +230,7 @@ class WfdP2PClient extends P2PClient {
         p2pConfig.groupOwnerIntent = 0;
 
         // P2P connection request
+        final OnConnectResult fOnConnectResult = onConnectResult;
         Logger.DEBUG(kTag, "Request to connect: " + p2pDevice.deviceName + " " + p2pDevice
                 .deviceAddress + " (" + p2pConfig.wps.pin + ")");
         mWFDManager.connect(mWFDChannel, p2pConfig, new WifiP2pManager.ActionListener() {
@@ -239,7 +241,8 @@ class WfdP2PClient extends P2PClient {
 
             @Override
             public void onFailure(int i) {
-                Logger.WARN(kTag, "WFD Connection Failure " + i);
+                Logger.WARN(kTag, "WFD Connection Failure " + i + " - retry to connect...");
+                connectImpl(fOnConnectResult);
             }
         });
     }

@@ -464,6 +464,7 @@ public class ClientAdapter {
         }
 
         private void senderThreadLoop() {
+            Logger.VERB(kTag, ClientAdapter.this.getName() + "'s Sender thread starts");
             while (this.mIsOn) {
                 SegmentManager sm = SegmentManager.singleton();
                 Segment segmentToSend;
@@ -527,8 +528,8 @@ public class ClientAdapter {
                     }
                 }
 
-                Logger.DEBUG(kTag, "SEND " + segmentToSend.seq_no + " / " + segmentToSend.len +
-                        "" + " / " + segmentToSend.flag);
+                Logger.DEBUG(ClientAdapter.this.getName(), "SEND Segment " + segmentToSend.seq_no
+                        + " / " + segmentToSend.len + "" + " / " + segmentToSend.flag);
 
                 int res = send(segmentToSend.data, kSegHeaderSize + kSegSize);
                 if (res < 0) {
@@ -588,6 +589,7 @@ public class ClientAdapter {
         private long mIntervals[] = new long[4];
 
         public void receiverThreadLoop(ClientAdapter adapter) {
+            Logger.VERB(kTag, ClientAdapter.this.getName() + "'s Receiver thread starts");
             byte prevData[] = new byte[SegmentManager.kSegSize + SegmentManager.kSegHeaderSize];
 
             while (this.isOn()) {
@@ -813,7 +815,7 @@ public class ClientAdapter {
 
     public void peerKnowsDisconnectingOnPurpose() {
         this.mIsDisconnectingOnPurposePeer = true;
-        synchronized(this.mWaitForDisconnectAck) {
+        synchronized (this.mWaitForDisconnectAck) {
             this.mWaitForDisconnectAck.notifyAll();
         }
     }
@@ -844,7 +846,7 @@ public class ClientAdapter {
         public static final int kASNum = 7;
     }
 
-    private static String stateToString(int state) {
+    public static String stateToString(int state) {
         final String[] stateStr = {"Disconnected", "Connecting", "Active", "Disconnecting",
                 "GoingSleep", "Sleeping", "WakingUp"};
         if (state >= State.kASNum || state < 0) {
@@ -874,17 +876,12 @@ public class ClientAdapter {
         Logger.DEBUG(this.getName(), "State(" + stateToString(oldState) + "->" + stateToString
                 (newState) + ")");
 
-        for (StateListener listener : this.mListeners) {
+        for (ClientAdapterStateListener listener : this.mListeners) {
             listener.onUpdateClientAdapterState(this, oldState, newState);
         }
     }
 
-    // State Listener
-    interface StateListener {
-        void onUpdateClientAdapterState(ClientAdapter adapter, int oldState, int newState);
-    }
-
-    public void listenState(StateListener listener) {
+    public void listenState(ClientAdapterStateListener listener) {
         synchronized (this.mListeners) {
             this.mListeners.add(listener);
         }
@@ -894,7 +891,7 @@ public class ClientAdapter {
     private Integer mState;
 
     // State Listener
-    private final ArrayList<StateListener> mListeners;
+    private final ArrayList<ClientAdapterStateListener> mListeners;
 
     // Main Components : Device, P2PClient, ClientSocket
     private Device mDevice;

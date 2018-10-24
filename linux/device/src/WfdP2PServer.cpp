@@ -418,7 +418,7 @@ bool WfdP2PServer::disallow_discover_impl(void) {
     ptr = strtok_r(NULL, "\t \n\'", &ptrptr);
   }
 
-  LOG_ERR("%s: wpa_supplicant crash detected", this->get_name());
+  LOG_WARN("%s: wpa_supplicant crash detected", this->get_name());
   /* Revive wfd interface */
   this->turn_off_wfd_interface();
   sleep(1);

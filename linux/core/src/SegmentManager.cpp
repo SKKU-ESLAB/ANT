@@ -382,7 +382,7 @@ void SegmentManager::free_segment_all(void) {
 void SegmentManager::failed_sending(Segment *seg) {
   std::unique_lock<std::mutex> lck(this->mSendFailQueueLock);
   this->mSendFailQueue.push_back(seg);
-  this->mFailedSendingQueueLength.add(1);
+  this->mFailedSendingQueueLength.increase();
 }
 
 Segment *SegmentManager::get_failed_sending(void) {
@@ -392,6 +392,7 @@ Segment *SegmentManager::get_failed_sending(void) {
 
   Segment *res = this->mSendFailQueue.front();
   this->mSendFailQueue.pop_front();
+  this->mFailedSendingQueueLength.decrease();
 
   return res;
 }

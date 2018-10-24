@@ -40,7 +40,7 @@ class RfcommClientSocket extends ClientSocket {
         }
 
         // Try to open socket
-        final int kMaxTries = 2;
+        final int kMaxTries = 10;
         for (int tries = 0; tries < kMaxTries; tries++) {
             try {
                 this.mSocket.connect();

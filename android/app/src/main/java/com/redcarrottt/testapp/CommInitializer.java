@@ -163,7 +163,7 @@ public class CommInitializer {
             wifiManager.setWifiEnabled(true);
         } else {
             Logger.DEBUG(kTag, "WIFI already turned on");
-            this.mOnResult.onCommInitializerResult(false);
+            this.mOnResult.onCommInitializerResult(true);
         }
     }
 
