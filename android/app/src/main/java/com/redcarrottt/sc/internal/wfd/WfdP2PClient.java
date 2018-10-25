@@ -76,8 +76,13 @@ class WfdP2PClient extends P2PClient {
 
                 @Override
                 public void onFailure(int i) {
-                    Logger.ERR(kTag, "Stopping discovery failed");
-                    doneDiscoverTx(mOnDiscoverResult, false);
+                    Logger.ERR(kTag, "Stopping discovery failed / reason=" + i);
+                    mTries++;
+                    if (mTries < kMaxTries) {
+                        retry();
+                    } else {
+                        doneDiscoverTx(mOnDiscoverResult, false);
+                    }
                 }
             });
         }
@@ -241,7 +246,7 @@ class WfdP2PClient extends P2PClient {
 
             @Override
             public void onFailure(int i) {
-                Logger.WARN(kTag, "WFD Connection Failure " + i + " - retry to connect...");
+                Logger.WARN(kTag, "WFD Connection Failure / reason=" + i + " - retry to connect...");
                 connectImpl(fOnConnectResult);
             }
         });

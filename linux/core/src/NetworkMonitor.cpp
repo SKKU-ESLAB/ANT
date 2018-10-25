@@ -68,31 +68,17 @@ void NetworkMonitor::print_stats(Stats &stats) {
     return;
   }
 
-  const int k_state_str_length = 20;
-  char state_str[k_state_str_length];
-  switch (NetworkSwitcher::singleton()->get_state()) {
-  case NSState::kNSStateReady:
-    strncpy(state_str, "Ready", k_state_str_length);
-    break;
-  case NSState::kNSStateSwitching:
-    strncpy(state_str, "Switching", k_state_str_length);
-    break;
-  default:
-    strncpy(state_str, "Unknown", k_state_str_length);
-    break;
-  }
-
   const int k_mode_str_length = 20;
   char mode_str[k_mode_str_length];
   switch (this->get_mode()) {
   case NSMode::kNSModeEnergyAware:
-    strncpy(mode_str, "Energy-Aware", k_mode_str_length);
+    strncpy(mode_str, "Energy", k_mode_str_length);
     break;
   case NSMode::kNSModeLatencyAware:
-    strncpy(mode_str, "Latency-Aware", k_mode_str_length);
+    strncpy(mode_str, "Latency", k_mode_str_length);
     break;
   case NSMode::kNSModeCapDynamic:
-    strncpy(mode_str, "Cap-Dynamic", k_mode_str_length);
+    strncpy(mode_str, "Capacity", k_mode_str_length);
     break;
   default:
     strncpy(mode_str, "Unknown", k_mode_str_length);
@@ -110,12 +96,11 @@ void NetworkMonitor::print_stats(Stats &stats) {
    */
   printf(
       "%3.3fB/s (R: %3.3fB, T_IA: %3.3fms) => [Q: %'dB ] => %'dB/s // ON:%'dB "
-      "OFF: %dB // %s %s\n",
+      "OFF: %dB // %s\n",
       stats.ema_queue_arrival_speed, stats.ema_send_request_size,
       (stats.ema_arrival_time_us / 1000), stats.now_queue_data_size,
       stats.now_total_bandwidth, this->get_init_energy_payoff_point(),
-      this->get_idle_energy_payoff_point(stats.ema_arrival_time_us), mode_str,
-      state_str);
+      this->get_idle_energy_payoff_point(stats.ema_arrival_time_us), mode_str);
 #endif
 }
 
