@@ -312,10 +312,6 @@ class SegmentManager {
         boolean segmentEnqueued = false;
 
         synchronized (this.mQueues[queueType]) {
-            if (segment.seq_no <= 2 || this.mExpectedSeqNo[queueType] <= 2) {
-                Logger.WARN(kTag, "Enqueue: Qtype=" + queueType + " / seqno=" + segment.seq_no +
-                        " / exp_seqno=" + this.mExpectedSeqNo[queueType]);
-            }
             if (segment.seq_no == this.mExpectedSeqNo[queueType]) {
                 // Case 1. this seq no. = expected seq no.
                 // In-order segments -> enqueue to the target queue
@@ -337,7 +333,7 @@ class SegmentManager {
                     if (walker.seq_no > segment.seq_no) break;
                 }
                 it.add(segment);
-                Logger.DEBUG(kTag, "Pending Queue: (" + queueType + ") incoming=" + segment
+                Logger.WARN(kTag, "Pending Queue: (" + queueType + ") incoming=" + segment
                         .seq_no + " / expected_next=" + this.mExpectedSeqNo[queueType]);
             }
 
