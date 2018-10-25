@@ -212,7 +212,7 @@ bool NetworkMonitor::check_increase_adapter(const Stats &stats) {
   }
 }
 
-#define CHECK_DECREASING_OK_COUNT 4
+#define CHECK_DECREASING_OK_COUNT 10
 bool NetworkMonitor::check_decrease_adapter(const Stats &stats) {
   /* Check the condition of adapter decrease based on switching policy */
   if (!this->is_decreaseable()) {
