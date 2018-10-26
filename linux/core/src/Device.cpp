@@ -27,8 +27,7 @@ bool Device::turn_on(void) {
   // Check previous state
   DeviceState state = this->get_state();
   if (state == DeviceState::kOn || state == DeviceState::kTurningOn) {
-    LOG_ERR("%s: Failed to turn on - Already turned on (%d)", this->get_name(),
-            state);
+    LOG_WARN("turn_on(%s): FAILED - already on (%d)", this->get_name(), state);
     return false;
   }
 
@@ -40,10 +39,10 @@ bool Device::turn_on(void) {
 
   // Result check
   if (!res) {
-    LOG_DEBUG("%s: Failed to turn on", this->get_name());
+    LOG_ERR("turn_on(%s): FAILED - impl error", this->get_name());
     this->set_state(DeviceState::kOff);
   } else {
-    LOG_DEBUG("%s: Successfully turned on", this->get_name());
+    LOG_DEBUG("turn_on(%s): SUCCESS", this->get_name());
     this->set_state(DeviceState::kOn);
   }
 
@@ -54,8 +53,7 @@ bool Device::turn_off(void) {
   // Check previous state
   DeviceState state = this->get_state();
   if (state == DeviceState::kOff || state == DeviceState::kTurningOff) {
-    LOG_ERR("%s: Failed to turn off - Already turned off (%d)",
-            this->get_name(), state);
+    LOG_WARN("turn_off(%s): FAILED - already off (%d)", this->get_name(), state);
     return false;
   }
 
@@ -67,10 +65,10 @@ bool Device::turn_off(void) {
   
   // Result check
   if (!res) {
-    LOG_DEBUG("%s: Failed to turn off", this->get_name());
+    LOG_ERR("turn_off(%s): FAILED - impl error", this->get_name());
     this->set_state(DeviceState::kOn);
   } else {
-    LOG_DEBUG("%s: Successfully turned off", this->get_name());
+    LOG_DEBUG("turn_off(%s): SUCCESS", this->get_name());
     this->set_state(DeviceState::kOff);
   }
 

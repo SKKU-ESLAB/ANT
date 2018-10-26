@@ -21,6 +21,8 @@
 
 #include "../inc/API.h"
 
+#include "../../configs/ExpConfig.h"
+
 #include <iostream>
 #include <string.h>
 #include <string>
@@ -32,7 +34,10 @@ void ControlMessageSender::send_control_message(std::string &message) {
   char *message_buffer = new char[message_buffer_size];
   strncpy(message_buffer, message.c_str(), message_buffer_size);
   message_buffer[message_buffer_size - 1] = '\0';
-  LOG_VERB("Send(Control Msg) RAW (len=%d)::\n%s", message_buffer_size, message_buffer);
+#ifdef VERBOSE_CONTROL_RAW_MESSAGE
+  LOG_DEBUG("Send(Control Msg) RAW (len=%d)::\n%s", message_buffer_size,
+            message_buffer);
+#endif
   int res = Core::singleton()->send(message_buffer, message_buffer_size, true);
 }
 
@@ -55,8 +60,8 @@ void ControlMessageSender::send_request_connect(int adapter_id) {
   LOG_VERB("Send(Control Msg): Request(Connect %d)", adapter_id);
 }
 
-void ControlMessageSender::send_request_disconnect(int adapter_id,
-                                                   uint32_t final_seq_no_control, uint32_t final_seq_no_data) {
+void ControlMessageSender::send_request_disconnect(
+    int adapter_id, uint32_t final_seq_no_control, uint32_t final_seq_no_data) {
   std::string message("");
 
   // Write first line (request code)
@@ -76,7 +81,8 @@ void ControlMessageSender::send_request_disconnect(int adapter_id,
 
   // Send the message
   this->send_control_message(message);
-  LOG_VERB("Send(Control Msg): Request(Disconnect %d; final_seq_no_control=%lu; final_seq_no_data=%lu)",
+  LOG_VERB("Send(Control Msg): Request(Disconnect %d; "
+           "final_seq_no_control=%lu; final_seq_no_data=%lu)",
            adapter_id, final_seq_no_control, final_seq_no_data);
 }
 

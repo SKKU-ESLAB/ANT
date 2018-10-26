@@ -26,8 +26,8 @@
 #include <poll.h>
 #include <stdio.h>
 #include <string.h>
-#include <sys/types.h>
 #include <sys/socket.h>
+#include <sys/types.h>
 #include <unistd.h>
 
 #define VERBOSE_WFD_MSG 0
@@ -51,20 +51,20 @@ bool TcpServerSocket::open_impl(void) {
 
   if (setsockopt(this->mServerSocket, SOL_SOCKET, SO_REUSEADDR, (char *)&reuse,
                  sizeof(int)) == -1) {
-    LOG_ERR("%s: WFD socket self address setting failed", this->get_name());
+    LOG_ERR("open(%s): setsockopt SO_REUSEADDR error", this->get_name());
     return false;
   }
 
   int err = ::bind(this->mServerSocket, (struct sockaddr *)&server_address,
                    sizeof(server_address));
   if (err < 0) {
-    LOG_ERR("%s: WFD socket bind failed", this->get_name());
+    LOG_ERR("open(%s): bind error", this->get_name());
     return false;
   }
 
   err = ::listen(this->mServerSocket, 5);
   if (err < 0) {
-    LOG_ERR("%s: WFD socket listen failed", this->get_name());
+    LOG_ERR("open_impl(%s): listen error", this->get_name());
     return false;
   }
 
@@ -73,25 +73,28 @@ bool TcpServerSocket::open_impl(void) {
   int client_address_len = sizeof(client_address);
   const int kMaxTries = 10;
   for (int tries = 0; tries < kMaxTries; tries++) {
-    LOG_VERB("%s: Accepting client... (%d)", this->get_name(), tries);
+    LOG_VERB("open_impl(%s): Accepting... (trial: %d/%d)", this->get_name(),
+             tries + 1, kMaxTries);
     this->mClientSocket =
         ::accept(this->mServerSocket, (struct sockaddr *)&client_address,
                  (socklen_t *)&client_address_len);
     if (this->mClientSocket >= 0) {
-      LOG_DEBUG("%s: Wi-fi direct accept / fd=%d", this->get_name(), this->mClientSocket);
-      
+      LOG_VERB("open_impl(%s): Accept SUCCESS (fd=%d)", this->get_name(),
+               this->mClientSocket);
+
       return true;
     } else {
       if (errno == EINTR) {
-        LOG_WARN("%s: Interrupted system call: Retry to accept...",
+        LOG_WARN("open_impl(%s): Accept FAILED (interrupted) Retry to accept...",
                  this->get_name());
       } else {
-        LOG_ERR("%s: Accept failed %s", this->get_name(), strerror(errno));
+        LOG_WARN("open_impl(%s): Accept FAILED (%s)", this->get_name(),
+                 strerror(errno));
         return false;
       }
     }
   }
-  
+
   return false;
 }
 
@@ -101,7 +104,7 @@ bool TcpServerSocket::close_impl(void) {
   this->mClientSocket = 0;
   this->mServerSocket = 0;
 
-  LOG_VERB("%s: TCP Socket closed", this->get_name());
+  LOG_VERB("close_impl(%s): DONE", this->get_name());
 
   return true;
 }
@@ -109,8 +112,10 @@ bool TcpServerSocket::close_impl(void) {
 int TcpServerSocket::send_impl(const void *data_buffer, size_t data_length) {
   int sent_bytes = 0;
 
-  if (this->mClientSocket <= 0)
+  if (this->mClientSocket <= 0) {
+    LOG_WARN("send_impl(%s): FAILED - socket closed", this->get_name());
     return -1;
+  }
 
   while (sent_bytes < data_length) {
     int once_sent_bytes =
@@ -119,7 +124,7 @@ int TcpServerSocket::send_impl(const void *data_buffer, size_t data_length) {
       return once_sent_bytes;
     }
 #if VERBOSE_WFD_MSG != 0
-    LOG_DEBUG("%s: Send: %d", this->get_name(), once_sent_bytes);
+    LOG_DEBUG("send_impl(%s): size=%d", this->get_name(), once_sent_bytes);
 #endif
     sent_bytes += once_sent_bytes;
   }
@@ -130,8 +135,10 @@ int TcpServerSocket::send_impl(const void *data_buffer, size_t data_length) {
 int TcpServerSocket::receive_impl(void *data_buffer, size_t data_length) {
   int received_bytes = 0;
 
-  if (this->mClientSocket <= 0)
+  if (this->mClientSocket <= 0) {
+    LOG_WARN("receive_impl(%s): FAILED - socket closed", this->get_name());
     return -1;
+  }
 
   // Polling
   struct pollfd poll_fd;
@@ -139,7 +146,7 @@ int TcpServerSocket::receive_impl(void *data_buffer, size_t data_length) {
   poll_fd.events = POLLIN;
   int ret = poll(&poll_fd, 1, 1000);
   if (ret == -1) {
-    LOG_ERR("%s: Polling error", this->get_name());
+    LOG_ERR("receive_impl(%s): FAILED - polling error", this->get_name());
     return -1;
   } else if (ret == 0) {
     // Receive timeout
@@ -156,12 +163,13 @@ int TcpServerSocket::receive_impl(void *data_buffer, size_t data_length) {
 
     received_bytes += once_received_bytes;
 #if VERBOSE_WFD_MSG != 0
-    LOG_DEBUG("%s: Receive : %d", this->get_name(), once_received_bytes);
+    LOG_DEBUG("receive_impl(%s): size=%d", this->get_name(), once_received_bytes);
 #endif
   }
 
-  if(received_bytes < 0) {
-    LOG_ERR("Receive error: fd=%d", this->mClientSocket);
+  if (received_bytes < 0) {
+    LOG_ERR("receive_impl(%s): FAILED (fd=%d)", this->get_name(),
+            this->mClientSocket);
   }
 
   return received_bytes;

@@ -19,8 +19,8 @@
  * limitations under the License.
  */
 
-#include "../inc/ServerAdapterStateListener.h"
 #include "../inc/ServerAdapter.h"
+#include "../inc/ServerAdapterStateListener.h"
 
 #include "../inc/Core.h"
 #include "../inc/NetworkSwitcher.h"
@@ -97,7 +97,8 @@ void ServerAdapter::disconnect_on_command(DisconnectCallback callback) {
 
   // Get my final seq_no
   SegmentManager *sm = SegmentManager::singleton();
-  uint32_t my_final_seq_no_control = this->mSenderThread->get_last_seq_no_control();
+  uint32_t my_final_seq_no_control =
+      this->mSenderThread->get_last_seq_no_control();
   uint32_t my_final_seq_no_data = this->mSenderThread->get_last_seq_no_data();
 
   // Send disconnect request
@@ -355,14 +356,14 @@ bool ServerAdapter::__disconnect_internal(ServerAdapterState oldState) {
 
   // Wait for sender/receiver thread
   if (this->mSenderThread != NULL) {
-    LOG_DEBUG("Waiting for sender loop: %s", this->get_name());
+    LOG_DEBUG("Wait sender loop(%s)", this->get_name());
     this->mSenderThread->wait_until_disable_loop_done();
-    LOG_DEBUG("End of sender loop: %s", this->get_name());
+    LOG_DEBUG("End sender loop(%s)", this->get_name());
   }
   if (this->mReceiverThread != NULL) {
-    LOG_DEBUG("Waiting for receiver thread: %s", this->get_name());
+    LOG_DEBUG("Wait receiver loop(%s)", this->get_name());
     this->mReceiverThread->wait_until_disable_loop_done();
-    LOG_DEBUG("End of receiver loop: %s", this->get_name());
+    LOG_DEBUG("End receiver loop(%s)", this->get_name());
   }
 
   return true;
@@ -370,12 +371,12 @@ bool ServerAdapter::__disconnect_internal(ServerAdapterState oldState) {
 
 int ServerAdapter::send(const void *buf, size_t len) {
   ServerAdapterState state = this->get_state();
-  if(state == ServerAdapterState::kConnecting) {
+  if (state == ServerAdapterState::kConnecting) {
     LOG_VERB("Send blocked: waiting for connection... (%d)", state);
     do {
       state = this->get_state();
       ::sleep(1);
-    } while(state != ServerAdapterState::kActive);
+    } while (state != ServerAdapterState::kActive);
   } else if (state != ServerAdapterState::kActive) {
     return -1;
   }
@@ -396,16 +397,16 @@ int ServerAdapter::send(const void *buf, size_t len) {
 
 int ServerAdapter::receive(void *buf, size_t len) {
   ServerAdapterState state = this->get_state();
-  if(state == ServerAdapterState::kConnecting) {
+  if (state == ServerAdapterState::kConnecting) {
     LOG_VERB("Receive blocked: waiting for connection... (%d)", state);
     do {
       state = this->get_state();
       ::sleep(1);
-    } while(state != ServerAdapterState::kActive);
+    } while (state != ServerAdapterState::kActive);
   } else if (state != ServerAdapterState::kActive &&
-      state != ServerAdapterState::kGoingSleeping &&
-      state != ServerAdapterState::kSleeping &&
-      state != ServerAdapterState::kWakingUp) {
+             state != ServerAdapterState::kGoingSleeping &&
+             state != ServerAdapterState::kSleeping &&
+             state != ServerAdapterState::kWakingUp) {
     return -1;
   }
 

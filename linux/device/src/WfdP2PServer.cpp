@@ -70,10 +70,10 @@ bool WfdP2PServer::allow_discover_impl(void) {
     char *ptr = strtok_r(buf, "\t \n\'", &ptrptr);
     while (ptr != NULL) {
       if (strstr(ptr, "FAIL")) {
-        LOG_WARN("%s: P2P Group add failed", this->get_name());
+        LOG_ERR("allow_discover(%s): p2p_group_add error", this->get_name());
         return false;
       } else if (strstr(ptr, "OK")) {
-        LOG_VERB("%s: P2P Group added", this->get_name());
+        LOG_DEBUG("allow_discover(%s): p2p_group_add success", this->get_name());
         break;
       }
 
@@ -84,7 +84,7 @@ bool WfdP2PServer::allow_discover_impl(void) {
   // Retrieve WPA Interface Name from wpa-cli
   ret_bool = this->retrieve_wpa_interface_name();
   if (!ret_bool) {
-    LOG_ERR("%s: Could not WPA Interface name!", this->get_name());
+    LOG_ERR("allow_discover(%s): retrieve_wpa_interface_name error", this->get_name());
     return false;
   }
 
@@ -103,21 +103,17 @@ bool WfdP2PServer::allow_discover_impl(void) {
     // MAC Address
     ret = this->get_wfd_p2p_device_addr(buf, 256);
     if (ret < 0) {
-      LOG_ERR("%s: Cannot retrieve WFD Server MAC Address", this->get_name());
+      LOG_ERR("allow_discover(%s): get_wfd_p2p_device_addr error", this->get_name());
       return false;
     }
-    
-    LOG_VERB("%s: WFD Server MAC Address: %s", this->get_name(), buf);
-    int adapter_id = ((WfdServerAdapter *)this->mOwner)->get_id();
     snprintf(wfdInfo, 1024, "%s", buf);
 
     // WPS PIN
     ret = this->reset_wfd_server(buf, 256);
     if (ret < 0) {
-      LOG_ERR("%s: Cannot set WFD WPS PIN", this->get_name());
+      LOG_ERR("allow_discover(%s): reset_wfd_server error", this->get_name());
       return false;
     }
-    LOG_VERB("%s: WFD WPS PIN: %s", this->get_name(), buf);
     strncat(wfdInfo, "\n", 1024);
     strncat(wfdInfo, buf, 1024);
 
@@ -130,13 +126,12 @@ bool WfdP2PServer::allow_discover_impl(void) {
       usleep(300000);
     }
     if (ret < 0) {
-      LOG_ERR("%s: IP Address is not set", this->get_name());
+      LOG_ERR("allow_discover(%s): get_wfd_ip_address error", this->get_name());
       return false;
     }
-    char *ip_address = buf;
-    LOG_VERB("%s: IP Address: %s", this->get_name(), buf);
     strncat(wfdInfo, "\n", 1024);
     strncat(wfdInfo, buf, 1024);
+    char *ip_address = buf;
 
 /* Send WFD Info
  *  <Server MAC Address>
@@ -144,7 +139,6 @@ bool WfdP2PServer::allow_discover_impl(void) {
  *  <Server IP Address>
  */
 #ifndef EXP_DONT_SEND_PRIV_CONTROL_MESSAGE
-    LOG_DEBUG("%s: Send WFD Info:\n%s", this->get_name(), wfdInfo);
     Core::singleton()->get_control_sender()->send_noti_private_data(
         PrivType::kPrivTypeWFDInfo, wfdInfo, strlen(wfdInfo));
 #endif
@@ -194,7 +188,6 @@ bool WfdP2PServer::retrieve_wpa_interface_name(void) {
       if (strstr(ptr, "p2p-wlan")) {
         snprintf(this->mWpaIntfName, sizeof(this->mWpaIntfName), "%s", ptr);
       } else if (strstr(ptr, "FAIL")) {
-        LOG_WARN("%s: P2P ping failed", this->get_name());
         this->mWpaIntfName[0] = '\0';
         return false;
       }
@@ -272,7 +265,7 @@ int WfdP2PServer::get_wfd_p2p_device_addr(char *dev_addr, size_t len) {
   char buf[1024];
   int ret;
   if (this->mWpaIntfName[0] == '\0') {
-    LOG_VERB("%s: WFD is not up", this->get_name());
+    LOG_WARN("%s: WFD is not up", this->get_name());
     return -1;
   }
 
@@ -311,7 +304,7 @@ int WfdP2PServer::reset_wfd_server(char *pin, size_t len) {
   };
   int ret;
   if (this->mWpaIntfName[0] == '\0') {
-    LOG_VERB("%s: WFD is not up", this->get_name());
+    LOG_WARN("%s: WFD is not up", this->get_name());
     return -1;
   }
 
@@ -320,7 +313,6 @@ int WfdP2PServer::reset_wfd_server(char *pin, size_t len) {
     return ret;
 
   // Selected interface 'p2p-wlanx-y' 33996608
-  LOG_VERB("%s: Pin parsing %s", this->get_name(), buf);
   char *ptrptr;
   char *ptr = strtok_r(buf, "\t \n\'", &ptrptr); // Selected
   ptr = strtok_r(NULL, "\t \n\'", &ptrptr);      // interface
@@ -328,10 +320,9 @@ int WfdP2PServer::reset_wfd_server(char *pin, size_t len) {
   ptr = strtok_r(NULL, "\t \n\'", &ptrptr);      // 33996608
 
   snprintf(pin, len, "%s", ptr);
-  LOG_VERB("%s: Pin:%s", this->get_name(), ptr);
 
   if (WfdP2PServer::sDhcpdPid == 0) {
-    LOG_VERB("%s: UDHCP is off > turn it up", this->get_name());
+    LOG_DEBUG("%s: UDHCP is off > turn it up", this->get_name());
     WfdP2PServer::sDhcpdPid = this->launch_dhcpd();
   }
 
@@ -356,7 +347,6 @@ int WfdP2PServer::get_wfd_ip_address(char *buf, size_t len) {
   while (ptr != NULL) {
     if (strstr(ptr, "ip_address") || strstr(ptr, "p2p_device_address")) {
       sscanf(ptr, "%*[^=]=%s", buf);
-      LOG_VERB("%s: IP Device Address = %s", this->get_name(), buf);
       return 0;
     }
 
@@ -378,11 +368,10 @@ void WfdP2PServer::sighandler_monitor_udhcpd(int signo, siginfo_t *sinfo,
     }
     WfdP2PServer::sDhcpdPid = 0;
 
+    LOG_DEBUG("udhcpd terminated");
     if (WfdP2PServer::sDhcpdCaller != NULL && WfdP2PServer::sDhcpdEnabled) {
-      LOG_WARN("Detected udhcpd process is terminated. Relaunch it... ");
+      LOG_WARN("Relaunch udhcpd");
       WfdP2PServer::sDhcpdPid = WfdP2PServer::sDhcpdCaller->launch_dhcpd();
-    } else {
-      LOG_WARN("Detected udhcpd process is terminated. Do not relaunch it. ");
     }
   }
 }
@@ -392,7 +381,7 @@ bool WfdP2PServer::disallow_discover_impl(void) {
   int ret;
 
   if (this->mWpaIntfName[0] == '\0') {
-    LOG_VERB("%s: WFD is not up", this->get_name());
+    LOG_WARN("%s: WFD is not up", this->get_name());
     return false;
   }
 
@@ -401,9 +390,6 @@ bool WfdP2PServer::disallow_discover_impl(void) {
   // Remove Wi-fi Direct P2P Group
   ret = this->wfd_remove_p2p_group(buf, 1024);
 
-  // TODO: debug
-  LOG_DEBUG("%s\n", buf);
-
   char *ptrptr;
   char *ptr = strtok_r(buf, "\t \n\'", &ptrptr);
   while (ptr != NULL) {
@@ -411,14 +397,14 @@ bool WfdP2PServer::disallow_discover_impl(void) {
       LOG_VERB("%s: Succedded to remove p2p group", this->get_name());
       return true;
     } else if (strstr(ptr, "FAIL")) {
-      LOG_VERB("%s: Failed to remove p2p group", this->get_name());
+      LOG_WARN("%s: Failed to remove p2p group", this->get_name());
       return false;
     }
 
     ptr = strtok_r(NULL, "\t \n\'", &ptrptr);
   }
 
-  LOG_WARN("%s: wpa_supplicant crash detected", this->get_name());
+  LOG_WARN("%s: wpa_supplicant crashed. revive it.", this->get_name());
   /* Revive wfd interface */
   this->turn_off_wfd_interface();
   sleep(1);
@@ -454,10 +440,10 @@ int WfdP2PServer::kill_dhcpd(void) {
   WfdP2PServer::sDhcpdMonitoring = false;
 
   if (unlink(UDHCPD_CONFIG_PATH) != 0)
-    LOG_WARN("%s: %s", this->get_name(), strerror(errno));
+    LOG_WARN("%s: kill udhcpd failed %s", this->get_name(), strerror(errno));
 
   if (WfdP2PServer::sDhcpdPid == 0) {
-    LOG_WARN("%s: udhcpd is not alive", this->get_name());
+    LOG_DEBUG("%s: no udhcpd to kill", this->get_name());
     return 0;
   }
 

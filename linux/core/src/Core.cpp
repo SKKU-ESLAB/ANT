@@ -58,12 +58,13 @@ StopCoreTransaction *StopCoreTransaction::sOngoing = NULL;
 void Core::start() {
   setlocale(LC_ALL, "");
 
-  if (this->get_state() != CoreState::kCoreStateIdle) {
-    LOG_ERR("Core has already started.");
+  CoreState state = this->get_state();
+  if (state != CoreState::kCoreStateIdle) {
+    LOG_ERR("start(Core): FAILED - state (%d)", state);
     this->done_start(false);
     return;
   } else if (this->mAdapters.empty()) {
-    LOG_ERR("No adapter is registered!");
+    LOG_ERR("start(Core): FAILED - no adapters");
     this->done_start(false);
     return;
   }
@@ -75,13 +76,13 @@ void Core::start() {
 
 void Core::done_start(bool is_success) {
   if (is_success) {
-    LOG_VERB("Succeed to start core!");
+    LOG_VERB("start(Core): SUCCESS");
     this->set_state(CoreState::kCoreStateReady);
 
     // Launch control message receiving thread
     this->mControlMessageReceiver->start_receiving_thread();
   } else {
-    LOG_ERR("Failed to start core!");
+    LOG_ERR("start(Core): FAILED - error");
     this->set_state(CoreState::kCoreStateIdle);
     return;
   }
@@ -94,16 +95,13 @@ void Core::done_start(bool is_success) {
 void Core::stop() {
   CoreState state = this->get_state();
   if (state == CoreState::kCoreStateStarting ||
-      state == CoreState::kCoreStateStopping) {
-    LOG_ERR("Cannot stop core during starting/stopping!");
-    this->done_stop(false);
-    return;
-  } else if (state == CoreState::kCoreStateIdle) {
-    LOG_ERR("Core is already idle state!");
+      state == CoreState::kCoreStateStopping ||
+      state == CoreState::kCoreStateIdle) {
+    LOG_ERR("done(Core): FAIL - state (%d)", state);
     this->done_stop(false);
     return;
   } else if (this->mAdapters.empty()) {
-    LOG_ERR("No adapter is registered!");
+    LOG_ERR("done(Core): FAIL - no adapters");
     this->done_stop(false);
     return;
   }
@@ -115,13 +113,13 @@ void Core::stop() {
 
 void Core::done_stop(bool is_success) {
   if (is_success) {
-    LOG_VERB("Succeed to stop core!");
+    LOG_VERB("done(Core): SUCCESS");
     this->set_state(CoreState::kCoreStateIdle);
 
     // Finish control message receiving thread
     this->mControlMessageReceiver->stop_receiving_thread();
   } else {
-    LOG_ERR("Failed to stop core!");
+    LOG_ERR("done(Core): FAIL - error");
     this->set_state(CoreState::kCoreStateReady);
   }
 
@@ -136,7 +134,7 @@ void Core::register_adapter(ServerAdapter *adapter) {
   }
   std::unique_lock<std::mutex> lck(this->mAdaptersLock);
   this->mAdapters.push_back(adapter);
-  
+
   adapter->launch_threads();
 }
 
@@ -221,7 +219,8 @@ void StartCoreTransaction::start() {
       StartCoreTransaction::connect_first_adapter_callback, false);
 }
 
-void StartCoreTransaction::connect_first_adapter_callback(ServerAdapter* adapter, bool is_success) {
+void StartCoreTransaction::connect_first_adapter_callback(
+    ServerAdapter *adapter, bool is_success) {
   if (is_success) {
     // Done transaction
     sOngoing->done(true);
@@ -282,7 +281,8 @@ void StopCoreTransaction::start() {
   }
 }
 
-void StopCoreTransaction::disconnect_adapter_callback(ServerAdapter* adapter, bool is_success) {
+void StopCoreTransaction::disconnect_adapter_callback(ServerAdapter *adapter,
+                                                      bool is_success) {
   if (!is_success) {
     if (sOngoing != NULL) {
       LOG_ERR("Disconnecting adapter is failed 2");

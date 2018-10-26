@@ -40,19 +40,19 @@ void CommInitializer::initialize(void) {
   };
 
   // Step 1. Bluetooth OFF
-  LOG_DEBUG("Init Step 1. Bluetooth OFF");
+  LOG_DEBUG("Init: Step 1. BT OFF");
 
   snprintf(cmdLine, 500, "%s hci0 down", HCICONFIG_PATH);
   system(cmdLine);
 
   // Step 2. Bluetooth ON
-  LOG_DEBUG("Init Step 2. Bluetooth ON");
+  LOG_DEBUG("Init: Step 2. BT ON");
 
   snprintf(cmdLine, 500, "%s hci0 up piscan", HCICONFIG_PATH);
   system(cmdLine);
 
   // Step 3. Wi-fi Direct OFF
-  LOG_DEBUG("Init Step 3. Wi-fi Direct OFF");
+  LOG_DEBUG("Init: Step 3. WF OFF");
 
   snprintf(cmdLine, 500, "killall udhcpd 2> /dev/null");
   system(cmdLine);
@@ -73,7 +73,7 @@ void CommInitializer::initialize(void) {
   }
 
   // Step 4. Wi-fi ON
-  LOG_DEBUG("Init Step 4. Wi-fi ON");
+  LOG_DEBUG("Init: Step 4. WF ON");
 
   snprintf(cmdLine, 500, "%s %s", IFUP_PATH, DEFAULT_WFD_DEVICE_NAME);
   system(cmdLine);

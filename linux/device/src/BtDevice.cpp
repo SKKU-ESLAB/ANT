@@ -29,6 +29,8 @@
 using namespace sc;
 
 bool BtDevice::turn_on_impl(void) {
+  // hciconfig hci0 up makes "sent_bytes are not accurate" error
+
   // char buf[512];
   // char *const params[] = {"hciconfig", "hci0", "up", "piscan", NULL};
 
@@ -38,6 +40,8 @@ bool BtDevice::turn_on_impl(void) {
 }
 
 bool BtDevice::turn_off_impl(void) {
+  // hciconfig hci0 down makes "sent_bytes are not accurate" error
+
   // char buf[512];
   // char *const params[] = {"hciconfig", "hci0", "down", NULL};
 
