@@ -22,6 +22,8 @@
 #ifndef __DEBUG_LOG_H__
 #define __DEBUG_LOG_H__
 
+#include "../../configs/ExpConfig.h"
+
 #include <assert.h>
 #include <stdarg.h>
 #include <stdio.h>

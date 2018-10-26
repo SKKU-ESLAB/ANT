@@ -94,13 +94,13 @@ void NetworkMonitor::print_stats(Stats &stats) {
    *  - Total Bandwidth
    *  - EMA(Arrival Time (sec))
    */
-  printf(
-      "%3.3fB/s (R: %3.3fB, T_IA: %3.3fms) => [Q: %'dB ] => %'dB/s // ON:%'dB "
-      "OFF: %dB // %s\n",
-      stats.ema_queue_arrival_speed, stats.ema_send_request_size,
-      (stats.ema_arrival_time_us / 1000), stats.now_queue_data_size,
-      stats.now_total_bandwidth, this->get_init_energy_payoff_point(),
-      this->get_idle_energy_payoff_point(stats.ema_arrival_time_us), mode_str);
+  printf("R: %dB (IAT: %3.3fms) => [Q: %dB ] => %dB/s // ON:%dB "
+         "OFF: %dB (%d)\n",
+         (int)stats.ema_send_request_size, (stats.ema_arrival_time_us / 1000),
+         stats.now_queue_data_size, stats.now_total_bandwidth,
+         this->get_init_energy_payoff_point(),
+         this->get_idle_energy_payoff_point(stats.ema_arrival_time_us),
+         this->mDecreasingCheckCount);
 #endif
 }
 
@@ -131,11 +131,9 @@ void NetworkMonitor::check_and_decide_switching(Stats &stats) {
     this->mBandwidthWhenIncreasing = stats.now_total_bandwidth;
 
     /* Increase Adapter */
-    LOG_VERB("Increase adapter start!");
     this->increase_adapter();
   } else if (this->check_decrease_adapter(stats)) {
     /* Decrease Adapter */
-    LOG_VERB("Decrease adapter start!");
     this->decrease_adapter();
   }
 }
@@ -247,7 +245,6 @@ bool NetworkMonitor::check_decrease_adapter(const Stats &stats) {
       if (wfd_off) {
         if (stats.ema_send_request_size <
             this->get_idle_energy_payoff_point(stats.ema_arrival_time_us)) {
-          LOG_DEBUG("DecreasingCheckCount=%d", this->mDecreasingCheckCount);
           this->mDecreasingCheckCount++;
           if (this->mDecreasingCheckCount >= CHECK_DECREASING_OK_COUNT) {
             this->mDecreasingCheckCount = 0;
@@ -295,8 +292,7 @@ bool NetworkMonitor::is_increaseable(void) {
   Core *core = Core::singleton();
   int adapter_count = core->get_adapter_count();
   int active_adapter_index = core->get_active_adapter_index();
-  return ((adapter_count > 1) &&
-          (active_adapter_index < (adapter_count - 1)));
+  return ((adapter_count > 1) && (active_adapter_index < (adapter_count - 1)));
 }
 bool NetworkMonitor::is_decreaseable(void) {
   /* Check the minimum condition of adapter decrease such as adapters' count
@@ -320,8 +316,7 @@ bool NetworkMonitor::increase_adapter(void) {
   int prev_index = core->get_active_adapter_index();
   int next_index = prev_index + 1;
 
-  return NetworkSwitcher::singleton()->switch_adapters(prev_index,
-                                                          next_index);
+  return NetworkSwitcher::singleton()->switch_adapters(prev_index, next_index);
 }
 
 bool NetworkMonitor::decrease_adapter(void) {
@@ -337,6 +332,5 @@ bool NetworkMonitor::decrease_adapter(void) {
   int prev_index = core->get_active_adapter_index();
   int next_index = prev_index - 1;
 
-  return NetworkSwitcher::singleton()->switch_adapters(prev_index,
-                                                          next_index);
+  return NetworkSwitcher::singleton()->switch_adapters(prev_index, next_index);
 }

@@ -70,8 +70,7 @@ public:
 
 void receiving_thread() {
   void *buf = NULL;
-  printf("[INFO] Receiving thread created! tid: %d\n",
-         (unsigned int)syscall(224));
+  LOG_THREAD_LAUNCH("App Receiving");
 
   while (true) {
     int ret = sc::receive(&buf);
@@ -87,6 +86,8 @@ void receiving_thread() {
     if (buf)
       free(buf);
   }
+
+  LOG_THREAD_FINISH("App Receiving");
 }
 
 static char *rand_string(char *str, size_t size) {
@@ -117,17 +118,13 @@ int main(int argc, char **argv) {
   commInit.initialize();
 
   snprintf(g_trace_file_name, 512, "%s", argv[1]);
-  printf("Trace File: %s\n", g_trace_file_name);
+  printf(" ** Trace File: %s\n", g_trace_file_name);
 
   g_bt_adapter = sc::BtServerAdapter::singleton(
       1, "Bt", "150e8400-1234-41d4-a716-446655440000");
   g_wfd_adapter = sc::WfdServerAdapter::singleton(2, "Wfd", 3455, "SelCon");
 
-  printf("Step 1. Initializing Network Adapters\n");
-
-  printf("  Adapter 1: RFCOMM over Bluetooth\n");
   sc::register_adapter(g_bt_adapter);
-  printf("  Adapter 2: TCP over Wi-fi Direct\n");
   sc::register_adapter(g_wfd_adapter);
 
   sc::start_sc(on_connect);
@@ -147,16 +144,16 @@ void on_connect(bool is_success) {
   std::thread(receiving_thread).detach();
 
 #define TEST_DATA_SIZE (5 * 1024)
-  printf("Step 2. Send Test Data (%dB)\n", TEST_DATA_SIZE);
+  printf(" ** Send Test Data (%dB)\n", TEST_DATA_SIZE);
   int i;
-  printf("Wait for 5 seconds...\n");
+  printf(" ** Wait for 5 seconds...\n");
   sleep(5);
 
   temp_buf = (char *)calloc(TEST_DATA_SIZE, sizeof(char));
   sc::send(temp_buf, TEST_DATA_SIZE);
   free(temp_buf);
 
-  printf("Wait for 2 seconds...\n");
+  printf(" ** Wait for 2 seconds...\n");
   sleep(2);
 
 #define BUFFER_SIZE (20 * 1024 * 1024)
@@ -211,10 +208,8 @@ void on_connect(bool is_success) {
              recent_sent_sec, recent_sent_usec, time_sec, time_usec);
       return;
     }
-    /* printf(" * Packet %d (Length: %d / Time: %d:%d) Wait for %d us...\n",
-        iter, payload_length, time_sec, time_usec, sleep_us); */
     if (iter % 1000 == 0) {
-      printf(" * Packet %d\n", iter);
+      printf(" ** Send Message (No. %d)\n", iter);
     }
     usleep(sleep_us);
 
@@ -245,19 +240,19 @@ void on_connect(bool is_success) {
     iter++;
   }
 
-  printf("Finish Workload... Send Small Tail Data...\n");
+  printf(" ** Finish Workload... Send Small Tail Data...\n");
 
 #define TAIL_DATA_SIZE (100)
 #define NUM_TAIL_DATA 100
   for (int i = 0; i < NUM_TAIL_DATA; i++) {
-    printf("Send Small Tail Data (%d/%d)\n", i, NUM_TAIL_DATA);
+    printf(" ** Send Small Tail Data (%d/%d)\n", i, NUM_TAIL_DATA);
     temp_buf = (char *)calloc(TAIL_DATA_SIZE, sizeof(char));
     sc::send(temp_buf, TAIL_DATA_SIZE);
     free(temp_buf);
     sleep(1);
   }
 
-  printf("Sleep 600 secs...\n");
+  printf(" ** Sleep 600 secs...\n");
 
   sleep(600);
 

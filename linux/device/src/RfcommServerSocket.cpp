@@ -44,26 +44,26 @@ bool RfcommServerSocket::open_impl(void) {
 
   this->mServerSocket = ::socket(AF_BLUETOOTH, SOCK_STREAM, BTPROTO_RFCOMM);
   if (this->mServerSocket < 0) {
-    LOG_ERR("%s: Bluetooth socket open failed(%s)", this->get_name(),
+    LOG_ERR("open_impl(%s): socket open error (%s)", this->get_name(),
             strerror(errno));
     return false;
   }
 
   this->mPort = this->bt_dynamic_bind_rc();
   if (this->mPort < 1 || this->mPort > 30) {
-    LOG_ERR("%s: Bluetooth socket bind failed(%s)", this->get_name(),
+    LOG_ERR("open_impl(%s): bt_dynamic_bind_rc error (%s)", this->get_name(),
             strerror(errno));
     return false;
   }
 
   if (this->bt_register_service() < 0) {
-    LOG_ERR("%s: Bluetooth sdp session creation failed(%s)", this->get_name(),
+    LOG_ERR("open_impl(%s): bt_register_service error (%s)", this->get_name(),
             strerror(errno));
     return false;
   }
 
   if (::listen(this->mServerSocket, 1) < 0) {
-    LOG_ERR("%s: Listening failed(%s)", this->get_name(), strerror(errno));
+    LOG_ERR("open_impl(%s): listen error (%s)", this->get_name(), strerror(errno));
     return false;
   }
 
@@ -74,15 +74,16 @@ bool RfcommServerSocket::open_impl(void) {
       0,
   };
   socklen_t opt = sizeof(client_addr);
-  LOG_DEBUG("%s: Bluetooth accept...", this->get_name());
+  LOG_DEBUG("open_impl(%s): Accepting...", this->get_name());
   this->mClientSocket =
       ::accept(this->mServerSocket, (struct sockaddr *)&client_addr, &opt);
   if (this->mClientSocket < 0) {
-    LOG_ERR("%s: Bluetooth accept failed(%s)", this->get_name(),
-            strerror(errno));
+    LOG_ERR("open_impl(%s): Accept FAILED (%s)", this->get_name(), strerror(errno));
     return false;
   }
-  LOG_DEBUG("%s: Bluetooth accept / fd=%d", this->get_name(), this->mClientSocket);
+  
+  LOG_DEBUG("open_impl(%s): Accept SUCCESS (fd=%d)", this->get_name(),
+            this->mClientSocket);
 
   return true;
 }
@@ -102,7 +103,7 @@ int RfcommServerSocket::bt_dynamic_bind_rc(void) {
     err = ::bind(this->mServerSocket, (struct sockaddr *)&sockaddr,
                  sizeof(struct sockaddr_rc));
     if (!err) {
-      LOG_VERB("%s: BT port binded: %d", this->get_name(), port);
+      LOG_DEBUG("%s: port binded: %d", this->get_name(), port);
       return port;
     }
 
@@ -163,7 +164,7 @@ int RfcommServerSocket::bt_register_service() {
     this->mSdpSession =
         sdp_connect(&my_bdaddr_any, &my_bdaddr_local, SDP_RETRY_IF_BUSY);
     if (NULL == this->mSdpSession) {
-      LOG_ERR("%s: Cannot connect to bluetooth sdp server", this->get_name());
+      LOG_ERR("%s: SDP server connection error", this->get_name());
       res = -1;
       break;
     }
@@ -191,7 +192,7 @@ bool RfcommServerSocket::close_impl(void) {
   this->mServerSocket = 0;
   this->mSdpSession = NULL;
 
-  LOG_VERB("%s: RFCOMM Socket closed", this->get_name());
+  LOG_VERB("close_impl(%s): DONE", this->get_name());
 
   return true;
 }
@@ -200,7 +201,7 @@ int RfcommServerSocket::send_impl(const void *data_buffer, size_t data_length) {
   int sent_bytes = 0;
 
   if (this->mClientSocket <= 0) {
-    LOG_WARN("%s: Socket closed", this->get_name());
+    LOG_WARN("send_impl(%s): FAILED - socket closed", this->get_name());
     return -1;
   }
 
@@ -211,7 +212,7 @@ int RfcommServerSocket::send_impl(const void *data_buffer, size_t data_length) {
       return once_sent_bytes;
     }
 #if VERBOSE_BT_MSG != 0
-    LOG_DEBUG("%s: Send: %d", this->get_name(), once_sent_bytes);
+    LOG_DEBUG("send_impl(%s): size=%d", this->get_name(), once_sent_bytes);
 #endif
     sent_bytes += once_sent_bytes;
   }
@@ -222,8 +223,10 @@ int RfcommServerSocket::send_impl(const void *data_buffer, size_t data_length) {
 int RfcommServerSocket::receive_impl(void *data_buffer, size_t data_length) {
   int received_bytes = 0;
 
-  if (this->mClientSocket <= 0)
+  if (this->mClientSocket <= 0) {
+    LOG_WARN("receive_impl(%s): FAILED - socket closed", this->get_name());
     return -1;
+  }
 
   // Polling
   struct pollfd poll_fd;
@@ -231,7 +234,7 @@ int RfcommServerSocket::receive_impl(void *data_buffer, size_t data_length) {
   poll_fd.events = POLLIN;
   int ret = poll(&poll_fd, 1, 1000);
   if (ret == -1) {
-    LOG_ERR("%s: Polling error", this->get_name());
+    LOG_ERR("receive_impl(%s): FAILED - polling error", this->get_name());
     return -1;
   } else if (ret == 0) {
     // Receive timeout
@@ -248,12 +251,13 @@ int RfcommServerSocket::receive_impl(void *data_buffer, size_t data_length) {
 
     received_bytes += once_received_bytes;
 #if VERBOSE_BT_MSG != 0
-    LOG_DEBUG("%s: Receive : %d", this->get_name(), once_received_bytes);
+    LOG_DEBUG("receive_impl(%s): size=%d", this->get_name(), once_received_bytes);
 #endif
   }
 
-  if(received_bytes <= 0) {
-    LOG_ERR("Receive error: res=%d, fd=%d", received_bytes, this->mClientSocket);
+  if (received_bytes <= 0) {
+    LOG_ERR("receive_impl(%s): FAILED (res=%d, fd=%d)", received_bytes,
+            this->mClientSocket);
   }
 
   return received_bytes;

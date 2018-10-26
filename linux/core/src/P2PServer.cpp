@@ -27,8 +27,7 @@ bool P2PServer::allow_discover(void) {
   // Check previous state
   P2PServerState state = this->get_state();
   if (state == P2PServerState::kAllowed) {
-    LOG_ERR("%s: Failed to allow discover - Already allowed (%d)",
-            this->get_name(), state);
+    LOG_WARN("allow_discover(%s): FAILED - already allowed (%d)", this->get_name(), state);
     return false;
   }
 
@@ -37,10 +36,10 @@ bool P2PServer::allow_discover(void) {
 
   // Check result and change state
   if (!res) {
-    LOG_DEBUG("%s: Failed to allow discover", this->get_name());
+    LOG_ERR("allow_discover(%s): FAILED - impl error", this->get_name());
     this->set_state(P2PServerState::kDisallowed);
   } else {
-    LOG_DEBUG("%s: Successfully allowed discover", this->get_name());
+    LOG_DEBUG("allow_discover(%s): SUCCESS", this->get_name());
     this->set_state(P2PServerState::kAllowed);
   }
   return res;
@@ -50,8 +49,7 @@ bool P2PServer::disallow_discover(void) {
   // Check previous state
   P2PServerState state = this->get_state();
   if (state == P2PServerState::kDisallowed) {
-    LOG_ERR("%s: Failed to disallow discover - Already disallowed (%d)",
-            this->get_name(), state);
+    LOG_WARN("disallow_discover(%s): FAILED - already disallowed(%d)", this->get_name(), state);
     return false;
   }
 
@@ -60,10 +58,10 @@ bool P2PServer::disallow_discover(void) {
 
   // Check result and change state
   if (!res) {
-    LOG_DEBUG("%s: Failed to disallow discover", this->get_name());
+    LOG_ERR("disallow_discover(%s): FAILED - impl error", this->get_name());
     this->set_state(P2PServerState::kAllowed);
   } else {
-    LOG_DEBUG("%s: Successfully disallowed discover", this->get_name());
+    LOG_DEBUG("disallow_discover(%s): SUCCESS", this->get_name());
     this->set_state(P2PServerState::kDisallowed);
   }
   return res;

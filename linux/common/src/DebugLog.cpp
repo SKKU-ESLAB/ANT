@@ -19,6 +19,8 @@
 
 #include "../inc/DebugLog.h"
 
+#include "../../configs/ExpConfig.h"
+
 #include <assert.h>
 #include <stdarg.h>
 #include <stdio.h>
@@ -28,7 +30,15 @@
 void __log(const char *format, const char *fileName, const char *funcName,
            int color, int lineNo, ...) {
   va_list ap;
-  printf("\033[%dm %s:%d (%s())  ", color, fileName, lineNo, funcName);
+  #if defined(LOG_FILE_NAME) && defined(LOG_FUNC_NAME)
+  printf("\033[%dm%s:%d (%s())  ", color, fileName, lineNo, funcName);
+  #elif defined(LOG_FILE_NAME)
+  printf("\033[%dm%s:%d  ", color, fileName, lineNo);
+  #elif defined(LOG_FUNC_NAME)
+  printf("\033[%dm(%s())  ", color, funcName);
+  #else
+  printf("\033[%dm", color);
+  #endif
   va_start(ap, lineNo);
   vprintf(format, ap);
   va_end(ap);
@@ -38,7 +48,15 @@ void __log(const char *format, const char *fileName, const char *funcName,
 void __func(const char *format, const char *fileName, const char *funcName,
             int lineNo, ...) {
   va_list ap;
-  printf("\033[2m %s:%d (%s())  ", fileName, lineNo, funcName);
+  #if defined(LOG_FILE_NAME) && defined(LOG_FUNC_NAME)
+  printf("\033[%dm%s:%d (%s())  ", 2, fileName, lineNo, funcName);
+  #elif defined(LOG_FILE_NAME)
+  printf("\033[%dm%s:%d  ", 2, fileName, lineNo);
+  #elif defined(LOG_FUNC_NAME)
+  printf("\033[%dm(%s())  ", 2, funcName);
+  #else
+  printf("\033[%dm", 2);
+  #endif
   va_start(ap, lineNo);
   vprintf(format, ap);
   va_end(ap);

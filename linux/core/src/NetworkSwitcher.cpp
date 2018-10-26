@@ -43,7 +43,7 @@ ReconnectAdapterTransaction *ReconnectAdapterTransaction::sOngoing = NULL;
 void NetworkSwitcher::connect_adapter_by_peer(int adapter_id) {
   NSState state = this->get_state();
   if (state == NSState::kNSStateSwitching) {
-    LOG_VERB("It's now switching. Cannot connect to adapter %d.", adapter_id);
+    LOG_WARN("connect(adapter %d): FAILED - already switching", adapter_id);
     return;
   }
 
@@ -56,7 +56,7 @@ void NetworkSwitcher::disconnect_adapter_by_peer(int adapter_id,
                                                  uint32_t last_seq_no_data) {
   NSState state = this->get_state();
   if (state == NSState::kNSStateSwitching) {
-    LOG_VERB("It's now switching. Cannot connect to adapter %d.", adapter_id);
+    LOG_WARN("disconnect(adapter %d): FAILED - already switching", adapter_id);
     return;
   }
 
@@ -141,7 +141,7 @@ void NetworkSwitcher::done_switch() {
 bool SwitchAdapterTransaction::run(int prev_index, int next_index) {
   if (sOngoing == NULL) {
     sOngoing = new SwitchAdapterTransaction(prev_index, next_index);
-    LOG_VERB("Switch (%d->%d): Start", prev_index, next_index);
+    LOG_VERB("Switch (%d->%d): START", prev_index, next_index);
     sOngoing->start();
     return true;
   } else {
@@ -154,11 +154,11 @@ bool SwitchAdapterTransaction::run(int prev_index, int next_index) {
 
 void SwitchAdapterTransaction::done(bool is_success) {
   if (is_success) {
-    LOG_VERB("Switch (%d->%d): Success", sOngoing->mPrevIndex,
+    LOG_VERB("Switch (%d->%d): SUCCESS", sOngoing->mPrevIndex,
              sOngoing->mNextIndex);
     Core::singleton()->set_active_adapter_index(sOngoing->mNextIndex);
   } else {
-    LOG_ERR("Switch (%d->%d): Failed", sOngoing->mPrevIndex,
+    LOG_ERR("Switch (%d->%d): FAILED", sOngoing->mPrevIndex,
             sOngoing->mNextIndex);
   }
   NetworkSwitcher::singleton()->done_switch();
@@ -190,7 +190,7 @@ void SwitchAdapterTransaction::start(void) {
     return;
   }
 
-  LOG_VERB("Switch (%d->%d): Step 1. Connect/WakeUp Next Adapter (%s)",
+  LOG_VERB("Switch (%d->%d): STEP 1. %s Adapter ON",
            sOngoing->mPrevIndex, sOngoing->mNextIndex,
            next_adapter->get_name());
 
@@ -247,7 +247,7 @@ void SwitchAdapterTransaction::connect_next_adapter_callback(
     return;
   }
 
-  LOG_VERB("Switch (%d->%d): Step 2. Sleep Prev Adapter (%s)",
+  LOG_VERB("Switch (%d->%d): STEP 2. %s Adapter SLEEP",
            sOngoing->mPrevIndex, sOngoing->mNextIndex,
            prev_adapter->get_name());
 
@@ -299,7 +299,7 @@ void SwitchAdapterTransaction::sleep_prev_adapter_callback(
     return;
   }
 
-  LOG_VERB("Switch (%d->%d): Step 3. Disconnect Prev Adapter (%s)",
+  LOG_VERB("Switch (%d->%d): STEP 3. %s Adapter OFF",
            sOngoing->mPrevIndex, sOngoing->mNextIndex,
            prev_adapter->get_name());
 

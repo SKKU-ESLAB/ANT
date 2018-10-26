@@ -51,7 +51,7 @@ int ChildProcess::run(const char *path, char *const params[], char *res_buf,
     }
     i++;
   }
-  LOG_DEBUG("Run command: %s", command_string.c_str());
+  LOG_DEBUG("RUN: %s", command_string.c_str());
 #endif
 
   res = pipe(internal_pipe);
@@ -91,11 +91,11 @@ int ChildProcess::run(const char *path, char *const params[], char *res_buf,
       int status;
       waitpid(pid, &status, 0);
 #ifdef VERBOSE_CHILD_PROCESS_RUN
-      LOG_DEBUG("Done (%s): %d", command_string.c_str(), status);
+      LOG_DEBUG("DONE: %s - %d", command_string.c_str(), status);
 #endif
     } else {
 #ifdef VERBOSE_CHILD_PROCESS_RUN
-      LOG_DEBUG("Daemon (%s)", command_string.c_str());
+      LOG_DEBUG("DAEMON: %s", command_string.c_str());
 #endif
     }
 
@@ -139,11 +139,11 @@ int ChildProcess::run(const char *path, char *const params[],
       int status;
       waitpid(pid, &status, 0);
 #ifdef VERBOSE_CHILD_PROCESS_RUN
-      LOG_VERB("Done (%s): %d", command_string.c_str(), status);
+      LOG_VERB("DONE: %s - %d", command_string.c_str(), status);
 #endif
     } else {
 #ifdef VERBOSE_CHILD_PROCESS_RUN
-      LOG_VERB("Daemon (%s)", command_string.c_str());
+      LOG_VERB("DAEMON: %s", command_string.c_str());
 #endif
     }
     return pid;
