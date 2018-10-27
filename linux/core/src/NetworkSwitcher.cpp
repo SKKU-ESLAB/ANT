@@ -153,13 +153,17 @@ bool SwitchAdapterTransaction::run(int prev_index, int next_index) {
 }
 
 void SwitchAdapterTransaction::done(bool is_success) {
+  // SWITCH TIME: end
+  this->setSwitchEndTS();
+  uint64_t latency = this->getSwitchLatency();
+  
   if (is_success) {
-    LOG_VERB("Switch (%d->%d): SUCCESS", sOngoing->mPrevIndex,
-             sOngoing->mNextIndex);
+    LOG_VERB("Switch (%d->%d): SUCCESS (%lluus)", sOngoing->mPrevIndex,
+             sOngoing->mNextIndex, latency);
     Core::singleton()->set_active_adapter_index(sOngoing->mNextIndex);
   } else {
-    LOG_ERR("Switch (%d->%d): FAILED", sOngoing->mPrevIndex,
-            sOngoing->mNextIndex);
+    LOG_ERR("Switch (%d->%d): FAILED (%lluus)", sOngoing->mPrevIndex,
+            sOngoing->mNextIndex, latency);
   }
   NetworkSwitcher::singleton()->done_switch();
   sOngoing = NULL;
@@ -168,6 +172,9 @@ void SwitchAdapterTransaction::done(bool is_success) {
 void SwitchAdapterTransaction::start(void) {
   // Switch Step 0, 1-a
   Core *core = Core::singleton();
+
+  // SWITCH TIME: start
+  this->setSwitchStartTS();
 
   ServerAdapter *next_adapter = core->get_adapter(this->mNextIndex);
   if (next_adapter == NULL) {

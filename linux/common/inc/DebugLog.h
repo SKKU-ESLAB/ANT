@@ -22,8 +22,6 @@
 #ifndef __DEBUG_LOG_H__
 #define __DEBUG_LOG_H__
 
-#include "../../configs/ExpConfig.h"
-
 #include <assert.h>
 #include <stdarg.h>
 #include <stdio.h>
@@ -35,9 +33,7 @@
 #define unlikely(x) __builtin_expect(!!(x), 0)
 #endif /* likely(x) */
 
-#ifndef LOG_LEVEL
-#define LOG_LEVEL 0
-#endif
+#define LOG_LEVEL 1
 
 #define _log(format, color, args...)                                           \
   do {                                                                         \

@@ -28,10 +28,10 @@
 #include "../../configs/ExpConfig.h"
 
 #include <mutex>
+#include <stdint.h>
+#include <sys/time.h>
 #include <thread>
 #include <vector>
-
-#include <stdint.h>
 
 namespace sc {
 class Core;
@@ -62,9 +62,12 @@ class SwitchAdapterTransaction {
 public:
   static bool run(int prev_index, int next_index);
   void start(void);
-  static void connect_next_adapter_callback(ServerAdapter* adapter, bool is_success);
-  static void sleep_prev_adapter_callback(ServerAdapter* adapter, bool is_success);
-  static void disconnect_prev_adapter_callback(ServerAdapter* adapter, bool is_success);
+  static void connect_next_adapter_callback(ServerAdapter *adapter,
+                                            bool is_success);
+  static void sleep_prev_adapter_callback(ServerAdapter *adapter,
+                                          bool is_success);
+  static void disconnect_prev_adapter_callback(ServerAdapter *adapter,
+                                               bool is_success);
 
 protected:
   void done(bool is_success);
@@ -77,13 +80,27 @@ protected:
 
   int mPrevIndex;
   int mNextIndex;
+
+protected:
+  void setSwitchStartTS(void) { gettimeofday(&this->mSwitchStartTS, NULL); }
+  void setSwitchEndTS(void) { gettimeofday(&this->mSwitchEndTS, NULL); }
+  uint64_t getSwitchLatency(void) {
+    uint64_t end = (uint64_t)this->mSwitchEndTS.tv_sec * 1000 * 1000 +
+                   this->mSwitchEndTS.tv_usec;
+    uint64_t start = (uint64_t)this->mSwitchStartTS.tv_sec * 1000 * 1000 +
+                     this->mSwitchStartTS.tv_usec;
+    return (end - start);
+  }
+
+  struct timeval mSwitchStartTS;
+  struct timeval mSwitchEndTS;
 }; /* class SwitchAdapterTransaction */
 
 class ConnectRequestTransaction {
 public:
   static bool run(int adapter_id);
   bool start(void);
-  static void connect_callback(ServerAdapter* adapter, bool is_success);
+  static void connect_callback(ServerAdapter *adapter, bool is_success);
 
 protected:
   void done();
@@ -98,8 +115,8 @@ class ReconnectAdapterTransaction {
 public:
   static bool run(ServerAdapter *targetAdapter);
   bool start();
-  static void disconnect_callback(ServerAdapter* adapter, bool is_success);
-  static void connect_callback(ServerAdapter* adapter, bool is_success);
+  static void disconnect_callback(ServerAdapter *adapter, bool is_success);
+  static void connect_callback(ServerAdapter *adapter, bool is_success);
 
 protected:
   void done(bool require_restart);

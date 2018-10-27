@@ -37,6 +37,4 @@
 //#define EXP_RECONNECT_ADAPTER_ENABLED
 #define VERBOSE_CONTROL_RAW_MESSAGE
 
-#define LOG_LEVEL 1
-
 #endif /* !defined(__EXP_CONFIG_H__) */

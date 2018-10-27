@@ -157,7 +157,7 @@ void on_connect(bool is_success) {
   sleep(2);
 
 #define BUFFER_SIZE (20 * 1024 * 1024)
-#define SOURCE_LOCALHOST_BT "localhost (ANT-0)"
+#define SOURCE_LOCALHOST_BT "localhost ("
 #define SOURCE_LOCALHOST_WFD "192.168.0.33"
   printf("Step 3. Send Workload (%s)\n", g_trace_file_name);
 
@@ -165,7 +165,7 @@ void on_connect(bool is_success) {
   io::CSVReader<4, io::trim_chars<>, io::double_quote_escape<',', '\"'>> in(
       g_trace_file_name);
   in.read_header(io::ignore_extra_column, "Time", "Source", "PayloadBT",
-                 "PayloadTCP");
+                 "Payload");
   std::string timestr;
   std::string source;
   std::string payload_bt;
@@ -240,19 +240,7 @@ void on_connect(bool is_success) {
     iter++;
   }
 
-  printf(" ** Finish Workload... Send Small Tail Data...\n");
-
-#define TAIL_DATA_SIZE (100)
-#define NUM_TAIL_DATA 100
-  for (int i = 0; i < NUM_TAIL_DATA; i++) {
-    printf(" ** Send Small Tail Data (%d/%d)\n", i, NUM_TAIL_DATA);
-    temp_buf = (char *)calloc(TAIL_DATA_SIZE, sizeof(char));
-    sc::send(temp_buf, TAIL_DATA_SIZE);
-    free(temp_buf);
-    sleep(1);
-  }
-
-  printf(" ** Sleep 600 secs...\n");
+  printf(" ** Finish Workload...\n");
 
   sleep(600);
 

@@ -74,7 +74,7 @@ bool RfcommServerSocket::open_impl(void) {
       0,
   };
   socklen_t opt = sizeof(client_addr);
-  LOG_DEBUG("open_impl(%s): Accepting...", this->get_name());
+  LOG_VERB("open_impl(%s): Accepting...", this->get_name());
   this->mClientSocket =
       ::accept(this->mServerSocket, (struct sockaddr *)&client_addr, &opt);
   if (this->mClientSocket < 0) {
@@ -82,7 +82,7 @@ bool RfcommServerSocket::open_impl(void) {
     return false;
   }
   
-  LOG_DEBUG("open_impl(%s): Accept SUCCESS (fd=%d)", this->get_name(),
+  LOG_VERB("open_impl(%s): Accept SUCCESS (fd=%d)", this->get_name(),
             this->mClientSocket);
 
   return true;

@@ -197,6 +197,7 @@ bool NetworkMonitor::check_increase_adapter(const Stats &stats) {
       /*
        * Cap-dynamic Policy:
        */
+
       LOG_ERR("Unsupported mode!: %d", this->get_mode());
       return false;
       break;
@@ -229,6 +230,8 @@ bool NetworkMonitor::check_decrease_adapter(const Stats &stats) {
       bool wfd_off;
       int wfd_idle_energy =
           WFD_IDLE_ENERGY_PER_1SEC * stats.ema_arrival_time_us / 1000000;
+      int queue_size = stats.now_queue_data_size;
+      int bandwidth = stats.now_total_bandwidth;
       if (WFD_INIT_ENERGY < wfd_idle_energy) {
         wfd_off = true;
       } else {
@@ -242,9 +245,13 @@ bool NetworkMonitor::check_decrease_adapter(const Stats &stats) {
         }
       }
 
-      if (wfd_off) {
-        if (stats.ema_send_request_size <
-            this->get_idle_energy_payoff_point(stats.ema_arrival_time_us)) {
+      if (queue_size > 0) {
+        // If queue is not empty, do not turn off WFD
+        return false;
+      } else if (wfd_off) {
+        if ((bandwidth == 0) ||
+            (stats.ema_send_request_size <
+             this->get_idle_energy_payoff_point(stats.ema_arrival_time_us))) {
           this->mDecreasingCheckCount++;
           if (this->mDecreasingCheckCount >= CHECK_DECREASING_OK_COUNT) {
             this->mDecreasingCheckCount = 0;
