@@ -20,6 +20,7 @@
 #ifndef __TRACE_RUNNER_H__
 #define __TRACE_RUNNER_H__
 
-
+void start_trace_runner(const char *trace_file_name,
+                        int decision_policy);
 
 #endif /* !defined(__TRACE_RUNNER_H__ */

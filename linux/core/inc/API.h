@@ -22,6 +22,7 @@
 
 #include "Core.h"
 #include "ServerAdapter.h"
+#include "NetworkMonitor.h"
 
 namespace sc {
 typedef void (*StartCallback)(bool is_success);
@@ -40,6 +41,10 @@ inline int send(const void *dataBuffer, uint32_t dataLength) {
 
 inline int receive(void **dataBuffer) {
   Core::singleton()->receive(dataBuffer, false);
+}
+
+inline void set_switcher_mode(NSMode switcher_mode) {
+  NetworkSwitcher::singleton()->set_mode(switcher_mode);
 }
 } /* namespace sc */
 

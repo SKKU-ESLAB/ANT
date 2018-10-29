@@ -17,6 +17,8 @@
  * limitations under the License.
  */
 
+#include "trace_runner.h"
+
 #include "../core/inc/API.h"
 #include "../core/inc/ServerAdapterStateListener.h"
 
@@ -47,6 +49,7 @@ struct timeval start, end;
 FILE *g_file_pointer;
 
 char g_trace_file_name[512];
+ExpDecisionPolicy g_decision_policy;
 
 sc::BtServerAdapter *g_bt_adapter;
 sc::WfdServerAdapter *g_wfd_adapter;
@@ -108,18 +111,31 @@ void on_connect(bool is_success);
 
 int main(int argc, char **argv) {
   /* Parse arguments */
-  if (argc != 2) {
-    printf("[Usage] %s <trace file name>\n", argv[0]);
+  if (argc != 3) {
+    printf("[Usage] %s <trace file name> <policy number>\n", argv[0]);
+    printf("  - Energy-aware Only: 0\n");
+    printf("  - Latency-aware Only: 1\n");
+    printf("  - Cap-dynamic Only: 2\n");
+    printf("  - App-aware: 3\n");
     return -1;
   }
 
+  start_trace_runner(argv[1], atoi(argv[2]));
+  return 0;
+}
+
+void start_trace_runner(const char *trace_file_name, int decision_policy) {
   // Communication Interface Initialization
   CommInitializer commInit;
   commInit.initialize();
 
-  snprintf(g_trace_file_name, 512, "%s", argv[1]);
+  snprintf(g_trace_file_name, 512, "%s", trace_file_name);
   printf(" ** Trace File: %s\n", g_trace_file_name);
 
+  g_decision_policy = decision_policy;
+  printf(" ** Decision Policy: %d\n", g_decision_policy);
+
+  // Adapter setting
   g_bt_adapter = sc::BtServerAdapter::singleton(
       1, "Bt", "150e8400-1234-41d4-a716-446655440000");
   g_wfd_adapter = sc::WfdServerAdapter::singleton(2, "Wfd", 3455, "SelCon");
@@ -127,8 +143,31 @@ int main(int argc, char **argv) {
   sc::register_adapter(g_bt_adapter);
   sc::register_adapter(g_wfd_adapter);
 
+  // Initial network monitor mode setting
+  switch (g_decision_policy) {
+  case 0:
+    /* Energy-aware Only */
+    sc::set_switcher_mode(kNSModeEnergyAware);
+    break;
+  case 1:
+    /* Latency-aware Only */
+    sc::set_switcher_mode(kNSModeLatencyAware);
+    break;
+  case 2:
+    /* Cap-dynamic Only */
+    sc::set_switcher_mode(kNSModeCapDynamic);
+    break;
+  case 3:
+    /* App-aware Only */ // TODO:
+    sc::set_switcher_mode(kNSModeEnergyAware);
+    break;
+  default:
+    /* Unknown Policy */
+    printf("[ERROR] Unknown Policy! %d\n", g_decision_policy);
+    return;
+  }
+
   sc::start_sc(on_connect);
-  return 0;
 }
 
 void on_connect(bool is_success) {
@@ -212,7 +251,7 @@ void on_connect(bool is_success) {
     }
     usleep(sleep_us);
 
-    if(payload_length == 0) {
+    if (payload_length == 0) {
       recent_sent_sec = time_sec;
       recent_sent_usec = time_usec;
       continue;
