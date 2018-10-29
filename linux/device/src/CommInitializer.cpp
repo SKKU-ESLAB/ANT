@@ -57,8 +57,8 @@ void CommInitializer::initialize(void) {
   snprintf(cmdLine, 500, "killall udhcpd 2> /dev/null");
   system(cmdLine);
 
-  snprintf(cmdLine, 500, "%s %s", IFDOWN_PATH, DEFAULT_WFD_DEVICE_NAME);
-  system(cmdLine);
+  // snprintf(cmdLine, 500, "%s %s", IFDOWN_PATH, DEFAULT_WFD_DEVICE_NAME);
+  // system(cmdLine);
 
   snprintf(cmdLine, 500, "%s %s down", IFCONFIG_PATH, DEFAULT_WFD_DEVICE_NAME);
   system(cmdLine);
@@ -75,8 +75,8 @@ void CommInitializer::initialize(void) {
   // Step 4. Wi-fi ON
   LOG_VERB("Init (4/4): WF ON");
 
-  snprintf(cmdLine, 500, "%s %s", IFUP_PATH, DEFAULT_WFD_DEVICE_NAME);
-  system(cmdLine);
+  // snprintf(cmdLine, 500, "%s %s", IFUP_PATH, DEFAULT_WFD_DEVICE_NAME);
+  // system(cmdLine);
 
   snprintf(cmdLine, 500, "%s %s up", IFCONFIG_PATH, DEFAULT_WFD_DEVICE_NAME);
   system(cmdLine);

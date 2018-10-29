@@ -31,17 +31,19 @@
 using namespace sc;
 
 bool WfdDevice::turn_on_impl(void) {
-  char buf[512];
-  char *const params[] = {"ifconfig", DEFAULT_WFD_DEVICE_NAME, "up", NULL};
+  // char buf[512];
+  // char *const params[] = {"ifconfig", DEFAULT_WFD_DEVICE_NAME, "up", NULL};
 
-  int res = ChildProcess::run(IFCONFIG_PATH, params, buf, 512, true);
-  return (res >= 0);
+  // int res = ChildProcess::run(IFCONFIG_PATH, params, buf, 512, true);
+  // return (res >= 0);
+  return true;
 }
 
 bool WfdDevice::turn_off_impl(void) {
-  char buf[512];
-  char *const params[] = {"ifconfig", DEFAULT_WFD_DEVICE_NAME, "down", NULL};
+  // char buf[512];
+  // char *const params[] = {"ifconfig", DEFAULT_WFD_DEVICE_NAME, "down", NULL};
 
-  int res = ChildProcess::run(IFCONFIG_PATH, params, buf, 512, true);
-  return (res >= 0);
+  // int res = ChildProcess::run(IFCONFIG_PATH, params, buf, 512, true);
+  // return (res >= 0);
+  return true;
 }

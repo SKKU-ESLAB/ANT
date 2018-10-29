@@ -64,7 +64,7 @@ int ChildProcess::run(const char *path, char *const params[], char *res_buf,
 
   pid = fork();
   if (pid < 0) {
-    LOG_ERR("Fork error");
+    LOG_ERR("Fork error: %d %s", errno, strerror(errno));
     return errno;
   } else if (pid > 0) { // LOG_VERB("Forked PID : %d", pid);
     /* Parent process */
@@ -131,7 +131,7 @@ int ChildProcess::run(const char *path, char *const params[],
 #endif
 
   if ((pid = fork()) < 0) {
-    LOG_ERR("fork error");
+    LOG_ERR("Fork error: %d %s", errno, strerror(errno));
     return errno;
   } else if (pid > 0) { // LOG_VERB("Forked PID : %d", pid);
     /* Parent process */

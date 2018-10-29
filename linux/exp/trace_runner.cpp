@@ -198,7 +198,6 @@ void on_connect(bool is_success) {
     int time_sec;
     int time_usec;
     sscanf(timestr.c_str(), "%d.%d", &(time_sec), &(time_usec));
-    time_usec = time_usec / 1000;
 
     /* Sleep for wait */
     int sleep_us = (int)(time_sec * 1000 * 1000 + time_usec) -
@@ -212,6 +211,12 @@ void on_connect(bool is_success) {
       printf(" ** Send Message (No. %d)\n", iter);
     }
     usleep(sleep_us);
+
+    if(payload_length == 0) {
+      recent_sent_sec = time_sec;
+      recent_sent_usec = time_usec;
+      continue;
+    }
 
     buffer = (char *)calloc(payload_length, sizeof(char));
     if (buffer == NULL) {

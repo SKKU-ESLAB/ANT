@@ -389,6 +389,7 @@ bool WfdP2PServer::disallow_discover_impl(void) {
 
   // Remove Wi-fi Direct P2P Group
   ret = this->wfd_remove_p2p_group(buf, 1024);
+  LOG_VERB("wpa_supplicant p2p_group_remove result: %s", buf);
 
   char *ptrptr;
   char *ptr = strtok_r(buf, "\t \n\'", &ptrptr);
@@ -404,11 +405,12 @@ bool WfdP2PServer::disallow_discover_impl(void) {
     ptr = strtok_r(NULL, "\t \n\'", &ptrptr);
   }
 
-  LOG_WARN("%s: wpa_supplicant crashed. revive it.", this->get_name());
-  /* Revive wfd interface */
-  this->turn_off_wfd_interface();
-  sleep(1);
-  this->turn_on_wfd_interface();
+  LOG_WARN("%s: wpa_supplicant crashed!", this->get_name());
+  // LOG_WARN("%s: wpa_supplicant crashed. revive it.", this->get_name());
+  // /* Revive wfd interface */
+  // this->turn_off_wfd_interface();
+  // sleep(1);
+  // this->turn_on_wfd_interface();
   return true;
 }
 

@@ -171,6 +171,7 @@ int Core::send(const void *dataBuffer, uint32_t dataLength, bool is_control) {
     LOG_ERR("Sending stopped(%u/%u) by %d", curr_offset, dataLength,
             sent_bytes);
   }
+  free(serialized_vector);
   return sent_bytes;
 }
 
