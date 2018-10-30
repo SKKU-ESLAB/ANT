@@ -22,7 +22,6 @@
 
 #include "Core.h"
 #include "ServerAdapter.h"
-#include "NetworkMonitor.h"
 
 namespace sc {
 typedef void (*StartCallback)(bool is_success);
@@ -43,9 +42,13 @@ inline int receive(void **dataBuffer) {
   Core::singleton()->receive(dataBuffer, false);
 }
 
-inline void set_switcher_mode(NSMode switcher_mode) {
-  NetworkSwitcher::singleton()->set_mode(switcher_mode);
-}
+typedef enum {
+  kNSModeEnergyAware = 0,  /* WearDrive-like */
+  kNSModeLatencyAware = 1, /* Selective Connection Unique */
+  kNSModeCapDynamic = 2    /* CoolSpots */
+} NSMode;
+
+void set_switcher_mode(NSMode switcher_mode);
 } /* namespace sc */
 
 #endif /* !defined(__SC_API_H__) */

@@ -17,20 +17,20 @@
  * limitations under the License.
  */
 
-#ifndef __COMM_INITIALIZER_H__
-#define __COMM_INITIALIZER_H__
+#ifndef __NETWORK_INITIALIZER_H__
+#define __NETWORK_INITIALIZER_H__
 
 #include <string>
 
 namespace sc {
-class CommInitializer {
+class NetworkInitializer {
 public:
   void initialize(void);
 private:
   int kill_dhcpd(void);
   int ping_wpa_cli(char ret[], size_t len);
   void retrieve_wpa_interface_name(std::string &wpaIntfName);
-}; /* class CommInitializer */
+}; /* class NetworkInitializer */
 } /* namespace sc */
 
-#endif /* !defined(__COMM_INITIALIZER_H__) */
+#endif /* !defined(__NETWORK_INITIALIZER_H__) */

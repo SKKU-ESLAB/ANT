@@ -86,3 +86,7 @@ void sc::stop_sc_done(bool is_success) {
   g_stop_sc_success = is_success;
   g_wait_cond_stop_sc.notify_all();
 }
+
+void sc::set_switcher_mode(NSMode switcher_mode) {
+  NetworkMonitor::singleton()->set_mode(switcher_mode);
+}

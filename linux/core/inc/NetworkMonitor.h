@@ -20,15 +20,10 @@
 #ifndef __NETWORK_MONITOR_H__
 #define __NETWORK_MONITOR_H__
 
+#include "API.h"
 #include "NetworkSwitcher.h"
 
 namespace sc {
-typedef enum {
-  kNSModeEnergyAware = 0,  /* WearDrive-like */
-  kNSModeLatencyAware = 1, /* Selective Connection Unique */
-  kNSModeCapDynamic = 2    /* CoolSpots */
-} NSMode;
-
 class Stats {
 public:
   /* Statistics used to print present status */
@@ -98,7 +93,10 @@ public:
   /* Mode setter */
   void set_mode(NSMode new_mode) {
     std::unique_lock<std::mutex> lck(this->mModeLock);
+    NSMode old_mode = this->mMode;
     this->mMode = new_mode;
+    
+    LOG_VERB("Network Monitor Mode Change: %d -> %d", old_mode, new_mode);
   }
 
 private:

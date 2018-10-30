@@ -17,102 +17,17 @@
  * limitations under the License.
  */
 
-#include "trace_runner.h"
+#include "TraceRunner.h"
 
-#include "../core/inc/API.h"
-#include "../core/inc/ServerAdapterStateListener.h"
-
-#include "../device/inc/BtServerAdapter.h"
-#include "../device/inc/CommInitializer.h"
-#include "../device/inc/WfdServerAdapter.h"
-
-#include "csv.h"
-
+#include <string>
 #include <thread>
-
-#include <fcntl.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <sys/time.h>
-#include <unistd.h>
-
-using namespace sc;
-
-#define DEBUG_SHOW_DATA 0
-#define DEBUG_SHOW_TIME 0
-
-#if DEBUG_SHOW_TIME == 1
-struct timeval start, end;
-#endif
-
-FILE *g_file_pointer;
-
-char g_trace_file_name[512];
-ExpDecisionPolicy g_decision_policy;
-
-sc::BtServerAdapter *g_bt_adapter;
-sc::WfdServerAdapter *g_wfd_adapter;
-
-class MyAdapterStateListener : ServerAdapterStateListener {
-public:
-  virtual void onUpdateServerAdapterState(ServerAdapter *adapter,
-                                          ServerAdapterState old_state,
-                                          ServerAdapterState new_state) {
-    ServerAdapterState bt_state = g_bt_adapter->get_state();
-    ServerAdapterState wfd_state = g_wfd_adapter->get_state();
-    std::string bt_state_str(
-        ServerAdapter::server_adapter_state_to_string(bt_state));
-    std::string wfd_state_str(
-        ServerAdapter::server_adapter_state_to_string(wfd_state));
-
-    LOG_VERB("[STATE] BT: %s / WFD: %s", bt_state_str.c_str(),
-             wfd_state_str.c_str());
-  }
-}; /* class ServerAdapterStateListener */
-
-void receiving_thread() {
-  void *buf = NULL;
-  LOG_THREAD_LAUNCH("App Receiving");
-
-  while (true) {
-    int ret = sc::receive(&buf);
-#if DEBUG_SHOW_DATA == 1
-    printf("Recv %d> %s\n\n", ret, reinterpret_cast<char *>(buf));
-#endif
-#if DEBUG_SHOW_TIME == 1
-    gettimeofday(&end, NULL);
-    printf("%ld %ld \n", end.tv_sec - start.tv_sec,
-           end.tv_usec - start.tv_usec);
-#endif
-
-    if (buf)
-      free(buf);
-  }
-
-  LOG_THREAD_FINISH("App Receiving");
-}
-
-static char *rand_string(char *str, size_t size) {
-  const char charset[] = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
-  if (size) {
-    --size;
-    for (size_t n = 0; n < size; n++) {
-      // int key = rand() % (int)(sizeof charset - 1);
-      // str[n] = charset[key];
-      str[n] = (char)255;
-    }
-    str[size] = '\0';
-  }
-  return str;
-}
-
-void on_connect(bool is_success);
 
 int main(int argc, char **argv) {
   /* Parse arguments */
-  if (argc != 3) {
-    printf("[Usage] %s <trace file name> <policy number>\n", argv[0]);
+  if (argc != 3 && argc != 4) {
+    printf("[Usage] %s <packet trace filename> <policy number> <app trace "
+           "filename>\n",
+           argv[0]);
     printf("  - Energy-aware Only: 0\n");
     printf("  - Latency-aware Only: 1\n");
     printf("  - Cap-dynamic Only: 2\n");
@@ -120,175 +35,32 @@ int main(int argc, char **argv) {
     return -1;
   }
 
-  start_trace_runner(argv[1], atoi(argv[2]));
+  std::string packet_trace_filename(argv[1]);
+  int policy_number = atoi(argv[2]);
+
+  TraceRunner *trace_runner;
+  switch (policy_number) {
+  case 0: {
+    trace_runner = TraceRunner::energy_aware_only_runner(packet_trace_filename);
+    break;
+  }
+  case 1: {
+    trace_runner =
+        TraceRunner::latency_aware_only_runner(packet_trace_filename);
+    break;
+  }
+  case 2: {
+    trace_runner = TraceRunner::cap_dynamic_only_runner(packet_trace_filename);
+    break;
+  }
+  case 3: {
+    std::string app_trace_filename(argv[3]);
+    trace_runner = TraceRunner::app_aware_runner(packet_trace_filename,
+                                                 app_trace_filename);
+    break;
+  }
+  default: { return -1; }
+  }
+  trace_runner->start();
   return 0;
-}
-
-void start_trace_runner(const char *trace_file_name, int decision_policy) {
-  // Communication Interface Initialization
-  CommInitializer commInit;
-  commInit.initialize();
-
-  snprintf(g_trace_file_name, 512, "%s", trace_file_name);
-  printf(" ** Trace File: %s\n", g_trace_file_name);
-
-  g_decision_policy = decision_policy;
-  printf(" ** Decision Policy: %d\n", g_decision_policy);
-
-  // Adapter setting
-  g_bt_adapter = sc::BtServerAdapter::singleton(
-      1, "Bt", "150e8400-1234-41d4-a716-446655440000");
-  g_wfd_adapter = sc::WfdServerAdapter::singleton(2, "Wfd", 3455, "SelCon");
-
-  sc::register_adapter(g_bt_adapter);
-  sc::register_adapter(g_wfd_adapter);
-
-  // Initial network monitor mode setting
-  switch (g_decision_policy) {
-  case 0:
-    /* Energy-aware Only */
-    sc::set_switcher_mode(kNSModeEnergyAware);
-    break;
-  case 1:
-    /* Latency-aware Only */
-    sc::set_switcher_mode(kNSModeLatencyAware);
-    break;
-  case 2:
-    /* Cap-dynamic Only */
-    sc::set_switcher_mode(kNSModeCapDynamic);
-    break;
-  case 3:
-    /* App-aware Only */ // TODO:
-    sc::set_switcher_mode(kNSModeEnergyAware);
-    break;
-  default:
-    /* Unknown Policy */
-    printf("[ERROR] Unknown Policy! %d\n", g_decision_policy);
-    return;
-  }
-
-  sc::start_sc(on_connect);
-}
-
-void on_connect(bool is_success) {
-  int iter = 0;
-  char sending_buf[8192];
-  int ret, numbytes;
-  char *buffer;
-  char input[100];
-  char file_name[200];
-  char file_dir[200];
-  char *temp_buf;
-
-  std::thread(receiving_thread).detach();
-
-#define TEST_DATA_SIZE (5 * 1024)
-  printf(" ** Send Test Data (%dB)\n", TEST_DATA_SIZE);
-  int i;
-  printf(" ** Wait for 5 seconds...\n");
-  sleep(5);
-
-  temp_buf = (char *)calloc(TEST_DATA_SIZE, sizeof(char));
-  sc::send(temp_buf, TEST_DATA_SIZE);
-  free(temp_buf);
-
-  printf(" ** Wait for 2 seconds...\n");
-  sleep(2);
-
-#define BUFFER_SIZE (20 * 1024 * 1024)
-#define SOURCE_LOCALHOST_BT "localhost ("
-#define SOURCE_LOCALHOST_WFD "192.168.0.33"
-  printf("Step 3. Send Workload (%s)\n", g_trace_file_name);
-
-  /* Initialize CSV Parser */
-  io::CSVReader<4, io::trim_chars<>, io::double_quote_escape<',', '\"'>> in(
-      g_trace_file_name);
-  in.read_header(io::ignore_extra_column, "Time", "Source", "PayloadBT",
-                 "Payload");
-  std::string timestr;
-  std::string source;
-  std::string payload_bt;
-  std::string payload_tcp;
-
-  /* Read CSV File */
-  int recent_sent_sec = 0;
-  int recent_sent_usec = 0;
-  while (in.read_row(timestr, source, payload_bt, payload_tcp)) {
-    int payload_length;
-    if (payload_bt.length() != 0) {
-      payload_length = std::stoi(payload_bt);
-    } else if (payload_tcp.length() != 0) {
-      payload_length = std::stoi(payload_tcp);
-    } else {
-      continue;
-    }
-
-#if DEBUG_SHOW_DATA == 1
-    printf("%s %s %d\n", timestr.c_str(), source.c_str(), payload_length);
-#endif
-
-    if (source.find(SOURCE_LOCALHOST_BT) == std::string::npos &&
-        source.find(SOURCE_LOCALHOST_WFD) == std::string::npos) {
-      /* Only replay packets sent from this device */
-      continue;
-    }
-
-    /* Parse Time */
-    int time_sec;
-    int time_usec;
-    sscanf(timestr.c_str(), "%d.%d", &(time_sec), &(time_usec));
-
-    /* Sleep for wait */
-    int sleep_us = (int)(time_sec * 1000 * 1000 + time_usec) -
-                   (int)(recent_sent_sec * 1000 * 1000 + recent_sent_usec);
-    if (sleep_us < 0) {
-      printf("[Error] Invalid sleep time: %d(%d:%d -> %d:%d)\n", sleep_us,
-             recent_sent_sec, recent_sent_usec, time_sec, time_usec);
-      return;
-    }
-    if (iter % 1000 == 0) {
-      printf(" ** Send Message (No. %d)\n", iter);
-    }
-    usleep(sleep_us);
-
-    if (payload_length == 0) {
-      recent_sent_sec = time_sec;
-      recent_sent_usec = time_usec;
-      continue;
-    }
-
-    buffer = (char *)calloc(payload_length, sizeof(char));
-    if (buffer == NULL) {
-      fprintf(stderr, "[Error] Buffer allocation failed: size=%d\n",
-              payload_length);
-      return;
-    } else {
-#if DEBUG_SHOW_TIME == 1
-      gettimeofday(&start, NULL);
-#endif
-      /* Generate String */
-      rand_string(buffer, payload_length);
-
-      /* Send Data */
-      ret = sc::send(buffer, payload_length);
-
-      free(buffer);
-
-#if DEBUG_SHOW_DATA == 1
-      printf("   - Packet %d : Sent!\n", iter);
-#endif
-    }
-
-    recent_sent_sec = time_sec;
-    recent_sent_usec = time_usec;
-    iter++;
-  }
-
-  printf(" ** Finish Workload...\n");
-
-  sleep(600);
-
-  sc::stop_sc(NULL);
-
-  return;
 }

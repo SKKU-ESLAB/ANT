@@ -18,7 +18,7 @@
  * limitations under the License.
  */
 
-#include "../inc/CommInitializer.h"
+#include "../inc/NetworkInitializer.h"
 
 #include "../../common/inc/ChildProcess.h"
 #include "../../common/inc/DebugLog.h"
@@ -34,7 +34,7 @@
 
 using namespace sc;
 
-void CommInitializer::initialize(void) {
+void NetworkInitializer::initialize(void) {
   char cmdLine[500] = {
       0,
   };
@@ -82,13 +82,13 @@ void CommInitializer::initialize(void) {
   system(cmdLine);
 }
 
-int CommInitializer::ping_wpa_cli(char ret[], size_t len) {
+int NetworkInitializer::ping_wpa_cli(char ret[], size_t len) {
   char *const params[] = {"wpa_cli", "ping", NULL};
 
   return ChildProcess::run(WPA_CLI_PATH, params, ret, len, true);
 }
 
-void CommInitializer::retrieve_wpa_interface_name(std::string &wpaIntfName) {
+void NetworkInitializer::retrieve_wpa_interface_name(std::string &wpaIntfName) {
   char wpaIntfNameCstr[100];
   char buf[1024];
 

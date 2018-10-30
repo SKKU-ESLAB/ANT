@@ -28,7 +28,7 @@ COMMON_OBJ=$(patsubst %, $(COMMON_OBJ_DIR)/%, $(_COMMON_OBJ))
 
 $(DEV_OBJ_DIR)/%.o: $(DEV_SRC_DIR)/%.cpp
 	$(CC) -o $@ -c $< $(FLAG) $(LIB) 
-_DEV_OBJ=BtServerAdapter.o BtDevice.o BtP2PServer.o RfcommServerSocket.o WfdServerAdapter.o TcpServerSocket.o WfdDevice.o WfdP2PServer.o EthServerAdapter.o CommInitializer.o
+_DEV_OBJ=BtServerAdapter.o BtDevice.o BtP2PServer.o RfcommServerSocket.o WfdServerAdapter.o TcpServerSocket.o WfdDevice.o WfdP2PServer.o EthServerAdapter.o NetworkInitializer.o
 DEV_OBJ=$(patsubst %, $(DEV_OBJ_DIR)/%, $(_DEV_OBJ))
 
 all : outdir exp tests
@@ -40,7 +40,7 @@ exp: trace_runner
 
 tests: comm_init_test wpa_cli_test udhcpd_test
 
-trace_runner: exp/trace_runner.cpp $(CORE_OBJ) $(COMMON_OBJ) $(DEV_OBJ)
+trace_runner: exp/trace_runner.cpp exp/TraceRunner.cpp $(CORE_OBJ) $(COMMON_OBJ) $(DEV_OBJ)
 	$(CC) -o $(BIN_DIR)/$@ $^ $(FLAG) $(LIB) 
 
 wpa_cli_test: tests/wpa_cli.cpp $(CORE_OBJ) $(COMMON_OBJ) $(DEV_OBJ)
