@@ -162,9 +162,9 @@ int TcpServerSocket::receive_impl(void *data_buffer, size_t data_length) {
     }
 
     received_bytes += once_received_bytes;
-#if VERBOSE_WFD_MSG != 0
+// #if VERBOSE_WFD_MSG != 0
     LOG_DEBUG("receive_impl(%s): size=%d", this->get_name(), once_received_bytes);
-#endif
+// #endif
   }
 
   if (received_bytes < 0) {

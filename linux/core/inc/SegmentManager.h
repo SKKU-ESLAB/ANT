@@ -68,7 +68,8 @@ typedef enum {
  */
 typedef enum {
   kSegFlagMF = 1,
-  kSegFlagControl = 2
+  kSegFlagControl = 2,
+  kSegFlagAck = 4
 } SegFlagVal; /* enum SegFlagVal */
 
 /**

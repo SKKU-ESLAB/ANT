@@ -23,7 +23,7 @@
 #include <stdint.h>
 
 #define kSegSize 512
-#define kSegHeaderSize 12
+#define kSegHeaderSize 20
 
 /**
  * < Data Structure of Segment > - Handled by Segment Manager
@@ -34,12 +34,13 @@
  *    You need to be careful with the segment header.
  */
 #define SEGMENT_DATA_SIZE (kSegSize + kSegHeaderSize)
-typedef struct
-{
-    uint32_t seq_no;
-    uint32_t len; // To present the size of the segment(consider the flag)
-    uint32_t flag;
-    uint8_t data[SEGMENT_DATA_SIZE];
+typedef struct {
+  uint32_t seq_no;
+  uint32_t len; // To present the size of the segment(consider the flag)
+  uint32_t flag;
+  int send_start_ts_sec;
+  int send_start_ts_usec;
+  uint8_t data[SEGMENT_DATA_SIZE];
 } Segment; /* struct Segment */
 
 #endif /* !defined(__SEGMENT_H__) */

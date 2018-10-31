@@ -121,18 +121,22 @@ void SenderThread::sender_loop(void) {
     bool is_control = ((segment_to_send->flag & kSegFlagControl) != 0);
 #ifdef VERBOSE_DEQUEUE_SEND_CONTROL
     if (is_control) {
-      LOG_DEBUG("%s: Send %s Segment (type=Ctrl, seqno=%d, len=%d)",
+      LOG_DEBUG("%s: Send %s Segment (type=Ctrl, seqno=%d, len=%d, ts=%d.%d)",
                 this->mAdapter->get_name(),
                 (is_get_failed_segment ? "Failed" : "Normal"),
-                segment_to_send->seq_no, (int)segment_to_send->len);
+                segment_to_send->seq_no, (int)segment_to_send->len,
+                segment_to_send->send_start_ts_sec,
+                segment_to_send->send_start_ts_usec);
     }
 #endif
 #ifdef VERBOSE_DEQUEUE_SEND_DATA
     if (!is_control) {
-      LOG_DEBUG("%s: Send %s Segment (type=Data, seqno=%d)",
+      LOG_VERB("%s: Send %s Segment (type=Data, seqno=%d, len=%d, ts=%d.%d))",
                 this->mAdapter->get_name(),
                 (is_get_failed_segment ? "Failed" : "Normal"),
-                segment_to_send->seq_no);
+                segment_to_send->seq_no, (int)segment_to_send->len,
+                segment_to_send->send_start_ts_sec,
+                segment_to_send->send_start_ts_usec);
     }
 #endif
 
@@ -203,7 +207,7 @@ void SenderThread::sender_loop(void) {
 
     // If successful, update the last sequence number
     // Last sequence number is used to wait remaining segments on disconnection
-    if(is_control) {
+    if (is_control) {
       this->set_last_seq_no_control(segment_to_send->seq_no);
     } else {
       this->set_last_seq_no_data(segment_to_send->seq_no);

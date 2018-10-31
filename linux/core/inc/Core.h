@@ -23,10 +23,10 @@
 #define __SC_CORE_H__
 
 #include "APIInternal.h"
-#include "SegmentManager.h"
-#include "ServerAdapter.h"
 #include "ControlMessageReceiver.h"
 #include "ControlMessageSender.h"
+#include "SegmentManager.h"
+#include "ServerAdapter.h"
 
 #include "../../common/inc/ArrivalTimeCounter.h"
 
@@ -46,7 +46,8 @@ class StartCoreTransaction {
 public:
   static bool run(Core *caller);
   void start();
-  static void connect_first_adapter_callback(ServerAdapter* adapter, bool is_success);
+  static void connect_first_adapter_callback(ServerAdapter *adapter,
+                                             bool is_success);
 
 private:
   void done(bool is_success);
@@ -61,7 +62,8 @@ class StopCoreTransaction {
 public:
   static bool run(Core *caller);
   void start();
-  static void disconnect_adapter_callback(ServerAdapter* adapter, bool is_success);
+  static void disconnect_adapter_callback(ServerAdapter *adapter,
+                                          bool is_success);
 
 private:
   void done(bool is_success);
@@ -106,17 +108,17 @@ public:
 
 public:
   /* Control Message Receiver/Sender Getter */
-  ControlMessageSender* get_control_sender(void) {
+  ControlMessageSender *get_control_sender(void) {
     return this->mControlMessageSender;
   }
-  ControlMessageReceiver* get_control_receiver(void) {
+  ControlMessageReceiver *get_control_receiver(void) {
     return this->mControlMessageReceiver;
   }
 
 private:
-/* Control Message Receiver/Sender */
-  ControlMessageSender* mControlMessageSender;
-  ControlMessageReceiver* mControlMessageReceiver;
+  /* Control Message Receiver/Sender */
+  ControlMessageSender *mControlMessageSender;
+  ControlMessageReceiver *mControlMessageReceiver;
 
 public:
   /* Get statistics */
@@ -142,6 +144,14 @@ public:
   float get_ema_send_arrival_time() {
     return this->mSendArrivalTime.get_em_average();
   }
+
+  int get_sma_average_send_rtt() { return this->mSendRTT.get_sm_average(); }
+
+  void set_send_rtt(int send_rtt) { this->mSendRTT.set_value(send_rtt); }
+
+private:
+  /* Statistics */
+  Counter mSendRTT;
 
 public:
   /* State getter */

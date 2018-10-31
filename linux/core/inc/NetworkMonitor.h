@@ -36,6 +36,9 @@ public:
   float ema_send_request_size = 0;
   float ema_arrival_time_us = 0;
   int now_queue_data_size = 0;
+
+  /* Statistics used to evaluate the policies */
+  int sma_send_rtt = 0;
 };
 
 class NetworkSwitcher;

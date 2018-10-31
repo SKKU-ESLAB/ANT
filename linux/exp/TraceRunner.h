@@ -38,7 +38,7 @@ typedef enum {
   kDPEnergyAwareOnly = 0,
   kDPLatencyAwareOnly = 1,
   kDPCapDynamicOnly = 2,
-  kDPAppAwareOnly = 3,
+  kDPAppAware = 3,
   kDPNum = 4
 } DecisionPolicy;
 

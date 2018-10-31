@@ -30,6 +30,7 @@
 #include <netinet/in.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/time.h>
 
 using namespace sc;
 
@@ -50,9 +51,13 @@ void SegmentManager::serialize_segment_header(Segment *seg) {
   uint32_t net_seq_no = htonl(seg->seq_no);
   uint32_t net_len = htonl(seg->len);
   uint32_t net_flag = htonl(seg->flag);
+  int32_t net_send_start_ts_sec = htonl(seg->send_start_ts_sec);
+  int32_t net_send_start_ts_usec = htonl(seg->send_start_ts_usec);
   memcpy(seg->data, &net_seq_no, sizeof(uint32_t));
   memcpy(seg->data + 4, &net_len, sizeof(uint32_t));
   memcpy(seg->data + 8, &net_flag, sizeof(uint32_t));
+  memcpy(seg->data + 12, &net_send_start_ts_sec, sizeof(int32_t));
+  memcpy(seg->data + 16, &net_send_start_ts_usec, sizeof(int32_t));
 }
 
 int SegmentManager::send_to_segment_manager(uint8_t *data, size_t len,
@@ -67,6 +72,9 @@ int SegmentManager::send_to_segment_manager(uint8_t *data, size_t len,
 
   /* Reserve sequence numbers to this thread */
   uint32_t allocated_seq_no = get_next_seq_no(seq_num_type, num_of_segments);
+
+  struct timeval send_start_ts;
+  gettimeofday(&send_start_ts, NULL);
 
   int seg_idx;
   for (seg_idx = 0; seg_idx < num_of_segments; seg_idx++) {
@@ -87,6 +95,10 @@ int SegmentManager::send_to_segment_manager(uint8_t *data, size_t len,
       flag = flag | kSegFlagControl;
     seg->flag = flag;
 
+    /* Set segment enqueued timestamp */
+    seg->send_start_ts_sec = (int)send_start_ts.tv_sec;
+    seg->send_start_ts_usec = (int)send_start_ts.tv_usec;
+
     /* Set segment header to data */
     this->serialize_segment_header(seg);
 
@@ -96,14 +108,14 @@ int SegmentManager::send_to_segment_manager(uint8_t *data, size_t len,
 
     if (is_control) {
 #ifdef VERBOSE_ENQUEUE_SEND
-      LOG_DEBUG("Enqueue(control) IsControl: %d / SeqNo: %lu / len: %d",
-                is_control, seg->seq_no, len);
+      LOG_DEBUG("Enqueue(control) IsControl: %d / SeqNo: %lu / len: %d / TS: %ld.%ld",
+                is_control, seg->seq_no, len, send_start_ts.tv_sec, send_start_ts.tv_usec);
 #endif
       this->enqueue(kSQSendControl, seg);
     } else {
 #ifdef VERBOSE_ENQUEUE_SEND
-      LOG_DEBUG("Enqueue(data) IsControl: %d / SeqNo: %lu", is_control,
-                seg->seq_no);
+      LOG_DEBUG("Enqueue(data) IsControl: %d / SeqNo: %lu / TS: %ld.%ld", is_control,
+                seg->seq_no, send_start_ts.tv_sec, send_start_ts.tv_usec);
 #endif
       this->enqueue(kSQSendData, seg);
     }

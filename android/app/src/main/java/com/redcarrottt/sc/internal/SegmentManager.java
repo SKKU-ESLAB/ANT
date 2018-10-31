@@ -20,35 +20,15 @@ package com.redcarrottt.sc.internal;
 
 import com.redcarrottt.testapp.Logger;
 
-import java.nio.ByteBuffer;
-import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.ListIterator;
 
-/*
-    Segment is the minimum unit of the sending data through the network.
-    Segment header (sequence # + len + flag) is 16bytes (4bytes + 4bytes + 4bytes)
- */
-class Segment {
-    int seq_no;
-    int len;
-    int flag;
-    byte[] data;
-
-    Segment() {
-        seq_no = -1;
-        len = 0;
-        flag = 0;
-        data = new byte[SegmentManager.kSegSize + SegmentManager.kSegHeaderSize];
-    }
-}
+import static com.redcarrottt.sc.internal.Segment.kSegPayloadSize;
 
 class SegmentManager {
     static private SegmentManager instance = null;
-    static public final int kSegSize = 512;
-    private static final int kSegFreeThreshold = 256;
 
-    static public final int kSegHeaderSize = 12;
+    private static final int kSegFreeThreshold = 256;
 
     static final int kSQSendData = 0;
     static final int kSQRecvData = 1;
@@ -65,9 +45,6 @@ class SegmentManager {
     static final int kSNData = 0;
     static final int kSNControl = 1;
     private static final int kNumSN = 2;
-
-    static final short kSegFlagMF = 1;
-    static final short kSegFlagControl = 2;
 
     private int[] mNextSeqNo;
     private int[] mExpectedSeqNo;
@@ -179,62 +156,41 @@ class SegmentManager {
     int mWaitSeqNoData = 0;
     Object mWaitReceiving = new Object();
 
-    public int send_to_segment_manager(byte[] data, int length, boolean isControl) {
-        if (data == null || length <= 0) throw new AssertionError();
+    public int send_to_segment_manager(byte[] data_bytes, int data_length, boolean isControl) {
+        if (data_bytes == null || data_length <= 0) throw new AssertionError();
 
         int offset = 0;
-        int num_of_segments = (length + kSegSize - 1) / kSegSize;
+        int num_of_segments = (data_length + Segment.kSegPayloadSize - 1) / Segment.kSegPayloadSize;
         int seq_num_type = (isControl) ? kSNControl : kSNData;
         int allocated_seq_no = getNextSeqNo(seq_num_type, num_of_segments);
         int seg_idx;
+
         for (seg_idx = 0; seg_idx < num_of_segments; seg_idx++) {
-            int seg_len = (length - offset < kSegSize) ? (length - offset) : kSegSize;
-            Segment seg = get_free_segment();
+            Segment segmentToEnqueue = get_free_segment();
 
-            // 0~3: seq_no
-            seg.seq_no = allocated_seq_no++;
+            // Calculate segment metadata fields
+            int seq_no = allocated_seq_no++;
+            int payload_length = (data_length - offset < kSegPayloadSize) ? (data_length - offset) : kSegPayloadSize;
 
-            // 4~7: len
-            seg.len = seg_len;
+            // Setting segment metadata
+            segmentToEnqueue.initByteArray();
+            segmentToEnqueue.setMetadataNormal(seq_no, payload_length);
+            if (offset + payload_length < data_length) segmentToEnqueue.setMoreFragmentFlag();
+            if (isControl) segmentToEnqueue.setControlFlag();
 
-            // 8~11: flag
-            int flag = 0;
-            if (offset + seg_len < length) flag = flag | kSegFlagMF;
-            if (isControl) flag = flag | kSegFlagControl;
-            seg.flag = flag;
+            // Setting segment payload data
+            segmentToEnqueue.setPayloadData(data_bytes, offset, payload_length);
+            offset += payload_length;
 
-            // 12~: data
-            System.arraycopy(data, offset, seg.data, kSegHeaderSize, seg_len);
-            offset += seg_len;
-
-            serialize_segment_header(seg);
-
+            // Enqueue the segment
             if (isControl) {
-                enqueue(kSQSendControl, seg);
+                enqueue(kSQSendControl, segmentToEnqueue);
             } else {
-                enqueue(kSQSendData, seg);
+                enqueue(kSQSendData, segmentToEnqueue);
             }
         }
 
         return 0;
-    }
-
-    private void serialize_segment_header(Segment segment) {
-        ByteBuffer buffer = ByteBuffer.allocate(4);
-        buffer.putInt(segment.seq_no);
-        byte[] net_seq_no = buffer.array();
-
-        buffer = ByteBuffer.allocate(4);
-        buffer.putInt(segment.len);
-        byte[] net_len = buffer.array();
-
-        buffer = ByteBuffer.allocate(4);
-        buffer.putInt(segment.flag);
-        byte[] net_flag = buffer.array();
-
-        System.arraycopy(net_seq_no, 0, segment.data, 0, 4);
-        System.arraycopy(net_len, 0, segment.data, 4, 4);
-        System.arraycopy(net_flag, 0, segment.data, 8, 4);
     }
 
     public byte[] recv_from_segment_manager(ProtocolData protocolData, boolean isControl) {
@@ -243,45 +199,50 @@ class SegmentManager {
         byte[] serialized;
         int offset = 0;
         int data_size;
-        boolean cont;
+        boolean isMoreFragment;
 
-        Segment seg;
+        Segment segmentDequeued;
         do {
             if (isControl) {
-                seg = dequeue(kDeqRecvControl);
+                segmentDequeued = dequeue(kDeqRecvControl);
             } else {
-                seg = dequeue(kDeqRecvData);
+                segmentDequeued = dequeue(kDeqRecvData);
             }
-        } while (seg == null);
-        ProtocolManager.parse_header(Arrays.copyOfRange(seg.data, kSegHeaderSize, seg.data
-                .length), protocolData);
+        } while (segmentDequeued == null);
+
+        ProtocolManager.parse_header(segmentDequeued.getPayloadData(), protocolData);
         if (protocolData.len == 0) return null;
 
         //Logger.DEBUG(kTag, "pd.len is " + pd.len);
         serialized = new byte[protocolData.len];
 
         // Handle the first segment of the data bulk, because it contains protocol data
-        data_size = seg.len - ProtocolManager.kProtocolHeaderSize;
-        System.arraycopy(seg.data, kSegHeaderSize + ProtocolManager.kProtocolHeaderSize,
+        data_size = segmentDequeued.getLength() - ProtocolManager.kProtocolHeaderSize;
+        System.arraycopy(segmentDequeued.getPayloadData(), ProtocolManager.kProtocolHeaderSize,
                 serialized, offset, data_size);
         offset += data_size;
 
-        cont = ((seg.flag & kSegFlagMF) != 0);
-        free_segment(seg);
+        isMoreFragment = segmentDequeued.isMoreFragment();
+        free_segment(segmentDequeued);
 
-        while (cont) {
+        while (isMoreFragment) {
             do {
                 if (isControl) {
-                    seg = dequeue(kDeqRecvControl);
+                    segmentDequeued = dequeue(kDeqRecvControl);
                 } else {
-                    seg = dequeue(kDeqRecvData);
+                    segmentDequeued = dequeue(kDeqRecvData);
                 }
-            } while (seg == null);
-            data_size = seg.len;
-            System.arraycopy(seg.data, kSegHeaderSize, serialized, offset, data_size);
-            cont = ((seg.flag & kSegFlagMF) != 0);
+            } while (segmentDequeued == null);
+
+            // Copy each segments' payload to the serialized data buffer
+            byte[] segment_payload_data = segmentDequeued.getPayloadData();
+            data_size = segmentDequeued.getLength();
+            System.arraycopy(segment_payload_data, 0, serialized, offset, data_size);
+
+            // Update MF and offset
+            isMoreFragment = segmentDequeued.isMoreFragment();
             offset += data_size;
-            free_segment(seg);
+            free_segment(segmentDequeued);
         }
 
         return serialized;
@@ -312,7 +273,7 @@ class SegmentManager {
         boolean segmentEnqueued = false;
 
         synchronized (this.mQueues[queueType]) {
-            if (segment.seq_no == this.mExpectedSeqNo[queueType]) {
+            if (segment.getSeqNo() == this.mExpectedSeqNo[queueType]) {
                 // Case 1. this seq no. = expected seq no.
                 // In-order segments -> enqueue to the target queue
                 this.mExpectedSeqNo[queueType]++;
@@ -320,7 +281,7 @@ class SegmentManager {
                 this.mQueues[queueType].offerLast(segment);
                 this.mQueueLengths[queueType]++;
                 segmentEnqueued = true;
-            } else if (segment.seq_no < this.mExpectedSeqNo[queueType]) {
+            } else if (segment.getSeqNo() < this.mExpectedSeqNo[queueType]) {
                 // Case 2. this seq no. < expected seq no.
                 // Duplicated segments -> ignore
                 return;
@@ -330,19 +291,18 @@ class SegmentManager {
                 ListIterator it = this.mPendingQueue[queueType].listIterator();
                 while (it.hasNext()) {
                     Segment walker = (Segment) it.next();
-                    if (walker.seq_no > segment.seq_no) break;
+                    if (walker.getSeqNo() > segment.getSeqNo()) break;
                 }
                 it.add(segment);
-                Logger.WARN(kTag, "Pending Queue: (" + queueType + ") incoming=" + segment
-                        .seq_no + " / expected_next=" + this.mExpectedSeqNo[queueType]);
+                Logger.WARN(kTag, "Pending Queue: (" + queueType + ") incoming=" + segment.getSeqNo()
+                        + " / expected_next=" + this.mExpectedSeqNo[queueType]);
             }
 
-            // TODO: why do that?
             ListIterator it = this.mPendingQueue[queueType].listIterator();
             while (it.hasNext()) {
                 Segment walker = (Segment) it.next();
 
-                if (walker.seq_no != this.mExpectedSeqNo[queueType]) break;
+                if (walker.getSeqNo() != this.mExpectedSeqNo[queueType]) break;
 
                 this.mQueues[queueType].offerLast(walker);
                 this.mQueueLengths[queueType]++;
@@ -444,10 +404,6 @@ class SegmentManager {
             }
 
             if (ret == null) throw new AssertionError();
-
-            ret.seq_no = -1;
-            ret.flag = 0;
-            ret.len = 0;
         }
         return ret;
     }

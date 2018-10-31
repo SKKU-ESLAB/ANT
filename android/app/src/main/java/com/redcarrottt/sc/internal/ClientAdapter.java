@@ -20,7 +20,6 @@ import android.util.Log;
 
 import com.redcarrottt.testapp.Logger;
 
-import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Date;
 
@@ -31,9 +30,6 @@ import static com.redcarrottt.sc.internal.ExpConfig.VERBOSE_SEGMENT_DEQUEUE_DATA
 import static com.redcarrottt.sc.internal.SegmentManager.kDeqSendControlData;
 import static com.redcarrottt.sc.internal.SegmentManager.kSQRecvControl;
 import static com.redcarrottt.sc.internal.SegmentManager.kSQRecvData;
-import static com.redcarrottt.sc.internal.SegmentManager.kSegFlagControl;
-import static com.redcarrottt.sc.internal.SegmentManager.kSegHeaderSize;
-import static com.redcarrottt.sc.internal.SegmentManager.kSegSize;
 
 public class ClientAdapter {
     private final String kTag = "ClientAdapter";
@@ -149,7 +145,7 @@ public class ClientAdapter {
             return -2;
         }
 
-        Logger.VERB(this.getName(), "Send data: length=" + dataLength);
+//        Logger.VERB(this.getName(), "Send data: length=" + dataLength);
 
         // Omit Implementing Statistics: SendDataSize
         return this.mClientSocket.send(dataBuffer, dataLength);
@@ -528,10 +524,11 @@ public class ClientAdapter {
                     }
                 }
 
-                Logger.DEBUG(ClientAdapter.this.getName(), "SEND Segment " + segmentToSend.seq_no
-                        + " / " + segmentToSend.len + "" + " / " + segmentToSend.flag);
+                Logger.DEBUG(ClientAdapter.this.getName(), "SEND Segment " + segmentToSend
+                        .getSeqNo() + " / " + segmentToSend.getLength() + "" + " / " +
+                        segmentToSend.getFlag());
 
-                int res = send(segmentToSend.data, kSegHeaderSize + kSegSize);
+                int res = send(segmentToSend.getByteArray(), segmentToSend.getByteArraySize());
                 if (res < 0) {
                     Logger.WARN(kTag, "Sending failed at " + ClientAdapter.this.getName());
                     sm.failed_sending(segmentToSend);
@@ -590,62 +587,58 @@ public class ClientAdapter {
 
         public void receiverThreadLoop(ClientAdapter adapter) {
             Logger.VERB(kTag, ClientAdapter.this.getName() + "'s Receiver thread starts");
-            byte prevData[] = new byte[SegmentManager.kSegSize + SegmentManager.kSegHeaderSize];
 
             while (this.isOn()) {
                 if (VERBOSE_RECEIVER_TIME) this.mDates[0] = new Date();
 
                 SegmentManager sm = SegmentManager.singleton();
-                Segment segmentToReceive = sm.get_free_segment();
-                int len = kSegSize + kSegHeaderSize;
+
+                int length_to_receive = Segment.kSegHeaderSize + Segment.kSegPayloadSize;
+                byte[] receive_buffer = new byte[length_to_receive];
 
                 if (VERBOSE_RECEIVER_TIME) this.mDates[1] = new Date();
 
                 if (VERBOSE_CLIENT_ADAPTER) {
                     Logger.DEBUG(kTag, adapter.getName() + ": Receiving...");
                 }
-                int res = adapter.receive(segmentToReceive.data, len);
-                if (res < len) {
+                int res = adapter.receive(receive_buffer, length_to_receive);
+                if (res < length_to_receive) {
                     Logger.WARN(kTag, "Receiving failed at " + adapter.getName());
                     break;
                 }
 
                 if (VERBOSE_RECEIVER_TIME) this.mDates[2] = new Date();
 
-                // Read segment metadata
-                ByteBuffer buffer = ByteBuffer.allocate(4);
-                buffer.put(segmentToReceive.data, 0, 4);
-                segmentToReceive.seq_no = buffer.getInt(0);
-
-                buffer = ByteBuffer.allocate(4);
-                buffer.put(segmentToReceive.data, 4, 4);
-                segmentToReceive.len = buffer.getInt(0);
-
-                buffer = ByteBuffer.allocate(4);
-                buffer.put(segmentToReceive.data, 8, 4);
-                segmentToReceive.flag = buffer.getInt(0);
-
-                //Logger.DEBUG(kTag, "RECEIVE " + segmentToReceive.seq_no + " / " +
-                // segmentToReceive.len + " / " + segmentToReceive.flag);
+                // Set segment
+                Segment segmentToReceive = sm.get_free_segment();
+                segmentToReceive.setByteArray(receive_buffer);
 
                 if (VERBOSE_RECEIVER_TIME) this.mDates[3] = new Date();
 
-                boolean is_control = ((segmentToReceive.flag & kSegFlagControl) != 0);
-
-                if (VERBOSE_SEGMENT_DEQUEUE_CTRL && is_control) {
-                    Logger.DEBUG(getName(), "Receive Segment: seqno=" + segmentToReceive.seq_no +
-                            " / type=ctrl");
-                }
-                if (VERBOSE_SEGMENT_DEQUEUE_DATA && !is_control) {
-                    Logger.DEBUG(getName(), "Receive Segment: seqno=" + segmentToReceive.seq_no +
-                            " / type=data");
+                if (segmentToReceive.isAck()) {
+                    // For now, Android-side does not handle ACK message.
+                    continue;
                 }
 
-                if (is_control) {
+                if (VERBOSE_SEGMENT_DEQUEUE_CTRL && segmentToReceive.isControl()) {
+                    Logger.DEBUG(getName(), "Receive Segment: seqno=" + segmentToReceive.getSeqNo
+                            () + " / type=ctrl");
+                }
+                if (VERBOSE_SEGMENT_DEQUEUE_DATA && !segmentToReceive.isControl()) {
+                    Logger.DEBUG(getName(), "Receive Segment: seqno=" + segmentToReceive.getSeqNo
+                            () + " / type=data");
+                }
+
+                if (segmentToReceive.isControl()) {
                     sm.enqueue(kSQRecvControl, segmentToReceive);
                 } else {
                     sm.enqueue(kSQRecvData, segmentToReceive);
                 }
+
+                // Send ACK message
+                sendAckSegment(segmentToReceive.getSeqNo(), segmentToReceive.getFlag(),
+                        segmentToReceive.getSendStartTSSec(), segmentToReceive.getSendStartTSUsec
+                                ());
 
                 if (VERBOSE_RECEIVER_TIME) this.mDates[4] = new Date();
 
@@ -668,6 +661,29 @@ public class ClientAdapter {
 
 //            NetworkSwitcher.singleton().reconnectAdapter(ClientAdapter.this);
             Logger.VERB(kTag, ClientAdapter.this.getName() + "'s Receiver thread ends");
+        }
+
+        public void sendAckSegment(int seq_no, int flag, int send_start_ts_sec, int
+                send_start_ts_usec) {
+            // Filter ACK messages
+            if (seq_no % 10 != 0) return;
+
+            String message = "ACK";
+            byte[] messageBytes = message.getBytes();
+
+//            Logger.DEBUG(kTag, "Send ACK: " + seq_no + " " + flag + " " + send_start_ts_sec + "
+// " +
+//                    send_start_ts_usec);
+
+            SegmentManager sm = SegmentManager.singleton();
+            Segment ackSegment = sm.get_free_segment();
+            ackSegment.initByteArray();
+            ackSegment.setMetadataAck(seq_no, messageBytes.length, flag, send_start_ts_sec,
+                    send_start_ts_usec);
+            ackSegment.setPayloadData(messageBytes, 0, messageBytes.length);
+
+            send(ackSegment.getByteArray(), ackSegment.getByteArraySize());
+            sm.free_segment(ackSegment);
         }
 
         public void finish() {

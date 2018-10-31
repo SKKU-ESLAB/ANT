@@ -95,12 +95,12 @@ void NetworkMonitor::print_stats(Stats &stats) {
    *  - EMA(Arrival Time (sec))
    */
   printf("R: %dB (IAT: %3.3fms) => [Q: %dB ] => %dB/s // ON:%dB "
-         "OFF: %dB (%d)\n",
+         "OFF: %dB (%d) // RTT=%3.3fus\n",
          (int)stats.ema_send_request_size, (stats.ema_arrival_time_us / 1000),
          stats.now_queue_data_size, stats.now_total_bandwidth,
          this->get_init_energy_payoff_point(),
          this->get_idle_energy_payoff_point(stats.ema_arrival_time_us),
-         this->mDecreasingCheckCount);
+         this->mDecreasingCheckCount, (float)stats.sma_send_rtt / 1000);
 #endif
 }
 
@@ -122,6 +122,9 @@ void NetworkMonitor::get_stats(Stats &stats) {
   stats.now_queue_data_size = sm->get_queue_data_size(kSQSendData) +
                               sm->get_queue_data_size(kSQSendControl) +
                               sm->get_failed_sending_queue_data_size();
+  
+  /* Statistics used to evaluate the policies */
+  stats.sma_send_rtt = core->get_sma_average_send_rtt();
 }
 
 void NetworkMonitor::check_and_decide_switching(Stats &stats) {

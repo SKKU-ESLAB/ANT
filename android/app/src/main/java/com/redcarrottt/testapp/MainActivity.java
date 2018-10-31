@@ -117,6 +117,8 @@ public class MainActivity extends AppCompatActivity implements LogReceiver.Callb
         public void onClick(View view) {
             // Initialize SC
             initializeCommunication();
+            Button startButton = (Button) findViewById(R.id.startButton);
+            startButton.setEnabled(false);
         }
     };
 

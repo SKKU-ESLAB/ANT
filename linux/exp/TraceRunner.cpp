@@ -132,7 +132,7 @@ void TraceRunner::send_workload(void) {
                                 "PayloadBT", "Payload");
 
   AppTraceReader *appTraceReader = NULL;
-  if (this->mDecisionPolicy == kDPAppAwareOnly) {
+  if (this->mDecisionPolicy == kDPAppAware) {
     appTraceReader = new AppTraceReader(this->mAppTraceFilename);
   }
 
@@ -188,10 +188,12 @@ void TraceRunner::send_workload(void) {
 
     // In case of app-aware workload,
     // check if the policy should be applied by NetworkMonitor
-    res = this->check_app_policy(appTraceReader, ts_sec, ts_usec);
-    if(res < 0) {
-      printf("[ERROR] check_app_policy error %d\n", res);
-      return;
+    if(this->mDecisionPolicy == kDPAppAware) {
+      res = this->check_app_policy(appTraceReader, ts_sec, ts_usec);
+      if(res < 0) {
+        printf("[ERROR] check_app_policy error %d\n", res);
+        return;
+      }
     }
 
 #if DEBUG_SHOW_TIME == 1
@@ -347,7 +349,7 @@ TraceRunner::cap_dynamic_only_runner(std::string packet_trace_filename) {
 }
 TraceRunner *TraceRunner::app_aware_runner(std::string packet_trace_filename,
                                            std::string app_trace_filename) {
-  return new TraceRunner(packet_trace_filename, kDPAppAwareOnly,
+  return new TraceRunner(packet_trace_filename, kDPAppAware,
                          app_trace_filename);
 }
 
