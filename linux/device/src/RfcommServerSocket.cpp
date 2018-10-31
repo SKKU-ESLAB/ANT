@@ -243,8 +243,9 @@ int RfcommServerSocket::receive_impl(void *data_buffer, size_t data_length) {
 
   // Read
   while (received_bytes < data_length) {
+    int left_data_bytes = data_length - received_bytes;
     int once_received_bytes =
-        ::recv(this->mClientSocket, data_buffer, data_length, 0);
+        ::recv(this->mClientSocket, data_buffer + received_bytes, left_data_bytes, 0);
     if (once_received_bytes <= 0) {
       return once_received_bytes;
     }
