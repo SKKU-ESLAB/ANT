@@ -88,7 +88,7 @@ class RfcommClientSocket extends ClientSocket {
     @Override
     protected int sendImpl(byte[] dataBuffer, int dataLength) {
         if (this.mSocket == null || !this.mSocket.isConnected() || this.mOutputStream == null) {
-            Logger.ERR(kTag, "Socket closed! Send failed!");
+            Logger.WARN(kTag, "Send - Socket closed! 1");
             return -1;
         }
         try {
@@ -96,7 +96,7 @@ class RfcommClientSocket extends ClientSocket {
             this.mOutputStream.flush();
             return dataLength;
         } catch (IOException e) {
-            Logger.ERR(kTag, "Send failed! / " + e.getMessage());
+            Logger.WARN(kTag, "Send - Socket closed! 2 / " + e.getMessage());
             return -2;
         }
     }
@@ -104,7 +104,7 @@ class RfcommClientSocket extends ClientSocket {
     @Override
     protected int receiveImpl(byte[] dataBuffer, int dataLength) {
         if (this.mSocket == null || !this.mSocket.isConnected() || this.mInputStream == null) {
-            Logger.ERR(kTag, "Socket closed! Receive failed!");
+            Logger.ERR(kTag, "Receive - Socket closed! 1");
             return -1;
         }
         try {
@@ -120,7 +120,7 @@ class RfcommClientSocket extends ClientSocket {
             }
             return dataLength;
         } catch (IOException e) {
-            Logger.ERR(kTag, "Receive failed! 2 / " + e.getMessage());
+            Logger.WARN(kTag, "Receive - Socket closed! 2 / " + e.getMessage());
             return -3;
         }
     }

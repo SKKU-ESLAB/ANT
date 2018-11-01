@@ -666,7 +666,7 @@ public class ClientAdapter {
         public void sendAckSegment(int seq_no, int flag, int send_start_ts_sec, int
                 send_start_ts_usec) {
             // Filter ACK messages
-            if (seq_no % 10 != 0) return;
+            if (seq_no % 50 != 0) return;
 
             String message = "ACK";
             byte[] messageBytes = message.getBytes();

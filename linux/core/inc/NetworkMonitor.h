@@ -38,7 +38,7 @@ public:
   int now_queue_data_size = 0;
 
   /* Statistics used to evaluate the policies */
-  int sma_send_rtt = 0;
+  float ema_send_rtt = 0;
 };
 
 class NetworkSwitcher;
@@ -47,12 +47,18 @@ public:
   /* Control netwowrk monitor thread */
   void start(void);
   void stop(void);
+  
 
 private:
-  /* Network switcher thread */
-  void switcher_thread(void);
-  std::thread *mThread;
-  bool mSwitcherThreadOn;
+  /* Network monitor thread */
+  void monitor_thread(void);
+  std::thread *mMonitorThread;
+  bool mMonitorThreadOn;
+
+  /* Logging thread */
+  void logging_thread(void);
+  std::thread *mLoggingThread;
+  bool mLoggingThreadOn;
 
   /* Checking statistics and decide switching */
   void get_stats(Stats &stats);
@@ -120,8 +126,8 @@ private:
   /* Singleton */
   static NetworkMonitor *sSingleton;
   NetworkMonitor(void) {
-    this->mSwitcherThreadOn = false;
-    this->mThread = NULL;
+    this->mMonitorThreadOn = false;
+    this->mMonitorThread = NULL;
     this->mBandwidthWhenIncreasing = 0;
     this->mDecreasingCheckCount = 0;
     this->set_mode(NSMode::kNSModeEnergyAware);

@@ -19,6 +19,7 @@ package com.redcarrottt.sc.internal;
  */
 
 import com.redcarrottt.testapp.Logger;
+import com.redcarrottt.testapp.MainActivity;
 
 import java.util.LinkedList;
 import java.util.ListIterator;
@@ -133,8 +134,8 @@ class SegmentManager {
     private void checkReceivingDone() {
         boolean is_wakeup = false;
         synchronized (this.mWaitReceiving) {
-            if (this.mIsWaitReceiving && this.mExpectedSeqNo[kSQRecvControl] >= this
-                    .mWaitSeqNoControl && this.mExpectedSeqNo[kSQRecvData] >= this.mWaitSeqNoData) {
+            if (this.mIsWaitReceiving && this.mExpectedSeqNo[kSQRecvControl] > this
+                    .mWaitSeqNoControl && this.mExpectedSeqNo[kSQRecvData] > this.mWaitSeqNoData) {
                 is_wakeup = true;
             }
 
@@ -281,6 +282,7 @@ class SegmentManager {
                 this.mQueues[queueType].offerLast(segment);
                 this.mQueueLengths[queueType]++;
                 segmentEnqueued = true;
+                MainActivity.setPendingState(false);
             } else if (segment.getSeqNo() < this.mExpectedSeqNo[queueType]) {
                 // Case 2. this seq no. < expected seq no.
                 // Duplicated segments -> ignore
@@ -294,8 +296,9 @@ class SegmentManager {
                     if (walker.getSeqNo() > segment.getSeqNo()) break;
                 }
                 it.add(segment);
-                Logger.WARN(kTag, "Pending Queue: (" + queueType + ") incoming=" + segment.getSeqNo()
+                Logger.DEBUG(kTag, "Pending Queue: (" + queueType + ") incoming=" + segment.getSeqNo()
                         + " / expected_next=" + this.mExpectedSeqNo[queueType]);
+                MainActivity.setPendingState(true);
             }
 
             ListIterator it = this.mPendingQueue[queueType].listIterator();

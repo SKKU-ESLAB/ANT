@@ -96,6 +96,8 @@ public class MainActivity extends AppCompatActivity implements LogReceiver.Callb
         Logger.VERB(kTag, "Initializing network interfaces...");
         mCommInitializer = new CommInitializer(this, this);
         mCommInitializer.start();
+
+        sSingleton = this;
     }
 
 
@@ -221,19 +223,27 @@ public class MainActivity extends AppCompatActivity implements LogReceiver.Callb
             final String btClientAdapterState = ClientAdapter.stateToString(mBtClientAdapterState);
             final String wfdClientAdapterState = ClientAdapter.stateToString
                     (mWfdClientAdapterState);
-            final String stateString = "BT: " + btClientAdapterState + " / WFD: " +
-                    wfdClientAdapterState;
+
+            final String btClientAdapterStateColor = (mBtClientAdapterState == 2) ? "#0000ff" :
+                    "#000000";
+            final String wfdClientAdapterStateColor = (mWfdClientAdapterState == 2) ? "#0000ff" :
+                    "#000000";
 
             runOnUiThread(new Runnable() {
                 @Override
                 public void run() {
                     // Update UI
-                    TextView adapterStateTextView = (TextView) findViewById(R.id
-                            .adapterStateTextView);
-                    adapterStateTextView.setText(stateString);
+                    TextView btStateTextView = (TextView) findViewById(R.id.btStateTextView);
+                    btStateTextView.setText("BT: " + btClientAdapterState);
+                    btStateTextView.setTextColor(Color.parseColor(btClientAdapterStateColor));
+
+                    TextView wfdStateTextView = (TextView) findViewById(R.id.wfdStateTextView);
+                    wfdStateTextView.setText("WFD: " + wfdClientAdapterState);
+                    wfdStateTextView.setTextColor(Color.parseColor(wfdClientAdapterStateColor));
 
                     // Add Log
-                    Logger.VERB("Adapters", stateString);
+                    Logger.VERB("Adapters", "BT: " + btClientAdapterState + " / WFD: " +
+                            wfdClientAdapterState);
                 }
             });
         }
@@ -398,6 +408,30 @@ public class MainActivity extends AppCompatActivity implements LogReceiver.Callb
                 if (logLevel <= kPrintThreshold) {
                     mLogListViewData.add(0, new LogListViewItem(printMessage, color));
                     mLogListViewAdapter.notifyDataSetChanged();
+                }
+            }
+        });
+    }
+
+    static private MainActivity sSingleton;
+    private boolean mIsPending = false;
+
+    static public void setPendingState(boolean isPending) {
+        final MainActivity self = sSingleton;
+        if (self.mIsPending == isPending) {
+            return;
+        }
+        self.mIsPending = isPending;
+
+        self.runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                TextView pendingStatusTextView = (TextView) self.findViewById(R.id
+                        .pendingStatusTextView);
+                if (self.mIsPending) {
+                    pendingStatusTextView.setText("Pending...");
+                } else {
+                    pendingStatusTextView.setText("");
                 }
             }
         });

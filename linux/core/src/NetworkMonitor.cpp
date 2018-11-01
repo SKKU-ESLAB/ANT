@@ -31,17 +31,17 @@ using namespace sc;
 NetworkMonitor *NetworkMonitor::sSingleton = NULL;
 
 void NetworkMonitor::start(void) {
-  this->mSwitcherThreadOn = true;
-  this->mThread =
-      new std::thread(std::bind(&NetworkMonitor::switcher_thread, this));
-  this->mThread->detach();
+  this->mMonitorThreadOn = true;
+  this->mMonitorThread =
+      new std::thread(std::bind(&NetworkMonitor::monitor_thread, this));
+  this->mMonitorThread->detach();
 }
 
-void NetworkMonitor::stop(void) { this->mSwitcherThreadOn = false; }
+void NetworkMonitor::stop(void) { this->mMonitorThreadOn = false; }
 
-void NetworkMonitor::switcher_thread(void) {
+void NetworkMonitor::monitor_thread(void) {
   int count = 0;
-  while (this->mSwitcherThreadOn) {
+  while (this->mMonitorThreadOn) {
     // Get statistics
     Stats stats;
     this->get_stats(stats);
@@ -95,12 +95,12 @@ void NetworkMonitor::print_stats(Stats &stats) {
    *  - EMA(Arrival Time (sec))
    */
   printf("R: %dB (IAT: %3.3fms) => [Q: %dB ] => %dB/s // ON:%dB "
-         "OFF: %dB (%d) // RTT=%3.3fus\n",
+         "OFF: %dB (%d) // RTT=%3.3fms\n",
          (int)stats.ema_send_request_size, (stats.ema_arrival_time_us / 1000),
          stats.now_queue_data_size, stats.now_total_bandwidth,
          this->get_init_energy_payoff_point(),
          this->get_idle_energy_payoff_point(stats.ema_arrival_time_us),
-         this->mDecreasingCheckCount, (float)stats.sma_send_rtt / 1000);
+         this->mDecreasingCheckCount, stats.ema_send_rtt / 1000);
 #endif
 }
 
@@ -124,7 +124,7 @@ void NetworkMonitor::get_stats(Stats &stats) {
                               sm->get_failed_sending_queue_data_size();
   
   /* Statistics used to evaluate the policies */
-  stats.sma_send_rtt = core->get_sma_average_send_rtt();
+  stats.ema_send_rtt = core->get_ema_average_send_rtt();
 }
 
 void NetworkMonitor::check_and_decide_switching(Stats &stats) {

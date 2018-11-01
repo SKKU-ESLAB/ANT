@@ -145,7 +145,7 @@ public:
     return this->mSendArrivalTime.get_em_average();
   }
 
-  int get_sma_average_send_rtt() { return this->mSendRTT.get_sm_average(); }
+  float get_ema_average_send_rtt() { return this->mSendRTT.get_em_average(); }
 
   void set_send_rtt(int send_rtt) { this->mSendRTT.set_value(send_rtt); }
 
