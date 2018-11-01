@@ -21,8 +21,8 @@
 
 #include "../inc/NetworkSwitcher.h"
 
+#include "../../config s/NetworkSwitcherConfig.h"
 #include "../../configs/ExpConfig.h"
-#include "../../configs/NetworkSwitcherConfig.h"
 
 #include <string.h>
 
@@ -35,9 +35,23 @@ void NetworkMonitor::start(void) {
   this->mMonitorThread =
       new std::thread(std::bind(&NetworkMonitor::monitor_thread, this));
   this->mMonitorThread->detach();
+
+  this->start_logging();
 }
 
-void NetworkMonitor::stop(void) { this->mMonitorThreadOn = false; }
+void NetworkMonitor::stop(void) {
+  this->mMonitorThreadOn = false;
+  this->stop_logging();
+}
+
+void NetworkMonitor::start_logging(void) {
+  this->mLoggingThreadOn = true;
+  this->mLoggingThread =
+      new std::thread(std::bind(&NetworkMonitor::logging_thread, this));
+  this->mLoggingThread->detach();
+}
+
+void NetworkMonitor::stop_logging(void) { this->mLoggingThread = false; }
 
 void NetworkMonitor::monitor_thread(void) {
   int count = 0;
@@ -58,6 +72,27 @@ void NetworkMonitor::monitor_thread(void) {
 
     usleep(NETWORK_MONITOR_SLEEP_USECS);
   }
+}
+
+void NetworkMonitor::logging_thread(void) {
+  FILE *fp = ::fopen("./log", "w");
+  if(fp == NULL) {
+    LOG_ERR("Failed to open log file");
+    return;
+  }
+
+  while (this->mLoggingThreadOn) {
+    // Get statistics
+    Core *core = Core::singleton();
+    struct timeval now_tv;
+    gettimeofday(&now_tv, NULL);
+    float ema_send_rtt = core->get_ema_send_rtt();
+    
+    ::fprintf(fp, "%ld.%ld %f\n", now_tv.tv_sec, now_tv.tv_usec, ema_send_rtt / 1000);
+    ::sleep(1);
+  }
+
+  ::fclose(fp);
 }
 
 void NetworkMonitor::print_stats(Stats &stats) {
@@ -122,9 +157,9 @@ void NetworkMonitor::get_stats(Stats &stats) {
   stats.now_queue_data_size = sm->get_queue_data_size(kSQSendData) +
                               sm->get_queue_data_size(kSQSendControl) +
                               sm->get_failed_sending_queue_data_size();
-  
+
   /* Statistics used to evaluate the policies */
-  stats.ema_send_rtt = core->get_ema_average_send_rtt();
+  stats.ema_send_rtt = core->get_ema_send_rtt();
 }
 
 void NetworkMonitor::check_and_decide_switching(Stats &stats) {

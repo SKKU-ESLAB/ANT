@@ -48,6 +48,9 @@ public:
   void start(void);
   void stop(void);
   
+  /* Control logging thread */
+  void start_logging(void);
+  void stop_logging(void);
 
 private:
   /* Network monitor thread */
