@@ -32,9 +32,14 @@ bool BtDevice::turn_on_impl(void) {
   // hciconfig hci0 up makes "sent_bytes are not accurate" error
 
   char buf[512];
-  char *const params[] = {"hciconfig", "hci0", "up", "piscan", NULL};
 
-  int res = ChildProcess::run(HCICONFIG_PATH, params, buf, 512, true);
+  char *const params[] = {"rfkill", "unblock", "1", NULL};
+  int res = ChildProcess::run(RFKILL_PATH, params, buf, 512, true);
+  if(res < 0) return res;
+
+  char *const params1[] = {"hciconfig", "hci0", "up", "piscan", NULL};
+
+  res = ChildProcess::run(HCICONFIG_PATH, params1, buf, 512, true);
   return (res >= 0);
   // return true;
 }
@@ -43,9 +48,18 @@ bool BtDevice::turn_off_impl(void) {
   // hciconfig hci0 down makes "sent_bytes are not accurate" error
 
   char buf[512];
-  char *const params[] = {"hciconfig", "hci0", "down", NULL};
 
-  int res = ChildProcess::run(HCICONFIG_PATH, params, buf, 512, true);
+  char *const params[] = {"rfkill", "block", "1", NULL};
+  int res = ChildProcess::run(RFKILL_PATH, params, buf, 512, true);
+  if(res < 0) return res;
+
+  char *const params1[] = {"hciconfig", "hci0", "down", NULL};
+  res = ChildProcess::run(HCICONFIG_PATH, params1, buf, 512, true);
+  if(res < 0) return res;
+
+  char *const params2[] = {"invoke-rc.d", "bluetooth", "restart", NULL};
+  res = ChildProcess::run(INVOKE_RC_D_PATH, params2, buf, 512, true);
+
   return (res >= 0);
   // return true;
 }

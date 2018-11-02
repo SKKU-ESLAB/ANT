@@ -19,6 +19,7 @@
 
 #include "TraceRunner.h"
 
+#include "../common/inc/DebugLog.h"
 #include "../core/inc/API.h"
 #include "../device/inc/NetworkInitializer.h"
 
@@ -134,6 +135,7 @@ void TraceRunner::send_workload(void) {
   AppTraceReader *appTraceReader = NULL;
   if (this->mDecisionPolicy == kDPAppAware) {
     appTraceReader = new AppTraceReader(this->mAppTraceFilename);
+    appTraceReader->read_header();
   }
 
   int iter = 0;
@@ -141,6 +143,7 @@ void TraceRunner::send_workload(void) {
   // Parse packet trace file
   std::string ts_str, source_str, payload_length_rfcomm_str,
       payload_length_tcp_str;
+  this->mNextAppTSReady = false;
   while (packetTraceReader.read_row(
       ts_str, source_str, payload_length_rfcomm_str, payload_length_tcp_str)) {
 #if DEBUG_SHOW_DATA == 1
@@ -176,7 +179,8 @@ void TraceRunner::send_workload(void) {
     }
 
     if (iter % 1000 == 0) {
-      printf(" ** Send Workload Packet (No. %d)\n", iter);
+      printf(" ** Send Workload Packet (No. %d) - %d.%d\n", iter, ts_sec,
+             ts_usec);
     }
 
     // Sleep for wait
@@ -188,9 +192,9 @@ void TraceRunner::send_workload(void) {
 
     // In case of app-aware workload,
     // check if the policy should be applied by NetworkMonitor
-    if(this->mDecisionPolicy == kDPAppAware) {
+    if (this->mDecisionPolicy == kDPAppAware) {
       res = this->check_app_policy(appTraceReader, ts_sec, ts_usec);
-      if(res < 0) {
+      if (res < 0) {
         printf("[ERROR] check_app_policy error %d\n", res);
         return;
       }
@@ -250,31 +254,40 @@ int TraceRunner::sleep_workload(int next_ts_sec, int next_ts_usec) {
 }
 
 int TraceRunner::check_app_policy(AppTraceReader *app_trace_reader,
-                                  int next_ts_sec, int next_ts_usec) {
+                                  int next_packet_ts_sec,
+                                  int next_packet_ts_usec) {
   if (app_trace_reader == NULL) {
     return -1;
   }
 
-  int next_app_ts_us = this->mRecentTSSec * 1000 * 1000 + this->mRecentTSUsec;
-  int next_ts_us = next_ts_sec * 1000 * 1000 + next_ts_usec;
+  // Next app timestamp
+  int next_packet_ts_us =
+      next_packet_ts_sec * 1000 * 1000 + next_packet_ts_usec;
+
+  // Next packet timestamp
+  int next_app_ts_us = this->mNextAppTSSec * 1000 * 1000 + this->mNextAppTSUsec;
 
   // Read a column from app trace file
-  if (next_app_ts_us > next_ts_us || next_app_ts_us == 0) {
+  if (!this->mNextAppTSReady) {
     bool ret = app_trace_reader->read_column(
         this->mNextAppTSSec, this->mNextAppTSUsec, this->mNextAppPolicyNum);
     if (ret) {
       next_app_ts_us = this->mNextAppTSSec * 1000 * 1000 + this->mNextAppTSUsec;
+      this->mNextAppTSReady = true;
     }
   }
 
   // If the time is for app, apply the policy
-  if (next_app_ts_us <= next_ts_us && next_app_ts_us != 0) {
+  if (this->mNextAppTSReady && next_app_ts_us <= next_packet_ts_us &&
+      next_app_ts_us != 0) {
     switch (this->mNextAppPolicyNum) {
     case 0:
       sc::set_switcher_mode(sc::kNSModeEnergyAware);
+      this->mNextAppTSReady = false;
       break;
     case 1:
       sc::set_switcher_mode(sc::kNSModeLatencyAware);
+      this->mNextAppTSReady = false;
       break;
     default:
       return -2;

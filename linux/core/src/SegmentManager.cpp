@@ -226,6 +226,7 @@ void SegmentManager::enqueue(SegQueueType queue_type, Segment *seg) {
   // Update statistics
   if (queue_type == kSQSendControl || queue_type == kSQSendData) {
     this->mSendRequest.add(SEGMENT_DATA_SIZE);
+    this->update_queue_arrival_speed();
   }
 
   // Check if all the remaining segments are received

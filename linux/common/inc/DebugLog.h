@@ -47,7 +47,7 @@
 #if LOG_LEVEL < 1
 #define LOG_DEBUG(fmt, args...)                                                \
   do {                                                                         \
-    _log(fmt, 9, ##args);                                                      \
+    _log(fmt, 0, 9, ##args);                                                      \
   } while (0)
 #else /* LOG_LEVEL >= 1 */
 #define LOG_DEBUG(fmt, args...)
@@ -56,7 +56,7 @@
 #if LOG_LEVEL < 2
 #define LOG_VERB(fmt, args...)                                                 \
   do {                                                                         \
-    _log(fmt, 94, ##args);                                                     \
+    _log(fmt, 0, 94, ##args);                                                     \
   } while (0)
 #else /* LOG_LEVEL >= 2 */
 #define LOG_VERB(fmt, args...)
@@ -65,7 +65,7 @@
 #if LOG_LEVEL < 3
 #define LOG_WARN(fmt, args...)                                                 \
   do {                                                                         \
-    _log(fmt, 91, ##args);                                                     \
+    _log(fmt, 0, 91, ##args);                                                     \
   } while (0)
 #else /* LOG_LEVEL >= 3 */
 #define LOG_WARN(fmt, args...)
@@ -74,11 +74,16 @@
 #if LOG_LEVEL < 4
 #define LOG_ERR(fmt, args...)                                                  \
   do {                                                                         \
-    _log(fmt, 101, ##args);                                                    \
+    _log(fmt, 101, 0, ##args);                                                    \
   } while (0)
 #else /* LOG_LEVEL >= 4 */
 #define LOG_ERR(fmt, args...)
 #endif /* LOG_LEVEL < 4 */
+
+#define LOG_IMP(fmt, args...)                                                  \
+  do {                                                                         \
+    _log(fmt, 104, 35, ##args);                                                    \
+  } while (0)
 
 #define __FUNCTION_ENTER__                                                     \
   do {                                                                         \
@@ -90,7 +95,7 @@
   } while (0)
 
 void __log(const char *format, const char *fileName, const char *funcName,
-           int color, int lineNo, ...);
+           int bg_color, int font_color, int lineNo, ...);
 
 void __func(const char *format, const char *fileName, const char *funcName,
             int lineNo, ...);

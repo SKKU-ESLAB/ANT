@@ -113,6 +113,15 @@ public:
 
   int get_send_request_per_sec() { return this->mSendRequest.get_speed(); }
 
+  void update_queue_arrival_speed() {
+    int send_request_per_sec = this->get_send_request_per_sec();
+    this->mQueueArrivalSpeed.set_value(send_request_per_sec);
+  }
+
+  int get_ema_queue_arrival_speed() {
+    return this->mQueueArrivalSpeed.get_em_average();
+  }
+
   /* Singleton */
   static SegmentManager *singleton(void) {
     if (sSingleton == NULL)
@@ -159,6 +168,7 @@ private:
 
   /* Statistics */
   Counter mSendRequest;
+  Counter mQueueArrivalSpeed; /* to achieve the ema of queue arrival speed */
   Counter mFailedSendingQueueLength;
 
   /* Reserved free segment list */

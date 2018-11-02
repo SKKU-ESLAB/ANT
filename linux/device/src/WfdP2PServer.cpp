@@ -101,12 +101,15 @@ bool WfdP2PServer::allow_discover_impl(void) {
         '\0',
     };
     // MAC Address
-    ret = this->get_wfd_p2p_device_addr(buf, 256);
-    if (ret < 0) {
-      LOG_ERR("allow_discover(%s): get_wfd_p2p_device_addr error", this->get_name());
-      return false;
+    if(this->mP2PDeviceAddr.empty()) {
+      ret = this->get_wfd_p2p_device_addr(buf, 256);
+      if (ret < 0) {
+        LOG_ERR("allow_discover(%s): get_wfd_p2p_device_addr error", this->get_name());
+        return false;
+      }
+      this->mP2PDeviceAddr.assign(buf);
     }
-    snprintf(wfdInfo, 1024, "%s", buf);
+    snprintf(wfdInfo, 1024, "%s", this->mP2PDeviceAddr.c_str());
 
     // WPS PIN
     ret = this->reset_wfd_server(buf, 256);
@@ -118,20 +121,22 @@ bool WfdP2PServer::allow_discover_impl(void) {
     strncat(wfdInfo, buf, 1024);
 
     // IP Address
-    for (int ip_wait_it = 0; ip_wait_it < 30; ip_wait_it++) {
-      ret = this->get_wfd_ip_address(buf, 256);
-      if (ret == 0) {
-        break;
+    if(this->mIPAddress.empty()) {
+      for (int ip_wait_it = 0; ip_wait_it < 30; ip_wait_it++) {
+        ret = this->get_wfd_ip_address(buf, 256);
+        if (ret == 0) {
+          break;
+        }
+        usleep(300000);
       }
-      usleep(300000);
-    }
-    if (ret < 0) {
-      LOG_ERR("allow_discover(%s): get_wfd_ip_address error", this->get_name());
-      return false;
+      if (ret < 0) {
+        LOG_ERR("allow_discover(%s): get_wfd_ip_address error", this->get_name());
+        return false;
+      }
+      this->mIPAddress.assign(buf);
     }
     strncat(wfdInfo, "\n", 1024);
-    strncat(wfdInfo, buf, 1024);
-    char *ip_address = buf;
+    strncat(wfdInfo, this->mIPAddress.c_str(), 1024);
 
 /* Send WFD Info
  *  <Server MAC Address>
@@ -148,7 +153,7 @@ bool WfdP2PServer::allow_discover_impl(void) {
              this->mIpAddrListeners.begin();
          it != this->mIpAddrListeners.end(); it++) {
       WfdIpAddressListener *listener = (*it);
-      listener->on_change_ip_address(ip_address);
+      listener->on_change_ip_address(this->mIPAddress.c_str());
     }
   }
 

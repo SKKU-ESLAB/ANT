@@ -43,6 +43,11 @@ class RfcommClientSocket extends ClientSocket {
         final int kMaxTries = 10;
         for (int tries = 0; tries < kMaxTries; tries++) {
             try {
+                Thread.sleep(500);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+            try {
                 this.mSocket.connect();
                 this.mInputStream = new BufferedInputStream(this.mSocket.getInputStream());
                 this.mOutputStream = new BufferedOutputStream(this.mSocket.getOutputStream());
@@ -51,11 +56,6 @@ class RfcommClientSocket extends ClientSocket {
                 this.mInputStream = null;
                 this.mOutputStream = null;
                 Logger.WARN(kTag, "Try socket open " + tries);
-            }
-            try {
-                Thread.sleep(500);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
             }
         }
 

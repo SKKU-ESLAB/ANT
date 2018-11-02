@@ -28,35 +28,36 @@
 #include <unistd.h>
 
 void __log(const char *format, const char *fileName, const char *funcName,
-           int color, int lineNo, ...) {
+           int bg_color, int font_color, int lineNo, ...) {
   va_list ap;
-  #if defined(LOG_FILE_NAME) && defined(LOG_FUNC_NAME)
-  printf("\033[%dm%s:%d (%s())  ", color, fileName, lineNo, funcName);
-  #elif defined(LOG_FILE_NAME)
-  printf("\033[%dm%s:%d  ", color, fileName, lineNo);
-  #elif defined(LOG_FUNC_NAME)
-  printf("\033[%dm(%s())  ", color, funcName);
-  #else
-  printf("\033[%dm", color);
-  #endif
+#if defined(LOG_FILE_NAME) && defined(LOG_FUNC_NAME)
+  printf("\033[%d;%dm%s:%d (%s())  ", bg_color, font_color, fileName, lineNo,
+         funcName);
+#elif defined(LOG_FILE_NAME)
+  printf("\033[%d;%dm%s:%d  ", bg_color, font_color, fileName, lineNo);
+#elif defined(LOG_FUNC_NAME)
+  printf("\033[%d;%dm(%s())  ", bg_color, font_color, funcName);
+#else
+  printf("\033[%d;%dm", bg_color, font_color);
+#endif
   va_start(ap, lineNo);
   vprintf(format, ap);
   va_end(ap);
-  printf("\033[0m\n");
+  printf("\033[0;0m\n");
 }
 
 void __func(const char *format, const char *fileName, const char *funcName,
             int lineNo, ...) {
   va_list ap;
-  #if defined(LOG_FILE_NAME) && defined(LOG_FUNC_NAME)
+#if defined(LOG_FILE_NAME) && defined(LOG_FUNC_NAME)
   printf("\033[%dm%s:%d (%s())  ", 2, fileName, lineNo, funcName);
-  #elif defined(LOG_FILE_NAME)
+#elif defined(LOG_FILE_NAME)
   printf("\033[%dm%s:%d  ", 2, fileName, lineNo);
-  #elif defined(LOG_FUNC_NAME)
+#elif defined(LOG_FUNC_NAME)
   printf("\033[%dm(%s())  ", 2, funcName);
-  #else
+#else
   printf("\033[%dm", 2);
-  #endif
+#endif
   va_start(ap, lineNo);
   vprintf(format, ap);
   va_end(ap);

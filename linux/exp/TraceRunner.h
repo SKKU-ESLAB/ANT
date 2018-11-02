@@ -22,6 +22,7 @@
 
 #include "csv.h"
 
+#include "../common/inc/DebugLog.h"
 #include "../core/inc/ServerAdapterStateListener.h"
 #include "../device/inc/BtServerAdapter.h"
 #include "../device/inc/WfdServerAdapter.h"
@@ -51,8 +52,11 @@ public:
   bool read_column(int &ts_sec, int &ts_usec, int &policy_num) {
     std::string ts_str, policy_num_str;
     bool ret = this->mCSVReader->read_row(ts_str, policy_num_str);
-    sscanf(ts_str.c_str(), "%d.%d", &(ts_sec), &(ts_usec));
-    policy_num = std::stoi(policy_num_str);
+    if(ret) {
+      LOG_VERB("ROW:%s / %s", ts_str.c_str(), policy_num_str.c_str());
+      sscanf(ts_str.c_str(), "%d.%d", &(ts_sec), &(ts_usec));
+      policy_num = std::stoi(policy_num_str);
+    }
 
     return ret;
   }
@@ -129,6 +133,7 @@ private:
   int mNextAppTSSec = 0;
   int mNextAppTSUsec = 0;
   int mNextAppPolicyNum = 0;
+  bool mNextAppTSReady = false;
 
   /* Components */
   std::thread *mThread;

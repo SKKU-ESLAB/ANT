@@ -127,7 +127,7 @@ bool NetworkSwitcher::switch_adapters(int prev_index, int next_index) {
 }
 
 void NetworkSwitcher::done_switch() {
-  LOG_VERB("Switch adapter end!");
+  LOG_IMP("Switch adapter end!");
   NSState state = this->get_state();
   switch (state) {
   case NSState::kNSStateSwitching:
@@ -158,7 +158,7 @@ void SwitchAdapterTransaction::done(bool is_success) {
   uint64_t latency = this->getSwitchLatency();
   
   if (is_success) {
-    LOG_VERB("Switch (%d->%d): SUCCESS (%lluus)", sOngoing->mPrevIndex,
+    LOG_IMP("Switch (%d->%d): SUCCESS (%lluus)", sOngoing->mPrevIndex,
              sOngoing->mNextIndex, latency);
     Core::singleton()->set_active_adapter_index(sOngoing->mNextIndex);
   } else {

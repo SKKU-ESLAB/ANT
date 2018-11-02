@@ -20,6 +20,8 @@
 #ifndef __PATH_CONFIG_H__
 #define __PATH_CONFIG_H__
 
+#define INVOKE_RC_D_PATH "/usr/sbin/invoke-rc.d"
+#define RFKILL_PATH "/usr/sbin/rfkill"
 #define HCICONFIG_PATH "/bin/hciconfig"
 #define WPA_CLI_PATH "/sbin/wpa_cli"
 #define IFCONFIG_PATH "/sbin/ifconfig"

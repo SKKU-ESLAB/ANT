@@ -91,9 +91,6 @@ private:
   int mBandwidthWhenIncreasing;
   int mDecreasingCheckCount;
 
-  /* Auxiliary member variable for statistics */
-  Counter mQueueArrivalSpeed; /* to achieve the ema of queue arrival speed */
-
 public:
   /* Mode getter */
   NSMode get_mode(void) {
@@ -108,7 +105,7 @@ public:
     NSMode old_mode = this->mMode;
     this->mMode = new_mode;
     
-    LOG_VERB("Network Monitor Mode Change: %d -> %d", old_mode, new_mode);
+    LOG_IMP("Network Monitor Mode Change: %d -> %d", old_mode, new_mode);
   }
 
 private:

@@ -27,6 +27,7 @@
 #include <mutex>
 #include <thread>
 #include <vector>
+#include <string>
 
 #include <signal.h>
 #include <stdio.h>
@@ -56,6 +57,9 @@ protected:
   char mWfdDeviceName[100];
 
   char mWpaIntfName[256];
+
+  std::string mP2PDeviceAddr;
+  std::string mIPAddress;
 
   // In order to monitor the termination of child udhcpd process
   static struct sigaction sSigaction, sSigactionOld;

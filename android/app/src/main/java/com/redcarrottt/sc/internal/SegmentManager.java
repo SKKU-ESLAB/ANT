@@ -171,7 +171,8 @@ class SegmentManager {
 
             // Calculate segment metadata fields
             int seq_no = allocated_seq_no++;
-            int payload_length = (data_length - offset < kSegPayloadSize) ? (data_length - offset) : kSegPayloadSize;
+            int payload_length = (data_length - offset < kSegPayloadSize) ? (data_length -
+                    offset) : kSegPayloadSize;
 
             // Setting segment metadata
             segmentToEnqueue.initByteArray();
@@ -282,7 +283,12 @@ class SegmentManager {
                 this.mQueues[queueType].offerLast(segment);
                 this.mQueueLengths[queueType]++;
                 segmentEnqueued = true;
-                MainActivity.setPendingState(false);
+                if (queueType == kSQRecvControl || queueType == kSQRecvData) {
+                    // Update UI
+                    MainActivity.setPendingState(false);
+                    MainActivity.setNextSeqNo(this.mExpectedSeqNo[kSQRecvControl], this
+                            .mExpectedSeqNo[kSQRecvData]);
+                }
             } else if (segment.getSeqNo() < this.mExpectedSeqNo[queueType]) {
                 // Case 2. this seq no. < expected seq no.
                 // Duplicated segments -> ignore
@@ -296,8 +302,8 @@ class SegmentManager {
                     if (walker.getSeqNo() > segment.getSeqNo()) break;
                 }
                 it.add(segment);
-                Logger.DEBUG(kTag, "Pending Queue: (" + queueType + ") incoming=" + segment.getSeqNo()
-                        + " / expected_next=" + this.mExpectedSeqNo[queueType]);
+                Logger.DEBUG(kTag, "Pending Queue: (" + queueType + ") incoming=" + segment
+                        .getSeqNo() + " / expected_next=" + this.mExpectedSeqNo[queueType]);
                 MainActivity.setPendingState(true);
             }
 

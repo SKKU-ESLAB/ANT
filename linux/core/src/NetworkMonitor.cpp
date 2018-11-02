@@ -21,8 +21,8 @@
 
 #include "../inc/NetworkSwitcher.h"
 
-#include "../../config s/NetworkSwitcherConfig.h"
 #include "../../configs/ExpConfig.h"
+#include "../../configs/NetworkSwitcherConfig.h"
 
 #include <string.h>
 
@@ -51,7 +51,7 @@ void NetworkMonitor::start_logging(void) {
   this->mLoggingThread->detach();
 }
 
-void NetworkMonitor::stop_logging(void) { this->mLoggingThread = false; }
+void NetworkMonitor::stop_logging(void) { this->mLoggingThreadOn = false; }
 
 void NetworkMonitor::monitor_thread(void) {
   int count = 0;
@@ -76,19 +76,44 @@ void NetworkMonitor::monitor_thread(void) {
 
 void NetworkMonitor::logging_thread(void) {
   FILE *fp = ::fopen("./log", "w");
-  if(fp == NULL) {
+  if (fp == NULL) {
     LOG_ERR("Failed to open log file");
     return;
   }
 
+  // Write header
+  fprintf(fp, "Timeval(sec), EMA_ReqSize(B), EMA_IAT(ms), SQ_Length(B), "
+              "Bandwidth(B/s), EMA_RTT(ms)\n");
+
+  // Setting first timeval
+  struct timeval first_tv;
+  gettimeofday(&first_tv, NULL);
+  long long first_tv_us =
+      (long long)first_tv.tv_sec * 1000 * 1000 + (long long)first_tv.tv_usec;
+
   while (this->mLoggingThreadOn) {
     // Get statistics
     Core *core = Core::singleton();
+ 
+    // Get relative now timeval
     struct timeval now_tv;
     gettimeofday(&now_tv, NULL);
-    float ema_send_rtt = core->get_ema_send_rtt();
-    
-    ::fprintf(fp, "%ld.%ld %f\n", now_tv.tv_sec, now_tv.tv_usec, ema_send_rtt / 1000);
+    long long now_tv_us =
+        (long long)now_tv.tv_sec * 1000 * 1000 + (long long)now_tv.tv_usec;
+    long long relative_now_tv_us = now_tv_us - first_tv_us;
+    int relative_now_tv_sec = (int)(relative_now_tv_us) / (1000 * 1000);
+    int relative_now_tv_usec = (int)(relative_now_tv_us) % (1000 * 1000);
+
+    // Get EMA send RTT
+    // Use get_stats() instead
+    Stats stats;
+    this->get_stats(stats);
+
+    ::fprintf(fp, "%ld.%ld, %d, %3.3f, %d, %d, %3.3f\n", relative_now_tv_sec,
+              relative_now_tv_usec, (int)stats.ema_send_request_size,
+              (stats.ema_arrival_time_us / 1000), stats.now_queue_data_size,
+              stats.now_total_bandwidth, stats.ema_send_rtt / 1000);
+    ::fflush(fp);
     ::sleep(1);
   }
 
@@ -103,23 +128,6 @@ void NetworkMonitor::print_stats(Stats &stats) {
     return;
   }
 
-  const int k_mode_str_length = 20;
-  char mode_str[k_mode_str_length];
-  switch (this->get_mode()) {
-  case NSMode::kNSModeEnergyAware:
-    strncpy(mode_str, "Energy", k_mode_str_length);
-    break;
-  case NSMode::kNSModeLatencyAware:
-    strncpy(mode_str, "Latency", k_mode_str_length);
-    break;
-  case NSMode::kNSModeCapDynamic:
-    strncpy(mode_str, "Capacity", k_mode_str_length);
-    break;
-  default:
-    strncpy(mode_str, "Unknown", k_mode_str_length);
-    break;
-  }
-
   /* Print statistics
    *  - EMA(Send Request Size (B))
    *  - EMA(Queue Arrival Speed (B/s))
@@ -129,13 +137,33 @@ void NetworkMonitor::print_stats(Stats &stats) {
    *  - Total Bandwidth
    *  - EMA(Arrival Time (sec))
    */
-  printf("R: %dB (IAT: %3.3fms) => [Q: %dB ] => %dB/s // ON:%dB "
-         "OFF: %dB (%d) // RTT=%3.3fms\n",
-         (int)stats.ema_send_request_size, (stats.ema_arrival_time_us / 1000),
-         stats.now_queue_data_size, stats.now_total_bandwidth,
-         this->get_init_energy_payoff_point(),
-         this->get_idle_energy_payoff_point(stats.ema_arrival_time_us),
-         this->mDecreasingCheckCount, stats.ema_send_rtt / 1000);
+  switch (this->get_mode()) {
+  case NSMode::kNSModeEnergyAware:
+    printf("R: %dB (IAT: %3.3fms) => [Q: %dB ] => %dB/s // Energy ON:%dB "
+           "OFF: %dB (%d) // RTT=%3.3fms\n",
+           (int)stats.ema_send_request_size, (stats.ema_arrival_time_us / 1000),
+           stats.now_queue_data_size, stats.now_total_bandwidth,
+           this->get_init_energy_payoff_point(),
+           this->get_idle_energy_payoff_point(stats.ema_arrival_time_us),
+           this->mDecreasingCheckCount, stats.ema_send_rtt / 1000);
+    break;
+  case NSMode::kNSModeLatencyAware:
+    printf("R: %dB (IAT: %3.3fms) => [Q: %dB ] => %dB/s // Latency ON:%dB "
+           "OFF: N/A // RTT=%3.3fms\n",
+           (int)stats.ema_send_request_size, (stats.ema_arrival_time_us / 1000),
+           stats.now_queue_data_size, stats.now_total_bandwidth,
+           this->get_init_latency_payoff_point(), stats.ema_send_rtt / 1000);
+    break;
+  case NSMode::kNSModeCapDynamic:
+    printf("R: %dB (IAT: %3.3fms) => [Q: %dB ] => %dB/s // Cap-Dynamic // "
+           "RTT=%3.3fms\n",
+           (int)stats.ema_send_request_size, (stats.ema_arrival_time_us / 1000),
+           stats.now_queue_data_size, stats.now_total_bandwidth,
+           stats.ema_send_rtt / 1000);
+    break;
+  default:
+    break;
+  }
 #endif
 }
 
@@ -145,8 +173,7 @@ void NetworkMonitor::get_stats(Stats &stats) {
   SegmentManager *sm = SegmentManager::singleton();
 
   /* Statistics used to print present status */
-  this->mQueueArrivalSpeed.set_value(sm->get_send_request_per_sec());
-  stats.ema_queue_arrival_speed = this->mQueueArrivalSpeed.get_em_average();
+  stats.ema_queue_arrival_speed = sm->get_ema_queue_arrival_speed();
 
   /* Statistics used in CoolSpots Policy */
   stats.now_total_bandwidth = core->get_total_bandwidth();

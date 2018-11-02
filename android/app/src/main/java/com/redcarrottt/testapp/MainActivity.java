@@ -436,6 +436,19 @@ public class MainActivity extends AppCompatActivity implements LogReceiver.Callb
             }
         });
     }
+
+    static public void setNextSeqNo(int seq_no_control, int seq_no_data) {
+        final MainActivity self = sSingleton;
+        final String next_seq_no_str = "SeqNo (Ctrl=" + seq_no_control + " / Data=" + seq_no_data
+                + ")";
+        self.runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                TextView nextSeqNoTextView = (TextView) self.findViewById(R.id.nextSeqNoTextView);
+                nextSeqNoTextView.setText(next_seq_no_str);
+            }
+        });
+    }
 }
 
 class LogListViewItem {
