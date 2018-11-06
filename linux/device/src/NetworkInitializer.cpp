@@ -42,6 +42,9 @@ void NetworkInitializer::initialize(void) {
   // Step 1. Bluetooth OFF
   LOG_VERB("Init (1/4): BT OFF");
 
+  snprintf(cmdLine, 500, "%s unblock 1", RFKILL_PATH);
+  system(cmdLine);
+
   snprintf(cmdLine, 500, "%s hci0 down", HCICONFIG_PATH);
   system(cmdLine);
 

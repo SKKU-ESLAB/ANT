@@ -70,7 +70,7 @@ public:
   void connect_or_wake_up(ConnectCallback callback, bool is_send_request);
 
   /* Basic APIs related to data transmission */
-  int send(const void *buf, size_t len);
+  int send(void *buf, size_t len);
   int receive(void *buf, size_t len);
 
 private:

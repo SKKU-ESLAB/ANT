@@ -40,5 +40,6 @@
 /* CoolSpots */
 #define AVERAGE_WFD_ON_LATENCY_SEC 8.04f /* 8.04 sec */
 #define MAX_BANDWIDTH 90000              /* 90000B/s */
+#define RTT_THRESHOLD_US 250000          /* 250ms */
 
 #endif /* !defined(__NETWORK_SWITCHER_CONFIG_H__) */

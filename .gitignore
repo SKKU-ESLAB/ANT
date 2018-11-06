@@ -25,4 +25,3 @@ android/captures
 .externalNativeBuild
 *.swp
 *.pcapng
-workload/result

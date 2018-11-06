@@ -31,6 +31,8 @@
 #include "../../configs/ExpConfig.h"
 
 #include <mutex>
+#include <arpa/inet.h>
+#include <sys/socket.h>
 
 #ifdef EXP_MEASURE_INTERVAL_SENDER
 #include <sys/time.h>
@@ -369,7 +371,7 @@ bool ServerAdapter::__disconnect_internal(ServerAdapterState oldState) {
   return true;
 }
 
-int ServerAdapter::send(const void *buf, size_t len) {
+int ServerAdapter::send(void *buf, size_t len) {
   ServerAdapterState state = this->get_state();
   if (state == ServerAdapterState::kConnecting) {
     LOG_VERB("Send blocked: waiting for connection... (%d)", state);
@@ -384,6 +386,14 @@ int ServerAdapter::send(const void *buf, size_t len) {
   if (this->mServerSocket == NULL) {
     return -2;
   }
+
+  // TODO: hard-coded for Cap-Dynamic policy
+  struct timeval media_start_ts;
+  gettimeofday(&media_start_ts, NULL);
+  int32_t net_media_start_ts_sec = htonl(media_start_ts.tv_sec);
+  int32_t net_media_start_ts_usec = htonl(media_start_ts.tv_usec);
+  memcpy(buf + 20, &net_media_start_ts_sec, sizeof(int32_t));
+  memcpy(buf + 24, &net_media_start_ts_usec, sizeof(int32_t));
 
   // Send
   int ret = this->mServerSocket->send(buf, len);

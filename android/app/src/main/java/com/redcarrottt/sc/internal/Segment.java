@@ -40,7 +40,9 @@ class Segment {
     private final int kOffsetFlag = 8;
     private final int kOffsetSendStartTSSec = 12;
     private final int kOffsetSendStartTSUsec = 16;
-    static public final int kSegHeaderSize = 20;
+    private final int kOffsetMediaStartTSSec = 20;
+    private final int kOffsetMediaStartTSUsec = 24;
+    static public final int kSegHeaderSize = 28;
     static public final int kSegPayloadSize = 512;
 
     public void initByteArray() {
@@ -70,23 +72,31 @@ class Segment {
         this.setByteArrayForMetadataField(seq_no, kOffsetSeqNo); // seq_no
         this.setByteArrayForMetadataField(length, kOffsetLength); // length
         this.setByteArrayForMetadataField(0, kOffsetFlag); // flag
-        this.setByteArrayForMetadataField(sendStartTSSec, kOffsetSendStartTSSec); //
         // send_start_ts_sec
-        this.setByteArrayForMetadataField(sendStartTSUsec, kOffsetSendStartTSUsec); //
+        this.setByteArrayForMetadataField(sendStartTSSec, kOffsetSendStartTSSec);
         // send_start_ts_usec
+        this.setByteArrayForMetadataField(sendStartTSUsec, kOffsetSendStartTSUsec);
+        // media_start_ts_sec
+        this.setByteArrayForMetadataField(0, kOffsetMediaStartTSSec);
+        // media_start_ts_usec
+        this.setByteArrayForMetadataField(0, kOffsetMediaStartTSUsec);
     }
 
     public void setMetadataAck(int seq_no, int length, int flag, int sendStartTSSec, int
-            sendStartTSUsec) {
+            sendStartTSUsec, int mediaStartTSSec, int mediaStartTSUsec) {
         // Set metadata fields
         this.setByteArrayForMetadataField(seq_no, kOffsetSeqNo); // seq_no
         this.setByteArrayForMetadataField(length, kOffsetLength); // length
         this.setByteArrayForMetadataField(flag, kOffsetFlag); // flag
         this.setAckFlag();
-        this.setByteArrayForMetadataField(sendStartTSSec, kOffsetSendStartTSSec); //
         // send_start_ts_sec
-        this.setByteArrayForMetadataField(sendStartTSUsec, kOffsetSendStartTSUsec); //
+        this.setByteArrayForMetadataField(sendStartTSSec, kOffsetSendStartTSSec);
         // send_start_ts_usec
+        this.setByteArrayForMetadataField(sendStartTSUsec, kOffsetSendStartTSUsec);
+        // media_start_ts_sec
+        this.setByteArrayForMetadataField(mediaStartTSSec, kOffsetMediaStartTSSec);
+        // media_start_ts_usec
+        this.setByteArrayForMetadataField(mediaStartTSUsec, kOffsetMediaStartTSUsec);
     }
 
     public void setPayloadData(byte[] entire_data_bytes, int offset, int payload_length) {
@@ -143,6 +153,14 @@ class Segment {
 
     public int getSendStartTSUsec() {
         return this.getMetadataFieldFromByteArray(kOffsetSendStartTSUsec);
+    }
+
+    public int getMediaStartTSSec() {
+        return this.getMetadataFieldFromByteArray(kOffsetMediaStartTSSec);
+    }
+
+    public int getMediaStartTSUsec() {
+        return this.getMetadataFieldFromByteArray(kOffsetMediaStartTSUsec);
     }
 
     public byte[] getPayloadData() {

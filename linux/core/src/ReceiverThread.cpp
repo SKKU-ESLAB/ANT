@@ -106,7 +106,7 @@ void ReceiverThread::receiver_loop(void) {
     }
 
     uint32_t net_seq_no, net_len, net_flag, net_send_start_ts_sec,
-        net_send_start_ts_usec;
+        net_send_start_ts_usec, net_media_start_ts_sec, net_media_start_ts_usec;
     memcpy(&net_seq_no, buf, sizeof(uint32_t));
     memcpy(&net_len, (reinterpret_cast<uint8_t *>(buf) + 4), sizeof(uint32_t));
     memcpy(&net_flag, (reinterpret_cast<uint8_t *>(buf) + 8), sizeof(uint32_t));
@@ -114,40 +114,51 @@ void ReceiverThread::receiver_loop(void) {
            sizeof(int));
     memcpy(&net_send_start_ts_usec, (reinterpret_cast<uint8_t *>(buf) + 16),
            sizeof(int));
+    memcpy(&net_media_start_ts_sec, (reinterpret_cast<uint8_t *>(buf) + 20),
+           sizeof(int));
+    memcpy(&net_media_start_ts_usec, (reinterpret_cast<uint8_t *>(buf) + 24),
+           sizeof(int));
     segment_to_receive->seq_no = ntohl(net_seq_no);
     segment_to_receive->len = ntohl(net_len);
     segment_to_receive->flag = ntohl(net_flag);
     segment_to_receive->send_start_ts_sec = ntohl(net_send_start_ts_sec);
     segment_to_receive->send_start_ts_usec = ntohl(net_send_start_ts_usec);
+    segment_to_receive->media_start_ts_sec = ntohl(net_media_start_ts_sec);
+    segment_to_receive->media_start_ts_usec = ntohl(net_media_start_ts_usec);
 
     bool is_ack = ((segment_to_receive->flag & kSegFlagAck) != 0);
     bool is_control = ((segment_to_receive->flag & kSegFlagControl) != 0);
 
     if (is_ack) {
       // Handle ACK message
-      struct timeval send_end_ts;
-      gettimeofday(&send_end_ts, NULL);
+      struct timeval end_ts;
+      gettimeofday(&end_ts, NULL);
 
 #ifdef VERBOSE_RECEIVE_ACK
       LOG_DEBUG("%s: Receive ACK - %d.%d ~ %ld.%ld (seqno=%d, len=%d, flag=%d)",
-               this->mAdapter->get_name(),
-               segment_to_receive->send_start_ts_sec,
-               segment_to_receive->send_start_ts_usec, send_end_ts.tv_sec,
-               send_end_ts.tv_usec, segment_to_receive->seq_no,
-               segment_to_receive->len, segment_to_receive->flag);
+                this->mAdapter->get_name(),
+                segment_to_receive->send_start_ts_sec,
+                segment_to_receive->send_start_ts_usec, end_ts.tv_sec,
+                end_ts.tv_usec, segment_to_receive->seq_no,
+                segment_to_receive->len, segment_to_receive->flag);
 #endif
 
       // Use 64-bit time value to prevent overflow during calculation
-      long long send_end_us =
-          (long long)send_end_ts.tv_sec * 1000 * 1000 + send_end_ts.tv_usec;
       long long send_start_us =
           (long long)segment_to_receive->send_start_ts_sec * 1000 * 1000 +
           segment_to_receive->send_start_ts_usec;
-      int send_rtt = (int)(send_end_us - send_start_us);
+      long long media_start_us =
+          (long long)segment_to_receive->media_start_ts_sec * 1000 * 1000 +
+          segment_to_receive->media_start_ts_usec;
+      long long end_us =
+          (long long)end_ts.tv_sec * 1000 * 1000 + end_ts.tv_usec;
+      int send_rtt = (int)(end_us - send_start_us);
+      int media_rtt = (int)(end_us - media_start_us);
       Core::singleton()->set_send_rtt(send_rtt);
+      Core::singleton()->set_media_rtt(media_rtt);
 #ifdef VERBOSE_RECEIVE_ACK
       LOG_DEBUG("%s: ACK seqno=%d RTT=%d", this->mAdapter->get_name(),
-               segment_to_receive->seq_no, send_rtt);
+                segment_to_receive->seq_no, send_rtt);
 #endif
 
       continue;

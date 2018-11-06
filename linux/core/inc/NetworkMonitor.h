@@ -31,6 +31,7 @@ public:
 
   /* Statistics used in CoolSpots Policy */
   int now_total_bandwidth = 0;
+  float ema_media_rtt = 0;
 
   /* Statistics used in Energy-aware & Latency-aware Policy */
   float ema_send_request_size = 0;
@@ -87,9 +88,13 @@ private:
   bool decrease_adapter(void);
 
   /* Policy-related */
-  /* CoolSpots Policy */
-  int mBandwidthWhenIncreasing;
-  int mDecreasingCheckCount;
+  /* Energy-aware Policy */
+  int mEADecreasingCheckCount;
+
+  /* Cap-Dynamic Policy */
+  int mCDIncreasingCheckCount;
+  int mCDBandwidthWhenIncreasing;
+  int mCDDecreasingCheckCount;
 
 public:
   /* Mode getter */
@@ -128,8 +133,9 @@ private:
   NetworkMonitor(void) {
     this->mMonitorThreadOn = false;
     this->mMonitorThread = NULL;
-    this->mBandwidthWhenIncreasing = 0;
-    this->mDecreasingCheckCount = 0;
+    this->mCDBandwidthWhenIncreasing = 0;
+    this->mEADecreasingCheckCount = 0;
+    this->mCDIncreasingCheckCount = 0;
     this->set_mode(NSMode::kNSModeEnergyAware);
   }
 }; /* class NetworkMonitor */

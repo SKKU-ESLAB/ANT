@@ -149,9 +149,14 @@ public:
 
   void set_send_rtt(int send_rtt) { this->mSendRTT.set_value(send_rtt); }
 
+  float get_ema_media_rtt() { return this->mMediaRTT.get_em_average(); }
+
+  void set_media_rtt(int media_rtt) { this->mMediaRTT.set_value(media_rtt); }
+
 private:
   /* Statistics */
   Counter mSendRTT;
+  Counter mMediaRTT;
 
 public:
   /* State getter */

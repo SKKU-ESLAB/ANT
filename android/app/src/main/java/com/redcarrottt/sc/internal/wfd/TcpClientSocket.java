@@ -21,6 +21,11 @@ class TcpClientSocket extends ClientSocket {
         final int kMaxTries = 10;
         for (int tries = 0; tries < kMaxTries; tries++) {
             try {
+                Thread.sleep(500);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+            try {
                 this.mSocket = new Socket();
                 this.mSocket.setReuseAddress(true);
                 this.mSocket.bind(null);
@@ -34,11 +39,6 @@ class TcpClientSocket extends ClientSocket {
                 this.mInputStream = null;
                 this.mOutputStream = null;
                 Logger.WARN(kTag, "Try socket open " + tries);
-            }
-            try {
-                Thread.sleep(500);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
             }
         }
 

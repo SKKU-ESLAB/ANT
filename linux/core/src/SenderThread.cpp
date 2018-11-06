@@ -152,7 +152,7 @@ void SenderThread::sender_loop(void) {
     }
 
     int len = kSegHeaderSize + kSegSize;
-    const void *data = segment_to_send->data;
+    void *data = segment_to_send->data;
 
     // Send data
     int res = this->mAdapter->send(data, len);

@@ -19,6 +19,7 @@
 
 #include "../inc/NetworkMonitor.h"
 
+#include "../inc/Core.h"
 #include "../inc/NetworkSwitcher.h"
 
 #include "../../configs/ExpConfig.h"
@@ -75,15 +76,15 @@ void NetworkMonitor::monitor_thread(void) {
 }
 
 void NetworkMonitor::logging_thread(void) {
-  FILE *fp = ::fopen("./log", "w");
+  FILE *fp = ::fopen("./sc.log", "w");
   if (fp == NULL) {
     LOG_ERR("Failed to open log file");
     return;
   }
 
   // Write header
-  fprintf(fp, "Timeval(sec), EMA_ReqSize(B), EMA_IAT(ms), SQ_Length(B), "
-              "Bandwidth(B/s), EMA_RTT(ms)\n");
+  fprintf(fp, "#Timeval(sec), EMA_ReqSize(B), EMA_IAT(ms), SQ_Length(B), "
+              "Bandwidth(B/s), EMA_RTT(ms), BT_ON, WFD_ON\n");
 
   // Setting first timeval
   struct timeval first_tv;
@@ -94,7 +95,7 @@ void NetworkMonitor::logging_thread(void) {
   while (this->mLoggingThreadOn) {
     // Get statistics
     Core *core = Core::singleton();
- 
+
     // Get relative now timeval
     struct timeval now_tv;
     gettimeofday(&now_tv, NULL);
@@ -109,10 +110,19 @@ void NetworkMonitor::logging_thread(void) {
     Stats stats;
     this->get_stats(stats);
 
-    ::fprintf(fp, "%ld.%ld, %d, %3.3f, %d, %d, %3.3f\n", relative_now_tv_sec,
+    ServerAdapterState btState = core->get_adapter(0)->get_state();
+    ServerAdapterState wfdState = core->get_adapter(1)->get_state();
+    int bt_on = (btState == ServerAdapterState::kConnecting)
+                    ? 1
+                    : ((btState == ServerAdapterState::kActive) ? 2 : 0);
+    int wfd_on = (wfdState == ServerAdapterState::kConnecting)
+                    ? 1
+                    : ((wfdState == ServerAdapterState::kActive) ? 2 : 0);
+
+    ::fprintf(fp, "%ld.%ld, %d, %3.3f, %d, %d, %3.3f, %d, %d\n", relative_now_tv_sec,
               relative_now_tv_usec, (int)stats.ema_send_request_size,
               (stats.ema_arrival_time_us / 1000), stats.now_queue_data_size,
-              stats.now_total_bandwidth, stats.ema_send_rtt / 1000);
+              stats.now_total_bandwidth, stats.ema_send_rtt / 1000, bt_on, wfd_on);
     ::fflush(fp);
     ::sleep(1);
   }
@@ -145,7 +155,7 @@ void NetworkMonitor::print_stats(Stats &stats) {
            stats.now_queue_data_size, stats.now_total_bandwidth,
            this->get_init_energy_payoff_point(),
            this->get_idle_energy_payoff_point(stats.ema_arrival_time_us),
-           this->mDecreasingCheckCount, stats.ema_send_rtt / 1000);
+           this->mEADecreasingCheckCount, stats.ema_send_rtt / 1000);
     break;
   case NSMode::kNSModeLatencyAware:
     printf("R: %dB (IAT: %3.3fms) => [Q: %dB ] => %dB/s // Latency ON:%dB "
@@ -187,14 +197,12 @@ void NetworkMonitor::get_stats(Stats &stats) {
 
   /* Statistics used to evaluate the policies */
   stats.ema_send_rtt = core->get_ema_send_rtt();
+  stats.ema_media_rtt = core->get_ema_media_rtt();
 }
 
 void NetworkMonitor::check_and_decide_switching(Stats &stats) {
   /* Determine Increasing/Decreasing adapter */
   if (this->check_increase_adapter(stats)) {
-    /* CoolSpots: Maintain bandwidth when increasing */
-    this->mBandwidthWhenIncreasing = stats.now_total_bandwidth;
-
     /* Increase Adapter */
     this->increase_adapter();
   } else if (this->check_decrease_adapter(stats)) {
@@ -224,6 +232,7 @@ int NetworkMonitor::get_init_latency_payoff_point(void) {
                (BT_TX_LATENCY_PER_1B - WFD_TX_LATENCY_PER_1B));
 }
 
+#define CHECK_CD_INCREASING_OK_COUNT 5
 bool NetworkMonitor::check_increase_adapter(const Stats &stats) {
   /* Check the condition of adapter increase based on switching policy */
   if (!this->is_increaseable()) {
@@ -262,9 +271,18 @@ bool NetworkMonitor::check_increase_adapter(const Stats &stats) {
       /*
        * Cap-dynamic Policy:
        */
-
-      LOG_ERR("Unsupported mode!: %d", this->get_mode());
-      return false;
+      if (stats.ema_media_rtt > RTT_THRESHOLD_US) {
+        this->mCDIncreasingCheckCount++;
+        if (this->mCDIncreasingCheckCount >= CHECK_CD_INCREASING_OK_COUNT) {
+          this->mCDIncreasingCheckCount = 0;
+          this->mCDBandwidthWhenIncreasing = stats.now_total_bandwidth;
+          return true;
+        } else {
+          return false;
+        }
+      } else {
+        return false;
+      }
       break;
     } /* case NSMode::kNSModeCapDynamic */
     default: {
@@ -276,7 +294,8 @@ bool NetworkMonitor::check_increase_adapter(const Stats &stats) {
   }
 }
 
-#define CHECK_DECREASING_OK_COUNT 10
+#define CHECK_EA_DECREASING_OK_COUNT 10
+#define CHECK_CD_DECREASING_OK_COUNT 15
 bool NetworkMonitor::check_decrease_adapter(const Stats &stats) {
   /* Check the condition of adapter decrease based on switching policy */
   if (!this->is_decreaseable()) {
@@ -317,19 +336,19 @@ bool NetworkMonitor::check_decrease_adapter(const Stats &stats) {
         if ((bandwidth == 0) ||
             (stats.ema_send_request_size <
              this->get_idle_energy_payoff_point(stats.ema_arrival_time_us))) {
-          this->mDecreasingCheckCount++;
-          if (this->mDecreasingCheckCount >= CHECK_DECREASING_OK_COUNT) {
-            this->mDecreasingCheckCount = 0;
+          this->mEADecreasingCheckCount++;
+          if (this->mEADecreasingCheckCount >= CHECK_EA_DECREASING_OK_COUNT) {
+            this->mEADecreasingCheckCount = 0;
             return true;
           } else {
             return false;
           }
         } else {
-          this->mDecreasingCheckCount = 0;
+          this->mEADecreasingCheckCount = 0;
           return false;
         }
       } else {
-        this->mDecreasingCheckCount = 0;
+        this->mEADecreasingCheckCount = 0;
         return false;
       }
       break;
@@ -346,7 +365,17 @@ bool NetworkMonitor::check_decrease_adapter(const Stats &stats) {
       /*
        * Cap-dynamic Policy:
        */
-      LOG_ERR("Unsupported mode!: %d", this->get_mode());
+      if (stats.now_total_bandwidth < this->mCDBandwidthWhenIncreasing) {
+        this->mCDDecreasingCheckCount++;
+        if (this->mCDDecreasingCheckCount >= CHECK_CD_DECREASING_OK_COUNT) {
+          this->mCDDecreasingCheckCount = 0;
+          return true;
+        } else {
+          return false;
+        }
+      } else {
+        return false;
+      }
       break;
     } /* case NSMode::kNSModeCapDynamic */
     default: {

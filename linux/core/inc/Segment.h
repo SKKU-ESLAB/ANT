@@ -23,7 +23,7 @@
 #include <stdint.h>
 
 #define kSegSize 512
-#define kSegHeaderSize 20
+#define kSegHeaderSize 28
 
 /**
  * < Data Structure of Segment > - Handled by Segment Manager
@@ -40,6 +40,8 @@ typedef struct {
   uint32_t flag;
   int send_start_ts_sec;
   int send_start_ts_usec;
+  int media_start_ts_sec; // TODO: hard-coded: actually, not used
+  int media_start_ts_usec; // TODO: hard-coded: actually, not used
   uint8_t data[SEGMENT_DATA_SIZE];
 } Segment; /* struct Segment */
 

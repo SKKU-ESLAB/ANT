@@ -638,7 +638,7 @@ public class ClientAdapter {
                 // Send ACK message
                 sendAckSegment(segmentToReceive.getSeqNo(), segmentToReceive.getFlag(),
                         segmentToReceive.getSendStartTSSec(), segmentToReceive.getSendStartTSUsec
-                                ());
+                                (), segmentToReceive.getMediaStartTSSec(), segmentToReceive.getMediaStartTSUsec());
 
                 if (VERBOSE_RECEIVER_TIME) this.mDates[4] = new Date();
 
@@ -664,7 +664,7 @@ public class ClientAdapter {
         }
 
         public void sendAckSegment(int seq_no, int flag, int send_start_ts_sec, int
-                send_start_ts_usec) {
+                send_start_ts_usec, int media_start_ts_sec, int media_start_ts_usec) {
             // Filter ACK messages
             if (seq_no % 50 != 0) return;
 
@@ -679,7 +679,7 @@ public class ClientAdapter {
             Segment ackSegment = sm.get_free_segment();
             ackSegment.initByteArray();
             ackSegment.setMetadataAck(seq_no, messageBytes.length, flag, send_start_ts_sec,
-                    send_start_ts_usec);
+                    send_start_ts_usec, media_start_ts_sec, media_start_ts_usec);
             ackSegment.setPayloadData(messageBytes, 0, messageBytes.length);
 
             send(ackSegment.getByteArray(), ackSegment.getByteArraySize());
