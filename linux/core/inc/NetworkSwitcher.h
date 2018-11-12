@@ -82,18 +82,52 @@ protected:
   int mNextIndex;
 
 protected:
-  void setSwitchStartTS(void) { gettimeofday(&this->mSwitchStartTS, NULL); }
-  void setSwitchEndTS(void) { gettimeofday(&this->mSwitchEndTS, NULL); }
-  uint64_t getSwitchLatency(void) {
-    uint64_t end = (uint64_t)this->mSwitchEndTS.tv_sec * 1000 * 1000 +
-                   this->mSwitchEndTS.tv_usec;
-    uint64_t start = (uint64_t)this->mSwitchStartTS.tv_sec * 1000 * 1000 +
-                     this->mSwitchStartTS.tv_usec;
+  /*
+   * Connect -> Sleep -> Disconnect
+   * Connect Latency
+   * Sleep Latency
+   * Disconnect Latency
+   */
+  void setConnectStartTS(void) { gettimeofday(&this->mConnectStartTS, NULL); }
+  void setSleepStartTS(void) { gettimeofday(&this->mSleepStartTS, NULL); }
+  void setDisconnectStartTS(void) { gettimeofday(&this->mDisconnectStartTS, NULL); }
+  void setDisconnectEndTS(void) { gettimeofday(&this->mDisconnectEndTS, NULL); }
+  uint64_t getTotalSwitchLatency(void) {
+    uint64_t start = (uint64_t)this->mConnectStartTS.tv_sec * 1000 * 1000 +
+                     this->mConnectStartTS.tv_usec;
+    uint64_t end = (uint64_t)this->mDisconnectEndTS.tv_sec * 1000 * 1000 +
+                   this->mDisconnectEndTS.tv_usec;
     return (end - start);
   }
 
-  struct timeval mSwitchStartTS;
-  struct timeval mSwitchEndTS;
+  uint64_t getConnectLatency(void) {
+    uint64_t start = (uint64_t)this->mConnectStartTS.tv_sec * 1000 * 1000 +
+                     this->mConnectStartTS.tv_usec;
+    uint64_t end = (uint64_t)this->mSleepStartTS.tv_sec * 1000 * 1000 +
+                   this->mSleepStartTS.tv_usec;
+    return (end - start);
+  }
+
+  uint64_t getSleepLatency(void) {
+    uint64_t start = (uint64_t)this->mSleepStartTS.tv_sec * 1000 * 1000 +
+                     this->mSleepStartTS.tv_usec;
+    uint64_t end = (uint64_t)this->mDisconnectStartTS.tv_sec * 1000 * 1000 +
+                   this->mDisconnectStartTS.tv_usec;
+    return (end - start);
+  }
+
+  uint64_t getDisconnectLatency(void) {
+    uint64_t start = (uint64_t)this->mDisconnectStartTS.tv_sec * 1000 * 1000 +
+                     this->mDisconnectStartTS.tv_usec;
+    uint64_t end = (uint64_t)this->mDisconnectEndTS.tv_sec * 1000 * 1000 +
+                   this->mDisconnectEndTS.tv_usec;
+    return (end - start);
+  }
+
+  struct timeval mConnectStartTS;
+  struct timeval mSleepStartTS;
+  struct timeval mDisconnectStartTS;
+  struct timeval mDisconnectEndTS;
 }; /* class SwitchAdapterTransaction */
 
 class ConnectRequestTransaction {

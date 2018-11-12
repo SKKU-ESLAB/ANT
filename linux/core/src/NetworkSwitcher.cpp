@@ -153,17 +153,22 @@ bool SwitchAdapterTransaction::run(int prev_index, int next_index) {
 }
 
 void SwitchAdapterTransaction::done(bool is_success) {
-  // SWITCH TIME: end
-  this->setSwitchEndTS();
-  uint64_t latency = this->getSwitchLatency();
-  
+  // SWITCH TIME: disconnect end
+  this->setDisconnectEndTS();
+  uint64_t totalLatency = this->getTotalSwitchLatency();
+  uint64_t connectLatency = this->getConnectLatency();
+  uint64_t sleepLatency = this->getSleepLatency();
+  uint64_t disconnectLatency = this->getDisconnectLatency();
+
   if (is_success) {
-    LOG_IMP("Switch (%d->%d): SUCCESS (%lluus)", sOngoing->mPrevIndex,
-             sOngoing->mNextIndex, latency);
+    LOG_IMP("Switch (%d->%d): SUCCESS (%lluus = %lluus + %lluus + %lluus)",
+            sOngoing->mPrevIndex, sOngoing->mNextIndex, totalLatency,
+            connectLatency, sleepLatency, disconnectLatency);
     Core::singleton()->set_active_adapter_index(sOngoing->mNextIndex);
   } else {
-    LOG_ERR("Switch (%d->%d): FAILED (%lluus)", sOngoing->mPrevIndex,
-            sOngoing->mNextIndex, latency);
+    LOG_ERR("Switch (%d->%d): FAILED (%lluus = %lluus + %lluus + %lluus)",
+            sOngoing->mPrevIndex, sOngoing->mNextIndex, totalLatency,
+            connectLatency, sleepLatency, disconnectLatency);
   }
   NetworkSwitcher::singleton()->done_switch();
   sOngoing = NULL;
@@ -173,8 +178,8 @@ void SwitchAdapterTransaction::start(void) {
   // Switch Step 0, 1-a
   Core *core = Core::singleton();
 
-  // SWITCH TIME: start
-  this->setSwitchStartTS();
+  // SWITCH TIME: connect start
+  this->setConnectStartTS();
 
   ServerAdapter *next_adapter = core->get_adapter(this->mNextIndex);
   if (next_adapter == NULL) {
@@ -197,9 +202,8 @@ void SwitchAdapterTransaction::start(void) {
     return;
   }
 
-  LOG_VERB("Switch (%d->%d): STEP 1. %s Adapter ON",
-           sOngoing->mPrevIndex, sOngoing->mNextIndex,
-           next_adapter->get_name());
+  LOG_VERB("Switch (%d->%d): STEP 1. %s Adapter ON", sOngoing->mPrevIndex,
+           sOngoing->mNextIndex, next_adapter->get_name());
 
 // Connect or wake up the next adapter
 #ifdef EXP_DONT_SEND_CONNECT_CONTROL_MESSAGE
@@ -217,6 +221,9 @@ void SwitchAdapterTransaction::connect_next_adapter_callback(
   // Switch Step 1-b, 2-a
   Core *core = Core::singleton();
   NetworkSwitcher *switcher = NetworkSwitcher::singleton();
+
+  // SWITCH TIME: sleep start
+  sOngoing->setSleepStartTS();
 
   // Check if the connection result is successful
   if (!is_success) {
@@ -254,9 +261,8 @@ void SwitchAdapterTransaction::connect_next_adapter_callback(
     return;
   }
 
-  LOG_VERB("Switch (%d->%d): STEP 2. %s Adapter SLEEP",
-           sOngoing->mPrevIndex, sOngoing->mNextIndex,
-           prev_adapter->get_name());
+  LOG_VERB("Switch (%d->%d): STEP 2. %s Adapter SLEEP", sOngoing->mPrevIndex,
+           sOngoing->mNextIndex, prev_adapter->get_name());
 
   // Disconnect or sleep previous adapter
   // TODO: Actually, it needs sleep request. For now, since sleep does not
@@ -271,6 +277,10 @@ void SwitchAdapterTransaction::sleep_prev_adapter_callback(
   // Switch Step 2-b, 3-a
   Core *core = Core::singleton();
   NetworkSwitcher *switcher = NetworkSwitcher::singleton();
+
+  // SWITCH TIME: disconnect start
+  sOngoing->setDisconnectStartTS();
+
   if (!is_success) {
     LOG_ERR("Sleeping next adapter is failed");
     sOngoing->done(false);
@@ -306,9 +316,8 @@ void SwitchAdapterTransaction::sleep_prev_adapter_callback(
     return;
   }
 
-  LOG_VERB("Switch (%d->%d): STEP 3. %s Adapter OFF",
-           sOngoing->mPrevIndex, sOngoing->mNextIndex,
-           prev_adapter->get_name());
+  LOG_VERB("Switch (%d->%d): STEP 3. %s Adapter OFF", sOngoing->mPrevIndex,
+           sOngoing->mNextIndex, prev_adapter->get_name());
 
   prev_adapter->disconnect_on_command(
       SwitchAdapterTransaction::disconnect_prev_adapter_callback);
