@@ -122,7 +122,7 @@ private:
 
 public:
   /* Get statistics */
-  int get_total_bandwidth(void) {
+  int get_total_bandwidth(int reader_id) {
     int num_adapters = 0;
     int now_total_bandwidth = 0;
     /* Statistics from adapters */
@@ -131,8 +131,8 @@ public:
       ServerAdapter *adapter = this->get_adapter(i);
       if (adapter == NULL)
         continue;
-      int bandwidth_up = adapter->get_bandwidth_up();
-      int bandwidth_down = adapter->get_bandwidth_down();
+      int bandwidth_up = adapter->get_bandwidth_up(reader_id);
+      int bandwidth_down = adapter->get_bandwidth_down(reader_id);
       now_total_bandwidth += (bandwidth_up + bandwidth_down);
       num_adapters++;
     }

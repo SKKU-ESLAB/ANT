@@ -97,8 +97,8 @@ private:
 
 public:
   /* Statistics getters */
-  int get_bandwidth_up(void) { this->mSendDataSize.get_speed(); }
-  int get_bandwidth_down(void) { this->mReceiveDataSize.get_speed(); }
+  int get_bandwidth_up(int reader_id) { this->mSendDataSize.get_speed(reader_id); }
+  int get_bandwidth_down(int reader_id) { this->mReceiveDataSize.get_speed(reader_id); }
 
 private:
   /* Statistics */

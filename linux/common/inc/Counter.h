@@ -25,6 +25,7 @@
 #include <assert.h>
 #include <mutex>
 #include <sys/time.h>
+#include <map>
 
 namespace sc {
 class Counter {
@@ -38,9 +39,6 @@ public:
         DEFAULT_EXPONENTIAL_MOVING_AVERAGE_WEIGHT;
 
     this->mValue = 0;
-    this->mPrevValue = 0;
-    this->mLastAccessedTS.tv_sec = 0;
-    this->mLastAccessedTS.tv_usec = 0;
 
     /* Simple moving average */
     assert(simple_moving_average_length > 0);
@@ -90,9 +88,9 @@ public:
     return this->get_value_locked();
   }
 
-  int get_speed() {
+  int get_speed(int reader_id) {
     std::unique_lock<std::mutex> lock(this->mValueLock);
-    return this->get_speed_locked();
+    return this->get_speed_locked(reader_id);
   };
 
   int get_sm_average(void) {
@@ -122,10 +120,22 @@ private:
 
   int get_value_locked() { return this->mValue; }
 
-  int get_speed_locked() {
+  int get_speed_locked(int reader_id) {
     int speed;
+    int prevValue;
     struct timeval startTS, endTS;
-    startTS = this->mLastAccessedTS;
+
+    if(this->mPrevValues.find(reader_id) == this->mPrevValues.end()) {
+      prevValue = 0;
+    } else {
+      prevValue = this->mPrevValues[reader_id];
+    }
+    if(this->mLastAccessedTSs.find(reader_id) == this->mLastAccessedTSs.end()) {
+      startTS.tv_sec = 0;
+      startTS.tv_usec = 0;
+    } else {
+      startTS = this->mLastAccessedTSs[reader_id];
+    }
     gettimeofday(&endTS, NULL);
 
     if (startTS.tv_sec == 0 && startTS.tv_usec == 0) {
@@ -136,14 +146,14 @@ private:
       uint64_t interval = end - start;
 
       if (start != 0 && interval != 0) {
-        speed = (int)((float)(this->mValue - this->mPrevValue) /
+        speed = (int)((float)(this->mValue - prevValue) /
                       ((float)interval / (1000 * 1000)));
       } else {
         speed = 0;
       }
     }
-    this->mPrevValue = this->mValue;
-    this->mLastAccessedTS = endTS;
+    this->mPrevValues[reader_id] = this->mValue;
+    this->mLastAccessedTSs[reader_id] = endTS;
     return speed;
   }
 
@@ -164,8 +174,8 @@ private:
   int mValue;
 
   /* Speed */
-  int mPrevValue;
-  struct timeval mLastAccessedTS;
+  std::map<int, int> mPrevValues;
+  std::map<int, struct timeval> mLastAccessedTSs;
 
   /* Simple moving average (SMA) */
   int *mSimpleHistoryValues; /* History values for simple moving average */

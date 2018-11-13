@@ -60,12 +60,13 @@ private:
   bool mMonitorThreadOn;
 
   /* Logging thread */
+#define MONITOR_LOG_FILE_NAME "monitor.log"
   void logging_thread(void);
   std::thread *mLoggingThread;
   bool mLoggingThreadOn;
 
   /* Checking statistics and decide switching */
-  void get_stats(Stats &stats);
+  void get_stats(Stats &stats, int reader_id);
   void print_stats(Stats &stats);
   void check_and_decide_switching(Stats &stats);
 

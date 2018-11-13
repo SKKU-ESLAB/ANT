@@ -59,7 +59,7 @@ void NetworkMonitor::monitor_thread(void) {
   while (this->mMonitorThreadOn) {
     // Get statistics
     Stats stats;
-    this->get_stats(stats);
+    this->get_stats(stats, 0);
 
     // Print statistics
     this->print_stats(stats);
@@ -76,7 +76,7 @@ void NetworkMonitor::monitor_thread(void) {
 }
 
 void NetworkMonitor::logging_thread(void) {
-  FILE *fp = ::fopen("./sc.log", "w");
+  FILE *fp = ::fopen(MONITOR_LOG_FILE_NAME, "w");
   if (fp == NULL) {
     LOG_ERR("Failed to open log file");
     return;
@@ -84,7 +84,7 @@ void NetworkMonitor::logging_thread(void) {
 
   // Write header
   fprintf(fp, "#Timeval(sec), EMA_ReqSize(B), EMA_IAT(ms), SQ_Length(B), "
-              "Bandwidth(B/s), EMA_RTT(ms), BT_ON, WFD_ON\n");
+              "Bandwidth(B/s), EMA_RTT(ms), BT_State, WFD_State\n");
 
   // Setting first timeval
   struct timeval first_tv;
@@ -108,23 +108,31 @@ void NetworkMonitor::logging_thread(void) {
     // Get EMA send RTT
     // Use get_stats() instead
     Stats stats;
-    this->get_stats(stats);
+    this->get_stats(stats, 1);
 
     ServerAdapterState btState = core->get_adapter(0)->get_state();
     ServerAdapterState wfdState = core->get_adapter(1)->get_state();
-    int bt_on = (btState == ServerAdapterState::kConnecting)
-                    ? 1
-                    : ((btState == ServerAdapterState::kActive) ? 2 : 0);
-    int wfd_on = (wfdState == ServerAdapterState::kConnecting)
-                    ? 1
-                    : ((wfdState == ServerAdapterState::kActive) ? 2 : 0);
+    int bt_on =
+        (btState == ServerAdapterState::kConnecting)
+            ? 1
+            : ((btState == ServerAdapterState::kActive)
+                   ? 2
+                   : ((btState == ServerAdapterState::kDisconnecting) ? 3 : 0));
+    int wfd_on =
+        (wfdState == ServerAdapterState::kConnecting)
+            ? 1
+            : ((wfdState == ServerAdapterState::kActive)
+                   ? 2
+                   : ((wfdState == ServerAdapterState::kDisconnecting) ? 3
+                                                                       : 0));
 
-    ::fprintf(fp, "%ld.%ld, %d, %3.3f, %d, %d, %3.3f, %d, %d\n", relative_now_tv_sec,
-              relative_now_tv_usec, (int)stats.ema_send_request_size,
-              (stats.ema_arrival_time_us / 1000), stats.now_queue_data_size,
-              stats.now_total_bandwidth, stats.ema_send_rtt / 1000, bt_on, wfd_on);
+    ::fprintf(
+        fp, "%ld.%ld, %d, %3.3f, %d, %d, %3.3f, %d, %d\n", relative_now_tv_sec,
+        relative_now_tv_usec, (int)stats.ema_send_request_size,
+        (stats.ema_arrival_time_us / 1000), stats.now_queue_data_size,
+        stats.now_total_bandwidth, stats.ema_send_rtt / 1000, bt_on, wfd_on);
     ::fflush(fp);
-    ::sleep(1);
+    ::usleep(250 * 1000);
   }
 
   ::fclose(fp);
@@ -177,7 +185,7 @@ void NetworkMonitor::print_stats(Stats &stats) {
 #endif
 }
 
-void NetworkMonitor::get_stats(Stats &stats) {
+void NetworkMonitor::get_stats(Stats &stats, int reader_id) {
   // TODO: consider peer's request_speed, now_queue_data_size
   Core *core = Core::singleton();
   SegmentManager *sm = SegmentManager::singleton();
@@ -186,7 +194,7 @@ void NetworkMonitor::get_stats(Stats &stats) {
   stats.ema_queue_arrival_speed = sm->get_ema_queue_arrival_speed();
 
   /* Statistics used in CoolSpots Policy */
-  stats.now_total_bandwidth = core->get_total_bandwidth();
+  stats.now_total_bandwidth = core->get_total_bandwidth(reader_id);
 
   /* Statistics used in Energy-aware & Latency-aware Policy */
   stats.ema_send_request_size = core->get_ema_send_request_size();
