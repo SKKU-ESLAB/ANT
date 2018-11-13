@@ -48,7 +48,7 @@ public:
   /* Control netwowrk monitor thread */
   void start(void);
   void stop(void);
-  
+
   /* Control logging thread */
   void start_logging(void);
   void stop_logging(void);
@@ -79,10 +79,48 @@ private:
   bool is_increaseable(void);
   bool is_decreaseable(void);
 
-  /* Get payoff points */
+  /* TODO: Legacy: Get payoff points */
   int get_init_energy_payoff_point(void);
   int get_idle_energy_payoff_point(int avg_arrival_time_us);
   int get_init_latency_payoff_point(void);
+
+  /* Max Bandwidth (B/s) */
+  #define MAX_BANDWIDTH_BT 91585
+  #define MAX_BANDWIDTH_WFD 3735044
+
+  /* Energy-aware Policy */
+  int get_estimated_energy_retain_bt(int queue_length,
+                                     float queue_arrival_speed);
+  int get_estimated_energy_retain_wfd(int queue_length,
+                                      float queue_arrival_speed);
+  int get_estimated_energy_switch_to_bt(int queue_length,
+                                        float queue_arrival_speed);
+  int get_estimated_energy_switch_to_wfd(int queue_length,
+                                         float queue_arrival_speed);
+
+  /* Latency-aware Policy */
+  int get_estimated_latency_retain_bt(int queue_length,
+                                      float queue_arrival_speed) {
+    this->get_estimated_energy_retain(queue_length, queue_arrival_speed, MAX_BANDWIDTH_BT);
+  }
+  int get_estimated_latency_retain_wfd(int queue_length,
+                                       float queue_arrival_speed) {
+
+  }
+  int get_estimated_latency_switch_to_bt(int queue_length,
+                                         float queue_arrival_speed) {
+
+  }
+  int get_estimated_latency_switch_to_wfd(int queue_length,
+                                          float queue_arrival_speed) {
+
+  }
+  int get_estimated_latency_retain(int queue_length, float queue_arrival_speed,
+                                   int bandwidth_a1);
+  int get_estimated_latency_switch(int queue_length, float queue_arrival_speed,
+                                   int time_a2_on, int bandwidth_a2_on,
+                                   int time_a1_off, int bandwidth_a1_off,
+                                   int bandwidth_a2);
 
   /* Increase/decrease adapter */
   bool increase_adapter(void);
@@ -110,7 +148,7 @@ public:
     std::unique_lock<std::mutex> lck(this->mModeLock);
     NSMode old_mode = this->mMode;
     this->mMode = new_mode;
-    
+
     LOG_IMP("Network Monitor Mode Change: %d -> %d", old_mode, new_mode);
   }
 
