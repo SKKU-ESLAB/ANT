@@ -26,17 +26,17 @@ int main() {
   size_t len = 512;
 
   {
-    char *const params[] = {"wpa_cli", "p2p_group_add", NULL};
+    char const *const params[] = {"wpa_cli", "p2p_group_add", NULL};
     ChildProcess::run(WPA_CLI_PATH, params, ret, len, true);
     printf("wpa_cli p2p_group_add: %s\n", ret);
   }
   {
-    char *const params[] = {"wpa_cli", "status", NULL};
+    char const *const params[] = {"wpa_cli", "status", NULL};
     ChildProcess::run(WPA_CLI_PATH, params, ret, len, true);
     printf("wpa_cli status: %s\n", ret);
   }
   {
-    char *const params[] = {"wpa_cli", "ping", NULL};
+    char const *const params[] = {"wpa_cli", "ping", NULL};
     ChildProcess::run(WPA_CLI_PATH, params, ret, len, true);
     printf("wpa_cli ping: %s\n", ret);
   }

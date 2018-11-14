@@ -62,7 +62,7 @@ int set_dhcpd_config(const char *intfName) {
     sDhcpdMonitoring = true;
   }
 
-  char *const params[] = {"udhcpd", UDHCPD_CONFIG_PATH, "-f", NULL};
+  char const *const params[] = {"udhcpd", UDHCPD_CONFIG_PATH, "-f", NULL};
 
   // Generate dhcp configuration
   int config_fd = open(UDHCPD_CONFIG_PATH, O_CREAT | O_WRONLY | O_TRUNC, 0644);

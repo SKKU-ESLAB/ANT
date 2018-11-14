@@ -22,26 +22,11 @@
 
 #include "API.h"
 #include "NetworkSwitcher.h"
+#include "Stats.h"
 
 namespace sc {
-class Stats {
-public:
-  /* Statistics used to print present status */
-  float ema_queue_arrival_speed = 0;
 
-  /* Statistics used in CoolSpots Policy */
-  int now_total_bandwidth = 0;
-  float ema_media_rtt = 0;
-
-  /* Statistics used in Energy-aware & Latency-aware Policy */
-  float ema_send_request_size = 0;
-  float ema_arrival_time_us = 0;
-  int now_queue_data_size = 0;
-
-  /* Statistics used to evaluate the policies */
-  float ema_send_rtt = 0;
-};
-
+class Stats;
 class NetworkSwitcher;
 class NetworkMonitor {
 public:
@@ -78,49 +63,6 @@ private:
   /* Check condition of increase/decrease */
   bool is_increaseable(void);
   bool is_decreaseable(void);
-
-  /* TODO: Legacy: Get payoff points */
-  int get_init_energy_payoff_point(void);
-  int get_idle_energy_payoff_point(int avg_arrival_time_us);
-  int get_init_latency_payoff_point(void);
-
-  /* Max Bandwidth (B/s) */
-  #define MAX_BANDWIDTH_BT 91585
-  #define MAX_BANDWIDTH_WFD 3735044
-
-  /* Energy-aware Policy */
-  int get_estimated_energy_retain_bt(int queue_length,
-                                     float queue_arrival_speed);
-  int get_estimated_energy_retain_wfd(int queue_length,
-                                      float queue_arrival_speed);
-  int get_estimated_energy_switch_to_bt(int queue_length,
-                                        float queue_arrival_speed);
-  int get_estimated_energy_switch_to_wfd(int queue_length,
-                                         float queue_arrival_speed);
-
-  /* Latency-aware Policy */
-  int get_estimated_latency_retain_bt(int queue_length,
-                                      float queue_arrival_speed) {
-    this->get_estimated_energy_retain(queue_length, queue_arrival_speed, MAX_BANDWIDTH_BT);
-  }
-  int get_estimated_latency_retain_wfd(int queue_length,
-                                       float queue_arrival_speed) {
-
-  }
-  int get_estimated_latency_switch_to_bt(int queue_length,
-                                         float queue_arrival_speed) {
-
-  }
-  int get_estimated_latency_switch_to_wfd(int queue_length,
-                                          float queue_arrival_speed) {
-
-  }
-  int get_estimated_latency_retain(int queue_length, float queue_arrival_speed,
-                                   int bandwidth_a1);
-  int get_estimated_latency_switch(int queue_length, float queue_arrival_speed,
-                                   int time_a2_on, int bandwidth_a2_on,
-                                   int time_a1_off, int bandwidth_a1_off,
-                                   int bandwidth_a2);
 
   /* Increase/decrease adapter */
   bool increase_adapter(void);

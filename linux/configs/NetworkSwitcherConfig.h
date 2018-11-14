@@ -22,20 +22,29 @@
 
 #define NETWORK_MONITOR_SLEEP_USECS (250 * 1000)
 
-/* Energy constants (mJ) */
-#define BT_TX_ENERGY_1KB_BASIS 5.0342202f
-#define BT_TX_ENERGY_PER_1B 0.000882425f
-#define WFD_TX_ENERGY_1KB_BASIS 2.055363f
-#define WFD_TX_ENERGY_PER_1B 0.000200986f
-#define WFD_INIT_ENERGY 3157.8248f
-#define WFD_IDLE_ENERGY_PER_1SEC 156.13f
+/* Max Bandwidth (B/s; float) */
+#define MAX_BANDWIDTH_BT 91585.0f
+#define MAX_BANDWIDTH_WFD 3735044.0f
+#define MAX_BANDWIDTH_BT_ON 922126.0f
+#define MAX_BANDWIDTH_BT_OFF 352779.0f
+#define MAX_BANDWIDTH_WFD_ON 30674.0f
+#define MAX_BANDWIDTH_WFD_OFF 38531.0f
 
-/* Latency constants (us) */
-#define BT_TX_LATENCY_1KB_BASIS 26970.0f
-#define BT_TX_LATENCY_PER_1B 11.21951941f
-#define WFD_TX_LATENCY_1KB_BASIS 10110.0f
-#define WFD_TX_LATENCY_PER_1B 0.248092696f
-#define WFD_INIT_LATENCY 6740000.0f
+/* Switch Latency (sec; float) */
+#define LATENCY_BT_ON 5.72f
+#define LATENCY_BT_OFF 3.41f
+#define LATENCY_WFD_ON 7.66f
+#define LATENCY_WFD_OFF 2.61f
+
+/* Power (mW; float) */
+#define POWER_BT_TRANSFER 77.41f
+#define POWER_WFD_TRANSFER 704.71f
+#define POWER_BT_ON 160.77f
+#define POWER_BT_OFF 263.60f
+#define POWER_WFD_ON 242.31f
+#define POWER_WFD_OFF 173.62f
+#define POWER_BT_IDLE 1.53f
+#define POWER_WFD_IDLE 129.97f
 
 /* CoolSpots */
 #define AVERAGE_WFD_ON_LATENCY_SEC 8.04f /* 8.04 sec */

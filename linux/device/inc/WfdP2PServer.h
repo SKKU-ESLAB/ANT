@@ -78,7 +78,7 @@ private:
   bool turn_on_wfd_interface();
   bool retrieve_wpa_interface_name(void);
   int ping_wpa_cli(char ret[], size_t len);
-  int set_wfd_ip_addr(char *ip_addr);
+  int set_wfd_ip_addr(const char *ip_addr);
   int launch_dhcpd(void);
   int get_wfd_p2p_device_addr(char *dev_addr, size_t len);
   int get_wfd_status(char ret[], size_t len);

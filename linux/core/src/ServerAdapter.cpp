@@ -392,8 +392,8 @@ int ServerAdapter::send(void *buf, size_t len) {
   gettimeofday(&media_start_ts, NULL);
   int32_t net_media_start_ts_sec = htonl(media_start_ts.tv_sec);
   int32_t net_media_start_ts_usec = htonl(media_start_ts.tv_usec);
-  memcpy(buf + 20, &net_media_start_ts_sec, sizeof(int32_t));
-  memcpy(buf + 24, &net_media_start_ts_usec, sizeof(int32_t));
+  memcpy((void*)((uint8_t*)buf + 20), &net_media_start_ts_sec, sizeof(int32_t));
+  memcpy((void*)((uint8_t*)buf + 24), &net_media_start_ts_usec, sizeof(int32_t));
 
   // Send
   int ret = this->mServerSocket->send(buf, len);

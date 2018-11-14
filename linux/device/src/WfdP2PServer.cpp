@@ -73,7 +73,8 @@ bool WfdP2PServer::allow_discover_impl(void) {
         LOG_ERR("allow_discover(%s): p2p_group_add error", this->get_name());
         return false;
       } else if (strstr(ptr, "OK")) {
-        LOG_DEBUG("allow_discover(%s): p2p_group_add success", this->get_name());
+        LOG_DEBUG("allow_discover(%s): p2p_group_add success",
+                  this->get_name());
         break;
       }
 
@@ -84,12 +85,14 @@ bool WfdP2PServer::allow_discover_impl(void) {
   // Retrieve WPA Interface Name from wpa-cli
   ret_bool = this->retrieve_wpa_interface_name();
   if (!ret_bool) {
-    LOG_ERR("allow_discover(%s): retrieve_wpa_interface_name error", this->get_name());
+    LOG_ERR("allow_discover(%s): retrieve_wpa_interface_name error",
+            this->get_name());
     return false;
   }
 
   // Set Wi-fi Direct IP
-  this->set_wfd_ip_addr(DEFAULT_WFD_IP_ADDRESS);
+  std::string default_ip_addr(DEFAULT_WFD_IP_ADDRESS);
+  this->set_wfd_ip_addr(default_ip_addr.c_str());
 
   // Set DHCPD config
   WfdP2PServer::sDhcpdCaller = this;
@@ -101,10 +104,11 @@ bool WfdP2PServer::allow_discover_impl(void) {
         '\0',
     };
     // MAC Address
-    if(this->mP2PDeviceAddr.empty()) {
+    if (this->mP2PDeviceAddr.empty()) {
       ret = this->get_wfd_p2p_device_addr(buf, 256);
       if (ret < 0) {
-        LOG_ERR("allow_discover(%s): get_wfd_p2p_device_addr error", this->get_name());
+        LOG_ERR("allow_discover(%s): get_wfd_p2p_device_addr error",
+                this->get_name());
         return false;
       }
       this->mP2PDeviceAddr.assign(buf);
@@ -121,7 +125,7 @@ bool WfdP2PServer::allow_discover_impl(void) {
     strncat(wfdInfo, buf, 1024);
 
     // IP Address
-    if(this->mIPAddress.empty()) {
+    if (this->mIPAddress.empty()) {
       for (int ip_wait_it = 0; ip_wait_it < 30; ip_wait_it++) {
         ret = this->get_wfd_ip_address(buf, 256);
         if (ret == 0) {
@@ -130,7 +134,8 @@ bool WfdP2PServer::allow_discover_impl(void) {
         usleep(300000);
       }
       if (ret < 0) {
-        LOG_ERR("allow_discover(%s): get_wfd_ip_address error", this->get_name());
+        LOG_ERR("allow_discover(%s): get_wfd_ip_address error",
+                this->get_name());
         return false;
       }
       this->mIPAddress.assign(buf);
@@ -162,15 +167,15 @@ bool WfdP2PServer::allow_discover_impl(void) {
 
 int WfdP2PServer::set_wps_device_name(char *wfd_device_name, char ret[],
                                       size_t len) {
-  char *const params[] = {"wpa_cli", "set", "device_name", wfd_device_name,
-                          NULL};
+  char const *const params[] = {"wpa_cli", "set", "device_name",
+                                wfd_device_name, NULL};
 
   return ChildProcess::run(WPA_CLI_PATH, params, ret, len, true);
 }
 
 int WfdP2PServer::wfd_add_p2p_group(char ret[], size_t len) {
-  char *const params[] = {"wpa_cli", "-i", DEFAULT_WFD_DEVICE_NAME,
-                          "p2p_group_add", NULL};
+  char const *const params[] = {"wpa_cli", "-i", DEFAULT_WFD_DEVICE_NAME,
+                                "p2p_group_add", NULL};
 
   return ChildProcess::run(WPA_CLI_PATH, params, ret, len, true);
 }
@@ -203,15 +208,15 @@ bool WfdP2PServer::retrieve_wpa_interface_name(void) {
 }
 
 int WfdP2PServer::ping_wpa_cli(char ret[], size_t len) {
-  char *const params[] = {"wpa_cli", "ping", NULL};
+  char const *const params[] = {"wpa_cli", "ping", NULL};
 
   return ChildProcess::run(WPA_CLI_PATH, params, ret, len, true);
 }
 
-int WfdP2PServer::set_wfd_ip_addr(char *ip_addr) {
+int WfdP2PServer::set_wfd_ip_addr(const char *ip_addr) {
   assert(this->mWpaIntfName[0] != '\0');
 
-  char *const params[] = {"ifconfig", this->mWpaIntfName, ip_addr, NULL};
+  char const *const params[] = {"ifconfig", this->mWpaIntfName, ip_addr, NULL};
   char buf[256];
 
   return ChildProcess::run(IFCONFIG_PATH, params, buf, 256, true);
@@ -229,7 +234,7 @@ int WfdP2PServer::launch_dhcpd(void) {
     WfdP2PServer::sDhcpdMonitoring = true;
   }
 
-  char *const params[] = {"udhcpd", UDHCPD_CONFIG_PATH, "-f", NULL};
+  char const *const params[] = {"udhcpd", UDHCPD_CONFIG_PATH, "-f", NULL};
 
   // Generate dhcp configuration
   int config_fd = open(UDHCPD_CONFIG_PATH, O_CREAT | O_WRONLY | O_TRUNC, 0644);
@@ -281,7 +286,7 @@ int WfdP2PServer::get_wfd_p2p_device_addr(char *dev_addr, size_t len) {
   std::string buf_str(buf);
 
   int header_pos = buf_str.find("p2p_device_address=");
-  if(header_pos == std::string::npos) {
+  if (header_pos == std::string::npos) {
     LOG_WARN("%s: Get p2p device address failed", this->get_name());
     return -1;
   }
@@ -298,7 +303,7 @@ int WfdP2PServer::get_wfd_p2p_device_addr(char *dev_addr, size_t len) {
 }
 
 int WfdP2PServer::get_wfd_status(char ret[], size_t len) {
-  char *const params[] = {"wpa_cli", "status", NULL};
+  char const *const params[] = {"wpa_cli", "status", NULL};
 
   return ChildProcess::run(WPA_CLI_PATH, params, ret, len, true);
 }
@@ -335,7 +340,7 @@ int WfdP2PServer::reset_wfd_server(char *pin, size_t len) {
 }
 
 int WfdP2PServer::reset_wps_pin(char ret[], size_t len) {
-  char *const params[] = {"wpa_cli", "wps_pin", "any", "12345670", NULL};
+  char const *const params[] = {"wpa_cli", "wps_pin", "any", "12345670", NULL};
 
   assert(this->mWpaIntfName[0] != '\0');
 
@@ -420,22 +425,20 @@ bool WfdP2PServer::disallow_discover_impl(void) {
 }
 
 bool WfdP2PServer::turn_off_wfd_interface() {
-  char *const params[] = {"ifdown", DEFAULT_WFD_DEVICE_NAME,
-                          NULL};
+  char const *const params[] = {"ifdown", DEFAULT_WFD_DEVICE_NAME, NULL};
 
   return ChildProcess::run(IFDOWN_PATH, params, true);
 }
 
 bool WfdP2PServer::turn_on_wfd_interface() {
-  char *const params[] = {"ifup", DEFAULT_WFD_DEVICE_NAME,
-                          NULL};
+  char const *const params[] = {"ifup", DEFAULT_WFD_DEVICE_NAME, NULL};
 
   return ChildProcess::run(IFUP_PATH, params, true);
 }
 
 int WfdP2PServer::wfd_remove_p2p_group(char ret[], size_t len) {
-  char *const params[] = {"wpa_cli", "p2p_group_remove", this->mWpaIntfName,
-                          NULL};
+  char const *const params[] = {"wpa_cli", "p2p_group_remove",
+                                this->mWpaIntfName, NULL};
 
   assert(this->mWpaIntfName[0] != '\0');
 

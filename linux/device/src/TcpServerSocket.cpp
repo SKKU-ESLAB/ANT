@@ -157,7 +157,7 @@ int TcpServerSocket::receive_impl(void *data_buffer, size_t data_length) {
   while (received_bytes < data_length) {
     int left_data_bytes = data_length - received_bytes;
     int once_received_bytes =
-        ::recv(this->mClientSocket, data_buffer + received_bytes, left_data_bytes, 0);
+        ::recv(this->mClientSocket, (void*)((uint8_t*)data_buffer + received_bytes), left_data_bytes, 0);
     if (once_received_bytes <= 0) {
       return once_received_bytes;
     }

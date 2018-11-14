@@ -20,11 +20,14 @@
 #include "../inc/NetworkMonitor.h"
 
 #include "../inc/Core.h"
+#include "../inc/NetworkEstimator.h"
 #include "../inc/NetworkSwitcher.h"
+#include "../inc/Stats.h"
 
 #include "../../configs/ExpConfig.h"
 #include "../../configs/NetworkSwitcherConfig.h"
 
+#include <math.h>
 #include <string.h>
 
 using namespace sc;
@@ -156,29 +159,39 @@ void NetworkMonitor::print_stats(Stats &stats) {
    *  - EMA(Arrival Time (sec))
    */
   switch (this->get_mode()) {
-  case NSMode::kNSModeEnergyAware:
-    printf("R: %dB (IAT: %3.3fms) => [Q: %dB ] => %dB/s // Energy ON:%dB "
-           "OFF: %dB (%d) // RTT=%3.3fms\n",
+  case NSMode::kNSModeEnergyAware: {
+    float energy_retain = NetworkEstimator::energy_retain_bt(stats);
+    float energy_switch = NetworkEstimator::energy_switch_to_wfd(stats);
+    if (stats.now_queue_data_size == 0) {
+      energy_retain += NetworkEstimator::energy_idle_bt(stats);
+      energy_switch += NetworkEstimator::energy_idle_wfd(stats);
+    }
+    printf("R: %dB (IAT: %3.3fms) => [Q: %dB ] => %dB/s // Energy: %4.2fmJ vs. "
+           "%4.2fmJ (%d) // RTT=%3.3fms\n",
            (int)stats.ema_send_request_size, (stats.ema_arrival_time_us / 1000),
-           stats.now_queue_data_size, stats.now_total_bandwidth,
-           this->get_init_energy_payoff_point(),
-           this->get_idle_energy_payoff_point(stats.ema_arrival_time_us),
-           this->mEADecreasingCheckCount, stats.ema_send_rtt / 1000);
+           stats.now_queue_data_size, stats.now_total_bandwidth, energy_retain,
+           energy_switch, this->mEADecreasingCheckCount,
+           stats.ema_send_rtt / 1000);
     break;
-  case NSMode::kNSModeLatencyAware:
-    printf("R: %dB (IAT: %3.3fms) => [Q: %dB ] => %dB/s // Latency ON:%dB "
-           "OFF: N/A // RTT=%3.3fms\n",
+  }
+  case NSMode::kNSModeLatencyAware: {
+    float latency_retain = NetworkEstimator::latency_retain_bt(stats);
+    float latency_switch = NetworkEstimator::latency_switch_to_wfd(stats);
+    printf("R: %dB (IAT: %3.3fms) => [Q: %dB ] => %dB/s // Latency: %4.2fs vs. "
+           "%4.2fs // RTT=%3.3fms\n",
            (int)stats.ema_send_request_size, (stats.ema_arrival_time_us / 1000),
-           stats.now_queue_data_size, stats.now_total_bandwidth,
-           this->get_init_latency_payoff_point(), stats.ema_send_rtt / 1000);
+           stats.now_queue_data_size, stats.now_total_bandwidth, latency_retain,
+           latency_switch, stats.ema_send_rtt / 1000);
     break;
-  case NSMode::kNSModeCapDynamic:
+  }
+  case NSMode::kNSModeCapDynamic: {
     printf("R: %dB (IAT: %3.3fms) => [Q: %dB ] => %dB/s // Cap-Dynamic // "
            "RTT=%3.3fms\n",
            (int)stats.ema_send_request_size, (stats.ema_arrival_time_us / 1000),
            stats.now_queue_data_size, stats.now_total_bandwidth,
            stats.ema_send_rtt / 1000);
     break;
+  }
   default:
     break;
   }
@@ -219,27 +232,6 @@ void NetworkMonitor::check_and_decide_switching(Stats &stats) {
   }
 }
 
-int NetworkMonitor::get_init_energy_payoff_point(void) {
-  /* 4634053B (4525KB) */
-  return (int)((WFD_INIT_ENERGY) /
-               (BT_TX_ENERGY_PER_1B - WFD_TX_ENERGY_PER_1B));
-}
-int NetworkMonitor::get_idle_energy_payoff_point(int ema_arrival_time_us) {
-  /*
-   * 229118B(224KB) at 1sec
-   * 6873542B(6712KB) at 30sec
-   */
-  return (int)((WFD_IDLE_ENERGY_PER_1SEC * ema_arrival_time_us / 1000000) /
-               (BT_TX_ENERGY_PER_1B - WFD_TX_ENERGY_PER_1B));
-}
-
-int NetworkMonitor::get_init_latency_payoff_point(void) {
-  /* 612787B (598KB) */
-  return (int)((WFD_INIT_LATENCY + WFD_TX_LATENCY_1KB_BASIS -
-                BT_TX_LATENCY_1KB_BASIS) /
-               (BT_TX_LATENCY_PER_1B - WFD_TX_LATENCY_PER_1B));
-}
-
 #define CHECK_CD_INCREASING_OK_COUNT 5
 bool NetworkMonitor::check_increase_adapter(const Stats &stats) {
   /* Check the condition of adapter increase based on switching policy */
@@ -251,33 +243,49 @@ bool NetworkMonitor::check_increase_adapter(const Stats &stats) {
     switch (this->get_mode()) {
     case NSMode::kNSModeEnergyAware: {
       /*
-       * Energy-aware Policy:
-       *  - queue data size + EMA(send_request_size) > init energy payoff point
+       * Energy-aware Policy
        */
-      if (stats.ema_send_request_size + stats.now_queue_data_size >
-          this->get_init_energy_payoff_point()) {
+      float energy_retain = NetworkEstimator::energy_retain_bt(stats);
+      float energy_switch = NetworkEstimator::energy_switch_to_wfd(stats);
+      if (stats.now_queue_data_size == 0) {
+        energy_retain += NetworkEstimator::energy_idle_bt(stats);
+        energy_switch += NetworkEstimator::energy_idle_wfd(stats);
+      }
+
+      if (isinf(energy_retain) && isinf(energy_switch)) {
+        return true;
+      }
+
+      if (energy_retain > energy_switch) {
         return true;
       } else {
         return false;
       }
+
       break;
     } /* case NSMode::kNSModeEnergyAware */
     case NSMode::kNSModeLatencyAware: {
       /*
-       * Latency-aware Policy:
-       *  - queue data size + EMA(send_request_size) > init latency payoff point
+       * Latency-aware Policy
        */
-      if (stats.ema_send_request_size + stats.now_queue_data_size >
-          this->get_init_latency_payoff_point()) {
+      float latency_retain = NetworkEstimator::latency_retain_bt(stats);
+      float latency_switch = NetworkEstimator::latency_switch_to_wfd(stats);
+
+      if (isinf(latency_retain) && isinf(latency_switch)) {
+        return true;
+      }
+
+      if (latency_retain > latency_switch) {
         return true;
       } else {
         return false;
       }
+
       break;
     } /* case NSMode::kNSModeLatencyAware */
     case NSMode::kNSModeCapDynamic: {
       /*
-       * Cap-dynamic Policy:
+       * Cap-dynamic Policy
        */
       if (stats.ema_media_rtt > RTT_THRESHOLD_US) {
         this->mCDIncreasingCheckCount++;
@@ -314,59 +322,44 @@ bool NetworkMonitor::check_decrease_adapter(const Stats &stats) {
     switch (this->get_mode()) {
     case NSMode::kNSModeEnergyAware: {
       /*
-       * Energy-aware Policy:
-       *  - if(wfd_idle_energy < wfd_init_energy) EMA(send_request_size)
-       *      > idle energy payoff point
-       *  - if(wfd_idle_energy > wfd_init_energy) always false
+       * Energy-aware Policy
        */
-      bool wfd_off;
-      int wfd_idle_energy =
-          WFD_IDLE_ENERGY_PER_1SEC * stats.ema_arrival_time_us / 1000000;
-      int queue_size = stats.now_queue_data_size;
-      int bandwidth = stats.now_total_bandwidth;
-      if (WFD_INIT_ENERGY < wfd_idle_energy) {
-        wfd_off = true;
-      } else {
-        int next_request_size = stats.ema_send_request_size;
-        int idle_energy_payoff_point =
-            get_idle_energy_payoff_point(stats.ema_arrival_time_us);
-        if (next_request_size < idle_energy_payoff_point) {
-          wfd_off = true;
-        } else {
-          wfd_off = false;
-        }
+      float energy_retain = NetworkEstimator::energy_retain_wfd(stats);
+      float energy_switch = NetworkEstimator::energy_switch_to_bt(stats);
+      if (stats.now_queue_data_size == 0) {
+        energy_retain += NetworkEstimator::energy_idle_wfd(stats);
+        energy_switch += NetworkEstimator::energy_idle_bt(stats);
       }
 
-      if (queue_size > 0) {
-        // If queue is not empty, do not turn off WFD
-        return false;
-      } else if (wfd_off) {
-        if ((bandwidth == 0) ||
-            (stats.ema_send_request_size <
-             this->get_idle_energy_payoff_point(stats.ema_arrival_time_us))) {
-          this->mEADecreasingCheckCount++;
-          if (this->mEADecreasingCheckCount >= CHECK_EA_DECREASING_OK_COUNT) {
-            this->mEADecreasingCheckCount = 0;
-            return true;
-          } else {
-            return false;
-          }
-        } else {
-          this->mEADecreasingCheckCount = 0;
-          return false;
-        }
+      if (isinf(energy_retain) && isinf(energy_switch)) {
+        return true;
+      }
+
+      if (energy_retain > energy_switch) {
+        return true;
       } else {
-        this->mEADecreasingCheckCount = 0;
         return false;
       }
+
       break;
     } /* case NSMode::kNSModeEnergyAware */
     case NSMode::kNSModeLatencyAware: {
       /*
-       * Latency-aware Policy:
-       *  - always false
+       * Latency-aware Policy
        */
-      return false;
+      float latency_retain = NetworkEstimator::latency_retain_wfd(stats);
+      float latency_switch = NetworkEstimator::latency_switch_to_bt(stats);
+
+      if (isinf(latency_retain) && isinf(latency_switch)) {
+        return true;
+      }
+
+      if (latency_retain > latency_switch) {
+        return true;
+      } else {
+        return false;
+      }
+
       break;
     } /* case NSMode::kNSModeLatencyAware */
     case NSMode::kNSModeCapDynamic: {

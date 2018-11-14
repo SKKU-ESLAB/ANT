@@ -17,22 +17,27 @@
  * limitations under the License.
  */
 
-#ifndef __UTIL_H__
-#define __UTIL_H__
-
-#include "../../configs/PathConfig.h"
-
-#include <stdio.h>
+#ifndef __STATS_H__
+#define __STATS_H__
 
 namespace sc {
-class ChildProcess {
+class Stats {
 public:
-  static int run(const char *path, char const *const params[], char *res_buf,
-                 size_t len, bool is_wait_child);
-  static int run(const char *path, char const *const params[],
-                 bool is_wait_child);
-}; /* class ChildProcess */
+  /* Statistics used to print present status */
+  float ema_queue_arrival_speed = 0;
 
+  /* Statistics used in CoolSpots Policy */
+  int now_total_bandwidth = 0;
+  float ema_media_rtt = 0;
+
+  /* Statistics used in Energy-aware & Latency-aware Policy */
+  float ema_send_request_size = 0;
+  float ema_arrival_time_us = 0;
+  int now_queue_data_size = 0;
+
+  /* Statistics used to evaluate the policies */
+  float ema_send_rtt = 0;
+}; /* class Stats */
 } /* namespace sc */
 
-#endif /* !defined(__UTIL_H__) */
+#endif /* !defined(__STATS_H__) */

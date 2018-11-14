@@ -86,7 +86,7 @@ void NetworkInitializer::initialize(void) {
 }
 
 int NetworkInitializer::ping_wpa_cli(char ret[], size_t len) {
-  char *const params[] = {"wpa_cli", "ping", NULL};
+  char const *const params[] = {"wpa_cli", "ping", NULL};
 
   return ChildProcess::run(WPA_CLI_PATH, params, ret, len, true);
 }

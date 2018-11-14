@@ -97,8 +97,12 @@ private:
 
 public:
   /* Statistics getters */
-  int get_bandwidth_up(int reader_id) { this->mSendDataSize.get_speed(reader_id); }
-  int get_bandwidth_down(int reader_id) { this->mReceiveDataSize.get_speed(reader_id); }
+  int get_bandwidth_up(int reader_id) {
+    this->mSendDataSize.get_speed(reader_id);
+  }
+  int get_bandwidth_down(int reader_id) {
+    this->mReceiveDataSize.get_speed(reader_id);
+  }
 
 private:
   /* Statistics */
@@ -193,9 +197,9 @@ public:
   }
 
   static std::string server_adapter_state_to_string(ServerAdapterState state) {
-    char *const state_string[] = {"Disconnected",  "Connecting",    "Active",
-                                  "Disconnecting", "GoingSleeping", "Sleeping",
-                                  "WakingUp"};
+    char const *const state_string[] = {
+        "Disconnected",  "Connecting", "Active",  "Disconnecting",
+        "GoingSleeping", "Sleeping",   "WakingUp"};
     int state_index = (int)state;
     if (state_index >= ServerAdapterState::kASNum || state_index < 0) {
       return std::string("");

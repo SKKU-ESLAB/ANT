@@ -36,8 +36,8 @@
 
 using namespace sc;
 
-int ChildProcess::run(const char *path, char *const params[], char *res_buf,
-                      size_t len, bool is_wait_child) {
+int ChildProcess::run(const char *path, char const *const params[],
+                      char *res_buf, size_t len, bool is_wait_child) {
   int internal_pipe[2];
   int pid, bk, res;
 
@@ -110,12 +110,12 @@ int ChildProcess::run(const char *path, char *const params[], char *res_buf,
     close(internal_pipe[0]);
     dup2(internal_pipe[1], 1);
 
-    execv(path, params);
+    execv(path, (char **)params);
     return 0;
   }
 }
 
-int ChildProcess::run(const char *path, char *const params[],
+int ChildProcess::run(const char *path, char const *const params[],
                       bool is_wait_child) {
   int pid;
 
@@ -148,7 +148,7 @@ int ChildProcess::run(const char *path, char *const params[],
     }
     return pid;
   } else {
-    execv(path, params);
+    execv(path, (char **)params);
     return 0;
   }
 }

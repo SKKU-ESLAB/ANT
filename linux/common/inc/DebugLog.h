@@ -33,7 +33,9 @@
 #define unlikely(x) __builtin_expect(!!(x), 0)
 #endif /* likely(x) */
 
+#ifndef LOG_LEVEL
 #define LOG_LEVEL 1
+#endif
 
 #define _log(format, color, args...)                                           \
   do {                                                                         \
