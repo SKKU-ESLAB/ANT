@@ -111,10 +111,10 @@ public:
     return this->mFailedSendingQueueLength.get_value() * SEGMENT_DATA_SIZE;
   }
 
-  int get_send_request_per_sec(int reader_id) { return this->mSendRequest.get_speed(reader_id); }
+  int get_send_request_per_sec() { return this->mSendRequest.get_speed(); }
 
   void update_queue_arrival_speed() {
-    int send_request_per_sec = this->get_send_request_per_sec(0);
+    int send_request_per_sec = this->get_send_request_per_sec();
     this->mQueueArrivalSpeed.set_value(send_request_per_sec);
   }
 
@@ -147,6 +147,8 @@ private:
 
     is_start = 0;
     is_finish = 0;
+
+    this->mSendRequest.start_measure_speed();
   }
 
   // for experiment

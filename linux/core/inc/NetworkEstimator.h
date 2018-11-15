@@ -22,85 +22,72 @@
 
 #include "Stats.h"
 
+#include "../../configs/NetworkSwitcherConfig.h"
+
 #include <limits>
+#include <stdio.h>
+
+#define A_BT 0
+#define A_WFD 1
+
+#define IDLE_ENERGY_ESTIMATION_TIME_SEC 30.0f
+#define BANDWIDTH_TRANSFER(a)                                                  \
+  ((a == A_BT) ? MAX_BANDWIDTH_BT : MAX_BANDWIDTH_WFD)
+#define BANDWIDTH_ON(a)                                                        \
+  ((a == A_BT) ? MAX_BANDWIDTH_BT_ON : MAX_BANDWIDTH_WFD_ON)
+#define BANDWIDTH_OFF(a)                                                       \
+  ((a == A_BT) ? MAX_BANDWIDTH_BT_OFF : MAX_BANDWIDTH_WFD_OFF)
+
+#define LATENCY_ON(a) ((a == A_BT) ? LATENCY_BT_ON : LATENCY_WFD_ON)
+#define LATENCY_OFF(a) ((a == A_BT) ? LATENCY_BT_OFF : LATENCY_WFD_OFF)
+
+#define POWER_TRANSFER(a) ((a == A_BT) ? POWER_BT_TRANSFER : POWER_WFD_TRANSFER)
+#define POWER_ON(a) ((a == A_BT) ? POWER_BT_ON : POWER_WFD_ON)
+#define POWER_OFF(a) ((a == A_BT) ? POWER_BT_OFF : POWER_WFD_OFF)
+#define POWER_IDLE(a) ((a == A_BT) ? POWER_BT_IDLE : POWER_WFD_IDLE)
 
 namespace sc {
 class NetworkEstimator {
-private:
-  /* Basic Information */
-  static float latency_retain(float queue_length, float queue_arrival_speed,
-                              float bandwidth_a1) {
-    float nr = queue_length;
-    float dn = bandwidth_a1 - queue_arrival_speed;
-    dn = (dn > 0) ? dn : 0;
-
-    float ret = (dn != 0) ? (nr / dn) : std::numeric_limits<float>::infinity();
-    return ret;
-  }
-  static float
-  latency_remaining_transfer(float queue_length, float queue_arrival_speed,
-                             float time_a2_on, float bandwidth_a2_on,
-                             float time_a1_off, float bandwidth_a1_off,
-                             float bandwidth_a2) {
-    float nr = queue_length - time_a2_on * bandwidth_a2_on -
-               time_a1_off * bandwidth_a1_off;
-    nr = (nr > 0) ? nr : 0;
-    float dn = bandwidth_a2_on - queue_arrival_speed;
-    dn = (dn > 0) ? dn : 0;
-
-    float ret = (dn != 0) ? (nr / dn) : std::numeric_limits<float>::infinity();
-    return ret;
-  }
-  static float latency_switch(float queue_length, float queue_arrival_speed,
-                              float time_a2_on, float bandwidth_a2_on,
-                              float time_a1_off, float bandwidth_a1_off,
-                              float bandwidth_a2) {
-    float time_a2_transfer = latency_remaining_transfer(
-        queue_length, queue_arrival_speed, time_a2_on, bandwidth_a2_on,
-        time_a1_off, bandwidth_a1_off, bandwidth_a2);
-    return (time_a2_on + time_a1_off + time_a2_transfer);
-  }
-
 public:
   /* Latency-aware Policy: Latency (sec) */
-  static float latency_retain_bt(const Stats &stats);
-  static float latency_retain_wfd(const Stats &stats);
-  static float latency_switch_to_bt(const Stats &stats);
-  static float latency_switch_to_wfd(const Stats &stats);
-
-private:
-  /* Energy-aware Policy: Energy (mJ) */
-  static float energy_retain(float queue_length, float queue_arrival_speed,
-                             float bandwidth_a1, float power_a1_transfer) {
-    float time_retain =
-        latency_retain(queue_arrival_speed, queue_arrival_speed, bandwidth_a1);
-    float ret = time_retain * power_a1_transfer;
-    return ret;
-  }
-  static float energy_switch(float queue_length, float queue_arrival_speed,
-                             float time_a2_on, float bandwidth_a2_on,
-                             float power_a2_on, float time_a1_off,
-                             float bandwidth_a1_off, float power_a1_off,
-                             float bandwidth_a2, float power_a2_transfer) {
-    float time_a2_transfer = latency_remaining_transfer(
-        queue_length, queue_arrival_speed, time_a2_on, bandwidth_a2_on,
-        time_a1_off, bandwidth_a1_off, bandwidth_a2);
-    float ret = time_a2_on * power_a2_on + time_a1_off * power_a1_off +
-                time_a2_transfer * power_a2_transfer;
-    return ret;
-  }
-
-  static float energy_idle(float idle_time, float power_a1_idle) {
-    return idle_time * power_a1_idle;
-  }
+  static float latency_retain_queue_bt(const Stats &stats);
+  static float latency_retain_queue_wfd(const Stats &stats);
+  static float latency_switch_queue_to_bt(const Stats &stats);
+  static float latency_switch_queue_to_wfd(const Stats &stats);
 
 public:
+  /* Energy-aware Policy: Energy (mJ) */
   static float energy_retain_bt(const Stats &stats);
   static float energy_retain_wfd(const Stats &stats);
   static float energy_switch_to_bt(const Stats &stats);
   static float energy_switch_to_wfd(const Stats &stats);
-  static float energy_idle_bt(const Stats &stats);
-  static float energy_idle_wfd(const Stats &stats);
+
+private:
+  /* Basic Latency */
+  static float latency_transfer_queue(float queue_length,
+                                      float queue_arrival_speed, int a1,
+                                      int a2);
+  static float latency_switch_only(float queue_length,
+                                    float queue_arrival_speed, int a1, int a2);
+
+private:
+  /* Basic Energy */
+  static float energy_retain_queue_bt(const Stats &stats);
+  static float energy_retain_queue_wfd(const Stats &stats);
+  static float energy_switch_queue_to_bt(const Stats &stats);
+  static float energy_switch_queue_to_wfd(const Stats &stats);
+
+  static float energy_retain_idle_bt(const Stats &stats);
+  static float energy_retain_idle_wfd(const Stats &stats);
+  static float energy_switch_idle_to_bt(const Stats &stats);
+  static float energy_switch_idle_to_wfd(const Stats &stats);
+
+  static float energy_transfer_queue(float queue_length,
+                                     float queue_arrival_speed, int a1, int a2);
+  static float energy_transfer_idle(float avg_request_size, float inter_arrival_time, int a1, int a2);
+  static float energy_switch_only(float queue_length, float queue_arrival_speed,
+                             int a1, int a2);
+
 }; /* class NetworkEstimator */
 } /* namespace sc */
 

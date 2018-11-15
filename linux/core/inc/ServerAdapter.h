@@ -97,11 +97,11 @@ private:
 
 public:
   /* Statistics getters */
-  int get_bandwidth_up(int reader_id) {
-    this->mSendDataSize.get_speed(reader_id);
+  int get_bandwidth_up() {
+    this->mSendDataSize.get_speed();
   }
-  int get_bandwidth_down(int reader_id) {
-    this->mReceiveDataSize.get_speed(reader_id);
+  int get_bandwidth_down() {
+    this->mReceiveDataSize.get_speed();
   }
 
 private:
@@ -224,6 +224,9 @@ public:
     this->mId = id;
     this->mIsDisconnectingOnPurpose = false;
     this->mIsDisconnectingOnPurposePeer = false;
+
+    this->mSendDataSize.start_measure_speed();
+    this->mReceiveDataSize.start_measure_speed();
   }
 
   ~ServerAdapter() {

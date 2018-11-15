@@ -51,7 +51,7 @@ private:
   bool mLoggingThreadOn;
 
   /* Checking statistics and decide switching */
-  void get_stats(Stats &stats, int reader_id);
+  void get_stats(Stats &stats);
   void print_stats(Stats &stats);
   void check_and_decide_switching(Stats &stats);
 

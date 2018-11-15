@@ -23,15 +23,17 @@
 #include "DebugLog.h"
 
 #include <assert.h>
+#include <map>
 #include <mutex>
 #include <sys/time.h>
-#include <map>
+#include <thread>
 
 namespace sc {
 class Counter {
 public:
-#define DEFAULT_SIMPLE_MOVING_AVERAGE_LENGTH 10
+#define DEFAULT_SIMPLE_MOVING_AVERAGE_LENGTH 12
 #define DEFAULT_EXPONENTIAL_MOVING_AVERAGE_WEIGHT 0.9f
+#define PREV_VALUES_SIZE 10
 
   Counter() {
     int simple_moving_average_length = DEFAULT_SIMPLE_MOVING_AVERAGE_LENGTH;
@@ -39,6 +41,12 @@ public:
         DEFAULT_EXPONENTIAL_MOVING_AVERAGE_WEIGHT;
 
     this->mValue = 0;
+
+    /* Speed */
+    for (int i = 0; i < PREV_VALUES_SIZE; i++) {
+      this->mPrevValues[i] = 0;
+      this->mPrevValueTSs[i] = 0;
+    }
 
     /* Simple moving average */
     assert(simple_moving_average_length > 0);
@@ -88,10 +96,15 @@ public:
     return this->get_value_locked();
   }
 
-  int get_speed(int reader_id) {
+  int get_speed() {
     std::unique_lock<std::mutex> lock(this->mValueLock);
-    return this->get_speed_locked(reader_id);
+    return this->get_speed_locked();
   };
+
+  void update_speed() {
+    std::unique_lock<std::mutex> lock(this->mValueLock);
+    this->update_speed_locked();
+  }
 
   int get_sm_average(void) {
     std::unique_lock<std::mutex> lock(this->mValueLock);
@@ -101,6 +114,11 @@ public:
   float get_em_average(void) {
     std::unique_lock<std::mutex> lock(this->mValueLock);
     return this->get_em_average_locked();
+  }
+
+  void start_measure_speed(void) {
+    this->mSpeedThread = new std::thread(std::bind(&Counter::speed_thread_loop, this));
+    this->mSpeedThread->detach();
   }
 
 private:
@@ -120,41 +138,41 @@ private:
 
   int get_value_locked() { return this->mValue; }
 
-  int get_speed_locked(int reader_id) {
+  void speed_thread_loop() {
+    while(1) {
+      this->update_speed();
+      usleep(250 * 1000);
+    }
+  }
+
+  int get_speed_locked() {
+    int startPointer = (this->mPrevValuePointer + 1) % PREV_VALUES_SIZE;
+    int endPointer = (this->mPrevValuePointer) % PREV_VALUES_SIZE;
+
+    int startValue = this->mPrevValues[startPointer];
+    int endValue = this->mPrevValues[endPointer];
+    uint64_t startTStv = this->mPrevValueTSs[startPointer];
+    uint64_t endTStv = this->mPrevValueTSs[endPointer];
+
     int speed;
-    int prevValue;
-    struct timeval startTS, endTS;
-
-    if(this->mPrevValues.find(reader_id) == this->mPrevValues.end()) {
-      prevValue = 0;
-    } else {
-      prevValue = this->mPrevValues[reader_id];
-    }
-    if(this->mLastAccessedTSs.find(reader_id) == this->mLastAccessedTSs.end()) {
-      startTS.tv_sec = 0;
-      startTS.tv_usec = 0;
-    } else {
-      startTS = this->mLastAccessedTSs[reader_id];
-    }
-    gettimeofday(&endTS, NULL);
-
-    if (startTS.tv_sec == 0 && startTS.tv_usec == 0) {
+    if (endTStv == 0 || startTStv == 0) {
       speed = 0;
     } else {
-      uint64_t end = (uint64_t)endTS.tv_sec * 1000 * 1000 + endTS.tv_usec;
-      uint64_t start = (uint64_t)startTS.tv_sec * 1000 * 1000 + startTS.tv_usec;
-      uint64_t interval = end - start;
-
-      if (start != 0 && interval != 0) {
-        speed = (int)((float)(this->mValue - prevValue) /
-                      ((float)interval / (1000 * 1000)));
-      } else {
-        speed = 0;
-      }
+      speed = (int)(((float)(endValue - startValue)) /
+                    ((float)(endTStv - startTStv) / 1000000));
     }
-    this->mPrevValues[reader_id] = this->mValue;
-    this->mLastAccessedTSs[reader_id] = endTS;
+
     return speed;
+  }
+
+  void update_speed_locked() {
+    struct timeval nowTStv;
+    gettimeofday(&nowTStv, NULL);
+
+    this->mPrevValuePointer = (this->mPrevValuePointer + 1) % PREV_VALUES_SIZE;
+    this->mPrevValues[this->mPrevValuePointer] = this->get_value_locked();
+    this->mPrevValueTSs[this->mPrevValuePointer] =
+        (uint64_t)nowTStv.tv_sec * 1000 * 1000 + nowTStv.tv_usec;
   }
 
   int get_sm_average_locked(void) {
@@ -174,8 +192,11 @@ private:
   int mValue;
 
   /* Speed */
-  std::map<int, int> mPrevValues;
-  std::map<int, struct timeval> mLastAccessedTSs;
+  int mPrevValues[PREV_VALUES_SIZE];
+  uint64_t mPrevValueTSs[PREV_VALUES_SIZE];
+  int mPrevValuePointer;
+  struct timeval mLastAccessedTS;
+  std::thread* mSpeedThread;
 
   /* Simple moving average (SMA) */
   int *mSimpleHistoryValues; /* History values for simple moving average */
@@ -185,7 +206,7 @@ private:
   /* Exponential moving average (EMA) */
   float mEma;       /* Exponential moving average */
   float mEmaWeight; /* Weight for Exponential moving average */
-}; /* class Counter */
+};                  /* class Counter */
 } /* namespace sc */
 
 #endif /* !defined(__COUNTER_H__) */

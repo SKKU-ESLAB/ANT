@@ -62,7 +62,7 @@ void NetworkMonitor::monitor_thread(void) {
   while (this->mMonitorThreadOn) {
     // Get statistics
     Stats stats;
-    this->get_stats(stats, 0);
+    this->get_stats(stats);
 
     // Print statistics
     this->print_stats(stats);
@@ -111,7 +111,7 @@ void NetworkMonitor::logging_thread(void) {
     // Get EMA send RTT
     // Use get_stats() instead
     Stats stats;
-    this->get_stats(stats, 1);
+    this->get_stats(stats);
 
     ServerAdapterState btState = core->get_adapter(0)->get_state();
     ServerAdapterState wfdState = core->get_adapter(1)->get_state();
@@ -160,36 +160,56 @@ void NetworkMonitor::print_stats(Stats &stats) {
    */
   switch (this->get_mode()) {
   case NSMode::kNSModeEnergyAware: {
-    float energy_retain = NetworkEstimator::energy_retain_bt(stats);
-    float energy_switch = NetworkEstimator::energy_switch_to_wfd(stats);
-    if (stats.now_queue_data_size == 0) {
-      energy_retain += NetworkEstimator::energy_idle_bt(stats);
-      energy_switch += NetworkEstimator::energy_idle_wfd(stats);
+    float energy_retain, energy_switch;
+    if (this->is_increaseable()) {
+      energy_retain = NetworkEstimator::energy_retain_bt(stats);
+      energy_switch = NetworkEstimator::energy_switch_to_wfd(stats);
+      if (stats.now_queue_data_size == 0) {
+        energy_retain += NetworkEstimator::energy_idle_bt(stats);
+        energy_switch += NetworkEstimator::energy_idle_wfd(stats);
+      }
+    } else {
+      energy_retain = NetworkEstimator::energy_retain_wfd(stats);
+      energy_switch = NetworkEstimator::energy_switch_to_bt(stats);
+      if (stats.now_queue_data_size == 0) {
+        energy_retain += NetworkEstimator::energy_idle_wfd(stats);
+        energy_switch += NetworkEstimator::energy_idle_bt(stats);
+      }
     }
-    printf("R: %dB (IAT: %3.3fms) => [Q: %dB ] => %dB/s // Energy: %4.2fmJ vs. "
+    printf("R: %dB (IAT: %3.3fms) %3.3fB/s => [Q: %dB ] => %dB/s // Energy: "
+           "%4.2fmJ vs. "
            "%4.2fmJ (%d) // RTT=%3.3fms\n",
            (int)stats.ema_send_request_size, (stats.ema_arrival_time_us / 1000),
-           stats.now_queue_data_size, stats.now_total_bandwidth, energy_retain,
-           energy_switch, this->mEADecreasingCheckCount,
-           stats.ema_send_rtt / 1000);
+           stats.ema_queue_arrival_speed, stats.now_queue_data_size,
+           stats.now_total_bandwidth, energy_retain, energy_switch,
+           this->mEADecreasingCheckCount, stats.ema_send_rtt / 1000);
     break;
   }
   case NSMode::kNSModeLatencyAware: {
-    float latency_retain = NetworkEstimator::latency_retain_bt(stats);
-    float latency_switch = NetworkEstimator::latency_switch_to_wfd(stats);
-    printf("R: %dB (IAT: %3.3fms) => [Q: %dB ] => %dB/s // Latency: %4.2fs vs. "
+    float latency_retain, latency_switch;
+    if (this->is_increaseable()) {
+      latency_retain = NetworkEstimator::latency_retain_queue_bt(stats);
+      latency_switch = NetworkEstimator::latency_switch_queue_to_wfd(stats);
+    } else {
+      latency_retain = NetworkEstimator::latency_retain_queue_wfd(stats);
+      latency_switch = NetworkEstimator::latency_switch_queue_to_bt(stats);
+    }
+    printf("R: %dB (IAT: %3.3fms) %3.3fB/s => [Q: %dB ] => %dB/s // Latency: "
+           "%4.2fs vs. "
            "%4.2fs // RTT=%3.3fms\n",
            (int)stats.ema_send_request_size, (stats.ema_arrival_time_us / 1000),
-           stats.now_queue_data_size, stats.now_total_bandwidth, latency_retain,
-           latency_switch, stats.ema_send_rtt / 1000);
+           stats.ema_queue_arrival_speed, stats.now_queue_data_size,
+           stats.now_total_bandwidth, latency_retain, latency_switch,
+           stats.ema_send_rtt / 1000);
     break;
   }
   case NSMode::kNSModeCapDynamic: {
-    printf("R: %dB (IAT: %3.3fms) => [Q: %dB ] => %dB/s // Cap-Dynamic // "
+    printf("R: %dB (IAT: %3.3fms) %3.3fB/s => [Q: %dB ] => %dB/s // "
+           "Cap-Dynamic // "
            "RTT=%3.3fms\n",
            (int)stats.ema_send_request_size, (stats.ema_arrival_time_us / 1000),
-           stats.now_queue_data_size, stats.now_total_bandwidth,
-           stats.ema_send_rtt / 1000);
+           stats.ema_queue_arrival_speed, stats.now_queue_data_size,
+           stats.now_total_bandwidth, stats.ema_send_rtt / 1000);
     break;
   }
   default:
@@ -198,8 +218,7 @@ void NetworkMonitor::print_stats(Stats &stats) {
 #endif
 }
 
-void NetworkMonitor::get_stats(Stats &stats, int reader_id) {
-  // TODO: consider peer's request_speed, now_queue_data_size
+void NetworkMonitor::get_stats(Stats &stats) {
   Core *core = Core::singleton();
   SegmentManager *sm = SegmentManager::singleton();
 
@@ -207,7 +226,7 @@ void NetworkMonitor::get_stats(Stats &stats, int reader_id) {
   stats.ema_queue_arrival_speed = sm->get_ema_queue_arrival_speed();
 
   /* Statistics used in CoolSpots Policy */
-  stats.now_total_bandwidth = core->get_total_bandwidth(reader_id);
+  stats.now_total_bandwidth = core->get_total_bandwidth();
 
   /* Statistics used in Energy-aware & Latency-aware Policy */
   stats.ema_send_request_size = core->get_ema_send_request_size();
@@ -268,8 +287,9 @@ bool NetworkMonitor::check_increase_adapter(const Stats &stats) {
       /*
        * Latency-aware Policy
        */
-      float latency_retain = NetworkEstimator::latency_retain_bt(stats);
-      float latency_switch = NetworkEstimator::latency_switch_to_wfd(stats);
+      float latency_retain = NetworkEstimator::latency_retain_queue_bt(stats);
+      float latency_switch =
+          NetworkEstimator::latency_switch_queue_to_wfd(stats);
 
       if (isinf(latency_retain) && isinf(latency_switch)) {
         return true;
@@ -310,7 +330,7 @@ bool NetworkMonitor::check_increase_adapter(const Stats &stats) {
   }
 }
 
-#define CHECK_EA_DECREASING_OK_COUNT 10
+#define CHECK_EA_DECREASING_OK_COUNT 8
 #define CHECK_CD_DECREASING_OK_COUNT 15
 bool NetworkMonitor::check_decrease_adapter(const Stats &stats) {
   /* Check the condition of adapter decrease based on switching policy */
@@ -332,11 +352,17 @@ bool NetworkMonitor::check_decrease_adapter(const Stats &stats) {
       }
 
       if (isinf(energy_retain) && isinf(energy_switch)) {
-        return true;
+        return false;
       }
 
       if (energy_retain > energy_switch) {
-        return true;
+        this->mEADecreasingCheckCount++;
+        if (this->mEADecreasingCheckCount > CHECK_EA_DECREASING_OK_COUNT) {
+          this->mEADecreasingCheckCount = 0;
+          return true;
+        } else {
+          return false;
+        }
       } else {
         return false;
       }
@@ -347,11 +373,11 @@ bool NetworkMonitor::check_decrease_adapter(const Stats &stats) {
       /*
        * Latency-aware Policy
        */
-      float latency_retain = NetworkEstimator::latency_retain_wfd(stats);
-      float latency_switch = NetworkEstimator::latency_switch_to_bt(stats);
+      float latency_retain = NetworkEstimator::latency_retain_queue_wfd(stats);
+      float latency_switch = NetworkEstimator::latency_switch_queue_to_bt(stats);
 
       if (isinf(latency_retain) && isinf(latency_switch)) {
-        return true;
+        return false;
       }
 
       if (latency_retain > latency_switch) {
