@@ -8,12 +8,14 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0 *  * Unless required by * * *
- * applicable law or agreed to in writing, software * distributed under the *  *
- * * License is distributed on an "AS IS" BASIS,  * WITHOUT WARRANTIES OR *  *
- * * CONDITIONS OF ANY KIND, either express or implied. * See the License for
- * the *  *  * specific language governing permissions and * limitations under
- * the *  * License. */
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 
 #ifndef __NETWORK_ESTIMATOR_H__
 #define __NETWORK_ESTIMATOR_H__
@@ -22,11 +24,10 @@
 
 #include "../../configs/NetworkSwitcherConfig.h"
 
-#include < limits >
-#include < stdio.h >
+#include <limits>
+#include <stdio.h>
 
-#define A_BT 0
-#define A_WFD 1
+typedef enum { A_BT = 0, A_WFD = 1 } AdapterType;
 
 #define IDLE_ENERGY_ESTIMATION_TIME_SEC 30.0f
 #define BANDWIDTH_TRANSFER(a)                                                  \
@@ -48,39 +49,38 @@ namespace sc {
 class NetworkEstimator {
 public:
   /* Latency-aware Policy: Latency (sec) */
-  static float latency_retain_queue_bt(const Stats &stats);
-  static float latency_retain_queue_wfd(const Stats &stats);
-  static float latency_switch_queue_to_bt(const Stats &stats);
-  static float latency_switch_queue_to_wfd(const Stats &stats);
+  static float latency_retain_queue(const Stats &stats, AdapterType a1);
+  static float latency_switch_queue(const Stats &stats, AdapterType a1,
+                                    AdapterType a2);
 
 public:
   /* Energy-aware Policy: Energy (mJ) */
-  static float energy_retain_bt(const Stats &stats);
-  static float energy_retain_wfd(const Stats &stats);
-  static float energy_switch_to_bt(const Stats &stats);
-  static float energy_switch_to_wfd(const Stats &stats);
+  static float energy_retain(const Stats &stats, AdapterType a1);
+  static float energy_switch(const Stats &stats, AdapterType a1,
+                             AdapterType a2);
 
 private:
   /* Basic Latency */
-  static float latency_transfer_queue(const Stats &stats, int a1, int a2);
-  static float latency_switch_only(const Stats &stats, int a1, int a2);
+  static float latency_transfer_queue(const Stats &stats, AdapterType a1,
+                                      AdapterType a2);
+  static float latency_switch_only(const Stats &stats, AdapterType a1,
+                                   AdapterType a2);
 
 private:
   /* Basic Energy */
-  static float energy_retain_queue_bt(const Stats &stats);
-  static float energy_retain_queue_wfd(const Stats &stats);
-  static float energy_switch_queue_to_bt(const Stats &stats);
-  static float energy_switch_queue_to_wfd(const Stats &stats);
-
   static float energy_retain_idle_bt(const Stats &stats);
   static float energy_retain_idle_wfd(const Stats &stats);
   static float energy_switch_idle_to_bt(const Stats &stats);
   static float energy_switch_idle_to_wfd(const Stats &stats);
 
-  static float energy_transfer_queue(const Stats &stats, int a1, int a2);
-  static float energy_transfer_idle(int a1, int a2);
-  static float energy_switch_only(float queue_length, float queue_arrival_speed,
-                                  int a1, int a2);
+  static float energy_transfer_queue(const Stats &stats, AdapterType a1,
+                                     AdapterType a2);
+  static float energy_transfer_idle(const Stats &stats, float time_transfer_duration, AdapterType a2);
+
+  static float time_transfer_idle(const Stats &stats,
+                                  float time_transfer_duration, AdapterType a2);
+  static float energy_idle(const Stats &stats, AdapterType a1, AdapterType a2);
+  static float energy_switch_only(AdapterType a1, AdapterType a2);
 
 }; /* class NetworkEstimator */
 } /* namespace sc */
