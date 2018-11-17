@@ -260,8 +260,8 @@ void NetworkMonitor::check_and_decide_switching(Stats &stats) {
   }
 }
 
-#define CHECK_EA_INCREASING_OK_COUNT 5
-#define CHECK_LA_INCREASING_OK_COUNT 5
+#define CHECK_EA_INCREASING_OK_COUNT 4
+#define CHECK_LA_INCREASING_OK_COUNT 4
 #define CHECK_CD_INCREASING_OK_COUNT 5
 bool NetworkMonitor::check_increase_adapter(const Stats &stats) {
   /* Check the condition of adapter increase based on switching policy */
