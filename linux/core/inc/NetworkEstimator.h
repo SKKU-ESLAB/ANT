@@ -68,19 +68,18 @@ private:
 
 private:
   /* Basic Energy */
-  static float energy_retain_idle_bt(const Stats &stats);
-  static float energy_retain_idle_wfd(const Stats &stats);
-  static float energy_switch_idle_to_bt(const Stats &stats);
-  static float energy_switch_idle_to_wfd(const Stats &stats);
-
   static float energy_transfer_queue(const Stats &stats, AdapterType a1,
                                      AdapterType a2);
-  static float energy_transfer_idle(const Stats &stats, float time_transfer_duration, AdapterType a2);
+  static float energy_transfer_idle(const Stats &stats,
+                                    float time_transfer_duration,
+                                    AdapterType a2);
 
   static float time_transfer_idle(const Stats &stats,
                                   float time_transfer_duration, AdapterType a2);
-  static float energy_idle(const Stats &stats, AdapterType a1, AdapterType a2);
-  static float energy_switch_only(AdapterType a1, AdapterType a2);
+  static float energy_idle(const Stats &stats, float estimation_time,
+                           AdapterType a1, AdapterType a2);
+  static float energy_switch_only(const Stats &stats, AdapterType a1,
+                                  AdapterType a2);
 
 }; /* class NetworkEstimator */
 } /* namespace sc */

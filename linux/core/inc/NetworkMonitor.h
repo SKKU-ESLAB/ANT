@@ -71,6 +71,10 @@ private:
   /* Policy-related */
   /* Energy-aware Policy */
   int mEADecreasingCheckCount;
+  int mEAIncreasingCheckCount;
+
+  /* Latency-aware Policy */
+  int mLAIncreasingCheckCount;
 
   /* Cap-Dynamic Policy */
   int mCDIncreasingCheckCount;
@@ -115,7 +119,9 @@ private:
     this->mMonitorThreadOn = false;
     this->mMonitorThread = NULL;
     this->mCDBandwidthWhenIncreasing = 0;
+    this->mEAIncreasingCheckCount = 0;
     this->mEADecreasingCheckCount = 0;
+    this->mLAIncreasingCheckCount = 0;
     this->mCDIncreasingCheckCount = 0;
     this->set_mode(NSMode::kNSModeEnergyAware);
   }
