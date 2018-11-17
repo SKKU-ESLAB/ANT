@@ -45,7 +45,9 @@ inline int receive(void **dataBuffer) {
 typedef enum {
   kNSModeEnergyAware = 0,  /* WearDrive-like */
   kNSModeLatencyAware = 1, /* Selective Connection Unique */
-  kNSModeCapDynamic = 2    /* CoolSpots */
+  kNSModeCapDynamic = 2,    /* CoolSpots */
+  kNSModeBTOnly = 3, /* BT-only baseline */
+  kNSModeWFDOnly = 4 /* WFD-only baseline */
 } NSMode;
 
 void set_switcher_mode(NSMode switcher_mode);

@@ -73,6 +73,14 @@ void TraceRunner::start() {
     // App-aware Only
     sc::set_switcher_mode(sc::kNSModeEnergyAware);
     break;
+  case 4:
+    // BT-only
+    sc::set_switcher_mode(sc::kNSModeBTOnly);
+    break;
+  case 5:
+    // WFD-only
+    sc::set_switcher_mode(sc::kNSModeWFDOnly);
+    break;
   default:
     // Unknown Policy
     printf("[ERROR] Unknown Policy! %d\n", this->mDecisionPolicy);
@@ -101,7 +109,16 @@ void TraceRunner::on_start_sc(bool is_success) {
   printf(" ** Send Test Data\n");
   ::sleep(5);
   self->send_test_data();
-  ::sleep(2);
+  printf(" ** 40 sec. remains\n");
+  ::sleep(10);
+  printf(" ** 30 sec. remains\n");
+  ::sleep(10);
+  printf(" ** 20 sec. remains\n");
+  ::sleep(10);
+  printf(" ** 10 sec. remains\n");
+  ::sleep(5);
+  printf(" ** 5 sec. remains\n");
+  ::sleep(5);
 
   printf(" ** Start Workload\n");
 
@@ -364,6 +381,12 @@ TraceRunner *TraceRunner::app_aware_runner(std::string packet_trace_filename,
                                            std::string app_trace_filename) {
   return new TraceRunner(packet_trace_filename, kDPAppAware,
                          app_trace_filename);
+}
+TraceRunner *TraceRunner::bt_only_runner(std::string packet_trace_filename) {
+  return TraceRunner::simple_runner(packet_trace_filename, kDPBTOnly);
+}
+TraceRunner *TraceRunner::wfd_only_runner(std::string packet_trace_filename) {
+  return TraceRunner::simple_runner(packet_trace_filename, kDPWFDOnly);
 }
 
 TraceRunner *TraceRunner::simple_runner(std::string packet_trace_filename,

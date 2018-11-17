@@ -221,6 +221,24 @@ void NetworkMonitor::print_stats(Stats &stats) {
            stats.now_total_bandwidth, stats.ema_send_rtt / 1000);
     break;
   }
+  case NSMode::kNSModeBTOnly: {
+    printf("R: %dB (IAT: %3.3fms) %3.3fB/s => [Q: %dB ] => %dB/s // "
+           "BT-Only // "
+           "RTT=%3.3fms\n",
+           (int)stats.ema_send_request_size, (stats.ema_arrival_time_us / 1000),
+           stats.ema_queue_arrival_speed, stats.now_queue_data_size,
+           stats.now_total_bandwidth, stats.ema_send_rtt / 1000);
+    break;
+  }
+  case NSMode::kNSModeWFDOnly: {
+    printf("R: %dB (IAT: %3.3fms) %3.3fB/s => [Q: %dB ] => %dB/s // "
+           "WFD-Only // "
+           "RTT=%3.3fms\n",
+           (int)stats.ema_send_request_size, (stats.ema_arrival_time_us / 1000),
+           stats.ema_queue_arrival_speed, stats.now_queue_data_size,
+           stats.now_total_bandwidth, stats.ema_send_rtt / 1000);
+    break;
+  }
   default:
     break;
   }
@@ -356,6 +374,20 @@ bool NetworkMonitor::check_increase_adapter(const Stats &stats) {
     }
     break;
   } /* case NSMode::kNSModeCapDynamic */
+  case NSMode::kNSModeBTOnly: {
+    /*
+     * BT-only Policy
+     */
+    return false;
+    break;
+  }
+  case NSMode::kNSModeWFDOnly: {
+    /*
+     * WFD-only Policy
+     */
+    return true;
+    break;
+  }
   default: {
     LOG_ERR("Unsupported mode!: %d", this->get_mode());
     return false;
@@ -440,6 +472,20 @@ bool NetworkMonitor::check_decrease_adapter(const Stats &stats) {
     }
     break;
   } /* case NSMode::kNSModeCapDynamic */
+  case NSMode::kNSModeBTOnly: {
+    /*
+     * BT-only Policy
+     */
+    return false;
+    break;
+  }
+  case NSMode::kNSModeWFDOnly: {
+    /*
+     * WFD-only Policy
+     */
+    return false;
+    break;
+  }
   default: {
     LOG_ERR("Unsupported mode!: %d", this->get_mode());
     return false;

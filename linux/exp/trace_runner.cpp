@@ -32,6 +32,8 @@ int main(int argc, char **argv) {
     printf("  - Latency-aware Only: 1\n");
     printf("  - Cap-dynamic Only: 2\n");
     printf("  - App-aware: 3\n");
+    printf("  - BT-only: 4\n");
+    printf("  - WFD-only: 5\n");
     return -1;
   }
 
@@ -57,6 +59,14 @@ int main(int argc, char **argv) {
     std::string app_trace_filename(argv[3]);
     trace_runner = TraceRunner::app_aware_runner(packet_trace_filename,
                                                  app_trace_filename);
+    break;
+  }
+  case 4: {
+    trace_runner = TraceRunner::bt_only_runner(packet_trace_filename);
+    break;
+  }
+  case 5: {
+    trace_runner = TraceRunner::wfd_only_runner(packet_trace_filename);
     break;
   }
   default: { return -1; }

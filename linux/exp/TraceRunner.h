@@ -40,7 +40,9 @@ typedef enum {
   kDPLatencyAwareOnly = 1,
   kDPCapDynamicOnly = 2,
   kDPAppAware = 3,
-  kDPNum = 4
+  kDPBTOnly = 4,
+  kDPWFDOnly = 5,
+  kDPNum = 6
 } DecisionPolicy;
 
 class AppTraceReader {
@@ -108,6 +110,8 @@ public:
   cap_dynamic_only_runner(std::string packet_trace_filename);
   static TraceRunner *app_aware_runner(std::string packet_trace_filename,
                                        std::string app_trace_filename);
+  static TraceRunner *bt_only_runner(std::string packet_trace_filename);
+  static TraceRunner *wfd_only_runner(std::string packet_trace_filename);
 
 private:
   static TraceRunner *simple_runner(std::string packet_trace_filename,
