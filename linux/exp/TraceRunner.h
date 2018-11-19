@@ -33,7 +33,7 @@
 #define DEBUG_SHOW_DATA 0
 #define DEBUG_SHOW_TIME 0
 
-#define TEST_DATA_SIZE (1024)
+#define TEST_DATA_SIZE (128)
 
 typedef enum {
   kDPEnergyAwareOnly = 0,

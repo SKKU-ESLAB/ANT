@@ -171,8 +171,7 @@ void NetworkMonitor::print_stats(Stats &stats) {
     float energy_switch = NetworkEstimator::energy_switch(stats, a1, a2);
     if (this->is_increaseable()) {
       printf("R: %dB (IAT: %3.3fms) %3.3fB/s => [Q: %dB ] => %dB/s // Energy: "
-             "%4.2fmJ vs. "
-             "%4.2fmJ (%d) // RTT=%3.3fms\n",
+             "%4.2fmJ vs. %4.2fmJ (%d) // RTT=%3.3fms\n",
              (int)stats.ema_send_request_size,
              (stats.ema_arrival_time_us / 1000), stats.ema_queue_arrival_speed,
              stats.now_queue_data_size, stats.now_total_bandwidth,
@@ -180,8 +179,7 @@ void NetworkMonitor::print_stats(Stats &stats) {
              stats.ema_send_rtt / 1000);
     } else {
       printf("R: %dB (IAT: %3.3fms) %3.3fB/s => [Q: %dB ] => %dB/s // Energy: "
-             "%4.2fmJ vs. "
-             "%4.2fmJ (%d) // RTT=%3.3fms\n",
+             "%4.2fmJ vs. %4.2fmJ (%d) // RTT=%3.3fms\n",
              (int)stats.ema_send_request_size,
              (stats.ema_arrival_time_us / 1000), stats.ema_queue_arrival_speed,
              stats.now_queue_data_size, stats.now_total_bandwidth,
@@ -196,8 +194,7 @@ void NetworkMonitor::print_stats(Stats &stats) {
       latency_retain = NetworkEstimator::latency_retain_queue(stats, a1);
       latency_switch = NetworkEstimator::latency_switch_queue(stats, a1, a2);
       printf("R: %dB (IAT: %3.3fms) %3.3fB/s => [Q: %dB ] => %dB/s // Latency: "
-             "%4.2fs vs. "
-             "%4.2fs // RTT=%3.3fms\n",
+             "%4.2fs vs. %4.2fs // RTT=%3.3fms\n",
              (int)stats.ema_send_request_size,
              (stats.ema_arrival_time_us / 1000), stats.ema_queue_arrival_speed,
              stats.now_queue_data_size, stats.now_total_bandwidth,
@@ -214,8 +211,7 @@ void NetworkMonitor::print_stats(Stats &stats) {
   }
   case NSMode::kNSModeCapDynamic: {
     printf("R: %dB (IAT: %3.3fms) %3.3fB/s => [Q: %dB ] => %dB/s // "
-           "Cap-Dynamic // "
-           "RTT=%3.3fms\n",
+           "Cap-Dynamic // RTT=%3.3fms\n",
            (int)stats.ema_send_request_size, (stats.ema_arrival_time_us / 1000),
            stats.ema_queue_arrival_speed, stats.now_queue_data_size,
            stats.now_total_bandwidth, stats.ema_send_rtt / 1000);
@@ -223,8 +219,7 @@ void NetworkMonitor::print_stats(Stats &stats) {
   }
   case NSMode::kNSModeBTOnly: {
     printf("R: %dB (IAT: %3.3fms) %3.3fB/s => [Q: %dB ] => %dB/s // "
-           "BT-Only // "
-           "RTT=%3.3fms\n",
+           "BT-Only // RTT=%3.3fms\n",
            (int)stats.ema_send_request_size, (stats.ema_arrival_time_us / 1000),
            stats.ema_queue_arrival_speed, stats.now_queue_data_size,
            stats.now_total_bandwidth, stats.ema_send_rtt / 1000);
@@ -232,8 +227,7 @@ void NetworkMonitor::print_stats(Stats &stats) {
   }
   case NSMode::kNSModeWFDOnly: {
     printf("R: %dB (IAT: %3.3fms) %3.3fB/s => [Q: %dB ] => %dB/s // "
-           "WFD-Only // "
-           "RTT=%3.3fms\n",
+           "WFD-Only // RTT=%3.3fms\n",
            (int)stats.ema_send_request_size, (stats.ema_arrival_time_us / 1000),
            stats.ema_queue_arrival_speed, stats.now_queue_data_size,
            stats.now_total_bandwidth, stats.ema_send_rtt / 1000);

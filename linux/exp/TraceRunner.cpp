@@ -111,8 +111,10 @@ void TraceRunner::on_start_sc(bool is_success) {
   self->send_test_data();
   printf(" ** 40 sec. remains\n");
   ::sleep(10);
+  self->send_test_data();
   printf(" ** 30 sec. remains\n");
   ::sleep(10);
+  self->send_test_data();
   printf(" ** 20 sec. remains\n");
   ::sleep(10);
   printf(" ** 10 sec. remains\n");
