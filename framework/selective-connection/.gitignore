@@ -1,0 +1,11 @@
+*.o
+bin/*
+dhcpd.conf
+!bin/.git_empty_file
+*.iml
+android/.gradle
+android/local.properties
+android/.idea
+android/build
+android/captures
+.externalNativeBuild

@@ -16,10 +16,12 @@ cmake_install.cmake
 */cmake_install.cmake
 Makefile
 */Makefile
-*.swp
 
 api/*/build/*
 api/*/Release/*
 api/*/*.node
 data
 
+*.swp
+.DS_Store
+.vscode
