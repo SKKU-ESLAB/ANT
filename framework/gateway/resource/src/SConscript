@@ -1,0 +1,53 @@
+##
+# OCLib (share library) build script
+##
+Import('env')
+
+# Add third party libraries
+lib_env = env.Clone()
+SConscript(env.get('SRC_DIR') + '/resource/third_party_libs.scons', 'lib_env')
+
+oclib_env = lib_env.Clone()
+######################################################################
+# Build flags
+######################################################################
+oclib_env.AppendUnique(CPPPATH = [
+		'../include/',
+		'../csdk/stack/include',
+		'../csdk/ocsocket/include',
+		'../csdk/ocrandom/include',
+		'../csdk/logger/include',
+		'../csdk/libcoap',
+		'../oc_logger/include'
+		])
+
+target_os = env.get('TARGET_OS')
+if target_os not in ['windows', 'winrt']:
+	oclib_env.AppendUnique(CXXFLAGS = ['-std=c++0x', '-Wall', '-fPIC', '-lpthread'])
+
+if target_os == 'android':
+	oclib_env.AppendUnique(CXXFLAGS = ['-frtti', '-fexceptions'])
+	oclib_env.AppendUnique(LIBPATH = [env.get('BUILD_DIR')])
+	oclib_env.AppendUnique(LIBS = ['octbstack', 'coap', 'oc_logger', 'boost_thread', 'gnustl_static', 'log', 'compatibility'])
+
+if target_os in ['darwin', 'ios']:
+	oclib_env.AppendUnique(LIBPATH = [env.get('BUILD_DIR')])
+	oclib_env.AppendUnique(LIBS = ['octbstack', 'coap', 'oc_logger'])
+
+######################################################################
+# Source files and Targets
+######################################################################
+oclib_src = [
+		'OCPlatform.cpp',
+		'OCPlatform_impl.cpp',
+		'OCResource.cpp',
+		'OCUtilities.cpp',
+		'OCException.cpp',
+		'OCRepresentation.cpp',
+		'InProcServerWrapper.cpp',
+		'InProcClientWrapper.cpp'
+	]
+
+shared_oclib = oclib_env.SharedLibrary('oc', oclib_src)
+static_oclib = oclib_env.StaticLibrary('oc', oclib_src)
+oclib_env.InstallTarget([shared_oclib, static_oclib], 'liboc')
