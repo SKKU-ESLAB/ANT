@@ -42,8 +42,6 @@ public interface TargetDeviceStubListener {
     public void onUpdateAppConfig(BaseMessage message);
 
     // CompanionMessage
-    public void onSendEventPage(BaseMessage message);
-
     public void onSendConfigPage(BaseMessage message);
 
     public void onSendToCompanion(BaseMessage message);

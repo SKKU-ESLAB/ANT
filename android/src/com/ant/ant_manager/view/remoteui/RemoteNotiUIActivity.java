@@ -54,8 +54,12 @@ public class RemoteNotiUIActivity extends Activity {
     private ANTControllerService mControllerServiceStub = null;
 
     private LinearLayout mLayout;
-    private String mIsCheckNoti;
     private int mAppId;
+
+    public static final String INTENT_KEY_NOTIFICATION_ID = "notificationId";
+    public static final String INTENT_KEY_LEGACY_DATA = "jsonData";
+    public static final String INTENT_KEY_APP_ID = "appId";
+    public static final String INTENT_KEY_ATTACHED_FILE_PATH = "attachedFilePath";
 
     protected void onCreate(Bundle savedInstanceState) {
 
@@ -64,20 +68,19 @@ public class RemoteNotiUIActivity extends Activity {
 
         // Parameters
         Bundle extras = getIntent().getExtras();
-        int id = extras.getInt("notificationId");
-        String jsonString = extras.getString("jsonData");
-        this.mIsCheckNoti = extras.getString("mIsCheckNoti");
+        int id = extras.getInt(INTENT_KEY_NOTIFICATION_ID);
+        String jsonString = extras.getString(INTENT_KEY_LEGACY_DATA);
+        this.mAppId = extras.getInt(INTENT_KEY_APP_ID);
+        String attachedFilePath = extras.getString(INTENT_KEY_ATTACHED_FILE_PATH);
 
         LegacyJSONParser jp = new LegacyJSONParser(jsonString);
-        String appId = jp.getValueByKey("mAppID");
-        this.mAppId = Integer.parseInt(appId);
         String isNoti = jp.getValueByKey("isNoti");
 
-        this.mLayout = (LinearLayout) findViewById(R.id.dynamicLayout);
+        this.mLayout = findViewById(R.id.dynamicLayout);
 
         // Initialize UI
         while (jp.hasMoreValue()) {
-            String ret[] = new String[2];
+            String ret[];
             ret = jp.getNextKeyValue();
 
             if (ret[0].equals("text")) {
@@ -95,21 +98,13 @@ public class RemoteNotiUIActivity extends Activity {
                 tview.setLayoutParams(lp);
                 mLayout.addView(tview);
 
-            } else if (ret[0].equals("img")) {
-
+            } else if (ret[0].equals("img") && attachedFilePath != null) {
                 try {
                     ImageView iv = new ImageView(this);
                     FileInputStream is;
 
-
-                    if (isNoti.equals("2")) {
-                        File cloudDir = mControllerServiceStub.getSettings().getCloudDir();
-                        is = new FileInputStream(new File(cloudDir, ret[1]));
-                    } else {
-                        File remoteUIDir = mControllerServiceStub.getSettings().getRemoteUIDir();
-                        is = new FileInputStream(new File(remoteUIDir, ret[1]));
-
-                    }
+                    File imgFile = new File(attachedFilePath);
+                    is = new FileInputStream(imgFile);
                     iv.setImageDrawable(Drawable.createFromStream(is, ret[1]));
 
                     LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(LinearLayout
@@ -194,11 +189,9 @@ public class RemoteNotiUIActivity extends Activity {
         switch (item.getItemId()) {
             case android.R.id.home:
                 this.finish();
-                if (mIsCheckNoti.equals("1")) {
-                    Intent intent = new Intent(RemoteNotiUIActivity.this, EventLogViewerActivity
-                            .class);
-                    startActivity(intent);
-                }
+
+                Intent intent = new Intent(RemoteNotiUIActivity.this, EventLogViewerActivity.class);
+                startActivity(intent);
                 return true;
             default:
                 return super.onOptionsItemSelected(item);

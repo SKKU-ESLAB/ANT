@@ -25,7 +25,6 @@ import android.os.IBinder;
 import android.util.Log;
 import android.util.SparseArray;
 
-import com.ant.cmfw.service.CommChannelService;
 import com.ant.ant_manager.model.ANTApp;
 import com.ant.ant_manager.model.ANTEvent;
 import com.ant.ant_manager.model.ANTEventList;
@@ -42,10 +41,9 @@ import com.ant.ant_manager.model.message.params.ParamsGetRootPath;
 import com.ant.ant_manager.model.message.params.ParamsInitializeApp;
 import com.ant.ant_manager.model.message.params.ParamsListenAppState;
 import com.ant.ant_manager.model.message.params.ParamsSendConfigPage;
-import com.ant.ant_manager.model.message.params.ParamsSendEventPage;
-import com.ant.ant_manager.model.message.params.ParamsUpdateAppConfig;
 import com.ant.ant_manager.model.message.params.ParamsSendToCompanion;
-import com.ant.ant_manager.view.remoteui.RemoteNotiUI;
+import com.ant.ant_manager.model.message.params.ParamsUpdateAppConfig;
+import com.ant.cmfw.service.CommChannelService;
 
 import org.xmlpull.v1.XmlPullParser;
 import org.xmlpull.v1.XmlPullParserException;
@@ -61,6 +59,8 @@ import java.util.Map;
 
 public class ANTControllerService extends Service {
     private static String TAG = "ANTControllerService";
+
+    // Android Service
     private int mBindersCount = 0;
     private final IBinder mBinder;
 
@@ -194,21 +194,6 @@ public class ANTControllerService extends Service {
         }
     }
 
-    // CompanionMessage callbacks
-    private void onReceivedEvent(int appId, String legacyData, boolean isNoti) {
-        LegacyJSONParser legacyJSONParser = new LegacyJSONParser(legacyData);
-        String appIdStr = String.valueOf(appId);
-        String appTitle = legacyJSONParser.getValueByKey("appTitle");
-        String description = legacyJSONParser.getValueByKey("description");
-        String dateTime = legacyJSONParser.getValueByKey("dateTime");
-        String eventJsonData = legacyJSONParser.getJsonData();
-        this.mEventList.addEvent(appIdStr, appTitle, description, dateTime, eventJsonData);
-
-        ANTApp app = this.getApp(appId);
-
-        if (isNoti) RemoteNotiUI.makeNotification(this, app, legacyData);
-    }
-
     private void onReceivedConfig(int appId, String legacyData) {
         ANTApp app = this.getApp(appId);
         app.setConfigJSONString(legacyData);
@@ -288,8 +273,8 @@ public class ANTControllerService extends Service {
             }
 
             // Notify Listener
-            ANTApp[] appListArray = this.mReadyAppList.toArray(new ANTApp[this.mReadyAppList
-                    .size()]);
+            ANTApp[] appListArray = this.mReadyAppList.toArray(new ANTApp[this.mReadyAppList.size
+                    ()]);
             ANTControllerBroadcastSender.onResultUpdateAppList(self, appListArray);
 
             // Finalize
@@ -514,20 +499,6 @@ public class ANTControllerService extends Service {
         }
 
         @Override
-        public void onSendEventPage(BaseMessage message) {
-            // Get parameters
-            CompanionMessage payload = (CompanionMessage) message.getPayload();
-            ParamsSendEventPage params = payload.getParamsSendEventPage();
-            int appId = params.appId;
-            String legacyData = params.legacyData;
-            boolean isNoti = params.isNoti;
-
-            // Listeners
-            self.onReceivedEvent(appId, legacyData, isNoti);
-            ANTControllerBroadcastSender.onReceivedEvent(self, appId, legacyData, isNoti);
-        }
-
-        @Override
         public void onSendConfigPage(BaseMessage message) {
             // Get parameters
             CompanionMessage payload = (CompanionMessage) message.getPayload();
@@ -542,14 +513,24 @@ public class ANTControllerService extends Service {
 
         @Override
         public void onSendToCompanion(BaseMessage message) {
+            // Get sender URI
+            String senderUri = message.getSenderUri();
+
             // Get parameters
             CompanionMessage payload = (CompanionMessage) message.getPayload();
             ParamsSendToCompanion params = payload.getParamsSendToCompanion();
             String listenerName = params.listenerName;
             String data = params.data;
 
+            // Get attached file's path
+            String attachedFilePath = message.getStoredFilePath();
+
+            Log.d(TAG, "Message coming from " + senderUri + " to " + listenerName + ": " + data +
+                    " " + attachedFilePath);
+
             // Listeners
-            ANTControllerBroadcastSender.onReceivedDataFromTarget(self, listenerName, data);
+            ANTControllerBroadcastSender.onReceivedDataFromTarget(self, senderUri, listenerName,
+                    data, attachedFilePath);
         }
 
         @Override
@@ -576,8 +557,7 @@ public class ANTControllerService extends Service {
 
             // TODO: success!
             // Listeners
-            ANTControllerBroadcastSender.onResultUpdateAppConfig(self, commandMessageId,
-                    isSucceed);
+            ANTControllerBroadcastSender.onResultUpdateAppConfig(self, commandMessageId, isSucceed);
         }
     }
 
@@ -609,7 +589,7 @@ public class ANTControllerService extends Service {
         return false;
     }
 
-    // Binder (for the caller of CommChannelService)
+    // Binder (for the caller of ANTControllerService)
     public class ControllerBinder extends android.os.Binder {
         public ANTControllerService getService() {
             return ANTControllerService.this;

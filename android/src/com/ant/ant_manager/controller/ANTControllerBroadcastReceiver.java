@@ -47,8 +47,11 @@ abstract public class ANTControllerBroadcastReceiver extends BroadcastReceiver {
     public static final String KEY_ON_RECEIVED_EVENT_IS_NOTI = "isNoti";
 
     public static final String EVENT_TYPE_ON_RECEIVED_DATA_FROM_TARGET = "onReceivedDataFromTarget";
-    public static final String KEY_ON_RECEIVED_SENSOR_DATA_LISTENER_NAME = "listenerName";
-    public static final String KEY_ON_RECEIVED_SENSOR_DATA_DATA = "data";
+    public static final String KEY_ON_RECEIVED_DATA_FROM_TARGET_SENDER_URI = "senderUri";
+    public static final String KEY_ON_RECEIVED_DATA_FROM_TARGET_LISTENER_NAME = "listenerName";
+    public static final String KEY_ON_RECEIVED_DATA_FROM_TARGET_DATA = "data";
+    public static final String KEY_ON_RECEIVED_DATA_FROM_TARGET_ATTACHED_FILE_PATH =
+            "attachedFilePath";
 
     public static final String EVENT_TYPE_ON_RECEIVED_APP_CONFIG = "onReceivedAppConfig";
     public static final String KEY_ON_RECEIVED_APP_CONFIG_APP_ID = "appId";
@@ -107,11 +110,16 @@ abstract public class ANTControllerBroadcastReceiver extends BroadcastReceiver {
                 if (this.mOnReceivedAppConfigListener != null)
                     this.mOnReceivedAppConfigListener.onReceivedAppConfig(appId, legacyData);
             } else if (eventType.compareTo(EVENT_TYPE_ON_RECEIVED_DATA_FROM_TARGET) == 0) {
+                String senderUri = intent.getStringExtra
+                        (KEY_ON_RECEIVED_DATA_FROM_TARGET_SENDER_URI);
                 String listenerName = intent.getStringExtra
-                        (KEY_ON_RECEIVED_SENSOR_DATA_LISTENER_NAME);
-                String data = intent.getStringExtra(KEY_ON_RECEIVED_SENSOR_DATA_DATA);
+                        (KEY_ON_RECEIVED_DATA_FROM_TARGET_LISTENER_NAME);
+                String data = intent.getStringExtra(KEY_ON_RECEIVED_DATA_FROM_TARGET_DATA);
+                String attachedFilePath = intent.getStringExtra
+                        (KEY_ON_RECEIVED_DATA_FROM_TARGET_ATTACHED_FILE_PATH);
                 if (this.mOnReceivedDataFromTarget != null)
-                    this.mOnReceivedDataFromTarget.onReceivedDataFromTarget(listenerName, data);
+                    this.mOnReceivedDataFromTarget.onReceivedDataFromTarget(senderUri,
+                            listenerName, data, attachedFilePath);
             } else if (eventType.compareTo(EVENT_TYPE_ON_RESULT_UPDATE_APP_LIST) == 0) {
                 Parcelable[] appListParcelable = intent.getParcelableArrayExtra
                         (KEY_ON_RESULT_UPDATE_APP_LIST_APP_LIST);
@@ -232,7 +240,8 @@ abstract public class ANTControllerBroadcastReceiver extends BroadcastReceiver {
     }
 
     public interface OnReceivedDataFromTarget {
-        public void onReceivedDataFromTarget(String listenerName, String data);
+        public void onReceivedDataFromTarget(String senderUri, String listenerName, String data,
+                                             String attachedFilePath);
     }
 
     public interface OnResultUpdateAppListListener {

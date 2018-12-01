@@ -21,11 +21,11 @@
 #include <node.h>
 #include <uv.h>
 
-#include "MessageRouter.h"
+#include "ANTdbugLog.h"
+#include "BaseMessage.h"
 #include "DbusChannel.h"
 #include "LocalChannel.h"
-#include "BaseMessage.h"
-#include "ANTdbugLog.h"
+#include "MessageRouter.h"
 
 using namespace v8;
 
@@ -33,75 +33,74 @@ class OnLaunchJSAsync;
 class OnTerminateJSAsync;
 class OnUpdateAppConfigJSAsync;
 
-class AppBase
-: public LocalChannelListener {
-  public:
-    friend class OnLaunchJSAsync;
-    friend class OnTerminateJSAsync;
-    friend class OnUpdateAppConfigJSAsync;
+class AppBase : public LocalChannelListener {
+public:
+  friend class OnLaunchJSAsync;
+  friend class OnTerminateJSAsync;
+  friend class OnUpdateAppConfigJSAsync;
 
-    AppBase()
-      : mAppId(-1) {
-    }
-    ~AppBase() {
-      if(this->mMessageRouter != NULL)
-        delete this->mMessageRouter;
-      if(this->mDbusChannel != NULL)
-        delete this->mDbusChannel;
-      if(this->mLocalChannel != NULL)
-        delete this->mLocalChannel;
-    }
+  AppBase() : mAppId(-1) {}
+  ~AppBase() {
+    if (this->mMessageRouter != NULL)
+      delete this->mMessageRouter;
+    if (this->mDbusChannel != NULL)
+      delete this->mDbusChannel;
+    if (this->mLocalChannel != NULL)
+      delete this->mLocalChannel;
+  }
 
-    // Run message framework
-    void run();
+  // Run message framework
+  void run();
 
-    // LocalChannelListener
-    virtual void onReceivedMessage(BaseMessage* message);
+  // LocalChannelListener
+  virtual void onReceivedMessage(BaseMessage *message);
 
-    // App Ready
-    void appReady();
+  // App Ready
+  void appReady();
 
-    // Set JS Async callbacks
-    void setOnLaunch(Local<Function> callback);
-    void setOnTerminate(Local<Function> callback);
-    void setOnUpdateAppConfig(Local<Function> callback);
+  // Set JS Async callbacks
+  void setOnLaunch(Local<Function> callback);
+  void setOnTerminate(Local<Function> callback);
+  void setOnUpdateAppConfig(Local<Function> callback);
 
-    // Send appcore comamnds
-    void completeLaunchingApp();
+  // Send appcore comamnds
+  void completeLaunchingApp();
 
-    // Send companion commands
-    void sendEventPageToCompanion(const char* jsonData, bool isNoti);
-    void sendConfigPageToCompanion(const char* jsonData);
-    void sendToCompanion(const char* listenerName, const char* data);
+  // Send companion commands
+  void sendEventPageToCompanion(const char *jsonData, bool isNoti);
+  void sendConfigPageToCompanion(const char *jsonData);
+  void sendToCompanion(const char *listenerName, const char *data);
+  void sendToCompanion(const char *listenerName, const char *data,
+                       const char *attachedFilePath);
 
-    // Send machine learning commands
-    void runModel(std::string modelName, Local<Function> callback);
+  // Send machine learning commands
+  void runModel(std::string modelName, Local<Function> callback);
 
-    // Native async callbacks
-    void onRunModelAsyncHandler(uv_async_t* handle);
+  // Native async callbacks
+  void onRunModelAsyncHandler(uv_async_t *handle);
 
-  protected:
-    // App ID
-    int mAppId;
+protected:
+  // App ID
+  int mAppId;
 
-    // App Commands
-    void terminate(BaseMessage* message);
-    void updateAppConfig(BaseMessage* message);
+  // App Commands
+  void terminate(BaseMessage *message);
+  void updateAppConfig(BaseMessage *message);
 
-    // Appcore Ack
-    void onAckCompleteLaunchingApp(BaseMessage* message);
+  // Appcore Ack
+  void onAckCompleteLaunchingApp(BaseMessage *message);
 
-    // ML Ack
-    void onAckRunModel(BaseMessage* message);
+  // ML Ack
+  void onAckRunModel(BaseMessage *message);
 
-    // Wait until appId is assigned
-    pthread_mutex_t mWaitMutex = PTHREAD_MUTEX_INITIALIZER;
-    pthread_cond_t mWaitCond = PTHREAD_COND_INITIALIZER;
+  // Wait until appId is assigned
+  pthread_mutex_t mWaitMutex = PTHREAD_MUTEX_INITIALIZER;
+  pthread_cond_t mWaitCond = PTHREAD_COND_INITIALIZER;
 
-    // Message framework
-    MessageRouter* mMessageRouter = NULL;
-    DbusChannel* mDbusChannel = NULL;
-    LocalChannel* mLocalChannel = NULL;
+  // Message framework
+  MessageRouter *mMessageRouter = NULL;
+  DbusChannel *mDbusChannel = NULL;
+  LocalChannel *mLocalChannel = NULL;
 };
 
 // JS async callback
@@ -113,137 +112,122 @@ class AppBase
 // 6. nativeCallback() (on app main thread)
 // 7. call JSCallback (on app main thread)
 class JSAsync {
-  public:
-    void setCallback(AppBase* appBase, Local<Function> jsCallback) {
-      this->setJSCallback(jsCallback);
-      this->setNativeCallback();
-      this->setAppBase(appBase);
+public:
+  void setCallback(AppBase *appBase, Local<Function> jsCallback) {
+    this->setJSCallback(jsCallback);
+    this->setNativeCallback();
+    this->setAppBase(appBase);
 
-      this->mIsCallbacksEnabled = true;
-    }
+    this->mIsCallbacksEnabled = true;
+  }
 
-    void onAsyncEvent() { uv_async_send(&this->mUVAsync); }
+  void onAsyncEvent() { uv_async_send(&this->mUVAsync); }
 
-    bool isCallbacksEnabled() { return this->mIsCallbacksEnabled; }
+  bool isCallbacksEnabled() { return this->mIsCallbacksEnabled; }
 
-  protected:
-    JSAsync(uv_async_cb nativeCb) {
-      this->mNativeCallback = nativeCb;
-    }
+protected:
+  JSAsync(uv_async_cb nativeCb) { this->mNativeCallback = nativeCb; }
 
-    void setJSCallback(Local<Function> jsCallback) {
-      // Set JS callback
-      Isolate* isolate = Isolate::GetCurrent();
-      this->mJSCallback.Reset(isolate, jsCallback);
-    }
+  void setJSCallback(Local<Function> jsCallback) {
+    // Set JS callback
+    Isolate *isolate = Isolate::GetCurrent();
+    this->mJSCallback.Reset(isolate, jsCallback);
+  }
 
-    void setNativeCallback() {
-      // Set native callback as libuv async callee
-      uv_loop_t* loop = uv_default_loop();
-      uv_async_init(loop, &this->mUVAsync, this->mNativeCallback);
-    }
+  void setNativeCallback() {
+    // Set native callback as libuv async callee
+    uv_loop_t *loop = uv_default_loop();
+    uv_async_init(loop, &this->mUVAsync, this->mNativeCallback);
+  }
 
-    void setAppBase(AppBase* appBase) {
-      this->mAppBase = appBase;
-    }
-    
-    uv_async_t mUVAsync;
-    uv_async_cb mNativeCallback;
-    Persistent<Function> mJSCallback;
-    bool mIsCallbacksEnabled = false;
-    AppBase* mAppBase;
+  void setAppBase(AppBase *appBase) { this->mAppBase = appBase; }
+
+  uv_async_t mUVAsync;
+  uv_async_cb mNativeCallback;
+  Persistent<Function> mJSCallback;
+  bool mIsCallbacksEnabled = false;
+  AppBase *mAppBase;
 };
 
-class OnLaunchJSAsync
-: public JSAsync {
-  public:
-    static OnLaunchJSAsync* get() {
-      if(sSingleton == NULL) {
-        sSingleton = new OnLaunchJSAsync();
-      }
-      return sSingleton;
+class OnLaunchJSAsync : public JSAsync {
+public:
+  static OnLaunchJSAsync *get() {
+    if (sSingleton == NULL) {
+      sSingleton = new OnLaunchJSAsync();
     }
+    return sSingleton;
+  }
 
-  protected:
-    OnLaunchJSAsync()
-      : JSAsync(OnLaunchJSAsync::nativeCallback) {
-    }
+protected:
+  OnLaunchJSAsync() : JSAsync(OnLaunchJSAsync::nativeCallback) {}
 
-    static void nativeCallback(uv_async_t* handle);
+  static void nativeCallback(uv_async_t *handle);
 
-    static OnLaunchJSAsync* sSingleton;
+  static OnLaunchJSAsync *sSingleton;
 };
 
-class OnTerminateJSAsync
-: public JSAsync {
-  public:
-    static OnTerminateJSAsync* get() {
-      if(sSingleton == NULL) {
-        sSingleton = new OnTerminateJSAsync();
-      }
-      return sSingleton;
+class OnTerminateJSAsync : public JSAsync {
+public:
+  static OnTerminateJSAsync *get() {
+    if (sSingleton == NULL) {
+      sSingleton = new OnTerminateJSAsync();
     }
+    return sSingleton;
+  }
 
-  protected:
-    OnTerminateJSAsync()
-      : JSAsync(OnTerminateJSAsync::nativeCallback) {
-    }
+protected:
+  OnTerminateJSAsync() : JSAsync(OnTerminateJSAsync::nativeCallback) {}
 
-    static void nativeCallback(uv_async_t* handle);
+  static void nativeCallback(uv_async_t *handle);
 
-    static OnTerminateJSAsync* sSingleton;
+  static OnTerminateJSAsync *sSingleton;
 };
 
-class OnUpdateAppConfigJSAsync
-: public JSAsync {
-  public:
-    static OnUpdateAppConfigJSAsync* get() {
-      if(sSingleton == NULL) {
-        sSingleton = new OnUpdateAppConfigJSAsync();
-      }
-      return sSingleton;
+class OnUpdateAppConfigJSAsync : public JSAsync {
+public:
+  static OnUpdateAppConfigJSAsync *get() {
+    if (sSingleton == NULL) {
+      sSingleton = new OnUpdateAppConfigJSAsync();
     }
+    return sSingleton;
+  }
 
-    void setMessage(BaseMessage* message) { this->mMessage  = message; }
-    void setLegacyData(uint8_t* legacyData) { this->mLegacyData = legacyData; }
+  void setMessage(BaseMessage *message) { this->mMessage = message; }
+  void setLegacyData(uint8_t *legacyData) { this->mLegacyData = legacyData; }
 
-  protected:
-    OnUpdateAppConfigJSAsync()
-      : JSAsync(OnUpdateAppConfigJSAsync::nativeCallback) {
-    }
+protected:
+  OnUpdateAppConfigJSAsync()
+      : JSAsync(OnUpdateAppConfigJSAsync::nativeCallback) {}
 
-    static void nativeCallback(uv_async_t* handle);
+  static void nativeCallback(uv_async_t *handle);
 
-    static OnUpdateAppConfigJSAsync* sSingleton;
+  static OnUpdateAppConfigJSAsync *sSingleton;
 
-    // Parameter to native callback
-    BaseMessage* mMessage;
-    uint8_t* mLegacyData;
+  // Parameter to native callback
+  BaseMessage *mMessage;
+  uint8_t *mLegacyData;
 };
 
-class OnRunModelJSAsync
-: public JSAsync {
-  public:
-    static OnRunModelJSAsync* get() {
-      if(sSingleton == NULL) {
-        sSingleton = new OnRunModelJSAsync();
-      }
-      return sSingleton;
+class OnRunModelJSAsync : public JSAsync {
+public:
+  static OnRunModelJSAsync *get() {
+    if (sSingleton == NULL) {
+      sSingleton = new OnRunModelJSAsync();
     }
+    return sSingleton;
+  }
 
-    void setOutputData(uint8_t* outputData) { this->mOutputData = outputData; }
+  void setOutputData(uint8_t *outputData) { this->mOutputData = outputData; }
 
-  protected:
-    OnRunModelJSAsync()
-      : JSAsync(OnRunModelJSAsync::nativeCallback) {
-    }
+protected:
+  OnRunModelJSAsync() : JSAsync(OnRunModelJSAsync::nativeCallback) {}
 
-    static void nativeCallback(uv_async_t* handle);
+  static void nativeCallback(uv_async_t *handle);
 
-    static OnRunModelJSAsync* sSingleton;
+  static OnRunModelJSAsync *sSingleton;
 
-    // Parameter to native callback
-    uint8_t* mOutputData;
+  // Parameter to native callback
+  uint8_t *mOutputData;
 };
 
 #endif // !defined(__MESSAGE_ADAPTER_H__)

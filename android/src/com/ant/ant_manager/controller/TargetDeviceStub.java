@@ -214,10 +214,6 @@ public class TargetDeviceStub {
                 this.mListener.onSendConfigPage(message);
                 break;
             }
-            case CompanionMessage.Type_SendEventPage: {
-                this.mListener.onSendEventPage(message);
-                break;
-            }
             case CompanionMessage.Type_SendToCompanion: {
                 this.mListener.onSendToCompanion(message);
                 break;
@@ -309,6 +305,7 @@ public class TargetDeviceStub {
         @Override
         public void onReceivedRawMessage(String messageStr, String filePath) {
             BaseMessage message = MessageFactory.makeMessageFromJSONString(messageStr);
+            Log.d(TAG, "onReceivedRawMessage: " + filePath);
             message.setStoredFilePath(filePath);
             switch (message.getType()) {
                 case BaseMessage.Type_AppCoreAck:

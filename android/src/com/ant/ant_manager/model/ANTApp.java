@@ -41,7 +41,7 @@ public class ANTApp implements Parcelable {
     private boolean mIsDefaultApp;
 
     public ANTApp(int appId, String name, String iconImagePath, boolean isDefaultApp) {
-        this(appId, name, iconImagePath, "", State_Initialized, isDefaultApp);
+        this(appId, name, iconImagePath, "", State_Ready, isDefaultApp);
     }
 
     public ANTApp(int appId, String name, String iconImagePath, String configJSONString, int

@@ -57,7 +57,5 @@ inline void __ant_func(const char *format, const char *fw, const char *fileName,
   vprintf(format, ap);
   va_end(ap);
   printf("]\033[0m\n");
- 
-  
 }
 #endif // !defined(__ANT_DBUG_LOG_H__)

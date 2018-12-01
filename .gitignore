@@ -1,13 +1,19 @@
+# Binaries
 build/
 out
 */out
 node_modules
+api/*/build/*
+api/*/Release/*
+api/*/*.node
 
+# Ctags, Cscope
 tags
 */tags
 cscope.out
 */cscope.out
 
+# Cmake, Make
 CMakeCache.txt
 */CMakeCache.txt
 CMakeFiles
@@ -16,11 +22,10 @@ cmake_install.cmake
 */cmake_install.cmake
 Makefile
 */Makefile
-*.swp
 
-api/*/build/*
-api/*/Release/*
-api/*/*.node
-data
-
+# Sconscript
 *-e
+
+# IDE Related
+.vscode
+*.swp
