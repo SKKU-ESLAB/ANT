@@ -34,6 +34,15 @@ public class UserAppMainIcon extends MainIcon {
     private String mAppName;
     private int mAppState;
 
+    public UserAppMainIcon(MainActivity ownerActivity, int appId, String appName, int iconId, int
+            appState) {
+        super(ownerActivity, appName, BitmapFactory.decodeResource(ownerActivity.getResources(),
+                iconId));
+        this.mAppId = appId;
+        this.mAppName = appName;
+        this.mAppState = appState;
+    }
+
     public UserAppMainIcon(MainActivity ownerActivity, int appId, String appName, String
             iconFilePath, int appState) {
         super(ownerActivity, appName, BitmapFactory.decodeFile(iconFilePath));
@@ -55,7 +64,7 @@ public class UserAppMainIcon extends MainIcon {
     }
 
     public String getAppStateString() {
-        switch(this.mAppState) {
+        switch (this.mAppState) {
             case ANTApp.State_Initialized:
             case ANTApp.State_Initializing:
             case ANTApp.State_Installing:
@@ -79,7 +88,7 @@ public class UserAppMainIcon extends MainIcon {
         this.mAppState = appState;
 
         // UI update corresponding to the app's state
-        switch(this.mAppState) {
+        switch (this.mAppState) {
             case ANTApp.State_Initialized:
             case ANTApp.State_Initializing:
             case ANTApp.State_Installing:
@@ -155,13 +164,14 @@ public class UserAppMainIcon extends MainIcon {
             case ANTApp.State_Initialized:
             case ANTApp.State_Initializing:
             case ANTApp.State_Installing:
-                Toast.makeText(this.mOwnerActivity, "This app (" + mAppName + ") is not ready.",
-                        Toast.LENGTH_LONG).show();
-                break;
+                // TODO: AppCore Manager state management has a problem. This is temporary solution.
+//                Toast.makeText(this.mOwnerActivity, "This app (" + mAppName + ") is not ready.",
+//                        Toast.LENGTH_LONG).show();
+//                break;
             case ANTApp.State_Ready:
-                Toast.makeText(this.mOwnerActivity, "This app (" + mAppName + ") is not running"
-                        + ".", Toast.LENGTH_LONG).show();
-                break;
+//                Toast.makeText(this.mOwnerActivity, "This app (" + mAppName + ") is not running"
+//                        + ".", Toast.LENGTH_LONG).show();
+//                break;
             case ANTApp.State_Launching:
             case ANTApp.State_Running:
                 // Terminate application

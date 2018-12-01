@@ -18,5 +18,5 @@ before_script:
 
 script:
   #- docker build -t ant .
-  - python tools/travis_script.py 
+  - python tools/travis_script/travis_script.py 
 

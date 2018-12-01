@@ -225,8 +225,8 @@ public class MotionClassifierActivity extends Activity {
         PrivateControllerBroadcastReceiver() {
             this.setOnReceivedSensorDataListener(new OnReceivedDataFromTarget() {
                 @Override
-                public void onReceivedDataFromTarget(String listenerName, String data) {
-                    Log.d(TAG, "Message coming for " + listenerName + ": " + data);
+                public void onReceivedDataFromTarget(String senderUri, String listenerName,
+                                                     String data, String attachedFilePath) {
                     if (listenerName.compareToIgnoreCase("motionclassifier") == 0) {
                         onSensorViewerMessage(data);
                     }

@@ -233,7 +233,8 @@ public class SensorViewerActivity extends Activity {
         PrivateControllerBroadcastReceiver() {
             this.setOnReceivedSensorDataListener(new OnReceivedDataFromTarget() {
                 @Override
-                public void onReceivedDataFromTarget(String listenerName, String data) {
+                public void onReceivedDataFromTarget(String senderUri, String listenerName,
+                                                     String data, String attachedFilePath) {
                     Log.d(TAG, "Message coming for " + listenerName + ": " + data);
                     if (listenerName.compareToIgnoreCase("sensorviewer") == 0) {
                         onSensorViewerMessage(data);
