@@ -1,0 +1,6 @@
+Release notes
+Release date: Aug 5th, 2014. 
+OS: Ubuntu 12.0.4 and above
+Requires boost version 1.55 to build. 
+NOTE: Boost is not distributed but should be installed in the Ubuntu machine. 
+
