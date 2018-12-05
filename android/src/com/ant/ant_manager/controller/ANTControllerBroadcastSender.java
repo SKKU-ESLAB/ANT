@@ -76,15 +76,20 @@ public class ANTControllerBroadcastSender {
         service.sendBroadcast(broadcastIntent);
     }
 
-    static public void onReceivedDataFromTarget(Service service, String listenerName, String data) {
+    static public void onReceivedDataFromTarget(Service service, String senderUri, String
+            listenerName, String data, String attachedFilePath) {
         Intent broadcastIntent = new Intent();
         broadcastIntent.setAction(ANTControllerBroadcastReceiver.ACTION);
         broadcastIntent.putExtra(ANTControllerBroadcastReceiver.KEY_EVENT_TYPE,
                 ANTControllerBroadcastReceiver.EVENT_TYPE_ON_RECEIVED_DATA_FROM_TARGET);
         broadcastIntent.putExtra(ANTControllerBroadcastReceiver
-                .KEY_ON_RECEIVED_SENSOR_DATA_LISTENER_NAME, listenerName);
-        broadcastIntent.putExtra(ANTControllerBroadcastReceiver.KEY_ON_RECEIVED_SENSOR_DATA_DATA,
-                data);
+                .KEY_ON_RECEIVED_DATA_FROM_TARGET_SENDER_URI, senderUri);
+        broadcastIntent.putExtra(ANTControllerBroadcastReceiver
+                .KEY_ON_RECEIVED_DATA_FROM_TARGET_LISTENER_NAME, listenerName);
+        broadcastIntent.putExtra(ANTControllerBroadcastReceiver
+                .KEY_ON_RECEIVED_DATA_FROM_TARGET_DATA, data);
+        broadcastIntent.putExtra(ANTControllerBroadcastReceiver
+                .KEY_ON_RECEIVED_DATA_FROM_TARGET_ATTACHED_FILE_PATH, attachedFilePath);
         service.sendBroadcast(broadcastIntent);
     }
 

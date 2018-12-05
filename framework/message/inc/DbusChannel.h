@@ -52,6 +52,7 @@ class DbusChannel: public Channel {
 
     // Send raw string to target process on RoutedThread
     void sendRawStringToTarget(const char* rawString);
+    void sendRawStringToTarget(const char* rawString, const char* attachedFilePath);
 
     // Listening Thread
     void runListeningThread();

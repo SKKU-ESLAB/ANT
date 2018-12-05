@@ -21,67 +21,66 @@
 #include <string.h>
 #include <string>
 
-#include "CommAPI.h"
+#include "ANTdbugLog.h"
 #include "API.h"
 #include "AppBase.h"
-#include "ANTdbugLog.h"
+#include "CommAPI.h"
 
 using namespace v8;
 
 #define MESSAGE_BUFFER_SIZE 1024
 
 // Utility Functions
-#define getV8String(isolate, cstr) (String::NewFromOneByte(isolate, \
-      (const uint8_t*)cstr))
+#define getV8String(isolate, cstr)                                             \
+  (String::NewFromOneByte(isolate, (const uint8_t *)cstr))
 
 // Static Constructor
 Persistent<Function> CommAPI::sConstructor;
 
 #define JS_THIS_OBJECT_NAME "CommAPI"
 
-/* 
+/*
  * Prototype Initializer
  */
-void CommAPI::InitPrototype(Isolate* isolate) {
+void CommAPI::InitPrototype(Isolate *isolate) {
   // Prepare constructor template
   Local<FunctionTemplate> funcTemplate = FunctionTemplate::New(isolate, New);
   funcTemplate->SetClassName(getV8String(isolate, JS_THIS_OBJECT_NAME));
   funcTemplate->InstanceTemplate()->SetInternalFieldCount(1);
 
   // Sensor Viewer
-  NODE_SET_PROTOTYPE_METHOD(funcTemplate,
-      "sendToCompanion", sendToCompanion);
+  NODE_SET_PROTOTYPE_METHOD(funcTemplate, "sendToCompanion", sendToCompanion);
 
   sConstructor.Reset(isolate, funcTemplate->GetFunction());
 }
 
-/* 
+/*
  * Constructor 1
  */
-void CommAPI::NewInstance(const FunctionCallbackInfo<Value>& args) {
-  Isolate* isolate = args.GetIsolate();
+void CommAPI::NewInstance(const FunctionCallbackInfo<Value> &args) {
+  Isolate *isolate = args.GetIsolate();
 
   Local<Function> consFunction = Local<Function>::New(isolate, sConstructor);
   Local<Context> context = isolate->GetCurrentContext();
   Local<Object> instance = consFunction->NewInstance(context).ToLocalChecked();
-  
+
   // No Arguments
 
   args.GetReturnValue().Set(instance);
 }
 
-/* 
+/*
  * Constructor 2
  */
-void CommAPI::New(const FunctionCallbackInfo<Value>& args) {
-  Isolate* isolate = args.GetIsolate();
+void CommAPI::New(const FunctionCallbackInfo<Value> &args) {
+  Isolate *isolate = args.GetIsolate();
 
-  if(args.IsConstructCall()) {
+  if (args.IsConstructCall()) {
     // Invoked as constructor: `new **(...)`
     // Get arguments: no arguments
 
     // Create a native object
-    CommAPI* newObject = new CommAPI();
+    CommAPI *newObject = new CommAPI();
     newObject->Wrap(args.This());
     args.GetReturnValue().Set(args.This());
   } else {
@@ -97,19 +96,23 @@ void CommAPI::New(const FunctionCallbackInfo<Value>& args) {
 }
 
 // send CompanionMessage.SendToCompanion
-void CommAPI::sendToCompanion(const FunctionCallbackInfo<Value>& args) {
-  Isolate* isolate = Isolate::GetCurrent();
+void CommAPI::sendToCompanion(const FunctionCallbackInfo<Value> &args) {
+  Isolate *isolate = Isolate::GetCurrent();
   HandleScope scope(isolate);
 
   // Arguments
-  const char* listenerName;
-  const char* data;
+  const char *listenerName = NULL;
+  const char *data = NULL;
+  const char *attachedFilePath = NULL;
 
   // Check arguments
-  if ((args.Length() != 2) ||	!args[0]->IsString() || !args[1]->IsString()) {
-    isolate->ThrowException(Exception::TypeError(getV8String(isolate,
-            "Invalid Use : 2 arguments expected " \
-            "[String listenerName, String data]")));
+  if ((args.Length() != 2 && args.Length() != 3) || !args[0]->IsString() ||
+      !args[1]->IsString()) {
+    isolate->ThrowException(Exception::TypeError(getV8String(
+        isolate,
+        "Invalid Use : 2 arguments or 3 arguments expected\n"
+        "[String listenerName, String data]\n"
+        "[String listenerName, String data, String attachedFilePath]")));
     return;
   }
 
@@ -123,8 +126,28 @@ void CommAPI::sendToCompanion(const FunctionCallbackInfo<Value>& args) {
   std::string dataStr = std::string(*param1);
   data = dataStr.c_str();
 
+  // Get argument 2
+  if (args.Length() == 3) {
+    v8::String::Utf8Value param2(args[2]->ToString());
+    std::string attachedFilePathStr = std::string(*param2);
+    attachedFilePath = attachedFilePathStr.c_str();
+
+    FILE *file = fopen(attachedFilePath, "r");
+    if(file == NULL) {
+      ANT_DBG_ERR("Cannot open attached file! %s", attachedFilePath);
+      return;
+    }
+    fclose(file);
+  }
+
   // Send CompanionMessage.SendToCompanion
-  gAppBase->sendToCompanion(listenerName, data);
+  if(attachedFilePath == NULL) {
+    ANT_DBG_VERB("Send to companion without attached file");
+    gAppBase->sendToCompanion(listenerName, data);
+  } else {
+    ANT_DBG_VERB("Send to companion with attached file %s", attachedFilePath);
+    gAppBase->sendToCompanion(listenerName, data, attachedFilePath);
+  }
 
   ANT_DBG_VERB("Send data to companion(%s): %s\n", listenerName, data);
   return;
