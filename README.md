@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 [![License](https://img.shields.io/badge/licence-Apache%202.0-brightgreen.svg?style=flat)](LICENSE)
 
 <img src="https://raw.githubusercontent.com/SKKU-ESLAB/ANT/master/docs/logo.png" width="30%" />
@@ -104,7 +103,3 @@ ANT is open source software under the [Apache 2.0 license](http://www.apache.org
 Copyright 2017 SKKU ESLAB, and contributors.
 
 Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with the License. You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0 Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions and limitations under the License.
-=======
-# P2PForYourThings
-C++ APIs for you to easily setup and communicate via smart P2P (using available p2p modules among Wi-Fi Direct / Bluetooth / Bluetooth LE)
->>>>>>> 16a54b5... Initial commit
