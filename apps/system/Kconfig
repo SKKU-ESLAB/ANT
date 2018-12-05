@@ -1,0 +1,43 @@
+menu "System Applications"
+
+config CAMERA_VIEWER_SYSTEM_APP
+  bool "Camera Viewer"
+  depends on CAMERA_JS_API
+  default y if CAMERA_JS_API
+  help
+    Camera Viewer App
+
+config SENSOR_VIEWER_SYSTEM_APP
+  bool "Sensor Viewer"
+  depends on SENSOR_JS_API
+  depends on COMM_JS_API
+  default y if (SENSOR_JS_API && COMM_JS_API)
+  help
+    Sensor Viewer App
+
+config IMAGE_CLASSIFIER_SYSTEM_APP
+  bool "Image Classifier"
+  depends on ML_JS_API
+  depends on CAMERA_JS_API
+  default y if (ML_JS_API && CAMERA_JS_API)
+  select SQUEEZENET_DNN_MODEL
+  help
+    Image Classifier App based on CNN
+
+config MOTION_CLASSIFIER_SYSTEM_APP
+  bool "Motion Classifier"
+  depends on ML_JS_API
+  depends on SENSOR_JS_API
+  depends on COMM_JS_API
+  default y if (ML_JS_API && SENSOR_JS_API && COMM_JS_API)
+  select MOTION_CLASSIFIER_ANN_MODEL
+  help
+    Motion Classifier App based on ANN
+
+config TEST_APP
+  bool "Test App"
+  default y
+  help
+    Test App
+
+endmenu

@@ -647,13 +647,13 @@ void initDbus(){
  */
 
 void load_sensors(){
-  char *ant_sensor_dir;
+  char *ant_device_driver_dir;
   const char *error = NULL;
   int sensor_num;
   //printf("%s\n",getenv("ANT_DIR"));
-  ant_sensor_dir = getenv("ANT_SENSOR_DRIVER_DIR");  
-  if(!ant_sensor_dir){
-    fprintf(stderr, "No environement variable: ANT_SENSOR_DRIVER_DIR\n");
+  ant_device_driver_dir = getenv("ANT_DEVICE_DRIVER_DIR");  
+  if(!ant_device_driver_dir){
+    fprintf(stderr, "No environement variable: ANT_DEVICE_DRIVER_DIR\n");
     exit(1);
   }
   
@@ -663,7 +663,7 @@ void load_sensors(){
   long numbytes;
   char json_file_path[200];
 
-  sprintf(json_file_path, "%s/sensor_config.json", ant_sensor_dir);
+  sprintf(json_file_path, "%s/sensor_config.json", ant_device_driver_dir);
   infile = fopen(json_file_path, "r");
   if(infile == NULL){
     fprintf(stderr, "Cannot read the sensor configuration file");
@@ -709,7 +709,7 @@ void load_sensors(){
 
   // load the dynamic library
   char library_path[200];
-  sprintf(library_path, "%s/libsensors.so", ant_sensor_dir);
+  sprintf(library_path, "%s/libsensors.so", ant_device_driver_dir);
   //printf("the library_path: %s\n", library_path);
 
   void *handle = dlopen(library_path, RTLD_LAZY);
@@ -796,13 +796,13 @@ void load_sensors(){
 }
 
 void load_actuators(){
-  char *ant_sensor_dir;
+  char *ant_device_driver_dir;
   const char *error = NULL;
   int actuator_num;
   //printf("%s\n",getenv("ANT_DIR"));
-  ant_sensor_dir = getenv("ANT_SENSOR_DRIVER_DIR");  
-  if(!ant_sensor_dir){
-    fprintf(stderr, "No environement variable: ANT_SENSOR_DRIVER_DIR\n");
+  ant_device_driver_dir = getenv("ANT_DEVICE_DRIVER_DIR");  
+  if(!ant_device_driver_dir){
+    fprintf(stderr, "No environement variable: ANT_DEVICE_DRIVER_DIR\n");
     exit(1);
   }
   
@@ -812,7 +812,7 @@ void load_actuators(){
   long numbytes;
   char json_file_path[200];
 
-  sprintf(json_file_path, "%s/actuator_config.json", ant_sensor_dir);
+  sprintf(json_file_path, "%s/actuator_config.json", ant_device_driver_dir);
   infile = fopen(json_file_path, "r");
   if(infile == NULL){
     fprintf(stderr, "Cannot read the actuator configuration file");
@@ -858,7 +858,7 @@ void load_actuators(){
 
   // load the dynamic library
   char library_path[200];
-  sprintf(library_path, "%s/libactuators.so", ant_sensor_dir);
+  sprintf(library_path, "%s/libactuators.so", ant_device_driver_dir);
   //printf("the library_path: %s\n", library_path);
 
   void *handle = dlopen(library_path, RTLD_LAZY);

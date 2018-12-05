@@ -1,56 +1,63 @@
 [![License](https://img.shields.io/badge/licence-Apache%202.0-brightgreen.svg?style=flat)](LICENSE)
-<img src="https://raw.githubusercontent.com/SKKU-ESLAB/ANT/master/docs/logo.png" width="30%" align="right"/>
+
 # ANT: AI-based Networked Things Framework
+<img src="https://raw.githubusercontent.com/SKKU-ESLAB/ANT/master/docs/logo.png" width="30%" align="right" />
+
 ## Quick Start
 ### How to Get the Source Code
 
 ```
 $ git clone https://github.com/SKKU-ESLAB/ANT
-$ cd ANT
 ```
 
-### How to Build the Sensor Driver code.
-You can build the sensor driver code for the specific target board.
-The target-dependent code is in the target/ directory.
-```
- $ cd ${ANT_ROOT_DIR}
- $ cd target/<TARGET_BOARD>/sensor-drivers/
- $ cmake .
- $ make
- $ cd out/sensor-drivers/
-```
-The driver code and specification is in the out/sensor-drivers/ directory.
-You need to copy it to the ANT sensor driver code directory
-```
-$ cp libsensors.so ${ANT_ROOT_DIR}/out/sensor-drivers/
-$ cp sensor_config.json ${ANT_ROOT_DIR}/out/sensor-drivers/
-
-```
-
-### How to Install Prerequisites
+### Prerequisites
 It is dependent on target device.
 
+#### Common Prerequisites
+ANT requires ```cmake```, ```python3```, and ```kconfiglib``` to configure build.
+```
+$ sudo apt-get install cmake python3 pip3
+$ sudo pip3 install kconfiglib
+```
+
+#### Target-dependent Prerequisites
 In example of Raspberry Pi 2 or 3:
 
 ```
-$ cd ${ANT_ROOT_DIR}
 $ ./target/raspberry-pi2_3/install-deps-raspberry-pi2_3.sh
 ```
 
-### How to Build
+In example of Tegra TX1 or TX2:
+
 ```
-$ cd ${ANT_ROOT_DIR}
-$ mkdir build
-$ cd build
-$ cmake .. -DTARGET_BOARD=<target_board>  #raspberry-pi, tegraTX
+$ ./target/tegraTX1/install-deps-tegraTX1.sh
+```
+
+### Build Configuration
+
+You can configure how to build ANT framework with following commands.
+```
+$ ./menuconfig.py
+```
+
+Then you can see following build configuration menu.
+
+![ANT Build Config](https://user-images.githubusercontent.com/1433126/49520297-48106280-f8e6-11e8-96cb-ee00451e7671.png)
+
+### How to Build
+
+```
+$ mkdir build && cd build
+$ cmake ..
 $ make -j4
 ```
+
+If you changed your build configuration, you should make your ```build``` directory once again.
 
 ### How to Install
 In example of Raspberry Pi 2 or 3:
 
 ```
-$ cd ${ANT_ROOT_DIR}
 $ sudo ./scripts/install.sh --target=raspberry-pi2_3
 ```
 ### How to Run

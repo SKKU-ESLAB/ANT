@@ -1,0 +1,24 @@
+menu "Sample Applications"
+
+config MACHINE_LEARNING_SAMPLE_APP
+  bool "Machine Learning Sample"
+  depends on ML_JS_API
+  depends on CAMERA_JS_API
+  help
+    Machine Learning Sample App
+
+config QUICK_CAM_SAMPLE_APP
+  bool "Quick Camera Sample"
+  depends on SENSOR_JS_API
+  depends on CAMERA_JS_API
+  depends on REMOTE_UI_JS_API
+  help
+    QuickCam (Quick Camera) Sample App
+
+config REMOTE_UI_SAMPLE_APP
+  bool "Remote UI Sample"
+  depends on REMOTE_UI_JS_API
+  help
+    Remote UI Sample App
+
+endmenu
