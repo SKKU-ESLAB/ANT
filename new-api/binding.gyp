@@ -1,7 +1,7 @@
 {
   'targets': [
     {
-      'target_name': 'ant',
+      'target_name': 'antnative',
       'sources': [
         'src/AppBase.cpp',
         'src/API.cpp',

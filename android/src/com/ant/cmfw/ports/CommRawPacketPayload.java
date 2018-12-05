@@ -144,11 +144,6 @@ class CommPayloadData extends CommRawPacketPayload {
     }
 
     public byte[] toByteArray() {
-        try {
-            Log.d(TAG, "Data: " + new String(mData, "UTF-8"));
-        } catch (UnsupportedEncodingException e) {
-            e.printStackTrace();
-        }
         return this.mData;
     }
 

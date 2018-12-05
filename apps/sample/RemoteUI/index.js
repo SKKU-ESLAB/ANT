@@ -1,0 +1,42 @@
+/* Copyright (c) 2017-2018 SKKU ESLAB, and contributors. All rights reserved.
+ *
+ * Contributor: Gyeonghwan Hong<redcarrottt@gmail.com>
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *  http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+var ant_api_dir = process.env.ANT_BIN_DIR + '/api/';
+var api = require(ant_api_dir + 'ant');
+var appApi = api.app();
+
+var path = require('path');
+
+appApi.onLaunch(function() {
+  console.log('App Launched!');
+  var remoteUIApi = api.remoteUI();
+  var notiPage = remoteUIApi.makeNotiPage('This is notification title!');
+
+  notiPage.addText('This is notification message\'s description.\n You can write your description via this function.');
+
+  var thisAppPath = path.join(process.env.ANT_APPS_DIR, 'system/Test');
+  var imagePath = path.join(thisAppPath, 'frame.jpg');
+  notiPage.addImg(imagePath);
+
+  notiPage.sendToCompanion();
+});
+
+appApi.onTermination(function() {
+  console.log('App Terminated!');
+});
+
+appApi.appReady();

@@ -41,6 +41,7 @@ import android.widget.ListView;
 
 import com.ant.ant_manager.R;
 
+import java.util.ArrayList;
 import java.util.Set;
 
 public class BluetoothConnectorActivity extends Activity {
@@ -66,7 +67,7 @@ public class BluetoothConnectorActivity extends Activity {
     private BindingBluetoothDeviceReceiver mBindingBluetoothDeviceReceiver = null;
 
     // Discovery UI
-    private ArrayAdapter<String> mBoundDevicesArrayAdapter;
+    private ArrayList<String> mBoundDevices = new ArrayList<>();
     private ArrayAdapter<String> mNewDevicesArrayAdapter;
 
     @Override
@@ -236,15 +237,8 @@ public class BluetoothConnectorActivity extends Activity {
     private void prepareDiscoveryUI() {
         // Initialize array adapters. One for already paired devices and
         // one for newly discovered devices
-        this.mBoundDevicesArrayAdapter = new ArrayAdapter<>(this, R.layout
-                .template_listview_item_device);
         this.mNewDevicesArrayAdapter = new ArrayAdapter<>(this, R.layout
                 .template_listview_item_device);
-
-        // Find and set up the ListView for paired devices
-        ListView pairedListView = (ListView) findViewById(R.id.paired_devices);
-        pairedListView.setAdapter(this.mBoundDevicesArrayAdapter);
-        pairedListView.setOnItemClickListener(mPairedDeviceListOnClickListener);
 
         // Find and set up the ListView for newly discovered devices
         ListView newDevicesListView = (ListView) findViewById(R.id.new_devices);
@@ -263,18 +257,10 @@ public class BluetoothConnectorActivity extends Activity {
 
         // If there are paired devices, add each one to the ArrayAdapter
         if (pairedDevices.size() > 0) {
-            findViewById(R.id.title_paired_devices).setVisibility(View.VISIBLE);
             for (BluetoothDevice device : pairedDevices) {
-                this.mBoundDevicesArrayAdapter.add(device.getAddress() + "\n" + device.getName());
+                this.mBoundDevices.add(device.getAddress() + " (Paired)\n" + device.getName());
             }
-        } else {
-            String noDevices = getResources().getText(R.string.none_paired).toString();
-            this.mBoundDevicesArrayAdapter.add(noDevices);
         }
-
-        // Turn on sub-titles
-        findViewById(R.id.title_paired_devices).setVisibility(View.VISIBLE);
-        findViewById(R.id.title_new_devices).setVisibility(View.VISIBLE);
 
         Button scanButton = (Button) findViewById(R.id.button_scan);
         scanButton.setOnClickListener(this.mScanButtonOnClickListener);
@@ -305,10 +291,15 @@ public class BluetoothConnectorActivity extends Activity {
                 // Get the BluetoothDevice object from the Intent
                 BluetoothDevice device = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
                 if (device.getBondState() != BluetoothDevice.BOND_BONDED) {
+                    String itemString;
                     if (device.getName() != null) {
-                        mNewDevicesArrayAdapter.add(device.getAddress() + "\n" + device.getName());
+                        itemString = device.getAddress() + "\n" + device.getName();
                     } else {
-                        mNewDevicesArrayAdapter.add(device.getAddress());
+                        itemString = device.getAddress();
+                    }
+                    int position = mNewDevicesArrayAdapter.getPosition(itemString);
+                    if (position < 0) {
+                        mNewDevicesArrayAdapter.add(itemString);
                     }
                 }
             } else if (BluetoothAdapter.ACTION_DISCOVERY_FINISHED.compareTo(action) == 0) {
@@ -331,6 +322,7 @@ public class BluetoothConnectorActivity extends Activity {
     private void startDiscovery() {
         // Initialize new device list
         this.mNewDevicesArrayAdapter.clear();
+        this.mNewDevicesArrayAdapter.addAll(this.mBoundDevices);
         this.mNewDevicesArrayAdapter.notifyDataSetChanged();
 
         // Indicate scanning in the title
@@ -353,23 +345,6 @@ public class BluetoothConnectorActivity extends Activity {
         this.mBluetoothAdapter.cancelDiscovery();
     }
 
-    private AdapterView.OnItemClickListener mPairedDeviceListOnClickListener = new AdapterView
-            .OnItemClickListener() {
-        public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-            String entryString = mBoundDevicesArrayAdapter.getItem(position);
-            if (entryString == null || entryString.compareTo(getResources().getText(R.string
-                    .none_found).toString()) == 0) {
-                return;
-            }
-
-            String[] bluetoothNameAddress = entryString.split("\\r?\\n");
-            String bluetoothAddress = bluetoothNameAddress[0];
-
-            cancelDiscovery();
-            resultInSelect(bluetoothAddress);
-        }
-    };
-
     private AdapterView.OnItemClickListener mNewDeviceListOnClickListener = new AdapterView
             .OnItemClickListener() {
         public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
@@ -379,11 +354,18 @@ public class BluetoothConnectorActivity extends Activity {
                 return;
             }
 
-            String[] bluetoothNameAddress = entryString.split("\\r?\\n");
-            String bluetoothAddress = bluetoothNameAddress[0];
+            String[] itemStringTokens = entryString.split("\\r?\\n");
+            String[] firstLineTokens = itemStringTokens[0].split(" ");
+            String bluetoothAddress = firstLineTokens[0];
 
             cancelDiscovery();
-            tryBindingBluetoothDevice(bluetoothAddress);
+            if (firstLineTokens.length > 1 && firstLineTokens[1].contains("Paired")) {
+                // Already-paired devices
+                resultInSelect(bluetoothAddress);
+            } else {
+                // Non-paired devices
+                tryBindingBluetoothDevice(bluetoothAddress);
+            }
         }
     };
 

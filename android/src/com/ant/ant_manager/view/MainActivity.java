@@ -41,10 +41,6 @@ import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import com.ant.ant_manager.view.main.ImageClassifierMainIcon;
-import com.ant.ant_manager.view.main.LargeDataTestMainIcon;
-import com.ant.ant_manager.view.main.MotionClassifierMainIcon;
-import com.ant.cmfw.service.CommChannelService;
 import com.ant.ant_manager.R;
 import com.ant.ant_manager.controller.ANTControllerBroadcastReceiver;
 import com.ant.ant_manager.controller.ANTControllerService;
@@ -55,10 +51,15 @@ import com.ant.ant_manager.view.main.CameraViewerMainIcon;
 import com.ant.ant_manager.view.main.ConnectMainIcon;
 import com.ant.ant_manager.view.main.EventLogViewerMainIcon;
 import com.ant.ant_manager.view.main.FileManagerMainIcon;
+import com.ant.ant_manager.view.main.ImageClassifierMainIcon;
+import com.ant.ant_manager.view.main.LargeDataTestMainIcon;
 import com.ant.ant_manager.view.main.MainIcon;
+import com.ant.ant_manager.view.main.MotionClassifierMainIcon;
 import com.ant.ant_manager.view.main.SensorViewerMainIcon;
 import com.ant.ant_manager.view.main.UserAppMainIcon;
 import com.ant.ant_manager.view.remoteui.RemoteConfigUIActivity;
+import com.ant.ant_manager.view.remoteui.RemoteUIService;
+import com.ant.cmfw.service.CommChannelService;
 
 import java.util.ArrayList;
 
@@ -67,11 +68,6 @@ public class MainActivity extends Activity {
 
     // Test Mode
     private static final boolean kIsTestMode = false;
-
-    // ANTControllerService
-    private ANTControllerService mControllerServiceStub;
-    private PrivateControllerBroadcastReceiver mControllerBroadcastReceiver;
-    private MainActivity self = this;
 
     private PortIndicator mDefaultPortIndicator;
     private PortIndicator mLargeDataPortIndicator;
@@ -109,6 +105,7 @@ public class MainActivity extends Activity {
 
     protected void onDestroy() {
         super.onDestroy();
+        this.disconnectRemoteUIService();
         this.disconnectControllerService();
     }
 
@@ -169,6 +166,10 @@ public class MainActivity extends Activity {
         this.updateMainIconList(null);
     }
 
+    // Connect to ANTControllerService
+    private ANTControllerService mControllerServiceStub;
+    private PrivateControllerBroadcastReceiver mControllerBroadcastReceiver;
+
     private void initializeControllerService() {
         // Launch ANTControllerService for setting connection with target ANT device.
         Intent serviceIntent = new Intent(this, ANTControllerService.class);
@@ -198,13 +199,45 @@ public class MainActivity extends Activity {
 
             // Request to open connection
             connectTargetDevice();
+
+            // Initialize Remote UI Service
+            initializeRemoteUIService();
         }
 
         @Override
         public void onServiceDisconnected(ComponentName componentName) {
-            Log.d(TAG, "onServiceDisconnected()");
             unregisterReceiver(mControllerBroadcastReceiver);
             mControllerServiceStub = null;
+        }
+    };
+
+    // Connect to RemoteUIService
+    private RemoteUIService mRemoteUIServiceStub;
+
+    private void initializeRemoteUIService() {
+        // Launch RemoteUIService for setting connection with target ANT device.
+        Intent serviceIntent = new Intent(this, RemoteUIService.class);
+        this.bindService(serviceIntent, this.mRemoteUIServiceConnection, Context
+                .BIND_AUTO_CREATE);
+    }
+
+    private void disconnectRemoteUIService() {
+        if (this.mRemoteUIServiceConnection != null)
+            this.unbindService(this.mRemoteUIServiceConnection);
+    }
+
+    private ServiceConnection mRemoteUIServiceConnection = new ServiceConnection() {
+        @Override
+        public void onServiceConnected(ComponentName componentName, IBinder inputBinder) {
+            RemoteUIService.RemoteUIBinder serviceBinder = (RemoteUIService
+                    .RemoteUIBinder) inputBinder;
+            mRemoteUIServiceStub = serviceBinder.getService();
+            mRemoteUIServiceStub.initialize();
+        }
+
+        @Override
+        public void onServiceDisconnected(ComponentName componentName) {
+            mRemoteUIServiceStub = null;
         }
     };
 
@@ -572,6 +605,9 @@ public class MainActivity extends Activity {
                         this.mMainIconList.add(new MotionClassifierMainIcon(this, app.getAppId()));
                     } else if (app.getName().compareTo("ImageClassifier") == 0) {
                         this.mMainIconList.add(new ImageClassifierMainIcon(this, app.getAppId()));
+                    } else if (app.getName().compareTo("Test") == 0) {
+                        this.mMainIconList.add(new UserAppMainIcon(this, app.getAppId(), "Test",
+                                R.drawable.testapp, app.getState()));
                     }
                 } else {
                     // User app

@@ -95,10 +95,18 @@ void DbusChannel::run() {
 void DbusChannel::onRoutedMessage(BaseMessage* message) {
   const char* uriString = message->getUri().c_str();
 
-  this->sendRawStringToTarget(message->toJSONString());
+  if(message->isFileAttached()) {
+    this->sendRawStringToTarget(message->toJSONString(), message->getStoredFilePath().c_str());
+  } else {
+    this->sendRawStringToTarget(message->toJSONString());
+  }
 }
 
 void DbusChannel::sendRawStringToTarget(const char* rawString) {
+  this->sendRawStringToTarget(rawString, "");
+}
+
+void DbusChannel::sendRawStringToTarget(const char* rawString, const char* attachedFilePath) {
   if(this->mDbusConnection == NULL) {
     ANT_DBG_VERB("Cannot send rawString since dbus is disconnected");
     return;
@@ -115,6 +123,7 @@ void DbusChannel::sendRawStringToTarget(const char* rawString) {
   dbus_message_append_args(dbusMessage,
       DBUS_TYPE_STRING, &rawString,
       DBUS_TYPE_INT32, &senderPid,
+      DBUS_TYPE_STRING, &attachedFilePath,
       DBUS_TYPE_INVALID);
 
   if (dbus_error_is_set(&derr)) {
@@ -171,11 +180,13 @@ DBusHandlerResult DbusChannel::onReceivedDbusMessage(DBusConnection* connection,
   // Retrieve rawString from DbusMessage
   int senderPid = -1;
   char* rawString = NULL;
+  char* attachedFilePath = NULL;
   DBusError derr;
   dbus_error_init(&derr);
   dbus_message_get_args(dbusMessage, &derr,
       DBUS_TYPE_STRING, &rawString,
       DBUS_TYPE_INT32, &senderPid,
+      DBUS_TYPE_STRING, &attachedFilePath,
       DBUS_TYPE_INVALID);
   if(dbus_error_is_set(&derr)) {
     ANT_DBG_ERR("Cannot retrieve rawString from DbusMessage!: %s",
@@ -197,6 +208,10 @@ DBusHandlerResult DbusChannel::onReceivedDbusMessage(DBusConnection* connection,
   if(message == NULL) {
     ANT_DBG_ERR("Received message is not ANT message!: %s", rawString);
     return DBUS_HANDLER_RESULT_NOT_YET_HANDLED;
+  }
+
+  if(attachedFilePath != NULL && strlen(attachedFilePath) > 0) {
+    message->attachFile(attachedFilePath);
   }
 
   ANT_DBG_VERB("(pid=%d) Received rawMessage from DbusChannel: %s", getpid(), rawString);
