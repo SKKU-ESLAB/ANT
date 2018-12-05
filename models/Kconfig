@@ -1,0 +1,14 @@
+menu "Built-in Machine Learning Models"
+  depends on ML_FW
+
+config SQUEEZENET_DNN_MODEL
+  bool "SqueezeNet Model (DNN/Caffe)"
+  help
+    DNN-based SqueezeNet Model (Caffe)
+
+config MOTION_CLASSIFIER_ANN_MODEL
+  bool "Motion Classifier Model (ANN)"
+  help
+    ANN-based Motion Classifier Model
+
+endmenu

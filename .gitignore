@@ -13,6 +13,9 @@ tags
 cscope.out
 */cscope.out
 
+# Build config file
+.config
+
 # Cmake, Make
 CMakeCache.txt
 */CMakeCache.txt

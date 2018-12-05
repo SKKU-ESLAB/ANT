@@ -1,0 +1,40 @@
+config SENSOR_FW
+  bool "Sensor Framework"
+  help
+    Sensor Framework
+
+config CAMERA_FW
+  bool "Camera Framework"
+  help
+    Camera Framework
+
+config ML_FW
+  bool "Machine Learning Framework"
+  default y if (PROFILE_CAMERA_BASED_SENSOR_DEVICE || PROFILE_GATEWAY_DEVICE)
+  help
+    Machine Learning Framework
+
+config GATEWAY_FW
+  bool "Gateway Framework"
+  help
+    Gateway Framework
+
+menuconfig COMM_FW
+  bool "Communication Library (libant-cmfw)"
+  default y
+  help
+    Communication Library is a library to make connection and data transfer between target device and companion device.
+
+if COMM_FW
+config COMM_BT_SUPPORT
+  bool "Bluetooth Support"
+  default y
+  help
+    Enable Bluetooth Support of Communication Library
+
+config COMM_WFD_SUPPORT
+  bool "Wi-fi Direct Support"
+  default y if (PROFILE_CAMERA_BASED_SENSOR_DEVICE || PROFILE_GATEWAY_DEVICE)
+  help
+    Enable Wi-fi Direct Support of Communication Library
+endif

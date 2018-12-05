@@ -1,5 +1,9 @@
 cmake_minimum_required(VERSION 2.8)
 
-add_subdirectory(camera)
-add_subdirectory(communication)
-add_subdirectory(sensor)
+if(CONFIG_CAMERA_JS_API STREQUAL "y")
+  add_subdirectory(camera)
+endif()
+
+if(CONFIG_SENSOR_JS_API STREQUAL "y")
+  add_subdirectory(sensor)
+endif()
