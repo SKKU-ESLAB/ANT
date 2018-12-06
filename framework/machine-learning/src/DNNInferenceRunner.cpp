@@ -16,28 +16,6 @@
  * limitations under the License.
  */
 
-/*
- * Caffe LICENSE
- *
- * COPYRIGHT
- *
- * All contributions by the University of California:
- * Copyright (c) 2014-2017 The Regents of the University of California (Regents)
- * All rights reserved.
- *
- * All other contributions:
- * Copyright (c) 2014-2017, the respective contributors
- * All rights reserved.
- *
- * Caffe uses a shared copyright model: each contributor holds copyright over
- * their contributions to Caffe. The project versioning records all such
- * contribution and copyright details. If a contributor wants to further mark
- * their specific copyright on a particular contribution, they should indicate
- * their copyright solely in the commit message of the change when it is
- * committed.
- */
-
-
 #include <stdio.h>
 
 #include "DNNInferenceRunner.h"
@@ -48,47 +26,23 @@ MLDataUnit* DNNInferenceRunner::run(MLDataUnit* inputData) {
   MLTensorLayout outputTensorLayout(1, outputShape, MLDataType::Char);
 
   if (this->mIsStreaming == false) {
-    ::google::InitGoogleLogging("DNNInferenceRunner");
-
-    char *dataPath = getenv("ANT_DATA_DIR");
-    if (!dataPath) {
-      ANT_DBG_ERR("Cannot read ANT_DATA_DIR");
-      return NULL;
-    }
-    string dataPathStr = string(dataPath);
-
-    string model_file   = dataPathStr + "/models/squeezenet_v1.1_deploy.prototxt";
-    string trained_file = dataPathStr + "/models/squeezenet_v1.1.caffemodel";
-    string mean_file    = dataPathStr + "/models/ilsvrc12_imagenet_mean.binaryproto";
-    string label_file   = dataPathStr + "/models/ilsvrc12_synset_words.txt";
-
-    std::cout << model_file << std::endl;
-
-    initClassifier(model_file, trained_file, mean_file, label_file);
 
     this->streamingStart();
     this->mIsStreaming = true;
-    ANT_DBG_VERB("---------- Caffe Daemon Run ----------");
+
+    initClassifier();
+
+    ANT_DBG_VERB("---------- ACL Daemon Run ----------");
   }
 
-  IplImage *image = this->retrieveFrame();
-
-  cv::Mat img = cv::cvarrToMat(image);
-
-  CHECK(!img.empty()) << "Unable to decode image ";
-  std::vector<Prediction> predictions = this->classify(img);
 
   /* Print the top N predictions. */
-  for (size_t i = 0; i < predictions.size(); ++i) {
-    Prediction p = predictions[i];
-    std::cout << std::fixed << std::setprecision(4) << p.second << " - \""
-      << p.first << "\"" << std::endl;
-  }
+  this->mGraph.run();
 
   MLTensor* outputTensor = new MLTensor(outputTensorLayout);
-  char outputStr[100];
-  strncpy(outputStr, predictions[0].first.c_str()+10, 100);
-  strtok(outputStr, ",");
+  char outputStr[100] = "TEST TEST";
+  //strncpy(outputStr, predictions[0].first.c_str()+10, 100);
+  //strtok(outputStr, ",");
 
   sendDBusMsg(this->mConnection, "textOverlayStart", outputStr);
   outputTensor->assignData(outputStr);
@@ -106,185 +60,130 @@ std::string DNNInferenceRunner::getResourceUsage() {
   return data;
 }
 
-bool DNNInferenceRunner::initClassifier(const string& model_file,
-                       const string& trained_file,
-                       const string& mean_file,
-                       const string& label_file) {
-#ifdef CPU_ONLY
-  Caffe::set_mode(Caffe::CPU);
-#else
-  Caffe::set_mode(Caffe::GPU);
-#endif
+bool DNNInferenceRunner::initClassifier() {
 
-  /* Load the network. */
-  this->mNet.reset(new Net<float>(model_file, TEST));
-  this->mNet->CopyTrainedLayersFrom(trained_file);
+  char *dataPath = getenv("ANT_DATA_DIR");
+  if (!dataPath) {
+    ANT_DBG_ERR("Cannot read ANT_DATA_DIR");
+    return NULL;
+  }
+  string data_path = string(dataPath) + "/models/alexnet";
+  string label_option = "--labels=" + data_path + "/labels.txt";
 
-  CHECK_EQ(this->mNet->num_inputs(), 1) << "Network should have exactly one input.";
-  CHECK_EQ(this->mNet->num_outputs(), 1) << "Network should have exactly one output.";
+  std::cout << data_path << std::endl;
+  printf("%s\n", const_cast<char*>(label_option.c_str()));
 
-  Blob<float>* input_layer = this->mNet->input_blobs()[0];
-  this->mNumChannels = input_layer->channels();
-  CHECK(this->mNumChannels == 3 || this->mNumChannels == 1)
-    << "Input layer should have 1 or 3 channels.";
-  this->mInputGeometry = cv::Size(input_layer->width(), input_layer->height());
+  char *argv[] = {"/etc/ant/bin/run_ant", const_cast<char*>(label_option.c_str()), NULL};
+  int argc = 2;
 
-  /* Load the binaryproto mean file. */
-  this->setMean(mean_file);
+  // Parse  arguments
+  mCmdParser.parse(argc, argv);
 
-  /* Load labels. */
-  std::ifstream labels(label_file.c_str());
-  CHECK(labels) << "Unable to open labels file " << label_file;
-  string line;
-  while (std::getline(labels, line))
-    this->mLabels.push_back(string(line));
+  // Consume common parameters
+  mCommonParams = consume_common_graph_parameters(mCommonOpts); 
 
-  Blob<float>* output_layer = this->mNet->output_blobs()[0];
-  CHECK_EQ(this->mLabels.size(), output_layer->channels())
-    << "Number of labels is different from the output layer dimension.";
-}
-
-static bool pairCompare(const std::pair<float, int>& lhs,
-                        const std::pair<float, int>& rhs) {
-  return lhs.first > rhs.first;
-}
-
-/* Return the indices of the top N values of vector v. */
-static std::vector<int> argmax(const std::vector<float>& v, int N) {
-  std::vector<std::pair<float, int> > pairs;
-  for (size_t i = 0; i < v.size(); ++i)
-    pairs.push_back(std::make_pair(v[i], i));
-  std::partial_sort(pairs.begin(), pairs.begin() + N, pairs.end(), pairCompare);
-
-  std::vector<int> result;
-  for (int i = 0; i < N; ++i)
-    result.push_back(pairs[i].second);
-  return result;
-}
-
-/* Return the top N predictions. */
-std::vector<Prediction> DNNInferenceRunner::classify(const cv::Mat& img, int N) {
-  std::vector<float> output = this->predict(img);
-
-  N = std::min<int>(this->mLabels.size(), N);
-  std::vector<int> maxN = argmax(output, N);
-  std::vector<Prediction> predictions;
-  for (int i = 0; i < N; ++i) {
-    int idx = maxN[i];
-    predictions.push_back(std::make_pair(this->mLabels[idx], output[idx]));
+  // Set default layout if needed
+  if (!mCommonOpts.data_layout->is_set() && mCommonParams.target == Target::NEON)
+  {
+    mCommonParams.data_layout = DataLayout::NCHW;
   }
 
-  return predictions;
-}
+  // Checks
+  ARM_COMPUTE_EXIT_ON_MSG(arm_compute::is_data_type_quantized_asymmetric(mCommonParams.data_type), "QASYMM8 not supported for this graph");
 
-/* Load the mean file in binaryproto format. */
-void DNNInferenceRunner::setMean(const string& mean_file) {
-  BlobProto blob_proto;
-  ReadProtoFromBinaryFileOrDie(mean_file.c_str(), &blob_proto);
+  // Print parameter values
+  std::cout << mCommonParams << std::endl;
 
-  /* Convert from BlobProto to Blob<float> */
-  Blob<float> mean_blob;
-  mean_blob.FromProto(blob_proto);
-  CHECK_EQ(mean_blob.channels(), this->mNumChannels)
-    << "Number of channels of mean file doesn't match input layer.";
+  // Create a preprocessor object
+  const std::array<float, 3> mean_rgb{ { 122.68f, 116.67f, 104.01f } };
+  std::unique_ptr<IPreprocessor> preprocessor = arm_compute::support::cpp14::make_unique<CaffePreproccessor>(mean_rgb);
 
-  /* The format of the mean file is planar 32-bit float BGR or grayscale. */
-  std::vector<cv::Mat> channels;
-  float* data = mean_blob.mutable_cpu_data();
-  for (int i = 0; i < this->mNumChannels; ++i) {
-    /* Extract an individual channel. */
-    cv::Mat channel(mean_blob.height(), mean_blob.width(), CV_32FC1, data);
-    channels.push_back(channel);
-    data += mean_blob.height() * mean_blob.width();
-  }
+  // Create input descriptor
+  const TensorShape tensor_shape = permute_shape(TensorShape(227U, 227U, 3U, 1U), DataLayout::NCHW, mCommonParams.data_layout);
+  TensorDescriptor input_descriptor = TensorDescriptor(tensor_shape, mCommonParams.data_type).set_layout(mCommonParams.data_layout);
 
-  /* Merge the separate channels into a single image. */
-  cv::Mat mean;
-  cv::merge(channels, mean);
+  // Set weights trained layout
+  const DataLayout weights_layout = DataLayout::NCHW;
 
-  /* Compute the global mean pixel value and create a mean image
-   * filled with this value. */
-  cv::Scalar channel_mean = cv::mean(mean);
-  this->mMean = cv::Mat(this->mInputGeometry, mean.type(), channel_mean);
-}
+  mGraph << mCommonParams.target
+    << mCommonParams.fast_math_hint
+    << InputLayer(input_descriptor, get_shm_input_accessor(mCommonParams, std::move(preprocessor), this))
+    // Layer 1
+    << ConvolutionLayer(
+        11U, 11U, 96U,
+        get_weights_accessor(data_path, "/cnn_data/alexnet_model/conv1_w.npy", weights_layout),
+        get_weights_accessor(data_path, "/cnn_data/alexnet_model/conv1_b.npy"),
+        PadStrideInfo(4, 4, 0, 0))
+    .set_name("conv1")
+    << ActivationLayer(ActivationLayerInfo(ActivationLayerInfo::ActivationFunction::RELU)).set_name("relu1")
+    << NormalizationLayer(NormalizationLayerInfo(NormType::CROSS_MAP, 5, 0.0001f, 0.75f)).set_name("norm1")
+    << PoolingLayer(PoolingLayerInfo(PoolingType::MAX, 3, PadStrideInfo(2, 2, 0, 0))).set_name("pool1")
+    // Layer 2
+    << ConvolutionLayer(
+        5U, 5U, 256U,
+        get_weights_accessor(data_path, "/cnn_data/alexnet_model/conv2_w.npy", weights_layout),
+        get_weights_accessor(data_path, "/cnn_data/alexnet_model/conv2_b.npy"),
+        PadStrideInfo(1, 1, 2, 2), 2)
+    .set_name("conv2")
+    << ActivationLayer(ActivationLayerInfo(ActivationLayerInfo::ActivationFunction::RELU)).set_name("relu2")
+    << NormalizationLayer(NormalizationLayerInfo(NormType::CROSS_MAP, 5, 0.0001f, 0.75f)).set_name("norm2")
+    << PoolingLayer(PoolingLayerInfo(PoolingType::MAX, 3, PadStrideInfo(2, 2, 0, 0))).set_name("pool2")
+    // Layer 3
+    << ConvolutionLayer(
+        3U, 3U, 384U,
+        get_weights_accessor(data_path, "/cnn_data/alexnet_model/conv3_w.npy", weights_layout),
+        get_weights_accessor(data_path, "/cnn_data/alexnet_model/conv3_b.npy"),
+        PadStrideInfo(1, 1, 1, 1))
+    .set_name("conv3")
+    << ActivationLayer(ActivationLayerInfo(ActivationLayerInfo::ActivationFunction::RELU)).set_name("relu3")
+    // Layer 4
+    << ConvolutionLayer(
+        3U, 3U, 384U,
+        get_weights_accessor(data_path, "/cnn_data/alexnet_model/conv4_w.npy", weights_layout),
+        get_weights_accessor(data_path, "/cnn_data/alexnet_model/conv4_b.npy"),
+        PadStrideInfo(1, 1, 1, 1), 2)
+    .set_name("conv4")
+    << ActivationLayer(ActivationLayerInfo(ActivationLayerInfo::ActivationFunction::RELU)).set_name("relu4")
+    // Layer 5
+    << ConvolutionLayer(
+        3U, 3U, 256U,
+        get_weights_accessor(data_path, "/cnn_data/alexnet_model/conv5_w.npy", weights_layout),
+        get_weights_accessor(data_path, "/cnn_data/alexnet_model/conv5_b.npy"),
+        PadStrideInfo(1, 1, 1, 1), 2)
+    .set_name("conv5")
+    << ActivationLayer(ActivationLayerInfo(ActivationLayerInfo::ActivationFunction::RELU)).set_name("relu5")
+    << PoolingLayer(PoolingLayerInfo(PoolingType::MAX, 3, PadStrideInfo(2, 2, 0, 0))).set_name("pool5")
+    // Layer 6
+    << FullyConnectedLayer(
+        4096U,
+        get_weights_accessor(data_path, "/cnn_data/alexnet_model/fc6_w.npy", weights_layout),
+        get_weights_accessor(data_path, "/cnn_data/alexnet_model/fc6_b.npy"))
+    .set_name("fc6")
+    << ActivationLayer(ActivationLayerInfo(ActivationLayerInfo::ActivationFunction::RELU)).set_name("relu6")
+    // Layer 7
+    << FullyConnectedLayer(
+        4096U,
+        get_weights_accessor(data_path, "/cnn_data/alexnet_model/fc7_w.npy", weights_layout),
+        get_weights_accessor(data_path, "/cnn_data/alexnet_model/fc7_b.npy"))
+    .set_name("fc7")
+    << ActivationLayer(ActivationLayerInfo(ActivationLayerInfo::ActivationFunction::RELU)).set_name("relu7")
+    // Layer 8
+    << FullyConnectedLayer(
+        1000U,
+        get_weights_accessor(data_path, "/cnn_data/alexnet_model/fc8_w.npy", weights_layout),
+        get_weights_accessor(data_path, "/cnn_data/alexnet_model/fc8_b.npy"))
+    .set_name("fc8")
+    // Softmax
+    << SoftmaxLayer().set_name("prob")
+    << OutputLayer(get_output_accessor(mCommonParams, 5));
 
-std::vector<float> DNNInferenceRunner::predict(const cv::Mat& img) {
-  Blob<float>* input_layer = this->mNet->input_blobs()[0];
-  input_layer->Reshape(1, this->mNumChannels,
-                       this->mInputGeometry.height, this->mInputGeometry.width);
-  /* Forward dimension change to all layers. */
-  this->mNet->Reshape();
+  // Finalize graph
+  GraphConfig config;
+  config.num_threads = mCommonParams.threads;
+  config.use_tuner   = mCommonParams.enable_tuner;
+  config.tuner_file  = mCommonParams.tuner_file;
 
-  std::vector<cv::Mat> input_channels;
-  this->wrapInputLayer(&input_channels);
-
-  this->preprocess(img, &input_channels);
-
-  this->mNet->Forward();
-
-  /* Copy the output layer to a std::vector */
-  Blob<float>* output_layer = this->mNet->output_blobs()[0];
-  const float* begin = output_layer->cpu_data();
-  const float* end = begin + output_layer->channels();
-  return std::vector<float>(begin, end);
-}
-
-/* Wrap the input layer of the network in separate cv::Mat objects
- * (one per channel). This way we save one memcpy operation and we
- * don't need to rely on cudaMemcpy2D. The last preprocessing
- * operation will write the separate channels directly to the input
- * layer. */
-void DNNInferenceRunner::wrapInputLayer(std::vector<cv::Mat>* input_channels) {
-  Blob<float>* input_layer = this->mNet->input_blobs()[0];
-
-  int width = input_layer->width();
-  int height = input_layer->height();
-  float* input_data = input_layer->mutable_cpu_data();
-  for (int i = 0; i < input_layer->channels(); ++i) {
-    cv::Mat channel(height, width, CV_32FC1, input_data);
-    input_channels->push_back(channel);
-    input_data += width * height;
-  }
-}
-
-void DNNInferenceRunner::preprocess(const cv::Mat& img,
-                            std::vector<cv::Mat>* input_channels) {
-  /* Convert the input image to the input image format of the network. */
-  cv::Mat sample;
-  if (img.channels() == 3 && this->mNumChannels == 1)
-    cv::cvtColor(img, sample, cv::COLOR_BGR2GRAY);
-  else if (img.channels() == 4 && this->mNumChannels == 1)
-    cv::cvtColor(img, sample, cv::COLOR_BGRA2GRAY);
-  else if (img.channels() == 4 && this->mNumChannels == 3)
-    cv::cvtColor(img, sample, cv::COLOR_BGRA2BGR);
-  else if (img.channels() == 1 && this->mNumChannels == 3)
-    cv::cvtColor(img, sample, cv::COLOR_GRAY2BGR);
-  else
-    sample = img;
-
-  cv::Mat sample_resized;
-  if (sample.size() != this->mInputGeometry)
-    cv::resize(sample, sample_resized, this->mInputGeometry);
-  else
-    sample_resized = sample;
-
-  cv::Mat sample_float;
-  if (this->mNumChannels == 3)
-    sample_resized.convertTo(sample_float, CV_32FC3);
-  else
-    sample_resized.convertTo(sample_float, CV_32FC1);
-
-  cv::Mat sample_normalized;
-  cv::subtract(sample_float, this->mMean, sample_normalized);
-
-  /* This operation will write the separate BGR planes directly to the
-   * input layer of the network because it is wrapped by the cv::Mat
-   * objects in input_channels. */
-  cv::split(sample_normalized, *input_channels);
-
-  CHECK(reinterpret_cast<float*>(input_channels->at(0).data)
-        == this->mNet->input_blobs()[0]->cpu_data())
-    << "Input channels are not wrapping the input layer of the network.";
+  this->mGraph.finalize(mCommonParams.target, config);
 }
 
 bool DNNInferenceRunner::initSemaphore()
@@ -321,16 +220,6 @@ bool DNNInferenceRunner::releaseSharedMemorySpace() {
   return true;
 }
 
-IplImage* DNNInferenceRunner::retrieveFrame() {
-  if (this->mShmPtr) {
-    sem_wait(this->mSem);
-    memcpy((char*)this->mFrame.imageData, (char*)this->mShmPtr,
-        CAMERA_DEFAULT_BUF_SIZE);
-    sem_post(this->mSem);
-  }
-  return &this->mFrame;
-}
-
 bool DNNInferenceRunner::initDBus() {
   dbus_error_init(&this->mError);
   this->mConnection = dbus_bus_get(DBUS_BUS_SYSTEM, &this->mError);
@@ -350,12 +239,7 @@ bool DNNInferenceRunner::streamingStart() {
 
   this->mBufferSize = CAMERA_DEFAULT_BUF_SIZE;
 
-  cvInitImageHeader(&this->mFrame, cvSize(640, 480), IPL_DEPTH_8U, 3, IPL_ORIGIN_BL, 8);
-  this->mFrame.imageData = (char *)cvAlloc(this->mFrame.imageSize);
-  if (!this->mFrame.imageData) {
-    ANT_DBG_ERR("cvAlloc error");
-    return false;
-  }
+  mFrame = (unsigned char*)malloc(sizeof(unsigned char*) * this->mBufferSize);
 
   while (1) {
     if (initSharedMemorySpace())
@@ -392,4 +276,96 @@ static void sendDBusMsg(DBusConnection* conn, const char* msg, const char* text)
   }
   dbus_connection_send(conn, message, NULL);
   dbus_message_unref(message);
+}
+
+ShmAccessor::ShmAccessor(DNNInferenceRunner* runner, bool bgr, std::unique_ptr<IPreprocessor> preprocessor)
+  : _runner(runner), _bgr(bgr), _preprocessor(std::move(preprocessor))
+{
+}
+
+bool ShmAccessor::access_tensor(ITensor &tensor)
+{
+  if (_runner == nullptr) {
+    ANT_DBG_ERR("DNNInferenceRunner is null prointer");
+    return false;
+  }
+
+  sem_wait(_runner->getSem());
+  memcpy(_runner->getFrame(), _runner->getShmPtr(), _runner->getBufferSize());
+  sem_post(_runner->getSem());
+
+  unsigned int _width = 227;
+  unsigned int _height = 227;
+
+  const DataLayout data_layout = tensor.info()->data_layout();
+  const TensorShape tensor_shape = tensor.info()->tensor_shape();
+
+  map(tensor, true);
+
+  size_t stride_z = 0;
+
+  Window window;
+  if (data_layout == DataLayout::NCHW) {
+    window.set(Window::DimX, Window::Dimension(0, _width, 1));
+    window.set(Window::DimY, Window::Dimension(0, _height, 1));
+    window.set(Window::DimZ, Window::Dimension(0, 1, 1));
+    stride_z = tensor.info()->strides_in_bytes()[2];
+  }
+  else
+  {
+    window.set(Window::DimX, Window::Dimension(0, 1, 1));
+    window.set(Window::DimY, Window::Dimension(0, _width, 1));
+    window.set(Window::DimZ, Window::Dimension(0, _height, 1));
+    stride_z = tensor.info()->strides_in_bytes()[0];
+  }
+
+  Iterator out(&tensor, window);
+
+  unsigned char red   = 0;
+  unsigned char green = 0;
+  unsigned char blue  = 0;
+
+  bool bgr = _bgr;
+  _feeder = support::cpp14::make_unique<MemoryImageFeeder>(_runner->getFrame());
+
+  execute_window_loop(window, [&](const Coordinates & id)
+  {
+    red   = _feeder->get();
+    green = _feeder->get();
+    blue  = _feeder->get();
+
+    switch(tensor.info()->data_type())
+    {
+      case DataType::U8:
+      {
+        *(out.ptr() + 0 * stride_z) = bgr ? blue : red;
+        *(out.ptr() + 1 * stride_z) = green;
+        *(out.ptr() + 2 * stride_z) = bgr ? red : blue;
+        break;
+      }
+      case DataType::F32:
+      {
+        *reinterpret_cast<float *>(out.ptr() + 0 * stride_z) = static_cast<float>(bgr ? blue : red);
+        *reinterpret_cast<float *>(out.ptr() + 1 * stride_z) = static_cast<float>(green);
+        *reinterpret_cast<float *>(out.ptr() + 2 * stride_z) = static_cast<float>(bgr ? red : blue);
+        break;
+      }
+      default:
+      {
+        ARM_COMPUTE_ERROR("Unsupported data type");
+      }
+    }
+  },
+  out);
+
+  _feeder = nullptr;
+
+  unmap(tensor);
+
+  if (_preprocessor)
+  {
+    _preprocessor->preprocess(tensor);
+  }
+
+  return true;
 }

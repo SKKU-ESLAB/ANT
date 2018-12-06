@@ -27,7 +27,7 @@
 #define REQUEST_DELAY	50 //ms
 
 static DBusConnection *antCon = NULL; //Only 1 connection 
-static struct timeval time_to_delay; //�ӽ� ����, event register�� �ణ�� �ð� ���� �α� ���� ���.
+static struct timeval time_to_delay; //Temoporary variable, used to set a time delay in event registration
 requestList *rList;
 pid_t pid;
 int sensor_num;
@@ -269,8 +269,8 @@ DBusHandlerResult sensorEventNotify(DBusConnection *connection, DBusMessage *mes
 }
 
 int wait_delay(){
-	//Node.js Multi thread ȯ�濡�� sleep���� ���� ������ �߻��ϱ� ������
-	//��¿ �� ���� busy wait�� ����
+	//Because of the problem caused by sleep in Node.js multi thread environment
+	//it is forced to be busy wait
 	struct timeval temp;
 	int i;
 	
@@ -307,7 +307,7 @@ void On(const FunctionCallbackInfo<Value>& args) {
 	int sensing_interval;
 	int handle_type = 0;
 	const char* handle_type_s;
-	int sensing_level = 0; //����� ������� ����.
+	int sensing_level = 0; //Currently not used.
 	
 	wait_delay(); //Perform wait.
 
@@ -338,7 +338,7 @@ void On(const FunctionCallbackInfo<Value>& args) {
 
 
 	//--------------------- 1.1 Sensor Name Check --------------------//
-	// ����Ʈ ����Ʈ�� ���ؼ�, �����ϴ� �������� üũ
+	// Check whether sensor is supported by comparison with support list
 	//
 	v8::String::Utf8Value param0(args[0]->ToString());
 	std::string name_c = std::string(*param0);
@@ -686,7 +686,7 @@ void Update(const FunctionCallbackInfo<Value>& args){
 	int sensing_interval = 0;
 	int handle_type = 0;
 	const char* handle_type_s;
-	int sensing_level = 0; //����� ������� ����.
+	int sensing_level = 0; //Currently not used.
 	int request_change_flag = 0;
 
 
@@ -710,7 +710,7 @@ void Update(const FunctionCallbackInfo<Value>& args){
 	pid = (unsigned int)getpid();
 
 	//--------------------- 1.2 Handle Type Check --------------------//
-	// ����Ʈ ����Ʈ�� ���ؼ�, �����ϴ� �������� üũ
+	// Check whether sensor is supported by comparison with support list
 	//
 	if (args[1]->IsString()){
 		v8::String::Utf8Value param1(args[1]->ToString());
@@ -736,7 +736,7 @@ void Update(const FunctionCallbackInfo<Value>& args){
 	//----------------------------------------------------------------//
 
 	//--------------------- 1.3 interval check --------------------//
-	// ����Ʈ ����Ʈ�� ���ؼ�, �����ϴ� �������� üũ
+	// Check whether sensor is supported by comparison with support list
 	//
 	if (args[2]->IsInt32()){
 		sensing_interval = args[2]->IntegerValue();
