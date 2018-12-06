@@ -1,0 +1,13 @@
+{
+  "target_name":"raspberry-pi",
+  "actuator_num": 1,
+  "actuator1": 
+  {
+    "name":"LED",
+    "value_type": "INT",
+    "start_func": "LED_start",
+    "stop_func": "LED_stop",
+    "set_func": "LED_set"
+  }
+}
+

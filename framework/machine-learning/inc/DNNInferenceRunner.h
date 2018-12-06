@@ -25,37 +25,43 @@
 
 #include "InferenceRunner.h"
 
-// For Caffe Framework
-#define CPU_ONLY
-#include <caffe/caffe.hpp>
-#include <opencv2/core/core.hpp>
-#include <opencv2/highgui/highgui.hpp>
-#include <opencv2/imgproc/imgproc.hpp>
-#include <algorithm>
-#include <iosfwd>
-#include <memory>
-#include <utility>
+// For ARM Compute Library
+#include "arm_compute/graph.h"
+#include "support/ToolchainSupport.h"
+#include "utils/CommonGraphOptions.h"
+#include "utils/GraphUtils.h"
+#include "utils/Utils.h"
+#include "utils/ImageLoader.h"
 
 // For Connection with Camera Framework
 #include <sys/shm.h>
 #include <semaphore.h>
 #include <errno.h>
 #include <dbus/dbus.h>
+#include <unistd.h>
 
 #define SHM_KEY_FOR_BUFFER 5315
-#define CAMERA_DEFAULT_BUF_SIZE CAMERA_480P_BUF_SIZE
+//#define CAMERA_DEFAULT_BUF_SIZE CAMERA_480P_BUF_SIZE
 #define CAMERA_480P_BUF_SIZE (RAW_480P_WIDTH * RAW_480P_HEIGHT * 3)
 #define RAW_480P_WIDTH 640
 #define RAW_480P_HEIGHT 480
 
-using namespace caffe;  // NOLINT(build/namespaces)
+#define CAMERA_DEFAULT_BUF_SIZE IMAGENET_INPUT_BUF_SIZE
+#define IMAGENET_INPUT_BUF_SIZE (227*227*3)
+
 using std::string;
+using namespace arm_compute;
+using namespace arm_compute::utils;
+using namespace arm_compute::graph::frontend;
+using namespace arm_compute::graph_utils;
 
 typedef std::pair<string, float> Prediction;
 
 class DNNInferenceRunner
 : public InferenceRunner {
   public:
+    DNNInferenceRunner() : mCommonOpts(mCmdParser), mGraph(0, "AlexNet") {}
+
     // Run model inference with inputData and get outputData
     //   - Input: MLDataUnit* inputData
     //   - Ouptut: MLDataUnit* outputData
@@ -64,35 +70,37 @@ class DNNInferenceRunner
     // Get resource usage of inference runner
     virtual std::string getResourceUsage();
 
-  private:
-    bool initClassifier(const string& model_file,
-        const string& trained_file,
-        const string& mean_file,
-        const string& label_file);
+    void* getShmPtr()
+    { return this->mShmPtr; }
+    sem_t* getSem()
+    { return this->mSem;}
+    unsigned char* getFrame()
+    { return this->mFrame; }
+    unsigned getBufferSize()
+    { return this->mBufferSize; }
 
-    std::vector<Prediction> classify(const cv::Mat& img, int N = 5);
-    void setMean(const string& mean_file);
-    std::vector<float> predict(const cv::Mat& img);
-    void wrapInputLayer(std::vector<cv::Mat>* input_channels);
-    void preprocess(const cv::Mat& img,
-        std::vector<cv::Mat>* input_channels);
+
+  private:
+    bool initClassifier();
 
     bool initSemaphore();
     bool releaseSemaphore();
     bool initSharedMemorySpace();
     bool releaseSharedMemorySpace();
-    IplImage* retrieveFrame();
+    //IplImage* retrieveFrame();
     bool initDBus();
     bool streamingStart();
 
-    shared_ptr<Net<float> > mNet;
-    cv::Size mInputGeometry;
+    //shared_ptr<Net<float> > mNet;
+    Stream             mGraph;
+    CommandLineParser  mCmdParser;
+    CommonGraphOptions mCommonOpts;
+    CommonGraphParams  mCommonParams;
     int mNumChannels;
-    cv::Mat mMean;
     std::vector<string> mLabels;
 
     bool mIsStreaming = false;
-    IplImage mFrame;
+    unsigned char* mFrame;
     unsigned mBufferSize;
     void* mShmPtr;
     int mShmId;
@@ -101,9 +109,32 @@ class DNNInferenceRunner
     DBusError mError;
 };
 
-static bool pairCompare(const std::pair<float, int>& lhs,
-                        const std::pair<float, int>& rhs);
-static std::vector<int> argmax(const std::vector<float>& v, int N);
 static void sendDBusMsg(DBusConnection* conn, const char* msg, const char* text);
+
+/* Shared memory accessor class */
+class ShmAccessor final : public graph::ITensorAccessor
+{
+public:
+  ShmAccessor(DNNInferenceRunner* runner = nullptr, bool bgr = true, std::unique_ptr<IPreprocessor> preprocessor = nullptr);
+  ShmAccessor(ShmAccessor &&) = default;
+
+  bool access_tensor(ITensor &tensor) override;
+
+private:
+  DNNInferenceRunner* _runner;
+  const bool                          _bgr;
+  std::unique_ptr<IPreprocessor>      _preprocessor;
+  std::unique_ptr<IImageDataFeeder>   _feeder;
+};
+
+inline std::unique_ptr<graph::ITensorAccessor> get_shm_input_accessor(
+    const arm_compute::utils::CommonGraphParams &graph_parameters,
+    std::unique_ptr<IPreprocessor> preprocessor = nullptr,
+    DNNInferenceRunner* runner = nullptr,
+    bool bgr = true)
+{
+  return arm_compute::support::cpp14::make_unique<ShmAccessor>(std::move(runner), bgr, std::move(preprocessor));
+}
+
 
 #endif // !defined(__DNN_INFERENCE_RUNNER_H__)
