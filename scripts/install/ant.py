@@ -37,7 +37,7 @@ try:
     gAntWpaSupplicantPath = os.environ['ANT_WPA_SUPPLICANT_PATH']
     gAntWpaCliPath = os.environ['ANT_WPA_CLI_PATH']
     gAntConfigDir = os.environ['ANT_CONFIG_DIR']
-    gAntSensorDriverDir = os.environ['ANT_SENSOR_DRIVER_DIR']
+    gAntDeviceDriverDir = os.environ['ANT_DEVICE_DRIVER_DIR']
     gAntAppsDir = os.environ['ANT_APPS_DIR']
 except KeyError as e:
     print("Not found environment variable. {}".format(str(e)))

@@ -124,8 +124,8 @@ DBusHandlerResult sensorEventNotify(DBusConnection *connection, DBusMessage *mes
 }
 
 int wait_delay(){
-	//Node.js Multi thread È¯°æ¿¡¼­ sleepÀ¸·Î ÀÎÇÑ ¹®Á¦°¡ ¹ß»ýÇÏ±â ¶§¹®¿¡
-	//¾îÂ¿ ¼ö ¾øÀÌ busy wait·Î ±¸Çö
+	//Node.js Multi thread È¯ï¿½æ¿¡ï¿½ï¿½ sleepï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ß»ï¿½ï¿½Ï±ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+	//ï¿½ï¿½Â¿ ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ busy waitï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
 	struct timeval temp;
 	int i;
 	
@@ -166,7 +166,7 @@ void On(const FunctionCallbackInfo<Value>& args) {
 	int sensing_interval;
 	int handle_type = 0;
 	const char* handle_type_s;
-	int sensing_level = 0; //ÇöÀç´Â »ç¿ëÇÏÁö ¾ÊÀ½.
+	int sensing_level = 0; //ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½.
 	
 	wait_delay(); //Perform wait.
 */
@@ -197,7 +197,7 @@ void On(const FunctionCallbackInfo<Value>& args) {
 
 
 	//--------------------- 1.1 Sensor Name Check --------------------//
-	// ¼­Æ÷Æ® ¸®½ºÆ®¿Í ºñ±³ÇØ¼­, Áö¿øÇÏ´Â ¼¾¼­ÀÎÁö Ã¼Å©
+	// ï¿½ï¿½ï¿½ï¿½Æ® ï¿½ï¿½ï¿½ï¿½Æ®ï¿½ï¿½ ï¿½ï¿½ï¿½Ø¼ï¿½, ï¿½ï¿½ï¿½ï¿½ï¿½Ï´ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ Ã¼Å©
 	//
 	v8::String::Utf8Value param0(args[0]->ToString());
 	std::string name_c = std::string(*param0);
@@ -364,7 +364,7 @@ void Update(const FunctionCallbackInfo<Value>& args){
 	int sensing_interval = 0;
 	int handle_type = 0;
 	const char* handle_type_s;
-	int sensing_level = 0; //ÇöÀç´Â »ç¿ëÇÏÁö ¾ÊÀ½.
+	int sensing_level = 0; //ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½.
 	int request_change_flag = 0;
 
 
@@ -388,7 +388,7 @@ void Update(const FunctionCallbackInfo<Value>& args){
 	pid = (unsigned int)getpid();
 
 	//--------------------- 1.2 Handle Type Check --------------------//
-	// ¼­Æ÷Æ® ¸®½ºÆ®¿Í ºñ±³ÇØ¼­, Áö¿øÇÏ´Â ¼¾¼­ÀÎÁö Ã¼Å©
+	// ï¿½ï¿½ï¿½ï¿½Æ® ï¿½ï¿½ï¿½ï¿½Æ®ï¿½ï¿½ ï¿½ï¿½ï¿½Ø¼ï¿½, ï¿½ï¿½ï¿½ï¿½ï¿½Ï´ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ Ã¼Å©
 	//
 	if (args[1]->IsString()){
 		v8::String::Utf8Value param1(args[1]->ToString());
@@ -414,7 +414,7 @@ void Update(const FunctionCallbackInfo<Value>& args){
 	//----------------------------------------------------------------//
 
 	//--------------------- 1.3 interval check --------------------//
-	// ¼­Æ÷Æ® ¸®½ºÆ®¿Í ºñ±³ÇØ¼­, Áö¿øÇÏ´Â ¼¾¼­ÀÎÁö Ã¼Å©
+	// ï¿½ï¿½ï¿½ï¿½Æ® ï¿½ï¿½ï¿½ï¿½Æ®ï¿½ï¿½ ï¿½ï¿½ï¿½Ø¼ï¿½, ï¿½ï¿½ï¿½ï¿½ï¿½Ï´ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ Ã¼Å©
 	//
 	if (args[2]->IsInt32()){
 		sensing_interval = args[2]->IntegerValue();
@@ -564,13 +564,12 @@ void nativeInterfaceLayerInit(){
 
 void read_sensorlist()
 {
-  char *ant_sensor_dir;
+  char *ant_device_driver_dir;
   const char *error = NULL;
 
-
-  ant_sensor_dir = getenv("ANT_SENSOR_DRIVER_DIR");
-  if(!ant_sensor_dir){
-    fprintf(stderr,"No environment variable: ANT_SENSOR_DRIVER_DIR\n");
+  ant_device_driver_dir = getenv("ANT_DEVICE_DRIVER_DIR");
+  if(!ant_device_driver_dir){
+    fprintf(stderr,"No environment variable: ANT_DEVICE_DRIVER_DIR\n");
     exit(1);
   }
   
@@ -580,7 +579,7 @@ void read_sensorlist()
   long numbytes;
   char json_file_path[200];
   
-  sprintf(json_file_path, "%s/sensor_config.json", ant_sensor_dir);
+  sprintf(json_file_path, "%s/sensor_config.json", ant_device_driver_dir);
   infile = fopen(json_file_path, "r");
   if(infile == NULL){
     fprintf(stderr, "Cannot read the sensor configuration file\n");
