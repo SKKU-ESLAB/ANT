@@ -2,11 +2,17 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR}/inc)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../message/inc)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../communication/inc)
 link_directories(${CMAKE_SOURCE_DIR}/out/libs)
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../../dep/ComputeLibrary)
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../../dep/ComputeLibrary/include)
 
 add_definitions("`pkg-config --libs --cflags dbus-1 glib-2.0 dbus-glib-1`")
 
 set(CMAKE_CXX_STANDARD 11)
 set(MLFW_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/src)
+
+file(GLOB ACL_SRC
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../dep/ComputeLibrary/utils/*.cpp
+)
 
 set(MLFW_sources
   ${MLFW_SOURCE_DIR}/main.cpp
@@ -17,13 +23,14 @@ set(MLFW_sources
   ${MLFW_SOURCE_DIR}/SensorInputReader.cpp
   ${MLFW_SOURCE_DIR}/InferenceUnit.cpp
   ${MLFW_SOURCE_DIR}/DNNInferenceRunner.cpp
-  ${MLFW_SOURCE_DIR}/ANNInferenceRunner.cpp)
+  ${MLFW_SOURCE_DIR}/ANNInferenceRunner.cpp
+  ${ACL_SRC})
 
 add_executable(ant-ml ${MLFW_sources})
 add_dependencies(ant-ml ant-message)
 
 target_link_libraries(ant-ml
-  ant-message ant-cmfw pthread fann doublefann fixedfann floatfann caffe glog boost_system opencv_core opencv_highgui opencv_imgproc)
+  ant-message ant-cmfw pthread fann doublefann fixedfann floatfann arm_compute arm_compute_core arm_compute_graph)
 
 set_target_properties(ant-ml
   PROPERTIES

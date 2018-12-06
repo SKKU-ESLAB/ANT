@@ -1,0 +1,15 @@
+{
+  "target": "odroid-xu4",
+  "camera_num":1,
+  "main": {
+    "0": "v4l2src ! video/x-raw,width=1280,height=720,framerate=30/1 ! videoconvert ! video/x-raw,format=RGB ! tee name=RAW_TEE ! queue ! tee name=MAIN_TEE ! queue ! opencvtextoverlay text=\"\" name=TEXT ypos=100 height=3 width=3 thickness=10 ! videoconvert ! avenc_mpeg4 ! tee name=H264_TEE ! queue ! fakesink",
+    "0_test": "v4l2src ! video/x-raw,width=1280,height=720,framerate=30/1 ! tee name=RAW_TEE ! queue ! tee name=MAIN_TEE ! queue !  videoconvert ! opencvtextoverlay text=\"\" name=TEXT ypos=100 height=3 width=3 thickness=10 ! videoconvert ! avenc_mpeg4 ! tee name=H264_TEE ! queue ! rtpmp4vpay pt=96 ! udpsink host=192.168.0.35 port=4000 name=sink_%u sync=f"
+  },
+  "recording": "queue ! mp4mux ! filesink name=sink_%u sync=f",
+  "snapshot": "queue ! jpegenc ! image/jpeg,width=1280,height=720,framerate=1/1 ! appsink name=sink_%u",
+  "streaming": "queue ! rtpmp4vpay pt=96 ! gdppay ! tcpserversink name=sink_%u sync=f",
+  "pre_recording_init": "queue min-threshold-time=10000000000 max-size-buffers=0 max-size-time=0 max-size-bytes=0 ! valve drop=true ! tee name=sink_%u",
+  "pre_recording": "queue ! mp4mux ! filesink name=sink_%u sync=f",
+  "copy_shm": "queue ! videorate ! video/x-raw,framerate=1/1 ! videoscale ! video/x-raw,width=640,height=480 ! videoconvert ! video/x-raw,format=BGR ! appsink name=sink_%u",
+  "show_window": "queue ! videorate ! video/x-raw,framerate=10/1 ! videoscale ! video/x-raw,width=640,height=480 ! autovideosink name=sink_%u"
+}

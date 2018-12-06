@@ -6,6 +6,7 @@ node_modules
 api/*/build/*
 api/*/Release/*
 api/*/*.node
+libsensors.so
 
 # Ctags, Cscope
 tags
@@ -32,3 +33,9 @@ Makefile
 # IDE Related
 .vscode
 *.swp
+
+# ARM Compute Library
+dep/ComputeLibrary/build/examples
+dep/ComputeLibrary/build/opencl-1.2-stubs
+dep/ComputeLibrary/build/src
+dep/ComputeLibrary/build/tests
