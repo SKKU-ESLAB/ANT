@@ -319,8 +319,8 @@ determine_var "ANT_OUT_DIR" "ANT output directory" y "./out"
 # Runtime directory path
 determine_var "ANT_BIN_DIR" "ANT binary directory" y
 determine_var "ANT_CONFIG_DIR" "ANT config directory" y
-determine_var "ANT_SENSOR_DRIVER_DIR" "ANT sensor driver directory" y
-determine_var "ANT_APPS_DIR" "ANT sensor driver directory" y
+determine_var "ANT_DEVICE_DRIVER_DIR" "ANT device driver directory" y
+determine_var "ANT_APPS_DIR" "ANT applications directory" y
 determine_var "ANT_DATA_DIR" "ANT data directory" y
 
 # Dependent binary path
@@ -363,7 +363,7 @@ echo "#!/bin/bash
 export ANT_TARGET_NAME=\"${ANT_TARGET_NAME}\";
 export ANT_BIN_DIR=\"${ANT_BIN_DIR}\";
 export ANT_CONFIG_DIR=\"${ANT_CONFIG_DIR}\";
-export ANT_SENSOR_DRIVER_DIR=\"${ANT_SENSOR_DRIVER_DIR}\";
+export ANT_DEVICE_DRIVER_DIR=\"${ANT_DEVICE_DRIVER_DIR}\";
 export ANT_APPS_DIR=\"${ANT_APPS_DIR}\";
 export ANT_DATA_DIR=\"${ANT_DATA_DIR}\";
 export ANT_WPA_SUPPLICANT_PATH=\"${ANT_WPA_SUPPLICANT_PATH}\";
@@ -389,15 +389,16 @@ cp ${TARGET_DIR}/dhcpd.conf ${ANT_CONFIG_DIR}/
 cp ${TARGET_DIR}/p2p.conf ${ANT_CONFIG_DIR}/
 cp ${TARGET_DIR}/haarcascade_frontalface_alt.xml ${ANT_CONFIG_DIR}/
 
-# Install ANT_SENSOR_DRIVER_DIR
-print_progress 6 "Install ANT sensor drivers..."
-cp -R ${ANT_OUT_DIR}/sensor-drivers/* ${ANT_SENSOR_DRIVER_DIR}/
+# Install ANT_DEVICE_DRIVER_DIR
+print_progress 6 "Install ANT device drivers..."
+cp -R ${ANT_OUT_DIR}/device-drivers/* ${ANT_DEVICE_DRIVER_DIR}/
 
 # Install ANT_APPS_DIR
 print_progress 7 "Install ANT system applications..."
 mkdir -p ${ANT_APPS_DIR}/system
 mkdir -p ${ANT_APPS_DIR}/user
-cp -R ${ANT_OUT_DIR}/system-apps/* ${ANT_APPS_DIR}/system/
+cp -R ${ANT_OUT_DIR}/apps/system/* ${ANT_APPS_DIR}/system/
+cp -R ${ANT_OUT_DIR}/apps/user/* ${ANT_APPS_DIR}/user/ 2> /dev/null
 
 # Copy built-in machine learning models
 print_progress 8 "Install built-in machine learning models..."
