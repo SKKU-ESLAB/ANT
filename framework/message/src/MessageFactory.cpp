@@ -22,6 +22,9 @@
 
 #include "MessageFactory.h"
 #include "BaseMessage.h"
+#include "AppMessage.h"
+#include "AppCoreMessage.h"
+#include "CompanionMessage.h"
 #include "cJSON.h"
 #include "ANTdbugLog.h"
 
