@@ -14,14 +14,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef __RESOURCE_MESSAGE_H__
-#define __RESOURCE_MESSAGE_H__
+#ifndef __RESOURCE_RESPONSE_MESSAGE_H__
+#define __RESOURCE_RESPONSE_MESSAGE_H__
 
-class ResourceMessage {
+class ResourceResponseMessage {
 public:
 
 private:
 
 };
 
-#endif // !defined(__RESOURCE_MESSAGE_H__)
+#endif // !defined(__RESOURCE_RESPONSE_MESSAGE_H__)

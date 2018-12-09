@@ -2,9 +2,10 @@
 #
 ##########################################################################
 #
-# Copyright (c) 2017 SKKU ESLAB, and contributors. All rights reserved.
+# Copyright (c) 2017-2018 SKKU ESLAB, and contributors. All rights reserved.
 #
 # Contributor: Gyeonghwan Hong<redcarrottt@gmail.com>
+#              Hayun Lee<lhy920806@gmail.com>
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
