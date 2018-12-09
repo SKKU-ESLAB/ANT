@@ -19,7 +19,8 @@
 #include <unistd.h>
 
 #include "AppBase.h"
-#include "BaseMessage.h"
+#include "AppMessage.h"
+#include "AppCoreMessage.h"
 #include "MessageFactory.h"
 
 #define COMPANION_DEVICE_URI "/comp0"

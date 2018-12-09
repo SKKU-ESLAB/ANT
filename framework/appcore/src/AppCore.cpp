@@ -40,7 +40,8 @@ extern "C" {
 
 #include "AppCore.h"
 #include "ANTdbugLog.h"
-#include "BaseMessage.h"
+#include "AppCoreMessage.h"
+#include "AppMessage.h"
 #include "MessageFactory.h"
 #include "AppList.h"
 

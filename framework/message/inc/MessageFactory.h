@@ -21,6 +21,9 @@
 #include <string>
 
 #include "BaseMessage.h"
+#include "AppCoreMessage.h"
+#include "AppMessage.h"
+#include "CompanionMessage.h"
 #include "MLMessage.h"
 
 class MessageFactory {
