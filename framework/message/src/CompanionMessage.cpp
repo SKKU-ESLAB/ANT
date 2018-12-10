@@ -45,38 +45,6 @@ cJSON* CompanionMessage::toJSON() {
 }
 
 // Set command-specific parameters (CompanionMessage)
-void CompanionMessage::setParamsSendEventPage(int appId, std::string legacyData,
-    bool isNoti) {
-  cJSON* payloadObj = cJSON_CreateObject();
-  cJSON* legacyDataObj = cJSON_Parse(legacyData.c_str());
-  if(legacyDataObj == NULL) {
-    ANT_DBG_ERR("SendEventPage: cannot parse legacyData");
-  }
-
-  char tempStr[20];
-  sprintf(tempStr, "%d", appId);
-  cJSON_AddStringToObject(payloadObj, "appId", tempStr);
-  cJSON_AddItemToObject(payloadObj, "legacyData", legacyDataObj);
-  cJSON_AddStringToObject(payloadObj, "isNoti", (isNoti) ? "1" : "0");
-
-  this->mCompanionPayloadObj = payloadObj;
-}
-
-void CompanionMessage::setParamsSendConfigPage(int appId,
-    std::string legacyData) {
-  cJSON* payloadObj = cJSON_CreateObject();
-  cJSON* legacyDataObj = cJSON_Parse(legacyData.c_str());
-  if(legacyDataObj == NULL) {
-    ANT_DBG_ERR("SendConfigPage: cannot parse legacyData");
-  }
-
-  char tempStr[20];
-  sprintf(tempStr, "%d", appId);
-  cJSON_AddStringToObject(payloadObj, "appId", tempStr);
-  cJSON_AddItemToObject(payloadObj, "legacyData", legacyDataObj);
-
-  this->mCompanionPayloadObj = payloadObj;
-}
 void CompanionMessage::setParamsSendToCompanion(std::string listenerName,
     std::string data) {
   cJSON* payloadObj = cJSON_CreateObject();

@@ -47,21 +47,6 @@ class AppAPI
     static void New(const FunctionCallbackInfo<Value>& args);
 
     // Member functions
-    static void makeEventPage(const FunctionCallbackInfo<Value>& args);
-    static void addEventText(const FunctionCallbackInfo<Value>& args);
-    static void addEventImg(const FunctionCallbackInfo<Value>& args);
-    static void sendEventPage(const FunctionCallbackInfo<Value>& args);
-    static void sendEventPageWithNoti(const FunctionCallbackInfo<Value>& args);
-    static void makeConfigPage(const FunctionCallbackInfo<Value>& args);
-    static void addStrTextbox(const FunctionCallbackInfo<Value>& args);
-    static void addNumberTextbox(const FunctionCallbackInfo<Value>& args);
-    static void addSingleDialog(const FunctionCallbackInfo<Value>& args);
-    static void addMultipleDialog(const FunctionCallbackInfo<Value>& args);
-    static void addDateDialog(const FunctionCallbackInfo<Value>& args);
-    static void addTimeDialog(const FunctionCallbackInfo<Value>& args);
-    static void sendConfigPage(const FunctionCallbackInfo<Value>& args);
-    static void getData(const FunctionCallbackInfo<Value>& args);
-
     static void appReady(const FunctionCallbackInfo<Value>& args);
     static void onLaunch(const FunctionCallbackInfo<Value>& args);
     static void onTermination(const FunctionCallbackInfo<Value>& args);

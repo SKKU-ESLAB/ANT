@@ -86,42 +86,6 @@ void AppBase::completeLaunchingApp() {
 }
 
 // Send companion commands
-void AppBase::sendEventPageToCompanion(const char *jsonData, bool isNoti) {
-  if (this->mAppId == -1) {
-    ANT_DBG_ERR("App ID is not initialized!");
-    return;
-  }
-
-  // Make companion message
-  BaseMessage *companionMessage = MessageFactory::makeCompanionMessage(
-      this->mLocalChannel->getUri(), COMPANION_DEVICE_URI,
-      CompanionMessageCommandType::SendEventPage);
-  CompanionMessage *companionPayload =
-      (CompanionMessage *)companionMessage->getPayload();
-  companionPayload->setParamsSendEventPage(this->mAppId, jsonData, isNoti);
-
-  // Send companion message
-  this->mLocalChannel->sendMessage(companionMessage);
-}
-
-void AppBase::sendConfigPageToCompanion(const char *jsonData) {
-  if (this->mAppId == -1) {
-    ANT_DBG_ERR("App ID is not initialized!");
-    return;
-  }
-
-  // Make companion message
-  BaseMessage *companionMessage = MessageFactory::makeCompanionMessage(
-      this->mLocalChannel->getUri(), COMPANION_DEVICE_URI,
-      CompanionMessageCommandType::SendConfigPage);
-  CompanionMessage *companionPayload =
-      (CompanionMessage *)companionMessage->getPayload();
-  companionPayload->setParamsSendConfigPage(this->mAppId, jsonData);
-
-  // Send companion message
-  this->mLocalChannel->sendMessage(companionMessage);
-}
-
 void AppBase::sendToCompanion(const char *listenerName, const char *data) {
   // Make companion message
   BaseMessage *companionMessage = MessageFactory::makeCompanionMessage(
