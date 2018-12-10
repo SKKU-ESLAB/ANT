@@ -67,8 +67,6 @@ public:
   void completeLaunchingApp();
 
   // Send companion commands
-  void sendEventPageToCompanion(const char *jsonData, bool isNoti);
-  void sendConfigPageToCompanion(const char *jsonData);
   void sendToCompanion(const char *listenerName, const char *data);
   void sendToCompanion(const char *listenerName, const char *data,
                        const char *attachedFilePath);
