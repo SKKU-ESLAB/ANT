@@ -14,14 +14,21 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef __RESOURCE_RESPONSE_MESSAGE_H__
-#define __RESOURCE_RESPONSE_MESSAGE_H__
+#ifndef __RESOURCE_MESSAGE_COMMON_H__
+#define __RESOURCE_MESSAGE_COMMON_H__
 
-class ResourceResponseMessage {
-public:
-
-private:
-
+// Use namespace + enum for readability
+namespace ResourceOperationType {
+  enum Value{
+    NotDetermined = 0,
+    POST = 1,
+    GET = 2,
+    UPDATE = 3,
+    DELETE = 4,
+    DISCOVER = 5,
+    SUBSCRIBE = 6,
+    UNSUBSCRIBE = 7
+  };
 };
 
-#endif // !defined(__RESOURCE_RESPONSE_MESSAGE_H__)
+#endif // !defined(__RESOURCE_MESSAGE_COMMON_H__)

@@ -9,6 +9,8 @@ set(MESSAGE_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/src)
 
 set(MESSAGE_sources
   ${MESSAGE_SOURCE_DIR}/BaseMessage.cpp
+  ${MESSAGE_SOURCE_DIR}/ResourceRequest.cpp
+  ${MESSAGE_SOURCE_DIR}/ResourceResponse.cpp
   ${MESSAGE_SOURCE_DIR}/AppMessage.cpp
   ${MESSAGE_SOURCE_DIR}/AppCoreMessage.cpp
   ${MESSAGE_SOURCE_DIR}/CompanionMessage.cpp
