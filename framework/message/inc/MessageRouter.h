@@ -18,9 +18,9 @@
 #ifndef __MESSAGE_ROUTER_H__
 #define __MESSAGE_ROUTER_H__
 
-#include <pthread.h>
 #include <iostream>
 #include <map>
+#include <pthread.h>
 
 #include "BaseMessage.h"
 #include "Channel.h"
@@ -29,25 +29,24 @@ class Channel;
 class MessageRouter;
 
 class MessageRouter {
-  public:
-    MessageRouter() {
-    }
+public:
+  MessageRouter() {}
 
-    // Routing functions
-    void addRoutingEntry(std::string uriString, Channel* channel);
-    void removeRoutingEntry(std::string uriString);
-    void routeMessage(Channel* originalChannel, BaseMessage* message);
+  // Routing functions
+  void addRoutingEntry(std::string uriString, Channel *channel);
+  void removeRoutingEntry(std::string uriString);
+  void routeMessage(Channel *originalChannel, BaseMessage *message);
 
-  protected:
-    Channel* findBestChannelLocked(std::string uriString);
-    Channel* findExactChannelLocked(std::string uriString);
+protected:
+  Channel *findBestChannelLocked(std::string uriString);
+  Channel *findExactChannelLocked(std::string uriString);
 
-    void printRoutingTable();
+  void printRoutingTable();
 
-    // Master Routing Table
-    //   entry = std::pair<std::string uriString, Channel* channel>
-    std::map<std::string, Channel*> mMasterRoutingTable;
-    pthread_mutex_t mMasterRoutingTableMutex = PTHREAD_MUTEX_INITIALIZER;
+  // Master Routing Table
+  //   entry = std::pair<std::string uriString, Channel* channel>
+  std::map<std::string, Channel *> mMasterRoutingTable;
+  pthread_mutex_t mMasterRoutingTableMutex = PTHREAD_MUTEX_INITIALIZER;
 };
 
 #endif // !defined(__MESSAGE_ROUTER_H__)

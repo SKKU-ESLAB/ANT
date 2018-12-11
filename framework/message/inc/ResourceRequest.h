@@ -24,35 +24,38 @@
 #include "cJSON.h"
 
 #include "BaseMessage.h"
-#include "ResourceMessageCommon.h"
+#include "ResourceMessageCommon.h"  
+
+#define RESOURCE_REQUEST_KEY_OP_TYPE "opType"
+#define RESOURCE_REQUEST_KEY_BODY "body"
 
 // ResourceRequest: message sent to everywhere
 // - Decoding(makeFromJSON): C++, Java, JavaScript
 // - Encoding(make, toJSON): C++, Java, JavaScript
 class ResourceRequest : public BaseMessagePayload {
 public:
-  friend class ResourceMessageFactory;
+  friend class MessageFactory;
   ~ResourceRequest() {}
 
   // encoding to JSON
   virtual cJSON *toJSON();
 
   // Get parameters
-  ResourceOperationType::Value getOperationType() {
-    return this->mOperationType;
+  ResourceOperationType::Value getOpType() {
+    return this->mOpType;
   }
-  
+
   std::string &getBody() { return this->mBody; }
 
   // Set command-specific parameters
   void setBody(std::string &body) { this->mBody.assign(body); }
 
 private:
-  ResourceRequest(ResourceOperationType::Value operationType, std::string &body)
-      : mOperationType(operationType), mBody(body) {}
+  ResourceRequest(ResourceOperationType::Value opType, std::string &body)
+      : mOpType(opType), mBody(body) {}
 
   // JSON-exported values
-  ResourceOperationType::Value mOperationType;
+  ResourceOperationType::Value mOpType;
   std::string mBody;
 };
 

@@ -26,36 +26,46 @@
 #include "BaseMessage.h"
 #include "ResourceMessageCommon.h"
 
+#define RESOURCE_RESPONSE_KEY_OP_TYPE "opType"
+#define RESOURCE_RESPONSE_KEY_REQUEST_MESSAGE_ID "reqMsgId"
+#define RESOURCE_RESPONSE_KEY_STATUS_CODE "statusCode"
+#define RESOURCE_RESPONSE_KEY_BODY "body"
+
 // ResourceResponse: message sent to everywhere
 // - Decoding(makeFromJSON): C++, Java, JavaScript
 // - Encoding(make, toJSON): C++, Java, JavaScript
 class ResourceResponse : public BaseMessagePayload {
 public:
-  friend class ResourceMessageFactory;
+  friend class MessageFactory;
   ~ResourceResponse() {}
 
   // encoding to JSON
   virtual cJSON *toJSON();
 
   // Get parameters
-  ResourceOperationType::Value getOperationType() {
-    return this->mOperationType;
-  }
+  ResourceOperationType::Value getOpType() { return this->mOpType; }
 
   int getRequestMessageId() { return this->mRequestMessageId; }
+
+  int getStatusCode() { return this->mStatusCode; }
 
   std::string &getBody() { return this->mBody; }
 
   // Set command-specific parameters
   void setBody(std::string &body) { this->mBody.assign(body); }
 
+  void setStatusCode(int statusCode) { this->mStatusCode = statusCode; }
+
 private:
-  ResourceResponse(ResourceOperationType::Value operationType, int requestMessageId, std::string &body)
-      : mOperationType(operationType), mRequestMessageId(requestMessageId), mBody(body) {}
+  ResourceResponse(ResourceOperationType::Value opType, int requestMessageId,
+                   int statusCode, std::string &body)
+      : mOpType(opType), mRequestMessageId(requestMessageId),
+        mStatusCode(statusCode), mBody(body) {}
 
   // JSON-exported values
-  ResourceOperationType::Value mOperationType;
+  ResourceOperationType::Value mOpType;
   int mRequestMessageId;
+  int mStatusCode;
   std::string mBody;
 };
 
