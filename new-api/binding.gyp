@@ -4,11 +4,11 @@
       'target_name': 'antnative',
       'sources': [
         'src/AppBase.cpp',
-        'src/API.cpp',
-        'src/AppAPI.cpp',
-        'src/AppAPIInternal.cpp',
-        'src/MLAPI.cpp',
-        'src/CommAPI.cpp'
+        'src/ANTNativeAPI.cpp',
+        'src/AppNativeAPI.cpp',
+        'src/MLNativeAPI.cpp',
+        'src/CommNativeAPI.cpp',
+        'src/ResourceNativeAPI.cpp'
        ],
       'link_settings': {
         'libraries': [

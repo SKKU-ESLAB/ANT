@@ -33,24 +33,27 @@ public:
   static void registerResource(Resource *resource);
   static Resource *findLocalResource(std::string &uri);
 
-  static void sendPost(Resource* sender, std::string &targetUri,
-                       std::string &body, ResourceResponseCallback callback);
-  static void sendGet(Resource* sender, std::string &targetUri,
+  static int sendPost(std::string &senderUri, std::string &targetUri,
                       std::string &body, ResourceResponseCallback callback);
-  static void sendPut(Resource* sender, std::string &targetUri,
-                      std::string &body, ResourceResponseCallback callback);
-  static void sendDelete(Resource* sender, std::string &targetUri,
-                         std::string &body, ResourceResponseCallback callback);
+  static int sendGet(std::string &senderUri, std::string &targetUri,
+                     std::string &body, ResourceResponseCallback callback);
+  static int sendPut(std::string &senderUri, std::string &targetUri,
+                     std::string &body, ResourceResponseCallback callback);
+  static int sendDelete(std::string &senderUri, std::string &targetUri,
+                        std::string &body, ResourceResponseCallback callback);
 
-  static void sendDiscover(Resource* sender, std::string &targetUri,
+  static int sendDiscover(std::string &senderUri, std::string &targetUri,
+                          std::string &body, ResourceResponseCallback callback);
+  static int sendSubscribe(std::string &senderUri, std::string &targetUri,
                            std::string &body,
                            ResourceResponseCallback callback);
-  static void sendSubscribe(Resource* sender, std::string &targetUri,
-                            std::string &body,
-                            ResourceResponseCallback callback);
-  static void sendUnsubscribe(Resource* sender, std::string &targetUri,
-                              std::string &body,
-                              ResourceResponseCallback callback);
+  static int sendUnsubscribe(std::string &senderUri, std::string &targetUri,
+                             std::string &body,
+                             ResourceResponseCallback callback);
+
+  static int sendRequest(ResourceOperationType::Value opType,
+                         std::string &senderUri, std::string &targetUri,
+                         std::string &body, ResourceResponseCallback callback);
 
 private:
 };
