@@ -49,13 +49,6 @@ sudo apt-get -y install g++-4.8 wiringpi libdbus-1-dev glib-2.0 bison byacc   \
   gstreamer1.0-plugins-bad gstreamer1.0-plugins-ugly gstreamer1.0-libav       \
   gstreamer1.0-doc gstreamer1.0-tools libgstreamer-plugins-base1.0-dev
 
-## Caffe Library Dependency
-#sudo apt-get -y install libprotobuf-dev libleveldb-dev libsnappy-dev          \
-#  libhdf5-serial-dev protobuf-compiler libatlas-base-dev libopenblas-dev      \
-#  libgflags-dev libgoogle-glog-dev liblmdb-dev python-numpy python-scipy      \
-#  python-yaml python-six python-pip
-#sudo apt-get -y install --no-install-recommends libboost-all-dev
-
 # Get the absolute path of ANT repository directory
 ANT_REPO_DIR=$(dirname "$0")/../..
 eval ANT_REPO_DIR=`readlink --canonicalize ${ANT_REPO_DIR}`
@@ -110,37 +103,24 @@ sudo cp ${ANT_REPO_DIR}/dep/hostap/wpa_supplicant/wpa_cli /usr/bin/ant-deps/
 sudo cp ${ANT_REPO_DIR}/dep/deletesem/deletesem /usr/bin/ant-deps/
 sudo chmod +x /usr/bin/ant-deps/*
 
-# Step 9. Install nodejs-4.x package
-#print_progress 9 "Install nodejs-4.x package..."
-#curl -sL https://deb.nodesource.com/setup_4.x | sudo -E bash -
-#sudo apt-get -y install nodejs
+# Step 9. Install nan, node-gyp package
+print_progress 10 "Install nan, node-gyp package..."
+cd ${ANT_REPO_DIR}
+npm install nan
+sudo npm install -g node-gyp
 
-# Step 10. Install nan, node-gyp package
-#print_progress 10 "Install nan, node-gyp package..."
-#cd ${ANT_REPO_DIR}
-#npm install nan
-#sudo npm install -g node-gyp
-
-# Step 11. Install Gstreamer RPI camera source element
+# Step 10. Install Gstreamer RPI camera source element
 cd ${ANT_REPO_DIR}/dep/gst-rpicamsrc
 ./autogen.sh --prefix=/usr --libdir=/usr/lib/arm-linux-gnueabihf/
 make -j4
 sudo make install
 
-# Step 12. Install Caffe Framework
-#cd ${ANT_REPO_DIR}/dep/caffe
-#cp Makefile.config.rpi Makefile.config
-#make -j4 all distribute
-#
-#sudo cp -a distribute/lib/libcaffe.so* /usr/lib
-#sudo cp -r distribute/include/caffe/ /usr/include
-
-# Install ComputeLibrary
+# Step 11. Install Arm Compute Library
 cd ${ANT_REPO_DIR}/dep/ComputeLibrary
 sudo cp build/libarm_compute*.so /usr/lib
 sudo cp -r arm_compute /usr/include/
 
-# Step 13. Install FANN Library
+# Step 12. Install FANN Library
 cd ${ANT_REPO_DIR}/dep/fann
 mkdir build
 cd build
