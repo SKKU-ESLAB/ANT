@@ -5,6 +5,7 @@
 # Copyright (c) 2017 SKKU ESLAB, and contributors. All rights reserved.
 #
 # Contributor: Gyeonghwan Hong<redcarrottt@gmail.com>
+#              Hayun Lee<lhy920806@gmail.com>
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -43,17 +44,10 @@ sudo apt-get update
 sudo apt-get -y install g++-4.8 wiringpi libdbus-1-dev glib-2.0 bison byacc   \
   libdbus-glib-1-2 libdbus-glib-1-dev zip sqlite3 libsqlite3-dev cmake git    \
   libgtk2.0-dev pkg-config automake libtool libssl-dev libnl-3-dev python3    \
-  libnl-genl-3-dev udhcpd libopencv-dev libxml2-dev curl                      \
+  libnl-genl-3-dev udhcpd libopencv-dev libxml2-dev curl nodejs npm           \
   libgstreamer1.0-dev gstreamer1.0-plugins-base gstreamer1.0-plugins-good     \
   gstreamer1.0-plugins-bad gstreamer1.0-plugins-ugly gstreamer1.0-libav       \
   gstreamer1.0-doc gstreamer1.0-tools libgstreamer-plugins-base1.0-dev
-
-## Caffe Library Dependency
-sudo apt-get -y install libprotobuf-dev libleveldb-dev libsnappy-dev          \
-  libhdf5-serial-dev protobuf-compiler libatlas-base-dev libopenblas-dev      \
-  libgflags-dev libgoogle-glog-dev liblmdb-dev python-numpy python-scipy      \
-  python-yaml python-six python-pip
-sudo apt-get -y install --no-install-recommends libboost-all-dev
 
 # Get the absolute path of ANT repository directory
 ANT_REPO_DIR=$(dirname "$0")/../..
@@ -109,32 +103,24 @@ sudo cp ${ANT_REPO_DIR}/dep/hostap/wpa_supplicant/wpa_cli /usr/bin/ant-deps/
 sudo cp ${ANT_REPO_DIR}/dep/deletesem/deletesem /usr/bin/ant-deps/
 sudo chmod +x /usr/bin/ant-deps/*
 
-# Step 9. Install nodejs-4.x package
-print_progress 9 "Install nodejs-4.x package..."
-curl -sL https://deb.nodesource.com/setup_4.x | sudo -E bash -
-sudo apt-get -y install nodejs
-
-# Step 10. Install nan, node-gyp package
+# Step 9. Install nan, node-gyp package
 print_progress 10 "Install nan, node-gyp package..."
 cd ${ANT_REPO_DIR}
 npm install nan
 sudo npm install -g node-gyp
 
-# Step 11. Install Gstreamer RPI camera source element
+# Step 10. Install Gstreamer RPI camera source element
 cd ${ANT_REPO_DIR}/dep/gst-rpicamsrc
 ./autogen.sh --prefix=/usr --libdir=/usr/lib/arm-linux-gnueabihf/
 make -j4
 sudo make install
 
-# Step 12. Install Caffe Framework
-cd ${ANT_REPO_DIR}/dep/caffe
-cp Makefile.config.rpi Makefile.config
-make -j4 all distribute
+# Step 11. Install Arm Compute Library
+cd ${ANT_REPO_DIR}/dep/ComputeLibrary
+sudo cp build/libarm_compute*.so /usr/lib
+sudo cp -r arm_compute /usr/include/
 
-sudo cp -a distribute/lib/libcaffe.so* /usr/lib
-sudo cp -r distribute/include/caffe/ /usr/include
-
-# Step 13. Install FANN Library
+# Step 12. Install FANN Library
 cd ${ANT_REPO_DIR}/dep/fann
 mkdir build
 cd build
