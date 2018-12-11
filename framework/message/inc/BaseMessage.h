@@ -37,23 +37,25 @@
 class MessageFactory;
 
 class BaseMessagePayload {
-  public:
-    // encoding to JSON
-    virtual cJSON* toJSON() = 0;
+public:
+  // encoding to JSON
+  virtual cJSON *toJSON() = 0;
 };
 
 // Use namespace + enum for readability
 namespace BaseMessageType {
-  enum Value {
-    NotDetermined = 0,
-    AppCore = 10,
-    AppCoreAck = 11,
-    App = 20,
-    AppAck = 21,
-    Companion = 30,
-    ML = 40,
-    MLAck = 41
-  };
+enum Value {
+  NotDetermined = 0,
+  AppCore = 10,
+  AppCoreAck = 11,
+  App = 20,
+  AppAck = 21,
+  Companion = 30,
+  ML = 40,
+  MLAck = 41,
+  ResourceRequest = 100,
+  ResourceResponse = 101
+};
 }
 
 #define BASE_MESSAGE_KEY_MESSAGE_NUM "messageId"
@@ -68,74 +70,69 @@ namespace BaseMessageType {
 // - Decoding(makeFromJSON): C++, Java
 // - Encoding(make, toJSON): C++, Java
 class BaseMessage {
-  public:
-    friend class MessageFactory;
+public:
+  friend class MessageFactory;
 
-    // File attachment
-    // Attached file will be transferred to target or be received from target
-    // in each Channel.
-    // Some Channel can refuse to transfer it due to its capability.
-    // ex. CommChannel and LocalChnanel can handle attached file, but
-    //     DbusChannel cannot.
-    
-    // Attach file on message to be sent
-    BaseMessage* attachFile(std::string filePath);
+  // File attachment
+  // Attached file will be transferred to target or be received from target
+  // in each Channel.
+  // Some Channel can refuse to transfer it due to its capability.
+  // ex. CommChannel and LocalChnanel can handle attached file, but
+  //     DbusChannel cannot.
 
-    // Set local file path when attached file has came
-    BaseMessage* setStoredFilePath(std::string storedFilePath) {
-      this->mStoredFilePath = storedFilePath;
-      return this;
-    }
-    std::string& getStoredFilePath() {
-      return this->mStoredFilePath;
-    }
+  // Attach file on message to be sent
+  BaseMessage *attachFile(std::string filePath);
 
-    // encoding to JSON
-    cJSON* toJSON();
-    char* toJSONString() {
-      cJSON* jsonObj = this->toJSON();
-      return cJSON_Print(jsonObj);
-    }
+  // Set local file path when attached file has came
+  BaseMessage *setStoredFilePath(std::string storedFilePath) {
+    this->mStoredFilePath = storedFilePath;
+    return this;
+  }
+  std::string &getStoredFilePath() { return this->mStoredFilePath; }
 
-    // Get parameters
-    int getMessageId() { return this->mMessageId; }
-    std::string& getSenderUri() { return this->mSenderUri; }
-    std::string& getUri() { return this->mUri; }
-    BaseMessageType::Value getType() { return this->mType; }
-    bool isFileAttached() { return this->mIsFileAttached; }
-    std::string& getFileName() { return this->mFileName; }
+  // encoding to JSON
+  cJSON *toJSON();
+  char *toJSONString() {
+    cJSON *jsonObj = this->toJSON();
+    return cJSON_Print(jsonObj);
+  }
 
-    // Payload
-    void setPayload(BaseMessagePayload* payload) { this->mPayload = payload; }
-    BaseMessagePayload* getPayload() { return this->mPayload; }
+  // Get parameters
+  int getMessageId() { return this->mMessageId; }
+  std::string &getSenderUri() { return this->mSenderUri; }
+  std::string &getUri() { return this->mUri; }
+  BaseMessageType::Value getType() { return this->mType; }
+  bool isFileAttached() { return this->mIsFileAttached; }
+  std::string &getFileName() { return this->mFileName; }
 
-  protected:
-    BaseMessage(int messageId, std::string senderUri, std::string uri,
-        BaseMessageType::Value type,
-        bool isFileAttached, std::string fileName)
+  // Payload
+  void setPayload(BaseMessagePayload *payload) { this->mPayload = payload; }
+  BaseMessagePayload *getPayload() { return this->mPayload; }
+
+protected:
+  BaseMessage(int messageId, std::string senderUri, std::string uri,
+              BaseMessageType::Value type, bool isFileAttached,
+              std::string fileName)
       : mMessageId(messageId), mSenderUri(senderUri), mUri(uri), mType(type),
-      mIsFileAttached(isFileAttached), mFileName(fileName),
-      mStoredFilePath("") {
-    }
-    BaseMessage(int messageId, std::string senderUri, std::string uri,
-        BaseMessageType::Value type)
+        mIsFileAttached(isFileAttached), mFileName(fileName),
+        mStoredFilePath("") {}
+  BaseMessage(int messageId, std::string senderUri, std::string uri,
+              BaseMessageType::Value type)
       : mMessageId(messageId), mSenderUri(senderUri), mUri(uri), mType(type),
-      mIsFileAttached(false), mFileName(""),
-      mStoredFilePath("") {
-    }
+        mIsFileAttached(false), mFileName(""), mStoredFilePath("") {}
 
-    // JSON-exported values
-    int mMessageId;
-    std::string mSenderUri;
-    std::string mUri;
-    BaseMessageType::Value mType;
-    bool mIsFileAttached;
-    std::string mFileName;
-    BaseMessagePayload* mPayload;
+  // JSON-exported values
+  int mMessageId;
+  std::string mSenderUri;
+  std::string mUri;
+  BaseMessageType::Value mType;
+  bool mIsFileAttached;
+  std::string mFileName;
+  BaseMessagePayload *mPayload;
 
-    // Internal value
-    // StoreFilePath: the local storage path of attached file
-    std::string mStoredFilePath;
+  // Internal value
+  // StoreFilePath: the local storage path of attached file
+  std::string mStoredFilePath;
 };
 
 #endif // !defined(__BASE_MESSAGE_H__)
