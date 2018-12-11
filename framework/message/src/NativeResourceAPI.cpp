@@ -39,54 +39,57 @@ Resource *NativeResourceAPI::findLocalResource(std::string &uri) {
   return LocalResourceManager::singleton()->findLocalResource(uri);
 }
 
-void NativeResourceAPI::sendPost(Resource *sender, std::string &targetUri,
-                                 std::string &body,
-                                 ResourceResponseCallback callback) {
-  BaseMessage *message = MessageFactory::makeResourceRequest(
-      sender->getUri(), targetUri, ResourceOperationType::POST, body);
-  LocalResourceManager::singleton()->sendRequest(message, callback);
-}
-void NativeResourceAPI::sendGet(Resource *sender, std::string &targetUri,
+int NativeResourceAPI::sendPost(std::string &senderUri, std::string &targetUri,
                                 std::string &body,
                                 ResourceResponseCallback callback) {
-  BaseMessage *message = MessageFactory::makeResourceRequest(
-      sender->getUri(), targetUri, ResourceOperationType::GET, body);
-  LocalResourceManager::singleton()->sendRequest(message, callback);
+  return NativeResourceAPI::sendRequest(ResourceOperationType::POST, senderUri,
+                                        targetUri, body, callback);
 }
-void NativeResourceAPI::sendPut(Resource *sender, std::string &targetUri,
-                                std::string &body,
-                                ResourceResponseCallback callback) {
-  BaseMessage *message = MessageFactory::makeResourceRequest(
-      sender->getUri(), targetUri, ResourceOperationType::PUT, body);
-  LocalResourceManager::singleton()->sendRequest(message, callback);
+int NativeResourceAPI::sendGet(std::string &senderUri, std::string &targetUri,
+                               std::string &body,
+                               ResourceResponseCallback callback) {
+  return NativeResourceAPI::sendRequest(ResourceOperationType::GET, senderUri,
+                                        targetUri, body, callback);
 }
-void NativeResourceAPI::sendDelete(Resource *sender, std::string &targetUri,
-                                   std::string &body,
-                                   ResourceResponseCallback callback) {
-  BaseMessage *message = MessageFactory::makeResourceRequest(
-      sender->getUri(), targetUri, ResourceOperationType::DELETE, body);
-  LocalResourceManager::singleton()->sendRequest(message, callback);
+int NativeResourceAPI::sendPut(std::string &senderUri, std::string &targetUri,
+                               std::string &body,
+                               ResourceResponseCallback callback) {
+  return NativeResourceAPI::sendRequest(ResourceOperationType::PUT, senderUri,
+                                        targetUri, body, callback);
+}
+int NativeResourceAPI::sendDelete(std::string &senderUri,
+                                  std::string &targetUri, std::string &body,
+                                  ResourceResponseCallback callback) {
+  return NativeResourceAPI::sendRequest(ResourceOperationType::DELETE,
+                                        senderUri, targetUri, body, callback);
 }
 
-void NativeResourceAPI::sendDiscover(Resource *sender, std::string &targetUri,
-                                     std::string &body,
+int NativeResourceAPI::sendDiscover(std::string &senderUri,
+                                    std::string &targetUri, std::string &body,
+                                    ResourceResponseCallback callback) {
+  return NativeResourceAPI::sendRequest(ResourceOperationType::DISCOVER,
+                                        senderUri, targetUri, body, callback);
+}
+int NativeResourceAPI::sendSubscribe(std::string &senderUri,
+                                     std::string &targetUri, std::string &body,
                                      ResourceResponseCallback callback) {
-  BaseMessage *message = MessageFactory::makeResourceRequest(
-      sender->getUri(), targetUri, ResourceOperationType::DISCOVER, body);
-  LocalResourceManager::singleton()->sendRequest(message, callback);
+  return NativeResourceAPI::sendRequest(ResourceOperationType::SUBSCRIBE,
+                                        senderUri, targetUri, body, callback);
 }
-void NativeResourceAPI::sendSubscribe(Resource *sender, std::string &targetUri,
-                                      std::string &body,
-                                      ResourceResponseCallback callback) {
-  BaseMessage *message = MessageFactory::makeResourceRequest(
-      sender->getUri(), targetUri, ResourceOperationType::SUBSCRIBE, body);
-  LocalResourceManager::singleton()->sendRequest(message, callback);
+int NativeResourceAPI::sendUnsubscribe(std::string &senderUri,
+                                       std::string &targetUri,
+                                       std::string &body,
+                                       ResourceResponseCallback callback) {
+  return NativeResourceAPI::sendRequest(ResourceOperationType::UNSUBSCRIBE,
+                                        senderUri, targetUri, body, callback);
 }
-void NativeResourceAPI::sendUnsubscribe(Resource *sender,
-                                        std::string &targetUri,
-                                        std::string &body,
-                                        ResourceResponseCallback callback) {
-  BaseMessage *message = MessageFactory::makeResourceRequest(
-      sender->getUri(), targetUri, ResourceOperationType::UNSUBSCRIBE, body);
+
+int NativeResourceAPI::sendRequest(ResourceOperationType::Value opType,
+                                   std::string &senderUri,
+                                   std::string &targetUri, std::string &body,
+                                   ResourceResponseCallback callback) {
+  BaseMessage *message =
+      MessageFactory::makeResourceRequest(senderUri, targetUri, opType, body);
   LocalResourceManager::singleton()->sendRequest(message, callback);
+  return message->getMessageId();
 }

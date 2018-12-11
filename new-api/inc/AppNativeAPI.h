@@ -1,4 +1,4 @@
-/* Copyright (c) 2017-2018 SKKU ESLAB, and contributors. All rights reserved.
+/* Copyright (c) 2017 SKKU ESLAB, and contributors. All rights reserved.
  *
  * Contributor: Gyeonghwan Hong<redcarrottt@gmail.com>
  *
@@ -22,8 +22,6 @@
 
 using namespace v8;
 
-void CreateAppNativeAPIObject(const FunctionCallbackInfo<Value>& args);
-
 // How to create this object: antAPI.app();
 class AppNativeAPI
 : public node::ObjectWrap {
@@ -46,6 +44,7 @@ class AppNativeAPI
     // Constructor 2
     static void New(const FunctionCallbackInfo<Value>& args);
 
+    // Member functions
     static void appReady(const FunctionCallbackInfo<Value>& args);
     static void onLaunch(const FunctionCallbackInfo<Value>& args);
     static void onTermination(const FunctionCallbackInfo<Value>& args);
