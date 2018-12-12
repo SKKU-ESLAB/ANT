@@ -73,8 +73,8 @@ bool DNNInferenceRunner::initClassifier() {
   std::cout << data_path << std::endl;
   printf("%s\n", const_cast<char*>(label_option.c_str()));
 
-  char *argv[] = {"/etc/ant/bin/run_ant", const_cast<char*>(label_option.c_str()), NULL};
-  int argc = 2;
+  char *argv[] = {"/etc/ant/bin/run_ant", const_cast<char*>(label_option.c_str()), "--target=CL", NULL};
+  int argc = 3;
 
   // Parse  arguments
   mCmdParser.parse(argc, argv);
@@ -99,7 +99,7 @@ bool DNNInferenceRunner::initClassifier() {
   std::unique_ptr<IPreprocessor> preprocessor = arm_compute::support::cpp14::make_unique<CaffePreproccessor>(mean_rgb);
 
   // Create input descriptor
-  const TensorShape tensor_shape = permute_shape(TensorShape(227U, 227U, 3U, 1U), DataLayout::NCHW, mCommonParams.data_layout);
+  const TensorShape tensor_shape = permute_shape(TensorShape(ALEXNET_WIDTH, ALEXNET_HEIGHT, 3U, 1U), DataLayout::NCHW, mCommonParams.data_layout);
   TensorDescriptor input_descriptor = TensorDescriptor(tensor_shape, mCommonParams.data_type).set_layout(mCommonParams.data_layout);
 
   // Set weights trained layout
@@ -294,8 +294,8 @@ bool ShmAccessor::access_tensor(ITensor &tensor)
   memcpy(_runner->getFrame(), _runner->getShmPtr(), _runner->getBufferSize());
   sem_post(_runner->getSem());
 
-  unsigned int _width = 227;
-  unsigned int _height = 227;
+  unsigned int _width = ALEXNET_WIDTH;
+  unsigned int _height = ALEXNET_HEIGHT;
 
   const DataLayout data_layout = tensor.info()->data_layout();
   const TensorShape tensor_shape = tensor.info()->tensor_shape();
@@ -328,44 +328,51 @@ bool ShmAccessor::access_tensor(ITensor &tensor)
   bool bgr = _bgr;
   _feeder = support::cpp14::make_unique<MemoryImageFeeder>(_runner->getFrame());
 
-  execute_window_loop(window, [&](const Coordinates & id)
-  {
-    red   = _feeder->get();
-    green = _feeder->get();
-    blue  = _feeder->get();
-
-    switch(tensor.info()->data_type())
+  if (bgr) {
+    execute_window_loop(window, [&](const Coordinates & id)
     {
-      case DataType::U8:
+      red   = _feeder->get();
+      green = _feeder->get();
+      blue  = _feeder->get();
+
+      switch(tensor.info()->data_type())
       {
-        *(out.ptr() + 0 * stride_z) = bgr ? blue : red;
-        *(out.ptr() + 1 * stride_z) = green;
-        *(out.ptr() + 2 * stride_z) = bgr ? red : blue;
-        break;
+        case DataType::U8:
+        {
+          *(out.ptr() + 0 * stride_z) = blue;
+          *(out.ptr() + 1 * stride_z) = green;
+          *(out.ptr() + 2 * stride_z) = red;
+          break;
+        }
+        case DataType::F32:
+        {
+          *reinterpret_cast<float *>(out.ptr() + 0 * stride_z) = static_cast<float>(blue) - 104.01f;
+          *reinterpret_cast<float *>(out.ptr() + 1 * stride_z) = static_cast<float>(green) - 116.67f;
+          *reinterpret_cast<float *>(out.ptr() + 2 * stride_z) = static_cast<float>(red) - 122.68f;
+          break;
+        }
+        default:
+        {
+          ARM_COMPUTE_ERROR("Unsupported data type");
+        }
       }
-      case DataType::F32:
-      {
-        *reinterpret_cast<float *>(out.ptr() + 0 * stride_z) = static_cast<float>(bgr ? blue : red);
-        *reinterpret_cast<float *>(out.ptr() + 1 * stride_z) = static_cast<float>(green);
-        *reinterpret_cast<float *>(out.ptr() + 2 * stride_z) = static_cast<float>(bgr ? red : blue);
-        break;
-      }
-      default:
-      {
-        ARM_COMPUTE_ERROR("Unsupported data type");
-      }
-    }
-  },
-  out);
+    },
+    out);
+  }
+  else {
+    ANT_DBG_ERR("Currently RGB is not supported");
+  }
 
   _feeder = nullptr;
 
   unmap(tensor);
 
+  /*
   if (_preprocessor)
   {
     _preprocessor->preprocess(tensor);
   }
+  */
 
   return true;
 }
