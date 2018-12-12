@@ -124,7 +124,7 @@ void CommNativeAPI::sendToCompanion(const FunctionCallbackInfo<Value>& args) {
   data = dataStr.c_str();
 
   // Send CompanionMessage.SendToCompanion
-  gAppBase->sendToCompanion(listenerName, data);
+  AppBase::singleton()->sendToCompanion(listenerName, data);
 
   ANT_DBG_VERB("Send data to companion(%s): %s\n", listenerName, data);
   return;

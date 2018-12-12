@@ -130,5 +130,5 @@ void MLNativeAPI::RunModel(const FunctionCallbackInfo<Value>& args) {
   // Get argument 1
   callback = Local<Function>::Cast(args[1]);
 
-  gAppBase->runModel(modelName, callback);
+  AppBase::singleton()->runModel(modelName, callback);
 }

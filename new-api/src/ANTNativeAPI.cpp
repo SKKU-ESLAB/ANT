@@ -36,16 +36,9 @@ using namespace v8;
 #define getV8String(isolate, cstr)                                             \
   (String::NewFromOneByte(isolate, (const uint8_t *)cstr))
 
-AppBase *gAppBase = NULL;
-
 void initAppBase() {
-  if (gAppBase != NULL) {
-    printf("AppBase is already initialized!");
-    return;
-  }
-
-  gAppBase = new AppBase();
-  gAppBase->run();
+  AppBase* appBase = AppBase::singleton();
+  appBase->run();
 }
 
 // antnative Object

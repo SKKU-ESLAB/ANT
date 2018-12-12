@@ -155,8 +155,8 @@ void ResourceNativeAPI::sendUnsubscribe(
   ResourceNativeAPI::sendRequest(ResourceOperationType::UNSUBSCRIBE, args);
 }
 
-static void sendRequest(ResourceOperationType::Value opType,
-                        const FunctionCallbackInfo<Value> &args) {
+void ResourceNativeAPI::sendRequest(ResourceOperationType::Value opType,
+                                    const FunctionCallbackInfo<Value> &args) {
   Isolate *isolate = Isolate::GetCurrent();
   HandleScope scope(isolate);
 
@@ -175,19 +175,25 @@ static void sendRequest(ResourceOperationType::Value opType,
   }
 
   // Get argument 0~3
-  senderUri.assign(*(args[0]->ToString()));
-  targetUri.assign(*(args[1]->ToString()));
-  body.assign(*(args[2]->ToString()));
+  v8::String::Utf8Value senderUriV8(args[0]->ToString());
+  senderUri = std::string(*senderUriV8);
+  v8::String::Utf8Value targetUriV8(args[1]->ToString());
+  targetUri = std::string(*targetUriV8);
+  v8::String::Utf8Value bodyV8(args[2]->ToString());
+  body = std::string(*bodyV8);
   responseJSCallback = Local<Function>::Cast(args[3]);
 
   // Send request
-  NativeResourceAPI::sendRequest(opType, senderUri, targetUri, body, );
+  NativeResourceAPI::sendRequest(
+      opType, senderUri, targetUri, body,
+      ResourceCallbackManager::resourceResponseCallback);
   // Register response callback
 
   return;
 }
 
-void addJSCallback(int requestId, Local<Function> responseJSCallback) {
+void ResourceCallbackManager::addJSCallback(
+    int requestId, Local<Function> responseJSCallback) {
   // TODO:
 }
 
