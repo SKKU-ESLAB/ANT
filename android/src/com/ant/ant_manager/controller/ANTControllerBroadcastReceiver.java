@@ -28,7 +28,7 @@ import com.ant.ant_manager.model.message.params.ParamFileListEntry;
 
 abstract public class ANTControllerBroadcastReceiver extends BroadcastReceiver {
     private static final String TAG = "ANTControllerBroadcastReceiver";
-    public static final String ACTION = "com.ant.controller.broadcastreceiver";
+    public static final String ACTION = "com.ant.ant_manager.controller.broadcastreceiver";
     public static final String KEY_EVENT_TYPE = "eventType";
 
     public static final String EVENT_TYPE_ON_COMM_CHANNEL_STATE_CHANGED =

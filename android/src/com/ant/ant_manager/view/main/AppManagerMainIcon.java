@@ -28,7 +28,7 @@ import com.ant.ant_manager.view.MainActivity;
 public class AppManagerMainIcon extends MainIcon {
     public AppManagerMainIcon(MainActivity ownerActivity) {
         super(ownerActivity, "Apps", BitmapFactory.decodeResource(ownerActivity
-                .getResources(), R.drawable.icon_app_manager));
+                .getResources(), R.drawable.icon_app_manager), -1);
     }
 
     @Override

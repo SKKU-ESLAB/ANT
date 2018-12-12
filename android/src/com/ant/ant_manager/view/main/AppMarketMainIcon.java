@@ -31,7 +31,7 @@ public class AppMarketMainIcon extends MainIcon {
 
     public AppMarketMainIcon(MainActivity ownerActivity) {
         super(ownerActivity, "Market", BitmapFactory.decodeResource(ownerActivity
-                .getResources(), R.drawable.market));
+                .getResources(), R.drawable.market), -1);
     }
 
     @Override

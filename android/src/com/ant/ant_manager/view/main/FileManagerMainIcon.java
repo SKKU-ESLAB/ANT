@@ -28,7 +28,7 @@ import com.ant.ant_manager.view.MainActivity;
 public class FileManagerMainIcon extends MainIcon {
     public FileManagerMainIcon(MainActivity ownerActivity) {
         super(ownerActivity, "Files", BitmapFactory.decodeResource(ownerActivity
-                .getResources(), R.drawable.filemanager));
+                .getResources(), R.drawable.filemanager), -1);
     }
 
     @Override
