@@ -133,8 +133,6 @@ void DbusChannel::sendRawStringToTarget(const char* rawString, const char* attac
     return;
   }
 
-  ANT_DBG_VERB("(%d) Dbus send %s", getpid(), rawString);	
-
   dbus_connection_send(this->mDbusConnection, dbusMessage, NULL);
   dbus_message_unref(dbusMessage);
 }
@@ -213,8 +211,6 @@ DBusHandlerResult DbusChannel::onReceivedDbusMessage(DBusConnection* connection,
   if(attachedFilePath != NULL && strlen(attachedFilePath) > 0) {
     message->attachFile(attachedFilePath);
   }
-
-  ANT_DBG_VERB("(pid=%d) Received rawMessage from DbusChannel: %s", getpid(), rawString);
 
   // Route message to the target of the ANT message
   self->mMessageRouter->routeMessage(self, message);

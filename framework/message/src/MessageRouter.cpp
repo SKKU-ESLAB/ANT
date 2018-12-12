@@ -92,9 +92,6 @@ void MessageRouter::routeMessage(Channel* originalChannel, BaseMessage* message)
 
   // If the message did not routed at all, make a warning message
   if(targetChannel != NULL) {
-    ANT_DBG_VERB("(pid=%d) Route to %s(%s), %s",
-        (int)getpid(), uriString.c_str(),
-        targetChannel->getName().c_str(), message->toJSONString());
     targetChannel->routeMessage(message);
   }
 }
