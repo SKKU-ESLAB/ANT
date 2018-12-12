@@ -265,9 +265,6 @@ int CommChannel::getIpAddress(const char* interfaceName, char* ipAddr) {
 void DataPortsListener::onReceivedRawMessage(std::string messageData,
     std::string filePath) {
   // Raw message from default port or largedata port
-  ANT_DBG_VERB("Received raw message from CommChannel: %s / %s",
-      messageData.c_str(), filePath.c_str());
-
   // Parse rawString into base message
   BaseMessage* message = MessageFactory::makeMessageFromJSONString(
       messageData.c_str());

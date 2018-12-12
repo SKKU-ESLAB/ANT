@@ -19,9 +19,6 @@
 [submodule "dep/fann"]
 	path = dep/fann
 	url = https://github.com/libfann/fann.git
-[submodule "dep/caffe"]
-	path = dep/caffe
-	url = https://github.com/SKKU-ESLAB/caffe.git
 [submodule "android/libs/armeabi"]
   path = android/libs/armeabi
   url = https://github.com/SKKU-ESLAB/ant-android-libs-armeabi.git
