@@ -2,10 +2,9 @@
 #
 ##########################################################################
 #
-# Copyright (c) 2017-2018 SKKU ESLAB, and contributors. All rights reserved.
+# Copyright (c) 2017 SKKU ESLAB, and contributors. All rights reserved.
 #
 # Contributor: Gyeonghwan Hong<redcarrottt@gmail.com>
-#              Hayun Lee<lhy920806@gmail.com>
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -47,7 +46,7 @@ sudo apt-get -y install libdbus-1-dev libglib2.0-dev bison byacc          \
   libnl-genl-3-dev udhcpd libopencv-dev libxml2-dev                       \
   libgstreamer1.0-dev gstreamer1.0-plugins-base gstreamer1.0-plugins-good \
   gstreamer1.0-plugins-bad gstreamer1.0-plugins-ugly gstreamer1.0-libav   \
-  gstreamer1.0-tools libgstreamer-plugins-base1.0-dev gstreamer1.0-opencv scons
+  gstreamer1.0-tools libgstreamer-plugins-base1.0-dev scons
 # glib-2.0
 
 ## Caffe Library Dependency
@@ -111,34 +110,20 @@ sudo cp ${ANT_REPO_DIR}/dep/hostap/wpa_supplicant/wpa_cli /usr/bin/ant-deps/
 sudo cp ${ANT_REPO_DIR}/dep/deletesem/deletesem /usr/bin/ant-deps/
 sudo chmod +x /usr/bin/ant-deps/*
 
-# Step 9. Install nodejs-4.x package
-#print_progress 9 "Install nodejs-4.x package..."
-#curl -sL https://deb.nodesource.com/setup_4.x | sudo -E bash -
-#sudo apt-get -y install nodejs
+# Install wiringPi for Odroid XU4
+cd ${ANT_REPO_DIR}/dep
+git clone https://github.com/hardkernel/wiringPi
+cd wiringPi
+sudo ./build
 
 # Step 10. Install nan, node-gyp package
-#print_progress 10 "Install nan, node-gyp package..."
-#cd ${ANT_REPO_DIR}
-#npm install nan
-#sudo npm install -g node-gyp
-
-# Step 11. Install Gstreamer RPI camera source element
-#cd ${ANT_REPO_DIR}/dep/gst-rpicamsrc
-#./autogen.sh --prefix=/usr --libdir=/usr/lib/arm-linux-gnueabihf/
-#make -j4
-#sudo make install
-
-# Step 12. Install Caffe Framework
-#cd ${ANT_REPO_DIR}/dep/caffe
-#cp Makefile.config.rpi Makefile.config
-#make -j4 all distribute
-
-#sudo cp -a distribute/lib/libcaffe.so* /usr/lib
-#sudo cp -r distribute/include/caffe/ /usr/include
+print_progress 10 "Install nan, node-gyp package..."
+cd ${ANT_REPO_DIR}
+npm install nan
+sudo npm install -g node-gyp
 
 # Install ComputeLibrary
 cd ${ANT_REPO_DIR}/dep/ComputeLibrary
-sudo cp build/libarm_compute*.so /usr/lib
 sudo cp -r arm_compute /usr/include/
 
 # Step 13. Install FANN Library
