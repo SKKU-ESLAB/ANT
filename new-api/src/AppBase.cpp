@@ -30,6 +30,8 @@
 
 #define PATH_BUFFER_SIZE 1024
 
+AppBase* AppBase::sSingleton = NULL;
+
 // Static variables
 OnLaunchJSAsync *OnLaunchJSAsync::sSingleton;
 OnTerminateJSAsync *OnTerminateJSAsync::sSingleton;
