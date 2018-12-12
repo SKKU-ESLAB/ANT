@@ -3,8 +3,8 @@
     {
       'target_name': 'antnative',
       'sources': [
-        'src/AppBase.cpp',
         'src/ANTNativeAPI.cpp',
+        'src/AppBase.cpp',
         'src/AppNativeAPI.cpp',
         'src/MLNativeAPI.cpp',
         'src/CommNativeAPI.cpp',

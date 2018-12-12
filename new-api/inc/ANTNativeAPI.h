@@ -20,6 +20,4 @@
 
 #include "AppBase.h"
 
-extern AppBase* gAppBase;
-
 #endif // !defined(__ANT_NATIVE_API_H__)

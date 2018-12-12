@@ -113,7 +113,7 @@ void AppNativeAPI::appReady(const FunctionCallbackInfo<Value> &args) {
   }
 
   // App ready
-  gAppBase->appReady();
+  AppBase::singleton()->appReady();
 
   return;
 }
@@ -137,7 +137,7 @@ void AppNativeAPI::onLaunch(const FunctionCallbackInfo<Value> &args) {
   onLaunchCallback = Local<Function>::Cast(args[0]);
 
   // Register onTerminate callback
-  gAppBase->setOnLaunch(onLaunchCallback);
+  AppBase::singleton()->setOnLaunch(onLaunchCallback);
 
   return;
 }
@@ -161,7 +161,7 @@ void AppNativeAPI::onTermination(const FunctionCallbackInfo<Value> &args) {
   onTerminateCallback = Local<Function>::Cast(args[0]);
 
   // Register onTerminate callback
-  gAppBase->setOnTerminate(onTerminateCallback);
+  AppBase::singleton()->setOnTerminate(onTerminateCallback);
 
   return;
 }

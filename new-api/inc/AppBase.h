@@ -39,7 +39,13 @@ public:
   friend class OnTerminateJSAsync;
   friend class OnUpdateAppConfigJSAsync;
 
-  AppBase() : mAppId(-1) {}
+  static AppBase *singleton() {
+    if(sSingleton == NULL) {
+      sSingleton = new AppBase();
+    }
+    return sSingleton;
+  }
+
   ~AppBase() {
     if (this->mMessageRouter != NULL)
       delete this->mMessageRouter;
@@ -78,6 +84,9 @@ public:
   void onRunModelAsyncHandler(uv_async_t *handle);
 
 protected:
+  static AppBase *sSingleton;
+  AppBase() : mAppId(-1) {}
+
   // App ID
   int mAppId;
 
