@@ -26,7 +26,7 @@ public class LargeDataTestMainIcon extends MainIcon {
 
     public LargeDataTestMainIcon(MainActivity ownerActivity) {
         super(ownerActivity, "Test LDPort", BitmapFactory.decodeResource(ownerActivity
-                .getResources(), R.drawable.connect));
+                .getResources(), R.drawable.connect), -1);
     }
 
     @Override

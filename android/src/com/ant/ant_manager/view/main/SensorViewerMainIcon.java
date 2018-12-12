@@ -25,12 +25,9 @@ import com.ant.ant_manager.view.SensorViewerActivity;
  * limitations under the License.
  */
 public class SensorViewerMainIcon extends MainIcon {
-    private int mAppId;
-
     public SensorViewerMainIcon(MainActivity ownerActivity, int appId) {
         super(ownerActivity, "Sensor", BitmapFactory.decodeResource(ownerActivity.getResources(),
-                R.drawable.sensor));
-        this.mAppId = appId;
+                R.drawable.sensor), appId);
     }
 
     @Override
@@ -41,7 +38,7 @@ public class SensorViewerMainIcon extends MainIcon {
             return;
         }
         Intent intent = new Intent(this.mOwnerActivity, SensorViewerActivity.class);
-        intent.putExtra(SensorViewerActivity.INTENT_KEY_APP_ID, this.mAppId);
+        intent.putExtra(SensorViewerActivity.INTENT_KEY_APP_ID, this.getAppId());
         mOwnerActivity.startActivity(intent);
     }
 

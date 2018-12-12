@@ -26,12 +26,10 @@ import com.ant.ant_manager.view.MainActivity;
  * limitations under the License.
  */
 public class CameraViewerMainIcon extends MainIcon {
-    private int mAppId;
 
     public CameraViewerMainIcon(MainActivity ownerActivity, int appId) {
         super(ownerActivity, "Camera", BitmapFactory.decodeResource(ownerActivity.getResources(),
-                R.drawable.cam));
-        this.mAppId = appId;
+                R.drawable.cam), appId);
     }
 
     @Override
@@ -42,7 +40,7 @@ public class CameraViewerMainIcon extends MainIcon {
             return;
         }
         Intent intent = new Intent(this.mOwnerActivity, BasicCameraViewerActivity.class);
-        intent.putExtra(CameraViewerActivity.INTENT_KEY_APP_ID, this.mAppId);
+        intent.putExtra(CameraViewerActivity.INTENT_KEY_APP_ID, this.getAppId());
         mOwnerActivity.startActivity(intent);
     }
 

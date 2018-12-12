@@ -1,6 +1,6 @@
 package com.ant.ant_manager.view.remoteui;
 
-/* Copyright (c) 2017 SKKU ESLAB, and contributors. All rights reserved.
+/* Copyright (c) 2017-2018 SKKU ESLAB, and contributors. All rights reserved.
  *
  * Contributor: Gyeonghwan Hong<redcarrottt@gmail.com>
  *              Dongig Sin<dongig@skku.edu>
@@ -39,13 +39,16 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import com.ant.ant_manager.R;
-import com.ant.ant_manager.controller.LegacyJSONParser;
 import com.ant.ant_manager.controller.ANTControllerService;
 import com.ant.ant_manager.model.ANTApp;
 import com.ant.ant_manager.view.EventLogViewerActivity;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.IOException;
+import java.util.Map;
 
 import static android.content.ContentValues.TAG;
 
@@ -73,19 +76,23 @@ public class RemoteNotiUIActivity extends Activity {
         this.mAppId = extras.getInt(INTENT_KEY_APP_ID);
         String attachedFilePath = extras.getString(INTENT_KEY_ATTACHED_FILE_PATH);
 
-        LegacyJSONParser jp = new LegacyJSONParser(jsonString);
-        String isNoti = jp.getValueByKey("isNoti");
+        ObjectMapper jsonMapper = new ObjectMapper();
+        Map<String, String> messageMap;
+        try {
+            messageMap = jsonMapper.readValue(jsonString, new TypeReference<Map<String, String>>() {
+            });
+        } catch (IOException e) {
+            e.printStackTrace();
+            return;
+        }
 
         this.mLayout = findViewById(R.id.dynamicLayout);
 
         // Initialize UI
-        while (jp.hasMoreValue()) {
-            String ret[];
-            ret = jp.getNextKeyValue();
-
-            if (ret[0].equals("text")) {
+        for (Map.Entry<String, String> entry : messageMap.entrySet()) {
+            if (entry.getKey().equals("text")) {
                 TextView tview = new TextView(this);
-                tview.setText(ret[1]);
+                tview.setText(entry.getValue());
                 tview.setTextSize(20);
                 tview.setTextColor(Color.WHITE);
                 tview.setGravity(Gravity.CENTER);
@@ -98,14 +105,15 @@ public class RemoteNotiUIActivity extends Activity {
                 tview.setLayoutParams(lp);
                 mLayout.addView(tview);
 
-            } else if (ret[0].equals("img") && attachedFilePath != null) {
+            } else if (entry.getKey().equals("img") && attachedFilePath != null && !attachedFilePath
+                    .isEmpty()) {
                 try {
                     ImageView iv = new ImageView(this);
                     FileInputStream is;
 
                     File imgFile = new File(attachedFilePath);
                     is = new FileInputStream(imgFile);
-                    iv.setImageDrawable(Drawable.createFromStream(is, ret[1]));
+                    iv.setImageDrawable(Drawable.createFromStream(is, entry.getValue()));
 
                     LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(LinearLayout
                             .LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.MATCH_PARENT);
@@ -126,9 +134,9 @@ public class RemoteNotiUIActivity extends Activity {
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
-            } else if (ret[0].equals("dateTime")) {
+            } else if (entry.getKey().equals("dateTime")) {
                 TextView tview = new TextView(this);
-                tview.setText(ret[1]);
+                tview.setText(entry.getValue());
                 tview.setTextSize(20);
                 tview.setTextColor(Color.RED);
                 tview.setGravity(Gravity.CENTER);
@@ -139,9 +147,9 @@ public class RemoteNotiUIActivity extends Activity {
                 lp.setMargins(60, 20, 60, 20);
                 tview.setLayoutParams(lp);
                 mLayout.addView(tview);
-            } else if (ret[0].equals("description")) {
+            } else if (entry.getKey().equals("description")) {
                 TextView tview = new TextView(this);
-                tview.setText(ret[1]);
+                tview.setText(entry.getValue());
                 tview.setTextSize(20);
                 tview.setTextColor(Color.RED);
                 tview.setGravity(Gravity.CENTER);

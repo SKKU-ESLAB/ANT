@@ -30,29 +30,22 @@ import com.ant.ant_manager.view.MainActivity;
 
 public class UserAppMainIcon extends MainIcon {
     private static String TAG = "UserAppMainIcon";
-    private int mAppId;
     private String mAppName;
     private int mAppState;
 
     public UserAppMainIcon(MainActivity ownerActivity, int appId, String appName, int iconId, int
             appState) {
         super(ownerActivity, appName, BitmapFactory.decodeResource(ownerActivity.getResources(),
-                iconId));
-        this.mAppId = appId;
+                iconId), appId);
         this.mAppName = appName;
         this.mAppState = appState;
     }
 
     public UserAppMainIcon(MainActivity ownerActivity, int appId, String appName, String
             iconFilePath, int appState) {
-        super(ownerActivity, appName, BitmapFactory.decodeFile(iconFilePath));
-        this.mAppId = appId;
+        super(ownerActivity, appName, BitmapFactory.decodeFile(iconFilePath), appId);
         this.mAppName = appName;
         this.mAppState = appState;
-    }
-
-    public int getAppId() {
-        return this.mAppId;
     }
 
     public String getAppName() {
@@ -132,7 +125,7 @@ public class UserAppMainIcon extends MainIcon {
                 break;
             case ANTApp.State_Ready:
                 // Launch the application
-                this.mOwnerActivity.launchApp(this.mAppId);
+                this.mOwnerActivity.launchApp(this.getAppId());
                 break;
             case ANTApp.State_Launching:
                 Toast.makeText(this.mOwnerActivity, "This app (" + mAppName + ") is being " +
@@ -140,7 +133,7 @@ public class UserAppMainIcon extends MainIcon {
                 break;
             case ANTApp.State_Running:
                 // Show remote config UI
-                this.mOwnerActivity.showRemoteConfigUI(this.mAppId);
+                this.mOwnerActivity.showRemoteConfigUI(this.getAppId());
                 break;
             case ANTApp.State_Removing:
                 Toast.makeText(this.mOwnerActivity, "Application is being removed...", Toast
@@ -179,7 +172,7 @@ public class UserAppMainIcon extends MainIcon {
                 alt_bld.setMessage("Terminate this App ?").setCancelable(false).setPositiveButton
                         ("Yes", new DialogInterface.OnClickListener() {
                     public void onClick(DialogInterface dialog, int id) {
-                        mOwnerActivity.terminateApp(mAppId);
+                        mOwnerActivity.terminateApp(getAppId());
                         Log.d(TAG, "Request to kill ");
                     }
                 }).setNegativeButton("No", new DialogInterface.OnClickListener() {
