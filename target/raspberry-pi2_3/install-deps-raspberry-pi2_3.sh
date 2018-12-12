@@ -117,7 +117,6 @@ sudo make install
 
 # Step 11. Install Arm Compute Library
 cd ${ANT_REPO_DIR}/dep/ComputeLibrary
-sudo cp build/libarm_compute*.so /usr/lib
 sudo cp -r arm_compute /usr/include/
 
 # Step 12. Install FANN Library
