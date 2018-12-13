@@ -31,6 +31,10 @@ public:
                          LocalChannel *localChannel);
 
   static void registerResource(Resource *resource);
+
+  static void deregisterResource(Resource *resource);
+  static void deregisterResource(std::string uri);
+
   static Resource *findLocalResource(std::string &uri);
 
   static int sendPost(std::string &senderUri, std::string &targetUri,

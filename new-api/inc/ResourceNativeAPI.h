@@ -27,23 +27,29 @@
 
 using namespace v8;
 
+using CopyablePersistentFunction = v8::Persistent<Function, v8::CopyablePersistentTraits<Function>>;
+
 class ResourceCallbackManager {
 public:
-  ResourceCallbackManager *singleton() {
+  static ResourceCallbackManager *singleton() {
     if (sSingleton == NULL) {
       sSingleton = new ResourceCallbackManager();
     }
     return sSingleton;
   }
   void addJSCallback(int requestId, Local<Function> responseJSCallback);
-  void executeJSCallback(); // TODO:
-  static void resourceResponseCallback(BaseMessage *responseMessage);
+  void removeJSCallback(int requestId);
+  static void onResourceResponse(BaseMessage *responseMessage);
+
+  void addSubscription(std::string targetUri, int requestMessageId);
+  int removeSubscription(std::string targetUri);
 
 private:
-  ResourceCallbackManager *sSingleton;
+  static ResourceCallbackManager *sSingleton;
   ResourceCallbackManager() {}
   ~ResourceCallbackManager() {}
-  std::map<int, Persistent<Function>> mResponseJSCallbacks;
+  std::map<int, CopyablePersistentFunction> mResponseJSCallbacks;
+  std::map<std::string, int> mSubscriptionList;
 };
 
 // How to create this object: antAPI.resource();

@@ -28,6 +28,29 @@ void LocalResourceManager::addLocalResource(Resource *resource) {
                                         this->mLocalChannel);
 }
 
+void LocalResourceManager::removeLocalResource(Resource *resource) {
+  for (std::vector<Resource *>::iterator it = this->mResources.begin();
+       it != this->mResources.end(); it++) {
+    Resource *foundResource = (Resource *)*it;
+    if (resource == foundResource) {
+      this->mResources.erase(it);
+      return;
+    }
+  }
+}
+
+void LocalResourceManager::removeLocalResource(std::string uri) {
+  for (std::vector<Resource *>::iterator it = this->mResources.begin();
+       it != this->mResources.end(); it++) {
+    Resource *foundResource = (Resource *)*it;
+    std::string resourceUri(foundResource->getUri());
+    if (uri.compare(resourceUri) == 0) {
+      this->mResources.erase(it);
+      return;
+    }
+  }
+}
+
 Resource *LocalResourceManager::findLocalResource(std::string uri) {
   for (std::vector<Resource *>::iterator it = this->mResources.begin();
        it != this->mResources.end(); it++) {
@@ -72,6 +95,11 @@ void LocalResourceManager::sendRequest(BaseMessage *requestMessage,
       this->removeResponseCallback(requestMessageId);
     }
     break;
+  }
+  case ResourceOperationType::NotDetermined:
+  default: {
+    ANT_DBG_ERR("Invalid opType: %d", opType);
+    return;
   }
   }
 
@@ -141,7 +169,9 @@ void LocalResourceManager::onReceivedMessage(BaseMessage *receivedMessage) {
         break;
       }
       case ResourceOperationType::SUBSCRIBE:
-      case ResourceOperationType::UNSUBSCRIBE: {
+      case ResourceOperationType::UNSUBSCRIBE:
+      case ResourceOperationType::NotDetermined:
+      default: {
         // Do nothing
         break;
       }

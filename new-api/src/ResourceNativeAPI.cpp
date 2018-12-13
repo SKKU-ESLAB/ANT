@@ -39,6 +39,8 @@ using namespace v8;
 // Static Constructor
 Persistent<Function> ResourceNativeAPI::sConstructor;
 
+ResourceCallbackManager *ResourceCallbackManager::sSingleton = NULL;
+
 #define JS_THIS_OBJECT_NAME "ResourceNativeAPI"
 
 /*
@@ -112,11 +114,11 @@ void ResourceNativeAPI::New(const FunctionCallbackInfo<Value> &args) {
 
 void ResourceNativeAPI::registerResource(
     const FunctionCallbackInfo<Value> &args) {
-  // TODO:
+  // TODO: Resource hosting feature
 }
 void ResourceNativeAPI::findLocalResource(
     const FunctionCallbackInfo<Value> &args) {
-  // TODO:
+  // TODO: Resource hosting feature
 }
 
 // sendPost(function)
@@ -155,6 +157,15 @@ void ResourceNativeAPI::sendUnsubscribe(
   ResourceNativeAPI::sendRequest(ResourceOperationType::UNSUBSCRIBE, args);
 }
 
+inline void printSendRequestHelp(Isolate *isolate) {
+  isolate->ThrowException(Exception::TypeError(
+      getV8String(isolate, "Invalid Use : 3 or 4 arguments expected\n"
+                           "[String senderUri, String targetUri , String "
+                           "bodyString]\n"
+                           "[String senderUri, String targetUri , String "
+                           "bodyString, Function responseCallback]")));
+}
+
 void ResourceNativeAPI::sendRequest(ResourceOperationType::Value opType,
                                     const FunctionCallbackInfo<Value> &args) {
   Isolate *isolate = Isolate::GetCurrent();
@@ -167,10 +178,28 @@ void ResourceNativeAPI::sendRequest(ResourceOperationType::Value opType,
   Local<Function> responseJSCallback;
 
   // Check arguments
-  if ((args.Length() != 4) || !args[0]->IsString() || !args[1]->IsString() ||
-      !args[2]->IsString() || !args[3]->IsFunction()) {
-    isolate->ThrowException(Exception::TypeError(
-        getV8String(isolate, "Invalid Use : 4 arguments expected")));
+  if (args.Length() >= 3) {
+    // args.length >= 3
+    if (!args[0]->IsString() || !args[1]->IsString() || !args[2]->IsString()) {
+      // args type error in args.length >= 3
+      printSendRequestHelp(isolate);
+      return;
+    }
+    if (args.Length() == 4) {
+      // args.length == 4
+      if (!args[3]->IsFunction()) {
+        // args[3] type error in args.length == 4
+        printSendRequestHelp(isolate);
+        return;
+      }
+    } else {
+      // args.length > 4
+      printSendRequestHelp(isolate);
+      return;
+    }
+  } else {
+    // args.length < 3
+    printSendRequestHelp(isolate);
     return;
   }
 
@@ -181,23 +210,143 @@ void ResourceNativeAPI::sendRequest(ResourceOperationType::Value opType,
   targetUri = std::string(*targetUriV8);
   v8::String::Utf8Value bodyV8(args[2]->ToString());
   body = std::string(*bodyV8);
-  responseJSCallback = Local<Function>::Cast(args[3]);
+
+  if (args.Length() == 4) {
+    responseJSCallback = Local<Function>::Cast(args[3]);
+  }
 
   // Send request
-  NativeResourceAPI::sendRequest(
+  int requestId = NativeResourceAPI::sendRequest(
       opType, senderUri, targetUri, body,
-      ResourceCallbackManager::resourceResponseCallback);
-  // Register response callback
+      ResourceCallbackManager::onResourceResponse);
 
+  // Register response callback
+  switch (opType) {
+  case ResourceOperationType::POST:
+  case ResourceOperationType::GET:
+  case ResourceOperationType::PUT:
+  case ResourceOperationType::DELETE:
+  case ResourceOperationType::DISCOVER: {
+    ResourceCallbackManager::singleton()->addJSCallback(requestId,
+                                                        responseJSCallback);
+    break;
+  }
+  case ResourceOperationType::SUBSCRIBE: {
+    ResourceCallbackManager::singleton()->addJSCallback(requestId,
+                                                        responseJSCallback);
+    ResourceCallbackManager::singleton()->addSubscription(targetUri, requestId);
+    break;
+  }
+  case ResourceOperationType::UNSUBSCRIBE: {
+    int requestMessageId =
+        ResourceCallbackManager::singleton()->removeSubscription(targetUri);
+    if (requestMessageId >= 0) {
+      ResourceCallbackManager::singleton()->removeJSCallback(requestMessageId);
+    }
+    break;
+  }
+  case ResourceOperationType::NotDetermined:
+  default: {
+    ANT_DBG_ERR("Invalid opType: %d", opType);
+    break;
+  }
+  }
   return;
+}
+
+void ResourceCallbackManager::addSubscription(std::string targetUri,
+                                              int requestMessageId) {
+  this->mSubscriptionList.insert(
+      std::pair<std::string, int>(targetUri, requestMessageId));
+}
+
+int ResourceCallbackManager::removeSubscription(std::string targetUri) {
+  std::map<std::string, int>::iterator found =
+      this->mSubscriptionList.find(targetUri);
+  if (found == this->mSubscriptionList.end()) {
+    return -1;
+  }
+
+  int requestMessageId = found->second;
+  this->mSubscriptionList.erase(found);
+
+  return requestMessageId;
 }
 
 void ResourceCallbackManager::addJSCallback(
     int requestId, Local<Function> responseJSCallback) {
-  // TODO:
+  // Register JS callback to be called on response message
+  Isolate *isolate = Isolate::GetCurrent();
+  CopyablePersistentFunction persistentCallback(isolate, responseJSCallback);
+
+  this->mResponseJSCallbacks.insert(
+      std::pair<int, CopyablePersistentFunction>(requestId, persistentCallback));
 }
 
-void ResourceCallbackManager::resourceResponseCallback(
+void ResourceCallbackManager::removeJSCallback(int requestId) {
+  std::map<int, CopyablePersistentFunction>::iterator found =
+      this->mResponseJSCallbacks.find(requestId);
+  if (found != this->mResponseJSCallbacks.end()) {
+    found->second.Reset();
+    this->mResponseJSCallbacks.erase(found);
+  }
+}
+
+void ResourceCallbackManager::onResourceResponse(
     BaseMessage *responseMessage) {
-  // TODO: call JS callback
+  ResourceCallbackManager *self = ResourceCallbackManager::singleton();
+  ResourceResponse *response =
+      (ResourceResponse *)responseMessage->getPayload();
+  int requestMessageId = response->getRequestMessageId();
+  std::string &messageBody = response->getBody();
+  ResourceOperationType::Value opType = response->getOpType();
+
+  // Find JS callback
+  std::map<int, CopyablePersistentFunction>::iterator found =
+      self->mResponseJSCallbacks.find(requestMessageId);
+  if (found == self->mResponseJSCallbacks.end()) {
+    ANT_DBG_ERR("ResourceResponse: no JS callback is found: %s",
+                messageBody.c_str());
+    return;
+  }
+
+  // Initialize V8 context
+  Isolate *isolate = Isolate::GetCurrent();
+  HandleScope scope(isolate);
+  TryCatch try_catch;
+
+  // Prepare the callback
+  CopyablePersistentFunction persistentCallback = found->second;
+  Handle<Value> args[1] = {};
+  args[0] = v8::String::NewFromUtf8(isolate, messageBody.c_str());
+  Local<Function> jsCallback =
+      Local<Function>::New(isolate, persistentCallback);
+
+  // Execute the callback
+  jsCallback->Call(isolate->GetCurrentContext()->Global(), 1, args);
+  if (try_catch.HasCaught()) {
+    Local<Value> exception = try_catch.Exception();
+    String::Utf8Value exception_str(exception);
+    ANT_DBG_ERR("Exception in ResourceResponse JS Callback: %s\n%s\n",
+                messageBody.c_str(), *exception_str);
+  }
+
+  // Remove the callback
+  switch (opType) {
+  case ResourceOperationType::POST:
+  case ResourceOperationType::GET:
+  case ResourceOperationType::PUT:
+  case ResourceOperationType::DELETE:
+  case ResourceOperationType::DISCOVER: {
+    self->removeJSCallback(requestMessageId);
+    break;
+  }
+  case ResourceOperationType::SUBSCRIBE:
+  case ResourceOperationType::UNSUBSCRIBE:
+  case ResourceOperationType::NotDetermined:
+  default: {
+    // Do nothing
+    break;
+  }
+  }
 }

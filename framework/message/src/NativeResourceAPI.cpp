@@ -35,6 +35,14 @@ void NativeResourceAPI::registerResource(Resource *resource) {
   LocalResourceManager::singleton()->addLocalResource(resource);
 }
 
+void NativeResourceAPI::deregisterResource(Resource *resource) {
+  LocalResourceManager::singleton()->removeLocalResource(resource);
+}
+
+void NativeResourceAPI::deregisterResource(std::string uri) {
+  LocalResourceManager::singleton()->removeLocalResource(uri);
+}
+
 Resource *NativeResourceAPI::findLocalResource(std::string &uri) {
   return LocalResourceManager::singleton()->findLocalResource(uri);
 }
