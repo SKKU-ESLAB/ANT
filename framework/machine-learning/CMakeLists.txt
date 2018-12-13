@@ -1,6 +1,6 @@
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/inc)
-include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../message/inc)
-include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../communication/inc)
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../resource-library/inc)
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../cmfw-library/inc)
 link_directories(${CMAKE_SOURCE_DIR}/out/libs)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../../dep/ComputeLibrary)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../../dep/ComputeLibrary/include)
@@ -27,10 +27,10 @@ set(MLFW_sources
   ${ACL_SRC})
 
 add_executable(ant-ml ${MLFW_sources})
-add_dependencies(ant-ml ant-message)
+add_dependencies(ant-ml ant-resource)
 
 target_link_libraries(ant-ml
-  ant-message ant-cmfw pthread fann doublefann fixedfann floatfann arm_compute arm_compute_core arm_compute_graph)
+  ant-resource ant-cmfw pthread fann doublefann fixedfann floatfann arm_compute arm_compute_core arm_compute_graph)
 
 set_target_properties(ant-ml
   PROPERTIES

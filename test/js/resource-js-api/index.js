@@ -1,4 +1,4 @@
-/* Copyright (c) 2017 SKKU ESLAB, and contributors. All rights reserved.
+/* Copyright (c) 2017-2018 SKKU ESLAB, and contributors. All rights reserved.
  *
  * Contributor: Gyeonghwan Hong<redcarrottt@gmail.com>
  *
@@ -15,9 +15,25 @@
  * limitations under the License.
  */
 
-#ifndef __ANT_NATIVE_API_H__
-#define __ANT_NATIVE_API_H__
+var ant_api_dir = process.env.ANT_BIN_DIR + '/api/';
+var api = require(ant_api_dir + 'ant');
+var appApi = api.app();
 
-#include "AppBase.h"
+appApi.onLaunch(function() {
+  console.log('App Launched!');
+  var resourceApi = api.resource();
+  var body = {
+    'commandId': 123,
+    'text': "abcd"
+  };
+  resourceApi.get('/thing/apps/4', '/thing/appcore', JSON.stringify(body),
+      function(responseText) {
+        consolg.log(responseText);
+      });
+});
 
-#endif // !defined(__ANT_NATIVE_API_H__)
+appApi.onTermination(function() {
+  console.log('App Terminated!');
+});
+
+appApi.appReady();

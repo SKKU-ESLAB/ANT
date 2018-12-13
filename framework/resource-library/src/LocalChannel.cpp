@@ -17,26 +17,27 @@
 
 #include <pthread.h>
 
-#include "LocalChannel.h"
-#include "BaseMessage.h"
 #include "ANTdbugLog.h"
+#include "BaseMessage.h"
+#include "LocalChannel.h"
 
 void LocalChannel::run() {
   // Run RoutedLoop
   this->runRoutedLoop(this->mIsCreateRoutedThread);
 }
 
-void LocalChannel::onRoutedMessage(BaseMessage* message) {
-  if(mListener != NULL) {
-    this->mListener->onReceivedMessage(message);
-  } else {
-    ANT_DBG_WARN("LocalChannel's listener is not set!");
-    ANT_DBG_WARN("Therefore, a message is ignored: %s",
-        message->toJSONString());
+void LocalChannel::onRoutedMessage(BaseMessage *message) {
+  for (std::vector<LocalChannelListener *>::iterator it =
+           this->mListeners.begin();
+       it != this->mListeners.end(); it++) {
+    LocalChannelListener *listener = *it;
+    if (listener != NULL) {
+      listener->onReceivedMessage(message);
+    }
   }
 }
 
-void LocalChannel::sendMessage(BaseMessage* message) {
+void LocalChannel::sendMessage(BaseMessage *message) {
   // Pass the given message to MessageRouter
   this->mMessageRouter->routeMessage(this, message);
 }

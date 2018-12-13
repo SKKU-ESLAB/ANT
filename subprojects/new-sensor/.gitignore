@@ -1,0 +1,11 @@
+tags
+cscope.out
+build/
+bin/
+out/
+
+*.o
+*.so
+
+sensorManager
+

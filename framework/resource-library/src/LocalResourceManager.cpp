@@ -22,6 +22,14 @@
 
 LocalResourceManager *LocalResourceManager::sSingleton = NULL;
 
+void LocalResourceManager::initialize(MessageRouter *messageRouter, LocalChannel *localChannel) {
+  // TODO: embed LocalChannel, MessageRouter, DbusChannel, CommChannel
+  this->mMessageRouter = messageRouter;
+  this->mLocalChannel = localChannel;
+
+  this->mLocalChannel->addListener(this);
+}
+
 void LocalResourceManager::addLocalResource(Resource *resource) {
   this->mResources.push_back(resource);
   this->mMessageRouter->addRoutingEntry(resource->getUri(),
@@ -120,15 +128,15 @@ void LocalResourceManager::sendResponse(BaseMessage *responseMessage) {
 
 // LocalChannelListener: Receive Message
 void LocalResourceManager::onReceivedMessage(BaseMessage *receivedMessage) {
-  Resource *resource = this->findLocalResource(receivedMessage->getUri());
-  if (resource == NULL) {
-    // Not found local resource - ignore the message
-    return;
-  }
-
   BaseMessageType::Value messageType = receivedMessage->getType();
   switch (messageType) {
   case BaseMessageType::ResourceRequest: {
+    Resource *resource = this->findLocalResource(receivedMessage->getUri());
+    if (resource == NULL) {
+      // Not found local resource - ignore the message
+      return;
+    }
+
     ResourceRequest *request = (ResourceRequest *)receivedMessage->getPayload();
     ResourceOperationType::Value opType = request->getOpType();
 
@@ -176,6 +184,8 @@ void LocalResourceManager::onReceivedMessage(BaseMessage *receivedMessage) {
         break;
       }
       }
+    } else {
+      ANT_DBG_VERB("No response callback found!");
     }
     break;
   }

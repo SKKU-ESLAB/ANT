@@ -22,12 +22,40 @@
 
 #include <node.h>
 #include <node_object_wrap.h>
+#include <uv.h>
 
+#include "BaseMessage.h"
 #include "NativeResourceAPI.h"
 
 using namespace v8;
 
-using CopyablePersistentFunction = v8::Persistent<Function, v8::CopyablePersistentTraits<Function>>;
+class ResourceResponseCallbackAsync {
+public:
+  ResourceResponseCallbackAsync(uv_async_cb nativeFunction,
+                           Local<Function> jsFunction) {
+    this->mNativeFunction = nativeFunction;
+    Isolate *isolate = Isolate::GetCurrent();
+    this->mJSFunction.Reset(isolate, jsFunction);
+
+    uv_loop_t *loop = uv_default_loop();
+    uv_async_init(loop, &this->mUVAsync, this->mNativeFunction);
+  }
+
+  void callAsync() { uv_async_send(&this->mUVAsync); }
+
+  void destroy() { this->mJSFunction.Reset(); }
+
+  Local<Function> getJSFunction(Isolate *isolate) {
+    Local<Function> localJsFunction =
+        Local<Function>::New(isolate, this->mJSFunction);
+    return localJsFunction;
+  }
+
+private:
+  uv_async_t mUVAsync;
+  uv_async_cb mNativeFunction;
+  Persistent<Function> mJSFunction;
+};
 
 class ResourceCallbackManager {
 public:
@@ -39,7 +67,10 @@ public:
   }
   void addJSCallback(int requestId, Local<Function> responseJSCallback);
   void removeJSCallback(int requestId);
-  static void onResourceResponse(BaseMessage *responseMessage);
+  ResourceResponseCallbackAsync* getCallback(int requestId);
+
+  static void onResourceResponseDbusThread(BaseMessage *responseMessage);
+  static void onResourceResponseMainThread(uv_async_t *handle);
 
   void addSubscription(std::string targetUri, int requestMessageId);
   int removeSubscription(std::string targetUri);
@@ -48,8 +79,9 @@ private:
   static ResourceCallbackManager *sSingleton;
   ResourceCallbackManager() {}
   ~ResourceCallbackManager() {}
-  std::map<int, CopyablePersistentFunction> mResponseJSCallbacks;
+  std::map<int, ResourceResponseCallbackAsync *> mResponseCallbacks;
   std::map<std::string, int> mSubscriptionList;
+  std::vector<BaseMessage *> mIncomingResponseList;
 };
 
 // How to create this object: antAPI.resource();

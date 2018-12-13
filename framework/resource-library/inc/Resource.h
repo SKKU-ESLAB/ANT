@@ -61,15 +61,15 @@ public:
       break;
     }
     case ResourceOperationType::GET: {
-      callback = this->mPostRequestCallback;
+      callback = this->mGetRequestCallback;
       break;
     }
     case ResourceOperationType::PUT: {
-      callback = this->mPostRequestCallback;
+      callback = this->mPutRequestCallback;
       break;
     }
     case ResourceOperationType::DELETE: {
-      callback = this->mPostRequestCallback;
+      callback = this->mDeleteRequestCallback;
       break;
     }
     case ResourceOperationType::DISCOVER: {
