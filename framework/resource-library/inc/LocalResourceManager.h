@@ -35,11 +35,7 @@ public:
     return sSingleton;
   }
 
-  // TODO: embed LocalChannel, MessageRouter, DbusChannel, CommChannel
-  void initialize(MessageRouter *messageRouter, LocalChannel *localChannel) {
-    this->mMessageRouter = messageRouter;
-    this->mLocalChannel = localChannel;
-  }
+  void initialize(MessageRouter *messageRouter, LocalChannel *localChannel);
 
   void addLocalResource(Resource *resource);
   void removeLocalResource(Resource *resource);

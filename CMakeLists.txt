@@ -19,6 +19,7 @@ add_custom_target(
   )
 
 add_subdirectory(framework)
+add_subdirectory(subprojects)
 add_subdirectory(api)
 add_subdirectory(new-api)
 add_subdirectory(apps)

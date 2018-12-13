@@ -77,15 +77,6 @@ def log(message):
     return
 
 ############################## EDIT HERE!!! ##############################
-def initialize_ipcrm():
-    run_command("ipcrm -M 9447")
-    run_command("ipcrm -M 5315")
-    run_command("ipcrm -M 4941")
-    run_command("ipcrm -S 49411")
-    run_command("ipcrm -S 49441")
-    run_command("ipcrm -M 4944")
-    run_command("ipcrm -S 9948")
-    return
 
 # on_did_initialize: (event handler) initialization process is completed
 # initialization process includes setting options and signal handlers.
@@ -95,7 +86,6 @@ def on_did_initialize(args):
     # Execute prerequisites on system server
     run_command("mkdir -p " + gAntDataDir)
     run_command("hciconfig hci0 piscan")
-    initialize_ipcrm()
     run_command(gAntDeleteSemPath)
 
     # Execute daemons
@@ -110,8 +100,18 @@ def on_did_initialize(args):
                 name="App-core Framework Daemon")
     run_on_daemon(command=["./ant-camera"],
             name="Camera Framework Daemon")
-    run_on_daemon(command=["./ant-sensor"],
-            name="Sensor Framework Daemon")
+    if args.debugsensor:
+        # TODO: merging new sensor daemon is postponed.
+        # run_on_daemon(command=["/usr/bin/gdb", "./ant-sensor"],
+        #         name="Sensor Framework Daemon")
+        run_on_daemon(command=["/usr/bin/gdb", "./ant-legacy-sensor"],
+                name="Legacy Sensor Framework Daemon")
+    else:
+        # TODO: merging new sensor daemon is postponed.
+        # run_on_daemon(command=["./ant-sensor"],
+        #         name="Sensor Framework Daemon")
+        run_on_daemon(command=["./ant-legacy-sensor"],
+                name="Legacy Sensor Framework Daemon")
     if args.debugml:
         run_on_daemon(command=["/usr/bin/gdb", "./ant-ml"],
                 name="Machine Learning Framework Daemon")
@@ -161,6 +161,9 @@ def main():
     parser.add_argument("--debug-ml", "-dm", dest="debugml",
             action="store_true",
             help="Debug ML Daemon")
+    parser.add_argument("--debug-sensor", "-ds", dest="debugsensor",
+            action="store_true",
+            help="Debug Sensor Daemon")
     args = parser.parse_args()
 
     # Register signal handlers

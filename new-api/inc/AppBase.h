@@ -40,7 +40,7 @@ public:
   friend class OnUpdateAppConfigJSAsync;
 
   static AppBase *singleton() {
-    if(sSingleton == NULL) {
+    if (sSingleton == NULL) {
       sSingleton = new AppBase();
     }
     return sSingleton;
@@ -60,6 +60,9 @@ public:
 
   // LocalChannelListener
   virtual void onReceivedMessage(BaseMessage *message);
+
+  // Get app id
+  int getAppId() { return this->mAppId; }
 
   // App Ready
   void appReady();

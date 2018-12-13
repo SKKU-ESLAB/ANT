@@ -92,7 +92,6 @@ class Core {
 public:
   /*
    * APIs
-   * These functions are mapped to ones in API.h
    */
   void start();
   void done_start(bool is_success);
