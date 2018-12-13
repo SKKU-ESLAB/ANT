@@ -15,34 +15,25 @@
  * limitations under the License.
  */
 
-'use strict';
-
 var ant_api_dir = process.env.ANT_BIN_DIR + '/api/';
-var antNative = require(ant_api_dir + 'antnative');
+var api = require(ant_api_dir + 'ant');
+var appApi = api.app();
 
-var path = require('path');
+appApi.onLaunch(function() {
+  console.log('App Launched!');
+  var resourceApi = api.resource();
+  var body = {
+    'commandId': 123,
+    'text': "abcd"
+  };
+  resourceApi.get('/thing/apps/4', '/thing/appcore', JSON.stringify(body),
+      function(responseText) {
+        consolg.log(responseText);
+      });
+});
 
-exports.app = function() {
-  return antNative.app();
-};
+appApi.onTermination(function() {
+  console.log('App Terminated!');
+});
 
-exports.ml = function() {
-  return antNative.ml();
-};
-
-exports.comm = function() {
-  return antNative.comm();
-};
-
-exports.remoteUI = function() {
-  return require(path.join(__dirname, 'remoteUI'));
-}
-
-exports.resource = function() {
-  // TODO: wrapping resource API
-  return antNative.resource();
-}
-
-exports.sensor = function() {
-  return require(path.join(__dirname, 'sensor'));
-}
+appApi.appReady();

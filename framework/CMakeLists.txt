@@ -14,6 +14,7 @@ endif()
 
 if(CONFIG_SENSOR_FW STREQUAL "y")
   add_subdirectory(sensor)
+  add_subdirectory(new-sensor)
 endif()
 
 if(CONFIG_ML_FW STREQUAL "y")

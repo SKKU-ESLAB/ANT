@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 2.8)
-PROJECT(sensor_manager)
+PROJECT(legacy_sensor_manager)
 
 include(FindPkgConfig)
 
@@ -14,16 +14,16 @@ add_definitions("`pkg-config --libs --cflags dbus-1 glib-2.0 dbus-glib-1`")
 set(CMAKE_VERBOSE_MAKEFILE ON)
 set(CMAKE_BUILD_TYPE RELEASE)
 
-set(SM_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/src)
-set(SM_sources ${SM_SOURCE_DIR}/sensor_manager.c ${SM_SOURCE_DIR}/request.c ${SM_SOURCE_DIR}/devices.c ${SM_SOURCE_DIR}/cJSON.c)
+set(LEGACY_SM_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/src)
+set(LEGACY_SM_SOURCES ${LEGACY_SM_SOURCE_DIR}/sensor_manager.c ${LEGACY_SM_SOURCE_DIR}/request.c ${LEGACY_SM_SOURCE_DIR}/devices.c ${LEGACY_SM_SOURCE_DIR}/cJSON.c)
 
-ADD_EXECUTABLE(ant-sensor ${SM_sources})
+ADD_EXECUTABLE(ant-legacy-sensor ${LEGACY_SM_SOURCES})
 set(COMPILE_FLAGS -Wall -O2 -fPIC )
 
-TARGET_COMPILE_OPTIONS(ant-sensor PRIVATE ${COMPILE_FLAGS})
-TARGET_LINK_LIBRARIES(ant-sensor pthread dl c m dbus-glib-1 dbus-1 glib-2.0)
+TARGET_COMPILE_OPTIONS(ant-legacy-sensor PRIVATE ${COMPILE_FLAGS})
+TARGET_LINK_LIBRARIES(ant-legacy-sensor pthread dl c m dbus-glib-1 dbus-1 glib-2.0)
 
-set_target_properties(ant-sensor
+set_target_properties(ant-legacy-sensor
 	PROPERTIES
 	RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/out/bin)
 

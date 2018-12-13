@@ -18,43 +18,50 @@
 #ifndef __LOCAL_CHANNEL_H__
 #define __LOCAL_CHANNEL_H__
 
-#include <vector>
 #include <pthread.h>
+#include <vector>
 
 #include "MessageRouter.h"
 
 class LocalChannelListener {
-  public:
-    virtual void onReceivedMessage(BaseMessage* message) = 0;
+public:
+  virtual void onReceivedMessage(BaseMessage *message) = 0;
 };
 
-class LocalChannel: public Channel {
-  public:
-    LocalChannel(MessageRouter* messageRouter,
-        std::string uri, bool isCreateRoutedThread)
-    : Channel(messageRouter, "LocalChannel"), mListener(NULL),
-    mIsCreateRoutedThread(isCreateRoutedThread),
-    mUri(uri) {
+class LocalChannel : public Channel {
+public:
+  LocalChannel(MessageRouter *messageRouter, std::string uri,
+               bool isCreateRoutedThread)
+      : Channel(messageRouter, "LocalChannel"),
+        mIsCreateRoutedThread(isCreateRoutedThread), mUri(uri) {}
+
+  // Channel function
+  virtual void run();
+
+  // LocalChannel-specific function
+  void sendMessage(BaseMessage *message);
+  void addListener(LocalChannelListener *listener) {
+    // Prevent duplicated listeners in the list
+    for (std::vector<LocalChannelListener*>::iterator it = this->mListeners.begin();
+         it != this->mListeners.end(); it++) {
+      LocalChannelListener* found = *it;
+      if(found == listener) {
+        return;
+      }
     }
 
-    // Channel function
-    virtual void run();
+    this->mListeners.push_back(listener);
+  }
+  void setUri(std::string uri) { this->mUri.assign(uri); }
+  std::string getUri() { return this->mUri; }
 
-    // LocalChannel-specific function
-    void sendMessage(BaseMessage* message);
-    void setListener(LocalChannelListener* listener) {
-      this->mListener = listener;
-    }
-    void setUri(std::string uri) { this->mUri.assign(uri); }
-    std::string getUri() { return this->mUri; }
+protected:
+  std::vector<LocalChannelListener *> mListeners;
+  bool mIsCreateRoutedThread;
+  std::string mUri;
 
-  protected:
-    LocalChannelListener* mListener = NULL;
-    bool mIsCreateRoutedThread;
-    std::string mUri;
-
-    // Channel function
-    virtual void onRoutedMessage(BaseMessage* message);
+  // Channel function
+  virtual void onRoutedMessage(BaseMessage *message);
 };
 
 #endif

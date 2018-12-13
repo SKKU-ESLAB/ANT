@@ -45,6 +45,7 @@ class AppNativeAPI
     static void New(const FunctionCallbackInfo<Value>& args);
 
     // Member functions
+    static void getAppId(const FunctionCallbackInfo<Value>& args);
     static void appReady(const FunctionCallbackInfo<Value>& args);
     static void onLaunch(const FunctionCallbackInfo<Value>& args);
     static void onTermination(const FunctionCallbackInfo<Value>& args);

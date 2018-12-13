@@ -15,34 +15,13 @@
  * limitations under the License.
  */
 
-'use strict';
+#include <string>
+#include <iostream>
+#include <unistd.h>
 
-var ant_api_dir = process.env.ANT_BIN_DIR + '/api/';
-var antNative = require(ant_api_dir + 'antnative');
+#include "SensorManager.h"
 
-var path = require('path');
-
-exports.app = function() {
-  return antNative.app();
-};
-
-exports.ml = function() {
-  return antNative.ml();
-};
-
-exports.comm = function() {
-  return antNative.comm();
-};
-
-exports.remoteUI = function() {
-  return require(path.join(__dirname, 'remoteUI'));
-}
-
-exports.resource = function() {
-  // TODO: wrapping resource API
-  return antNative.resource();
-}
-
-exports.sensor = function() {
-  return require(path.join(__dirname, 'sensor'));
+int main(int argc, char* argv[]) {
+  // Start sensor manager
+  SensorManager::singleton()->run();
 }

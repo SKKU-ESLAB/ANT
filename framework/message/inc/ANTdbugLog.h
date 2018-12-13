@@ -1,4 +1,4 @@
-/* Copyright (c) 2017 SKKU ESLAB, and contributors. All rights reserved.
+/* Copyright (c) 2017-2018 SKKU ESLAB, and contributors. All rights reserved.
  *
  * Contributor: Gyeonghwan Hong<redcarrottt@gmail.com>
  *              Dongig Sin<dongig@skku.edu>
@@ -22,21 +22,40 @@
 #include <stdarg.h>
 #include <stdio.h>
 
-#define FUNCTION_LOG 0
+#define LOG_LEVEL 2
 
 #define _ant_log(format, fw, color, args...) do { __ant_log(format, fw, \
     __FILE__, __func__, color, __LINE__, ##args); } while(0)
 #define _ant_func(format, fw, args...) do { __ant_func(format, fw, \
     __FILE__, __func__, __LINE__, ##args); } while(0)
 
-#define ANT_DBG_VERB(fmt, args...) do{ _ant_log(fmt, "[VERB] APPCORE", 9, ##args); }while(0)
-#define ANT_DBG_LOG(fmt, args...) do{ _ant_log(fmt, "[LOG] APPCORE", 94, ##args); }while(0)
-#define ANT_DBG_WARN(fmt, args...) do{ _ant_log(fmt, "[WARN] APPCORE", 91, ##args); }while(0) 
-#define ANT_DBG_ERR(fmt, args...) do{ _ant_log(fmt, "[ERR] APPCORE", 101, ##args); }while(0)
+#if LOG_LEVEL <= 0
+#define ANT_DBG_VERB(fmt, args...) do{ _ant_log(fmt, "[VERB] MESSAGE", 9, ##args); }while(0)
+#else
+#define ANT_DBG_VERB(fmt, args...)
+#endif
+
+#if LOG_LEVEL <= 1
+#define ANT_DBG_LOG(fmt, args...) do{ _ant_log(fmt, "[LOG] MESSAGE", 94, ##args); }while(0)
+#else
+#define ANT_DBG_LOG(fmt, args...)
+#endif
+
+#if LOG_LEVEL <= 2
+#define ANT_DBG_WARN(fmt, args...) do{ _ant_log(fmt, "[WARN] MESSAGE", 91, ##args); }while(0) 
+#else
+#define ANT_DBG_WARN(fmt, args...)
+#endif
+
+#if LOG_LEVEL <= 3
+#define ANT_DBG_ERR(fmt, args...) do{ _ant_log(fmt, "[ERR] MESSAGE", 101, ##args); }while(0)
+#else
+#define ANT_DBG_ERR(fmt, args...)
+#endif
 
 
-#define __ANT_FUNCTION_ENTER__ do{ _ant_func("ENTER", "APPCORE"); }while(0)
-#define __ANT_FUNCTION_EXIT__ do{ _ant_func("EXIT", "APPCORE"); }while(0)
+#define __ANT_FUNCTION_ENTER__ do{ _ant_func("ENTER", "MESSAGE"); }while(0)
+#define __ANT_FUNCTION_EXIT__ do{ _ant_func("EXIT", "MESSAGE"); }while(0)
 
 inline void __ant_log(const char *format, const char *fw, const char *fileName,
     const char *funcName, int color, int lineNo, ...){
@@ -57,5 +76,7 @@ inline void __ant_func(const char *format, const char *fw, const char *fileName,
   vprintf(format, ap);
   va_end(ap);
   printf("]\033[0m\n");
+ 
+  
 }
 #endif // !defined(__ANT_DBUG_LOG_H__)
