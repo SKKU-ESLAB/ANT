@@ -42,6 +42,9 @@ public:
   }
 
   void addLocalResource(Resource *resource);
+  void removeLocalResource(Resource *resource);
+  void removeLocalResource(std::string uri);
+  
   Resource *findLocalResource(std::string uri);
 
   // Send Request

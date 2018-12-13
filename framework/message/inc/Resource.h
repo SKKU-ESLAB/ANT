@@ -84,6 +84,11 @@ public:
       callback = this->mUnsubscribeRequestCallback;
       break;
     }
+    case ResourceOperationType::NotDetermined:
+    default: {
+      callback = NULL;
+      break;
+    }
     }
     return callback;
   }

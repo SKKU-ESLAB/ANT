@@ -19,8 +19,8 @@
 #include <unistd.h>
 
 #include "AppBase.h"
-#include "AppMessage.h"
 #include "AppCoreMessage.h"
+#include "AppMessage.h"
 #include "MessageFactory.h"
 
 #define COMPANION_DEVICE_URI "/comp0"
@@ -30,7 +30,7 @@
 
 #define PATH_BUFFER_SIZE 1024
 
-AppBase* AppBase::sSingleton = NULL;
+AppBase *AppBase::sSingleton = NULL;
 
 // Static variables
 OnLaunchJSAsync *OnLaunchJSAsync::sSingleton;
@@ -102,7 +102,7 @@ void AppBase::sendToCompanion(const char *listenerName, const char *data) {
 }
 
 void AppBase::sendToCompanion(const char *listenerName, const char *data,
-                     const char *attachedFilePath) {
+                              const char *attachedFilePath) {
   // Make companion message
   BaseMessage *companionMessage = MessageFactory::makeCompanionMessage(
       this->mLocalChannel->getUri(), COMPANION_DEVICE_URI,
