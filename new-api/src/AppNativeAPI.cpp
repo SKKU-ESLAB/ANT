@@ -1,7 +1,6 @@
 /* Copyright (c) 2017 SKKU ESLAB, and contributors. All rights reserved.
  *
  * Contributor: Gyeonghwan Hong<redcarrottt@gmail.com>
- *              Dongig Sin<dongig@skku.edu>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -48,6 +47,9 @@ void AppNativeAPI::InitPrototype(Isolate *isolate) {
   Local<FunctionTemplate> funcTemplate = FunctionTemplate::New(isolate, New);
   funcTemplate->SetClassName(getV8String(isolate, JS_THIS_OBJECT_NAME));
   funcTemplate->InstanceTemplate()->SetInternalFieldCount(1);
+
+  // Get App ID
+  NODE_SET_PROTOTYPE_METHOD(funcTemplate, "getAppId", getAppId);
 
   // App Ready
   NODE_SET_PROTOTYPE_METHOD(funcTemplate, "appReady", appReady);
@@ -98,6 +100,21 @@ void AppNativeAPI::New(const FunctionCallbackInfo<Value> &args) {
     Local<Object> result = consFunction->NewInstance(context).ToLocalChecked();
     args.GetReturnValue().Set(result);
   }
+}
+
+// getAppId(function)
+void AppNativeAPI::getAppId(const FunctionCallbackInfo<Value>& args) {
+  Isolate *isolate = Isolate::GetCurrent();
+  HandleScope scope(isolate);
+
+  // Check arguments
+  if ((args.Length() != 0)) {
+    isolate->ThrowException(Exception::TypeError(
+        getV8String(isolate, "Invalid Use : 0 arguments expected")));
+    return;
+  }
+
+  args.GetReturnValue().Set(AppBase::singleton()->getAppId());
 }
 
 // appReady(function)

@@ -144,7 +144,7 @@ public:
     int statusCode = RESOURCE_STATUS_OK;
     std::string body("");
     ResourceResponse *payload = new ResourceResponse(
-        request->getOpType(), statusCode, requestMessage->getMessageId(), body);
+        request->getOpType(), requestMessage->getMessageId(), statusCode, body);
     BaseMessage *message = new BaseMessage(
         currentMessageId++, requestMessage->getUri(),
         requestMessage->getSenderUri(), BaseMessageType::ResourceResponse);

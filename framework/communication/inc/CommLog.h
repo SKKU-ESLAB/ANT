@@ -34,7 +34,7 @@
 #define null (void *)0
 #endif
 
-//#define NO_LOG
+#define NO_LOG
 
 
 #ifndef NO_LOG

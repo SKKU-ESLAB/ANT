@@ -18,7 +18,6 @@ init_wf()
 	fi
 
 	IS_INIT=`cat ${INIT_PATH}/self | awk '{print $1}'`
-	echo $IS_INIT
 	if [ "${IS_INIT}" = "1" ];
 	then
 		exit 1
@@ -49,9 +48,9 @@ init_wf()
 	sudo echo 0 > ${INIT_PATH}/self
 
 	sudo chown -R $USER:$USER /tmp/wifi
-	sudo ifconfig wlan0 up
-	sudo ${ANT_WPA_SUPPLICANT_PATH} -Dnl80211 -iwlan0 -c${P2P_CONF_PATH} -Bd
-	sudo ${ANT_WPA_CLI_PATH} p2p_group_add persistent=0
+	sudo ifconfig wlan0 up > /dev/null 2>&1
+	sudo ${ANT_WPA_SUPPLICANT_PATH} -Dnl80211 -iwlan0 -c${P2P_CONF_PATH} -Bd > /dev/null 2>&1
+	sudo ${ANT_WPA_CLI_PATH} p2p_group_add persistent=0 > /dev/null 2>&1
 	P2P_IFNAME=`ifconfig | awk '/p2p/ {print $1}'`
 	if [ -z ${P2P_IFNAME} ]
 	then
@@ -65,11 +64,11 @@ init_wf()
 	sudo ifconfig ${P2P_IFNAME} 192.168.49.1 up
 	DEV_ADDR=`cat ${DEV_ADDR_PATH}/self`
 	
-	sudo ${ANT_WPA_CLI_PATH} wps_pin any 12345670
+	sudo ${ANT_WPA_CLI_PATH} wps_pin any 12345670 > /dev/null 2>&1
 	sudo udhcpd ${DHCP_CONF_PATH} -f &
 	echo 1 > ${INIT_PATH}/self
 
-	echo Started
+	echo "WFD Start"
 }
 deinit_wfd()
 {
@@ -80,8 +79,8 @@ deinit_wfd()
 	exit 1
 	fi
 	P2P_IFNAME=`ifconfig | awk '/p2p/ {print $1}'`
-	sudo ${ANT_WPA_CLI_PATH} p2p_flush
-	sudo ${ANT_WPA_CLI_PATH} p2p_group_remove ${P2P_IFNAME}
+	sudo ${ANT_WPA_CLI_PATH} p2p_flush > /dev/null 2>&1
+	sudo ${ANT_WPA_CLI_PATH} p2p_group_remove ${P2P_IFNAME} > /dev/null 2>&1
 	sudo pkill -x udhcpd
 	sudo echo 0 > ${DHCP_STAT_PATH}/self
 	sudo rm /var/lib/dhcpcd5/dhcpcd-p2p-wlan0-* -f
@@ -99,7 +98,7 @@ start_wfd()
 	then
 	exit 1
 	fi
-	IS_START=`sudo ${ANT_WPA_CLI_PATH} wps_pin any 12345670 | grep 12345670`
+	IS_START=`sudo ${ANT_WPA_CLI_PATH} wps_pin any 12345670 | grep 12345670 > /dev/null 2>&1`
 	if [ -z ${IS_START} ]
 	then
 	echo "Failed to start WFD"
@@ -107,15 +106,15 @@ start_wfd()
 	
 	sudo echo 1 > ${WFD_STAT_PATH}/self
 
-	echo started
+	echo "Start WFD"
 }
 
 stop_wfd()
 {
-	sudo ${ANT_WPA_CLI_PATH} p2p_flush
+	sudo ${ANT_WPA_CLI_PATH} p2p_flush > /dev/null 2>&1
 	
 	sudo echo 0 > ${WFD_STAT_PATH}/self
-	echo stopped
+	echo "Stop WFD"
 }
 
 # Check required environment variables

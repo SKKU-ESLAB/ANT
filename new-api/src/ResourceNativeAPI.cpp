@@ -1,7 +1,6 @@
 /* Copyright (c) 2017-2018 SKKU ESLAB, and contributors. All rights reserved.
  *
  * Contributor: Gyeonghwan Hong<redcarrottt@gmail.com>
- *              Dongig Sin<dongig@skku.edu>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -218,7 +217,7 @@ void ResourceNativeAPI::sendRequest(ResourceOperationType::Value opType,
   // Send request
   int requestId = NativeResourceAPI::sendRequest(
       opType, senderUri, targetUri, body,
-      ResourceCallbackManager::onResourceResponse);
+      ResourceCallbackManager::onResourceResponseDbusThread);
 
   // Register response callback
   switch (opType) {
@@ -276,39 +275,73 @@ int ResourceCallbackManager::removeSubscription(std::string targetUri) {
 void ResourceCallbackManager::addJSCallback(
     int requestId, Local<Function> responseJSCallback) {
   // Register JS callback to be called on response message
-  Isolate *isolate = Isolate::GetCurrent();
-  CopyablePersistentFunction persistentCallback(isolate, responseJSCallback);
-
-  this->mResponseJSCallbacks.insert(
-      std::pair<int, CopyablePersistentFunction>(requestId, persistentCallback));
+  ResourceResponseCallbackAsync *responseCallback =
+      new ResourceResponseCallbackAsync(
+          ResourceCallbackManager::onResourceResponseMainThread,
+          responseJSCallback);
+  this->mResponseCallbacks.insert(
+      std::pair<int, ResourceResponseCallbackAsync *>(requestId,
+                                                      responseCallback));
 }
 
 void ResourceCallbackManager::removeJSCallback(int requestId) {
-  std::map<int, CopyablePersistentFunction>::iterator found =
-      this->mResponseJSCallbacks.find(requestId);
-  if (found != this->mResponseJSCallbacks.end()) {
-    found->second.Reset();
-    this->mResponseJSCallbacks.erase(found);
+  std::map<int, ResourceResponseCallbackAsync *>::iterator found =
+      this->mResponseCallbacks.find(requestId);
+  if (found != this->mResponseCallbacks.end()) {
+    ResourceResponseCallbackAsync *responseCallback = found->second;
+    responseCallback->destroy();
+    delete responseCallback;
+    this->mResponseCallbacks.erase(found);
   }
 }
 
-void ResourceCallbackManager::onResourceResponse(
+ResourceResponseCallbackAsync *
+ResourceCallbackManager::getCallback(int requestId) {
+  std::map<int, ResourceResponseCallbackAsync *>::iterator found =
+      this->mResponseCallbacks.find(requestId);
+  if (found != this->mResponseCallbacks.end()) {
+    ResourceResponseCallbackAsync *responseCallback = found->second;
+    return responseCallback;
+  }
+  return NULL;
+}
+
+void ResourceCallbackManager::onResourceResponseDbusThread(
     BaseMessage *responseMessage) {
   ResourceCallbackManager *self = ResourceCallbackManager::singleton();
+
   ResourceResponse *response =
       (ResourceResponse *)responseMessage->getPayload();
+
   int requestMessageId = response->getRequestMessageId();
   std::string &messageBody = response->getBody();
-  ResourceOperationType::Value opType = response->getOpType();
 
   // Find JS callback
-  std::map<int, CopyablePersistentFunction>::iterator found =
-      self->mResponseJSCallbacks.find(requestMessageId);
-  if (found == self->mResponseJSCallbacks.end()) {
+  std::map<int, ResourceResponseCallbackAsync *>::iterator found =
+      self->mResponseCallbacks.find(requestMessageId);
+  if (found == self->mResponseCallbacks.end()) {
     ANT_DBG_ERR("ResourceResponse: no JS callback is found: %s",
                 messageBody.c_str());
     return;
   }
+
+  // Make async event and send it to main thread
+  ResourceResponseCallbackAsync *callback = found->second;
+  self->mIncomingResponseList.push_back(responseMessage);
+  callback->callAsync();
+}
+
+void ResourceCallbackManager::onResourceResponseMainThread(uv_async_t *handle) {
+  ResourceCallbackManager *self = ResourceCallbackManager::singleton();
+
+  BaseMessage *responseMessage = self->mIncomingResponseList.front();
+  self->mIncomingResponseList.erase(self->mIncomingResponseList.begin());
+  ResourceResponse *response =
+      (ResourceResponse *)responseMessage->getPayload();
+
+  int requestMessageId = response->getRequestMessageId();
+  std::string &messageBody = response->getBody();
+  ResourceOperationType::Value opType = response->getOpType();
 
   // Initialize V8 context
   Isolate *isolate = Isolate::GetCurrent();
@@ -316,11 +349,15 @@ void ResourceCallbackManager::onResourceResponse(
   TryCatch try_catch;
 
   // Prepare the callback
-  CopyablePersistentFunction persistentCallback = found->second;
   Handle<Value> args[1] = {};
   args[0] = v8::String::NewFromUtf8(isolate, messageBody.c_str());
-  Local<Function> jsCallback =
-      Local<Function>::New(isolate, persistentCallback);
+  ResourceResponseCallbackAsync *thisCallback =
+      self->getCallback(requestMessageId);
+  if(thisCallback == NULL) {
+    ANT_DBG_ERR("Cannot find JS callback for the resource response");
+    return;
+  }
+  Local<Function> jsCallback = thisCallback->getJSFunction(isolate);
 
   // Execute the callback
   jsCallback->Call(isolate->GetCurrentContext()->Global(), 1, args);

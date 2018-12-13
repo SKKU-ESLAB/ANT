@@ -301,7 +301,7 @@ MessageFactory::makeResourceRequestFromJSON(cJSON *messagePayloadObj) {
   cJSON *opTypeObj = cJSON_GetObjectItem(thisObj, "opType");
   RETURN_IF_INVALID_CJSON_OBJ(opTypeObj, NULL);
   ResourceOperationType::Value opType =
-      ResourceOperationType::get(atoi(opTypeObj->valuestring));
+      ResourceOperationType::get(opTypeObj->valueint);
 
   cJSON *bodyObj = cJSON_GetObjectItem(thisObj, "body");
   RETURN_IF_INVALID_CJSON_OBJ(bodyObj, NULL);
@@ -320,15 +320,15 @@ MessageFactory::makeResourceResponseFromJSON(cJSON *messagePayloadObj) {
   cJSON *opTypeObj = cJSON_GetObjectItem(thisObj, "opType");
   RETURN_IF_INVALID_CJSON_OBJ(opTypeObj, NULL);
   ResourceOperationType::Value opType =
-      ResourceOperationType::get(atoi(opTypeObj->valuestring));
+      ResourceOperationType::get(opTypeObj->valueint);
 
   cJSON *requestMessageIdObj = cJSON_GetObjectItem(thisObj, "reqMsgId");
   RETURN_IF_INVALID_CJSON_OBJ(requestMessageIdObj, NULL);
-  int requestMessageId = atoi(requestMessageIdObj->valuestring);
+  int requestMessageId = requestMessageIdObj->valueint;
 
   cJSON *statusCodeObj = cJSON_GetObjectItem(thisObj, "statusCode");
   RETURN_IF_INVALID_CJSON_OBJ(statusCodeObj, NULL);
-  int statusCode = atoi(statusCodeObj->valuestring);
+  int statusCode = statusCodeObj->valueint;
 
   cJSON *bodyObj = cJSON_GetObjectItem(thisObj, "body");
   RETURN_IF_INVALID_CJSON_OBJ(bodyObj, NULL);

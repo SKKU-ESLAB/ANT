@@ -66,7 +66,7 @@ void MLDaemon::run() {
 
   // LocalChannel: run on main thread
   // Main loop starts to run in LocalChannel::run()
-  this->mLocalChannel->setListener(this);
+  this->mLocalChannel->addListener(this);
   this->mMessageRouter->addRoutingEntry(ML_URI, this->mLocalChannel);
   this->mLocalChannel->run();
 }
