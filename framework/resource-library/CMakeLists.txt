@@ -1,5 +1,5 @@
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/inc)
-include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../communication/inc)
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../cmfw-library/inc)
 link_directories(${CMAKE_SOURCE_DIR}/out/libs)
 
 add_definitions("`pkg-config --libs --cflags dbus-1 glib-2.0 dbus-glib-1`")
@@ -27,15 +27,15 @@ set(MESSAGE_sources
   ${MESSAGE_SOURCE_DIR}/MessageRouter.cpp
   ${MESSAGE_SOURCE_DIR}/cJSON.c)
 
-add_library(ant-message SHARED ${MESSAGE_sources})
-add_dependencies(ant-message ant-cmfw)
+add_library(ant-resource SHARED ${MESSAGE_sources})
+add_dependencies(ant-resource ant-cmfw)
 
-target_link_libraries(ant-message
+target_link_libraries(ant-resource
   ant-cmfw
   dbus-glib-1 dbus-1 glib-2.0 pthread
   bluetooth)
 
-set_target_properties(ant-message
+set_target_properties(ant-resource
   PROPERTIES
   ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/out/libs
   LIBRARY_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/out/libs

@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 2.8)
 
-add_subdirectory(message)
+add_subdirectory(resource-library)
 
 add_subdirectory(appcore)
 
@@ -9,7 +9,7 @@ if(CONFIG_CAMERA_FW STREQUAL "y")
 endif()
 
 if(CONFIG_COMM_FW STREQUAL "y")
-  add_subdirectory(communication)
+  add_subdirectory(cmfw-library)
 endif()
 
 if(CONFIG_SENSOR_FW STREQUAL "y")

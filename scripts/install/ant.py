@@ -101,15 +101,17 @@ def on_did_initialize(args):
     run_on_daemon(command=["./ant-camera"],
             name="Camera Framework Daemon")
     if args.debugsensor:
-        run_on_daemon(command=["/usr/bin/gdb", "./ant-sensor"],
-                name="Sensor Framework Daemon")
-        # run_on_daemon(command=["/usr/bin/gdb", "./ant-legacy-sensor"],
-        #         name="Legacy Sensor Framework Daemon")
+        # TODO: merging new sensor daemon is postponed.
+        # run_on_daemon(command=["/usr/bin/gdb", "./ant-sensor"],
+        #         name="Sensor Framework Daemon")
+        run_on_daemon(command=["/usr/bin/gdb", "./ant-legacy-sensor"],
+                name="Legacy Sensor Framework Daemon")
     else:
-        run_on_daemon(command=["./ant-sensor"],
-                name="Sensor Framework Daemon")
-        # run_on_daemon(command=["./ant-legacy-sensor"],
-        #         name="Legacy Sensor Framework Daemon")
+        # TODO: merging new sensor daemon is postponed.
+        # run_on_daemon(command=["./ant-sensor"],
+        #         name="Sensor Framework Daemon")
+        run_on_daemon(command=["./ant-legacy-sensor"],
+                name="Legacy Sensor Framework Daemon")
     if args.debugml:
         run_on_daemon(command=["/usr/bin/gdb", "./ant-ml"],
                 name="Machine Learning Framework Daemon")

@@ -22,7 +22,6 @@
 #include <string>
 
 #include "ANTdbugLog.h"
-#include "API.h"
 #include "AppBase.h"
 #include "CommNativeAPI.h"
 

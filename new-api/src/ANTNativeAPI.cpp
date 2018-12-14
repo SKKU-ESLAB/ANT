@@ -20,7 +20,6 @@
 #include <string.h>
 #include <string>
 
-#include "ANTNativeAPI.h"
 #include "AppBase.h"
 #include "AppNativeAPI.h"
 #include "CommNativeAPI.h"

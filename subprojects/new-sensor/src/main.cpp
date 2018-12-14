@@ -1,4 +1,4 @@
-/* Copyright (c) 2017 SKKU ESLAB, and contributors. All rights reserved.
+/* Copyright (c) 2017-2018 SKKU ESLAB, and contributors. All rights reserved.
  *
  * Contributor: Gyeonghwan Hong<redcarrottt@gmail.com>
  *
@@ -15,9 +15,13 @@
  * limitations under the License.
  */
 
-#ifndef __ANT_NATIVE_API_H__
-#define __ANT_NATIVE_API_H__
+#include <string>
+#include <iostream>
+#include <unistd.h>
 
-#include "AppBase.h"
+#include "SensorManager.h"
 
-#endif // !defined(__ANT_NATIVE_API_H__)
+int main(int argc, char* argv[]) {
+  // Start sensor manager
+  SensorManager::singleton()->run();
+}

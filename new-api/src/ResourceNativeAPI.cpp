@@ -22,7 +22,6 @@
 #include <string>
 
 #include "ANTdbugLog.h"
-#include "API.h"
 #include "AppBase.h"
 #include "ResourceNativeAPI.h"
 
@@ -353,7 +352,7 @@ void ResourceCallbackManager::onResourceResponseMainThread(uv_async_t *handle) {
   args[0] = v8::String::NewFromUtf8(isolate, messageBody.c_str());
   ResourceResponseCallbackAsync *thisCallback =
       self->getCallback(requestMessageId);
-  if(thisCallback == NULL) {
+  if (thisCallback == NULL) {
     ANT_DBG_ERR("Cannot find JS callback for the resource response");
     return;
   }
@@ -385,5 +384,9 @@ void ResourceCallbackManager::onResourceResponseMainThread(uv_async_t *handle) {
     // Do nothing
     break;
   }
+  }
+  
+  if(handle != NULL) {
+    uv_close((uv_handle_t*)handle, NULL);
   }
 }
