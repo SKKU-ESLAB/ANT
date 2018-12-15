@@ -26,12 +26,9 @@ import com.ant.ant_manager.view.SensorViewerActivity;
  * limitations under the License.
  */
 public class MotionClassifierMainIcon extends MainIcon {
-    private int mAppId;
-
     public MotionClassifierMainIcon(MainActivity ownerActivity, int appId) {
         super(ownerActivity, "Motion Classifier", BitmapFactory.decodeResource(ownerActivity
-                .getResources(), R.drawable.motionclassifier));
-        this.mAppId = appId;
+                .getResources(), R.drawable.motionclassifier), appId);
     }
 
     @Override
@@ -42,7 +39,7 @@ public class MotionClassifierMainIcon extends MainIcon {
             return;
         }
         Intent intent = new Intent(this.mOwnerActivity, MotionClassifierActivity.class);
-        intent.putExtra(SensorViewerActivity.INTENT_KEY_APP_ID, this.mAppId);
+        intent.putExtra(SensorViewerActivity.INTENT_KEY_APP_ID, this.getAppId());
         mOwnerActivity.startActivity(intent);
     }
 

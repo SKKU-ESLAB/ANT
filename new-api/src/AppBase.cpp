@@ -19,15 +19,20 @@
 #include <unistd.h>
 
 #include "AppBase.h"
-#include "BaseMessage.h"
+#include "AppCoreMessage.h"
+#include "AppMessage.h"
 #include "MessageFactory.h"
+#include "NativeResourceAPI.h"
 
 #define COMPANION_DEVICE_URI "/comp0"
 #define APPCORE_URI "/thing/appcore"
 #define ML_URI "/thing/ml"
 #define APPS_URI "/thing/apps"
+#define SENSOR_MANAGER_URI "/thing/sensors"
 
 #define PATH_BUFFER_SIZE 1024
+
+AppBase *AppBase::sSingleton = NULL;
 
 // Static variables
 OnLaunchJSAsync *OnLaunchJSAsync::sSingleton;
@@ -51,11 +56,15 @@ void AppBase::run() {
   this->mMessageRouter->addRoutingEntry(ML_URI, this->mDbusChannel);
   this->mMessageRouter->addRoutingEntry(COMPANION_DEVICE_URI,
                                         this->mDbusChannel);
+  this->mMessageRouter->addRoutingEntry(SENSOR_MANAGER_URI, this->mDbusChannel);
 
   // LocalChannel: run on child thread
   this->mMessageRouter->addRoutingEntry(appURI, this->mLocalChannel);
-  this->mLocalChannel->setListener(this);
+  this->mLocalChannel->addListener(this);
   this->mLocalChannel->run();
+
+  // Initialize Native Resource API
+  NativeResourceAPI::initialize(this->mMessageRouter, this->mLocalChannel);
 }
 
 // Send appcore commands
@@ -85,42 +94,6 @@ void AppBase::completeLaunchingApp() {
 }
 
 // Send companion commands
-void AppBase::sendEventPageToCompanion(const char *jsonData, bool isNoti) {
-  if (this->mAppId == -1) {
-    ANT_DBG_ERR("App ID is not initialized!");
-    return;
-  }
-
-  // Make companion message
-  BaseMessage *companionMessage = MessageFactory::makeCompanionMessage(
-      this->mLocalChannel->getUri(), COMPANION_DEVICE_URI,
-      CompanionMessageCommandType::SendEventPage);
-  CompanionMessage *companionPayload =
-      (CompanionMessage *)companionMessage->getPayload();
-  companionPayload->setParamsSendEventPage(this->mAppId, jsonData, isNoti);
-
-  // Send companion message
-  this->mLocalChannel->sendMessage(companionMessage);
-}
-
-void AppBase::sendConfigPageToCompanion(const char *jsonData) {
-  if (this->mAppId == -1) {
-    ANT_DBG_ERR("App ID is not initialized!");
-    return;
-  }
-
-  // Make companion message
-  BaseMessage *companionMessage = MessageFactory::makeCompanionMessage(
-      this->mLocalChannel->getUri(), COMPANION_DEVICE_URI,
-      CompanionMessageCommandType::SendConfigPage);
-  CompanionMessage *companionPayload =
-      (CompanionMessage *)companionMessage->getPayload();
-  companionPayload->setParamsSendConfigPage(this->mAppId, jsonData);
-
-  // Send companion message
-  this->mLocalChannel->sendMessage(companionMessage);
-}
-
 void AppBase::sendToCompanion(const char *listenerName, const char *data) {
   // Make companion message
   BaseMessage *companionMessage = MessageFactory::makeCompanionMessage(
@@ -135,7 +108,7 @@ void AppBase::sendToCompanion(const char *listenerName, const char *data) {
 }
 
 void AppBase::sendToCompanion(const char *listenerName, const char *data,
-                     const char *attachedFilePath) {
+                              const char *attachedFilePath) {
   // Make companion message
   BaseMessage *companionMessage = MessageFactory::makeCompanionMessage(
       this->mLocalChannel->getUri(), COMPANION_DEVICE_URI,
@@ -211,6 +184,11 @@ void AppBase::onReceivedMessage(BaseMessage *message) {
       // Do not handle it
       break;
     }
+    break;
+  }
+  case BaseMessageType::ResourceRequest:
+  case BaseMessageType::ResourceResponse: {
+    // Ignore it
     break;
   }
   case BaseMessageType::AppCore:

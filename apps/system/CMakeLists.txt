@@ -39,3 +39,13 @@ add_custom_target(
   WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
   )
 endif()
+
+if(CONFIG_TEST_APP STREQUAL y)
+add_custom_target(
+  test-system-app ALL
+  COMMAND cp -R ${CMAKE_CURRENT_SOURCE_DIR}/Test ${CMAKE_SOURCE_DIR}/out/apps/system/
+
+  COMMENT "Copy Test system application"
+  WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+  )
+endif()

@@ -1,7 +1,6 @@
 /* Copyright (c) 2017 SKKU ESLAB, and contributors. All rights reserved.
  *
  * Contributor: Gyeonghwan Hong<redcarrottt@gmail.com>
- *              Dongig Sin<dongig@skku.edu>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,10 +21,9 @@
 #include <string.h>
 #include <string>
 
-#include "AppNativeAPI.h"
-#include "API.h"
-#include "AppBase.h"
 #include "ANTdbugLog.h"
+#include "AppBase.h"
+#include "AppNativeAPI.h"
 
 using namespace v8;
 
@@ -33,63 +31,63 @@ using namespace v8;
 #define MESSAGE_BUFFER_SIZE 1024
 
 // Utility Functions
-#define getV8String(isolate, cstr) (String::NewFromOneByte(isolate, \
-      (const uint8_t*)cstr))
+#define getV8String(isolate, cstr)                                             \
+  (String::NewFromOneByte(isolate, (const uint8_t *)cstr))
 
 // Static Constructor
 Persistent<Function> AppNativeAPI::sConstructor;
 
 #define JS_THIS_OBJECT_NAME "AppNativeAPI"
 
-/* 
+/*
  * Prototype Initializer
  */
-void AppNativeAPI::InitPrototype(Isolate* isolate) {
+void AppNativeAPI::InitPrototype(Isolate *isolate) {
   // Prepare constructor template
   Local<FunctionTemplate> funcTemplate = FunctionTemplate::New(isolate, New);
   funcTemplate->SetClassName(getV8String(isolate, JS_THIS_OBJECT_NAME));
   funcTemplate->InstanceTemplate()->SetInternalFieldCount(1);
 
+  // Get App ID
+  NODE_SET_PROTOTYPE_METHOD(funcTemplate, "getAppId", getAppId);
+
   // App Ready
-  NODE_SET_PROTOTYPE_METHOD(funcTemplate,
-      "appReady", appReady);
-  
+  NODE_SET_PROTOTYPE_METHOD(funcTemplate, "appReady", appReady);
+
   // Lifecycle callbacks
-  NODE_SET_PROTOTYPE_METHOD(funcTemplate,
-      "onLaunch", onLaunch);
-  NODE_SET_PROTOTYPE_METHOD(funcTemplate,
-      "onTermination", onTermination);
+  NODE_SET_PROTOTYPE_METHOD(funcTemplate, "onLaunch", onLaunch);
+  NODE_SET_PROTOTYPE_METHOD(funcTemplate, "onTermination", onTermination);
 
   sConstructor.Reset(isolate, funcTemplate->GetFunction());
 }
 
-/* 
+/*
  * Constructor 1
  */
-void AppNativeAPI::NewInstance(const FunctionCallbackInfo<Value>& args) {
-  Isolate* isolate = args.GetIsolate();
+void AppNativeAPI::NewInstance(const FunctionCallbackInfo<Value> &args) {
+  Isolate *isolate = args.GetIsolate();
 
   Local<Function> consFunction = Local<Function>::New(isolate, sConstructor);
   Local<Context> context = isolate->GetCurrentContext();
   Local<Object> instance = consFunction->NewInstance(context).ToLocalChecked();
-  
+
   // No Arguments
 
   args.GetReturnValue().Set(instance);
 }
 
-/* 
+/*
  * Constructor 2
  */
-void AppNativeAPI::New(const FunctionCallbackInfo<Value>& args) {
-  Isolate* isolate = args.GetIsolate();
+void AppNativeAPI::New(const FunctionCallbackInfo<Value> &args) {
+  Isolate *isolate = args.GetIsolate();
 
-  if(args.IsConstructCall()) {
+  if (args.IsConstructCall()) {
     // Invoked as constructor: `new **(...)`
     // Get arguments: no arguments
 
     // Create a native object
-    AppNativeAPI* newObject = new AppNativeAPI();
+    AppNativeAPI *newObject = new AppNativeAPI();
     newObject->Wrap(args.This());
     args.GetReturnValue().Set(args.This());
   } else {
@@ -104,36 +102,51 @@ void AppNativeAPI::New(const FunctionCallbackInfo<Value>& args) {
   }
 }
 
-// appReady(function)
-void AppNativeAPI::appReady(const FunctionCallbackInfo<Value>& args) {
-  Isolate* isolate = Isolate::GetCurrent();
+// getAppId(function)
+void AppNativeAPI::getAppId(const FunctionCallbackInfo<Value>& args) {
+  Isolate *isolate = Isolate::GetCurrent();
   HandleScope scope(isolate);
 
   // Check arguments
   if ((args.Length() != 0)) {
-    isolate->ThrowException(Exception::TypeError(getV8String(isolate,
-            "Invalid Use : 0 arguments expected")));
+    isolate->ThrowException(Exception::TypeError(
+        getV8String(isolate, "Invalid Use : 0 arguments expected")));
+    return;
+  }
+
+  args.GetReturnValue().Set(AppBase::singleton()->getAppId());
+}
+
+// appReady(function)
+void AppNativeAPI::appReady(const FunctionCallbackInfo<Value> &args) {
+  Isolate *isolate = Isolate::GetCurrent();
+  HandleScope scope(isolate);
+
+  // Check arguments
+  if ((args.Length() != 0)) {
+    isolate->ThrowException(Exception::TypeError(
+        getV8String(isolate, "Invalid Use : 0 arguments expected")));
     return;
   }
 
   // App ready
-  gAppBase->appReady();
+  AppBase::singleton()->appReady();
 
   return;
 }
 
 // onLaunch(function)
-void AppNativeAPI::onLaunch(const FunctionCallbackInfo<Value>& args) {
-  Isolate* isolate = Isolate::GetCurrent();
+void AppNativeAPI::onLaunch(const FunctionCallbackInfo<Value> &args) {
+  Isolate *isolate = Isolate::GetCurrent();
   HandleScope scope(isolate);
 
   // Arguments
   Local<Function> onLaunchCallback;
 
   // Check arguments
-  if ((args.Length() != 1) ||	!args[0]->IsFunction()) {
-    isolate->ThrowException(Exception::TypeError(getV8String(isolate,
-            "Invalid Use : 1 arguments expected [Callback Function]")));
+  if ((args.Length() != 1) || !args[0]->IsFunction()) {
+    isolate->ThrowException(Exception::TypeError(getV8String(
+        isolate, "Invalid Use : 1 arguments expected [Callback Function]")));
     return;
   }
 
@@ -141,23 +154,23 @@ void AppNativeAPI::onLaunch(const FunctionCallbackInfo<Value>& args) {
   onLaunchCallback = Local<Function>::Cast(args[0]);
 
   // Register onTerminate callback
-  gAppBase->setOnLaunch(onLaunchCallback);
+  AppBase::singleton()->setOnLaunch(onLaunchCallback);
 
   return;
 }
 
 // onTermination(function)
-void AppNativeAPI::onTermination(const FunctionCallbackInfo<Value>& args) {
-  Isolate* isolate = Isolate::GetCurrent();
+void AppNativeAPI::onTermination(const FunctionCallbackInfo<Value> &args) {
+  Isolate *isolate = Isolate::GetCurrent();
   HandleScope scope(isolate);
 
   // Arguments
   Local<Function> onTerminateCallback;
 
   // Check arguments
-  if ((args.Length() != 1) ||	!args[0]->IsFunction()) {
-    isolate->ThrowException(Exception::TypeError(getV8String(isolate,
-            "Invalid Use : 1 arguments expected [Callback Function]")));
+  if ((args.Length() != 1) || !args[0]->IsFunction()) {
+    isolate->ThrowException(Exception::TypeError(getV8String(
+        isolate, "Invalid Use : 1 arguments expected [Callback Function]")));
     return;
   }
 
@@ -165,7 +178,7 @@ void AppNativeAPI::onTermination(const FunctionCallbackInfo<Value>& args) {
   onTerminateCallback = Local<Function>::Cast(args[0]);
 
   // Register onTerminate callback
-  gAppBase->setOnTerminate(onTerminateCallback);
+  AppBase::singleton()->setOnTerminate(onTerminateCallback);
 
   return;
 }

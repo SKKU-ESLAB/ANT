@@ -1,6 +1,6 @@
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/inc)
-include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../message/inc)
-include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../communication/inc)
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../resource-library/inc)
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../cmfw-library/inc)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/libminiunz)
 include_directories(/usr/local/xml/include/libxml2)
 link_directories(/usr/local/xml/lib)
@@ -25,10 +25,10 @@ set(ACM_sources
   ${ACM_SOURCE_DIR}/AppList.cpp)
 
 add_executable(ant-appcore ${ACM_sources} $<TARGET_OBJECTS:miniunz>)
-add_dependencies(ant-appcore ant-message)
+add_dependencies(ant-appcore ant-resource)
 
 target_link_libraries(ant-appcore
-  ant-message ant-cmfw
+  ant-resource ant-cmfw
   sqlite3 xml2 ${ANT_LIBMINIUNZ})
 
 set_target_properties(ant-appcore

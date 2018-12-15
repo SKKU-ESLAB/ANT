@@ -26,7 +26,7 @@ public class ConnectMainIcon extends MainIcon {
 
     public ConnectMainIcon(MainActivity ownerActivity) {
         super(ownerActivity, "Connect", BitmapFactory.decodeResource(ownerActivity.getResources(),
-                R.drawable.connect));
+                R.drawable.connect), -1);
     }
 
     @Override

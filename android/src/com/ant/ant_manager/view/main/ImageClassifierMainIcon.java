@@ -27,12 +27,9 @@ import com.ant.ant_manager.view.MainActivity;
  */
 
 public class ImageClassifierMainIcon extends MainIcon {
-    private int mAppId;
-
     public ImageClassifierMainIcon(MainActivity ownerActivity, int appId) {
         super(ownerActivity, "Image Classifier", BitmapFactory.decodeResource(ownerActivity
-                .getResources(), R.drawable.imageclassifier));
-        this.mAppId = appId;
+                .getResources(), R.drawable.imageclassifier), appId);
     }
 
     @Override
@@ -43,7 +40,7 @@ public class ImageClassifierMainIcon extends MainIcon {
             return;
         }
         Intent intent = new Intent(this.mOwnerActivity, ImageClassifierActivity.class);
-        intent.putExtra(CameraViewerActivity.INTENT_KEY_APP_ID, this.mAppId);
+        intent.putExtra(CameraViewerActivity.INTENT_KEY_APP_ID, this.getAppId());
         mOwnerActivity.startActivity(intent);
     }
 

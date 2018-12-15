@@ -38,4 +38,7 @@
     <string name="IP2">2</string>
     <string name="IP3">3</string>
     <string name="Connect">Connect</string>
+    <string name="up_arrow">Up arrow</string>
+    <string name="down_arrow">Down arrow</string>
+    <string name="contents_image_view">Contents image view</string>
 </resources>

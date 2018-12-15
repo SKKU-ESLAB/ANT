@@ -37,3 +37,12 @@ exports.comm = function() {
 exports.remoteUI = function() {
   return require(path.join(__dirname, 'remoteUI'));
 }
+
+exports.resource = function() {
+  // TODO: wrapping resource API
+  return antNative.resource();
+}
+
+exports.sensor = function() {
+  return require(path.join(__dirname, 'sensor'));
+}
