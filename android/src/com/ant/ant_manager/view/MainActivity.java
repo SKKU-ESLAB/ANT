@@ -1,6 +1,6 @@
 package com.ant.ant_manager.view;
 
-/* Copyright (c) 2017 SKKU ESLAB, and contributors. All rights reserved.
+/* Copyright (c) 2017-2018 SKKU ESLAB, and contributors. All rights reserved.
  *
  * Contributor: Gyeonghwan Hong<redcarrottt@gmail.com>
  *              Dongig Sin<dongig@skku.edu>
@@ -58,6 +58,7 @@ import com.ant.ant_manager.view.main.MotionClassifierMainIcon;
 import com.ant.ant_manager.view.main.SensorViewerMainIcon;
 import com.ant.ant_manager.view.main.UserAppMainIcon;
 import com.ant.ant_manager.view.remoteui.RemoteConfigUIActivity;
+import com.ant.ant_manager.view.remoteui.RemoteUIBroadcastReceiver;
 import com.ant.ant_manager.view.remoteui.RemoteUIService;
 import com.ant.cmfw.service.CommChannelService;
 
@@ -213,12 +214,12 @@ public class MainActivity extends Activity {
 
     // Connect to RemoteUIService
     private RemoteUIService mRemoteUIServiceStub;
+    private PrivateRemoteUIBroadcastReceiver mRemoteUIBroadcastReceiver;
 
     private void initializeRemoteUIService() {
         // Launch RemoteUIService for setting connection with target ANT device.
         Intent serviceIntent = new Intent(this, RemoteUIService.class);
-        this.bindService(serviceIntent, this.mRemoteUIServiceConnection, Context
-                .BIND_AUTO_CREATE);
+        this.bindService(serviceIntent, this.mRemoteUIServiceConnection, Context.BIND_AUTO_CREATE);
     }
 
     private void disconnectRemoteUIService() {
@@ -229,14 +230,21 @@ public class MainActivity extends Activity {
     private ServiceConnection mRemoteUIServiceConnection = new ServiceConnection() {
         @Override
         public void onServiceConnected(ComponentName componentName, IBinder inputBinder) {
-            RemoteUIService.RemoteUIBinder serviceBinder = (RemoteUIService
-                    .RemoteUIBinder) inputBinder;
+            RemoteUIService.RemoteUIBinder serviceBinder = (RemoteUIService.RemoteUIBinder)
+                    inputBinder;
             mRemoteUIServiceStub = serviceBinder.getService();
             mRemoteUIServiceStub.initialize();
+
+            // Set BroadcastReceiver
+            IntentFilter broadcastIntentFilter = new IntentFilter();
+            broadcastIntentFilter.addAction(RemoteUIBroadcastReceiver.ACTION);
+            mRemoteUIBroadcastReceiver = new PrivateRemoteUIBroadcastReceiver();
+            registerReceiver(mRemoteUIBroadcastReceiver, broadcastIntentFilter);
         }
 
         @Override
         public void onServiceDisconnected(ComponentName componentName) {
+            unregisterReceiver(mRemoteUIBroadcastReceiver);
             mRemoteUIServiceStub = null;
         }
     };
@@ -545,12 +553,14 @@ public class MainActivity extends Activity {
                 holder = new RecordHolder();
                 holder.title = (TextView) row.findViewById(R.id.item_text);
                 holder.imageItem = (ImageView) row.findViewById(R.id.item_image);
+
                 row.setTag(holder);
             } else {
                 holder = (RecordHolder) row.getTag();
             }
 
             MainIcon item = mMainIconList.get(position);
+            item.setIconImageView(holder.imageItem);
             holder.title.setText(item.getTitle());
             holder.imageItem.setImageBitmap(item.getIconBitmap());
             return row;
@@ -617,5 +627,25 @@ public class MainActivity extends Activity {
             }
         }
         updateUI();
+    }
+
+    class PrivateRemoteUIBroadcastReceiver extends RemoteUIBroadcastReceiver {
+        PrivateRemoteUIBroadcastReceiver() {
+            this.setOnRemoteNotiUIListener(new OnRemoteNotiUIListener() {
+                @Override
+                public void onRemoteNotiUI(int appId, String description, String attachedFilePath) {
+                    updatePopupNoti(appId, description, attachedFilePath);
+                }
+            });
+        }
+    }
+
+    public void updatePopupNoti(int appId, String description, String attachedFilePath) {
+        for (MainIcon icon : this.mMainIconList) {
+            if (appId == icon.getAppId()) {
+                icon.updatePopupView(description, attachedFilePath);
+                return;
+            }
+        }
     }
 }

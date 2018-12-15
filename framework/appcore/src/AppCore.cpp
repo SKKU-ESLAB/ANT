@@ -40,7 +40,8 @@ extern "C" {
 
 #include "AppCore.h"
 #include "ANTdbugLog.h"
-#include "BaseMessage.h"
+#include "AppCoreMessage.h"
+#include "AppMessage.h"
 #include "MessageFactory.h"
 #include "AppList.h"
 
@@ -156,7 +157,7 @@ void AppCore::run() {
 
   // LocalChannel: run on main thread
   // Main loop starts to run in LocalChannel::run()
-  this->mLocalChannel->setListener(this);
+  this->mLocalChannel->addListener(this);
   this->mMessageRouter->addRoutingEntry(APPCORE_URI, this->mLocalChannel);
   this->mLocalChannel->run();
 }

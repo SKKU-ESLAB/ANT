@@ -39,7 +39,13 @@ public:
   friend class OnTerminateJSAsync;
   friend class OnUpdateAppConfigJSAsync;
 
-  AppBase() : mAppId(-1) {}
+  static AppBase *singleton() {
+    if (sSingleton == NULL) {
+      sSingleton = new AppBase();
+    }
+    return sSingleton;
+  }
+
   ~AppBase() {
     if (this->mMessageRouter != NULL)
       delete this->mMessageRouter;
@@ -55,6 +61,9 @@ public:
   // LocalChannelListener
   virtual void onReceivedMessage(BaseMessage *message);
 
+  // Get app id
+  int getAppId() { return this->mAppId; }
+
   // App Ready
   void appReady();
 
@@ -67,8 +76,6 @@ public:
   void completeLaunchingApp();
 
   // Send companion commands
-  void sendEventPageToCompanion(const char *jsonData, bool isNoti);
-  void sendConfigPageToCompanion(const char *jsonData);
   void sendToCompanion(const char *listenerName, const char *data);
   void sendToCompanion(const char *listenerName, const char *data,
                        const char *attachedFilePath);
@@ -80,6 +87,9 @@ public:
   void onRunModelAsyncHandler(uv_async_t *handle);
 
 protected:
+  static AppBase *sSingleton;
+  AppBase() : mAppId(-1) {}
+
   // App ID
   int mAppId;
 

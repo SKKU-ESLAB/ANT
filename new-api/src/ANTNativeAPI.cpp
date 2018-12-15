@@ -20,11 +20,11 @@
 #include <string.h>
 #include <string>
 
-#include "ANTNativeAPI.h"
 #include "AppBase.h"
 #include "AppNativeAPI.h"
-#include "MLNativeAPI.h"
 #include "CommNativeAPI.h"
+#include "MLNativeAPI.h"
+#include "ResourceNativeAPI.h"
 
 using namespace v8;
 
@@ -32,19 +32,12 @@ using namespace v8;
 #define MESSAGE_BUFFER_SIZE 1024
 
 // Utility Functions
-#define getV8String(isolate, cstr) (String::NewFromOneByte(isolate, \
-      (const uint8_t*)cstr))
+#define getV8String(isolate, cstr)                                             \
+  (String::NewFromOneByte(isolate, (const uint8_t *)cstr))
 
-AppBase* gAppBase = NULL;
-
-void initAppBase(){
-  if(gAppBase != NULL) {
-    printf("AppBase is already initialized!");
-    return; 
-  }
-
-  gAppBase = new AppBase();
-  gAppBase->run();
+void initAppBase() {
+  AppBase* appBase = AppBase::singleton();
+  appBase->run();
 }
 
 // antnative Object
@@ -55,11 +48,13 @@ void init(Local<Object> exports) {
   AppNativeAPI::InitPrototype(exports->GetIsolate());
   MLNativeAPI::InitPrototype(exports->GetIsolate());
   CommNativeAPI::InitPrototype(exports->GetIsolate());
+  ResourceNativeAPI::InitPrototype(exports->GetIsolate());
 
   // Set entries as API object's constructors
   NODE_SET_METHOD(exports, "app", AppNativeAPI::NewInstance);
   NODE_SET_METHOD(exports, "ml", MLNativeAPI::NewInstance);
   NODE_SET_METHOD(exports, "comm", CommNativeAPI::NewInstance);
+  NODE_SET_METHOD(exports, "resource", ResourceNativeAPI::NewInstance);
 }
 
 NODE_MODULE(NODE_GYP_MODULE_NAME, init)

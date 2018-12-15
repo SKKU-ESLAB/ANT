@@ -21,6 +21,7 @@ dependencies {
     implementation 'cn.dxjia:ffmpegexecutor:0.1.6'
     implementation 'com.fasterxml.jackson.core:jackson-core:2.9.7'
     implementation 'com.fasterxml.jackson.core:jackson-databind:2.9.7'
+    implementation 'com.koushikdutta.async:androidasync:2.+'
 }
 
 android {

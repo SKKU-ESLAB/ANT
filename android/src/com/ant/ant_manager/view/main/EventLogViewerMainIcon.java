@@ -29,7 +29,7 @@ public class EventLogViewerMainIcon extends MainIcon {
 
     public EventLogViewerMainIcon(MainActivity ownerActivity) {
         super(ownerActivity, "Event Log", BitmapFactory.decodeResource(ownerActivity.getResources
-                (), R.drawable.eventlogger));
+                (), R.drawable.eventlogger), -1);
     }
 
     @Override

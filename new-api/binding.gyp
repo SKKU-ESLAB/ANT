@@ -3,19 +3,19 @@
     {
       'target_name': 'antnative',
       'sources': [
+        'src/ANTNativeAPI.cpp',
         'src/AppBase.cpp',
-        'src/API.cpp',
-        'src/AppAPI.cpp',
-        'src/AppAPIInternal.cpp',
-        'src/MLAPI.cpp',
-        'src/CommAPI.cpp'
+        'src/AppNativeAPI.cpp',
+        'src/MLNativeAPI.cpp',
+        'src/CommNativeAPI.cpp',
+        'src/ResourceNativeAPI.cpp'
        ],
       'link_settings': {
         'libraries': [
           '<!@(pkg-config glib-2.0 --libs)',
           '<!@(pkg-config dbus-1 --libs)',
           "-L<(PRODUCT_DIR)/../../../out/libs -lant-cmfw",
-          "-L<(PRODUCT_DIR)/../../../out/libs -lant-message",
+          "-L<(PRODUCT_DIR)/../../../out/libs -lant-resource",
         ],
         'ldflags': [
           '-Wl,-rpath'
@@ -25,8 +25,8 @@
         './inc',
         '<!@(pkg-config glib-2.0 --cflags-only-I | sed s/-I//g)',
         '<!@(pkg-config dbus-1 --cflags-only-I | sed s/-I//g)',
-        '../framework/message/inc',
-        '../framework/communication/inc'
+        '../framework/resource-library/inc',
+        '../framework/cmfw-library/inc'
       ]
     }
   ]
