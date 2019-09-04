@@ -22,3 +22,6 @@
 [submodule "android/libs/armeabi"]
   path = android/libs/armeabi
   url = https://github.com/SKKU-ESLAB/ant-android-libs-armeabi.git
+[submodule "subprojects/selective-connection"]
+	path = subprojects/selective-connection
+	url = https://github.com/SKKU-ESLAB/selective-connection
