@@ -1,16 +1,12 @@
 var console = require('console');
-var http = require('http');
+// var http = require('http');
 
-var ant1 = require('ant');
+var ant = require('ant');
 
 function main_loop() {
   console.log('main loop start');
 
-  ant1.set_initialize();
-  ant1.set_main();
-
-  var ant2 = require('ant');
-  ant2.set_initialize();
+  console.log(ant.runtime.setCurrentApp());
 
   var server = http.createServer();
   server.on('request', function (request, response) {
