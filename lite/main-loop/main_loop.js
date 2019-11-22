@@ -21,16 +21,16 @@ function parseUrl(url) {
 
 function onAliveRequest(request, data) {
   var results = {
-    message = "Alive",
-    code = 200
+    message: "Alive",
+    code: 200
   };
   return results;
 }
 
 function onAppCommand(request, data) {
   var results = {
-    message = "Invalid command",
-    code = 500
+    message: "Invalid command",
+    code: 500
   };
   var command = data.toString();
   if (command == "start") {
@@ -44,8 +44,8 @@ function onAppCommand(request, data) {
 var current_app_object = undefined;
 function onInstallApp(request, data) {
   var results = {
-    message = RESULT_FAILED,
-    code = 500
+    message: RESULT_FAILED,
+    code: 500
   };
 
   // Write app code
@@ -65,8 +65,8 @@ function onInstallApp(request, data) {
 
 function onRemoveApp(request, data) {
   var results = {
-    message = "Not yet implemented",
-    code = 500
+    message: "Not yet implemented",
+    code: 500
   };
   // TODO: not yet implemented
   return results;
@@ -74,8 +74,8 @@ function onRemoveApp(request, data) {
 
 function onStartApp(request, data) {
   var results = {
-    message = RESULT_FAILED,
-    code = 500
+    message: RESULT_FAILED,
+    code: 500
   };
   var app = ant.runtime.getCurrentApp();
   if (app != undefined) {
@@ -90,8 +90,8 @@ function onStartApp(request, data) {
 function onGetAppInfo(request, data) {
   var currentApp = ant.runtime.getCurrentApp();
   var results = {
-    message = "No App Found",
-    code = 500
+    message: "No App Found",
+    code: 500
   };
 
   if (currentApp != undefined) {
@@ -104,8 +104,8 @@ function onGetAppInfo(request, data) {
 
 function onStopApp(request, data) {
   var results = {
-    message = "Not yet implemented",
-    code = 500
+    message: "Not yet implemented",
+    code: 500
   };
   // TODO: not yet implemented
   return results;
@@ -115,8 +115,8 @@ function _onHTTPRequest(request, response, data) {
   response.setHeader('Content-Type', 'text/html');
   var urlTokens = parseUrl(request.url);
   var results = {
-    message = "Not Found Entry",
-    code = 404
+    message: "Not Found Entry",
+    code: 404
   };
 
   if (urlTokens.length == 0) {
