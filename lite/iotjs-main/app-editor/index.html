@@ -1,0 +1,103 @@
+<html>
+
+<head>
+  <!-- jQuery -->
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
+
+  <!-- Material Lite -->
+  <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
+  <link rel="stylesheet" href="https://code.getmdl.io/1.3.0/material.indigo-pink.min.css">
+  <script defer src="https://code.getmdl.io/1.3.0/material.min.js"></script>
+
+  <style>
+    /* auto-grow */
+    .wrap {
+      width: 500px;
+    }
+
+    .wrap textarea {
+      width: 100%;
+      resize: none;
+      overflow-y: hidden;
+      /* prevents scroll bar flash */
+      padding: 1.1em;
+      /* prevents text jump on Enter keypress */
+      padding-bottom: 0.2em;
+      line-height: 1.6;
+      font-family: 'Courier New', Courier, monospace;
+      font-size: 12pt;
+    }
+  </style>
+  <script>
+    /* auto-grow */
+    $(document).ready(function () {
+      $('.wrap').on('keyup', 'textarea', function (e) {
+        $(this).css('height', 'auto');
+        $(this).height(this.scrollHeight);
+      });
+      $('.wrap').find('textarea').keyup();
+    });
+  </script>
+  <title>ANT App Editor</title>
+</head>
+
+<body>
+  <!-- Always shows a header, even in smaller screens. -->
+  <div class="mdl-layout mdl-js-layout mdl-layout--fixed-header">
+    <header class="mdl-layout__header">
+      <div class="mdl-layout__header-row">
+        <!-- Title -->
+        <span class="mdl-layout-title">ANT App Editor</span>
+        <!-- Add spacer, to align navigation to the right -->
+        <div class="mdl-layout-spacer"></div>
+        <!-- Navigation. We hide it in small screens. -->
+        <!-- <nav class="mdl-navigation mdl-layout--large-screen-only">
+          <a class="mdl-navigation__link" href="">Menu1</a>
+          <a class="mdl-navigation__link" href="">Menu2</a>
+          <a class="mdl-navigation__link" href="">Menu3</a>
+        </nav> -->
+      </div>
+    </header>
+    <main class="mdl-layout__content">
+      <div class="page-content">
+        <br />
+        <button name="installAppButton" type="button"
+          class="mdl-button mdl-js-button mdl-button--raised mdl-js-ripple-effect mdl-button--accent">
+          Install App
+        </button>
+        <button name="removeAppButton" type="button"
+          class="mdl-button mdl-js-button mdl-button--raised mdl-js-ripple-effect mdl-button--accent">
+          Remove App
+        </button>
+        <h5 name="statusLabel">
+          Ready
+        </h5>
+        <br />
+        <div class="wrap mdl-textfield mdl-js-textfield">
+          <textarea name="appCode" class="mdl-textfield__input">
+var ant = require('ant');
+var console = require('console');
+
+var on_initialize = function() {
+  console.log('on_initialize');
+};
+
+var on_start = function() {
+  console.log('on_start');
+};
+
+var on_stop = function() {
+  console.log('on_stop');
+};
+
+ant.runtime.setCurrentApp(on_initialize, on_start, on_stop);
+</textarea>
+          <label class="mdl-textfield__label" for="sample5">Write your ANT App...</label>
+        </div>
+
+      </div>
+    </main>
+  </div>
+</body>
+
+</html>
