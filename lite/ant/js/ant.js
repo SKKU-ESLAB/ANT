@@ -3,32 +3,34 @@ var console = require('console');
 var RESULT_SUCCESS = "Success";
 var RESULT_FAILED = "Failed";
 
+var APP_JS_FILENAME = "./app.js";
+
 /** Runtime API start **/
 var RuntimeAPI = { _current_app: undefined };
 
-RuntimeAPI.setCurrentApp = function (on_initialize, on_start, on_stop) {
-  if (!(on_initialize instanceof Function)
-    || !(on_start instanceof Function)
-    || !(on_stop instanceof Function)) {
+RuntimeAPI.setCurrentApp = function (onInitialize, onStart, onStop) {
+  if (!(onInitialize instanceof Function)
+    || !(onStart instanceof Function)
+    || !(onStop instanceof Function)) {
     return RESULT_FAILED;
   }
-  _current_app = new App(on_initialize, on_start, on_stop);
+  this._current_app = new App(onInitialize, onStart, onStop);
 
   return RESULT_SUCCESS;
 };
 
 RuntimeAPI.getCurrentApp = function () {
-  return _current_app;
+  return this._current_app;
 };
 
 /* App start */
-function App(on_initialize, on_start, on_stop) {
+function App(onInitialize, onStart, onStop) {
   this.state = this.STATE.IDLE;
-  this.on_initialize = on_initialize;
-  this.on_start = on_start;
-  this.on_stop = on_stop;
+  this.onInitialize = onInitialize;
+  this.onStart = onStart;
+  this.onStop = onStop;
 
-  this.on_initialize();
+  this.onInitialize();
 }
 
 App.prototype.STATE = {};
@@ -39,7 +41,7 @@ App.prototype.start = function () {
   if (this.state == this.STATE.RUNNING) {
     return RESULT_FAILED;
   }
-  this.on_start();
+  this.onStart();
   return RESULT_SUCCESS;
 };
 
@@ -47,7 +49,7 @@ App.prototype.stop = function () {
   if (this.state == this.STATE.IDLE) {
     return RESULT_FAILED;
   }
-  this.on_stop();
+  this.onStop();
   return RESULT_SUCCESS;
 };
 
@@ -59,6 +61,13 @@ App.prototype.getState = function () {
   } else {
     return "Unknown";
   }
+};
+
+App.prototype.getInfo = function () {
+  var appInfo = {
+    "state": this.getState()
+  };
+  return appInfo;
 };
 /* App end */
 
