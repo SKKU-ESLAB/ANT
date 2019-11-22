@@ -7,6 +7,8 @@ var ant = require('ant');
 var RESULT_SUCCESS = "Success";
 var RESULT_FAILED = "Failed";
 
+var APP_JS_FILENAME = "./app.js";
+
 function parseUrl(url) {
   var urlTokens = url.split('/');
   var uniqueTokens = [];
@@ -48,27 +50,38 @@ function onInstallApp(request, data) {
     code: 500
   };
 
-  // Write app code
-  var fd = fs.openSync(APP_JS_FILENAME, 'w');
-  fs.writeSync(fd, appCode, 0, appCode.length);
-  fs.closeSync(APP_JS_FILENAME);
+  if (ant.runtime.getCurrentApp() === undefined) {
+    // Write app code
+    var fd = fs.openSync(APP_JS_FILENAME, 'w');
+    var appCode = data;
+    fs.writeSync(fd, appCode, 0, appCode.length);
+    fs.closeSync(fd);
 
-  // Execute app code with initializaiton function
-  current_app_object = require(APP_JS_FILENAME);
+    // Execute app code with initializaiton function
+    current_app_object = require(APP_JS_FILENAME);
 
-  if (ant.runtime.getCurrentApp() !== undefined) {
-    results.message = RESULT_SUCCESS;
-    results.code = 200;
+    if (ant.runtime.getCurrentApp() !== undefined) {
+      results.message = RESULT_SUCCESS;
+      results.code = 200;
+    }
   }
   return results;
 }
 
 function onRemoveApp(request, data) {
   var results = {
-    message: "Not yet implemented",
+    message: RESULT_FAILED,
     code: 500
   };
-  // TODO: not yet implemented
+
+  if (ant.runtime.getCurrentApp() !== undefined) {
+    ant.runtime._removeCurrentApp();
+    if (fs.existsSync(APP_JS_FILENAME)) {
+      fs.unlinkSync(APP_JS_FILENAME);
+    }
+    results.message = RESULT_SUCCESS;
+    results.code = 200;
+  }
   return results;
 }
 
@@ -102,12 +115,33 @@ function onGetAppInfo(request, data) {
   return results;
 }
 
-function onStopApp(request, data) {
+function onGetAppCode(request, data) {
   var results = {
-    message: "Not yet implemented",
+    message: "No App Code Found",
     code: 500
   };
-  // TODO: not yet implemented
+
+  if (fs.existsSync(APP_JS_FILENAME)) {
+    var appCode = fs.readFileSync(APP_JS_FILENAME);
+    results.message = appCode.toString();
+    results.code = 200;
+  }
+
+  return results;
+}
+
+function onStopApp(request, data) {
+  var results = {
+    message: RESULT_FAILED,
+    code: 500
+  };
+  var app = ant.runtime.getCurrentApp();
+  if (app != undefined) {
+    results.message = app.stop();
+    if (results.message == RESULT_SUCCESS) {
+      results.code = 200;
+    }
+  }
   return results;
 }
 
@@ -119,17 +153,19 @@ function _onHTTPRequest(request, response, data) {
     code: 404
   };
 
+  // console.log(urlTokens.toString());
+
   if (urlTokens.length == 0) {
     // "/*"
     if (request.method == "GET") {
       // GET "/": Alive message
       results = onAliveRequest(request, data);
     }
-  } else if (urlTokens[1] == "runtime") {
+  } else if (urlTokens[0] == "runtime") {
     // "/runtime*"
     if (urlTokens.length == 1) {
       // "/runtime": Not found
-    } else if (urlTokens[2] == "currentApp") {
+    } else if (urlTokens[1] == "currentApp") {
       // "/runtime/currentApp*"
       if (urlTokens.length == 2) {
         // "/runtime/currentApp"
@@ -143,13 +179,13 @@ function _onHTTPRequest(request, response, data) {
           // DELETE "/runtime/currentApp"
           results = onRemoveApp(request, data);
         }
-      } else if (urlTokens[3] == "command") {
+      } else if (urlTokens[2] == "command") {
         // "/runtime/currentApp/command"
         if (request.method == "POST") {
           // POST "/runtime/currentApp/command"
           results = onAppCommand(request, data);
         }
-      } else if (urlTokens[3] == "code") {
+      } else if (urlTokens[2] == "code") {
         // "/runtime/currentApp/code"
         if (request.method == "GET") {
           // GET "/runtime/currentApp/code"
@@ -159,7 +195,7 @@ function _onHTTPRequest(request, response, data) {
     }
   }
 
-  response.setHeader('Content-Length', responseMessage.length);
+  response.setHeader('Content-Length', results.message.length);
   response.writeHead(results.code);
   response.write(results.message);
   response.end();
@@ -169,13 +205,13 @@ function onHTTPRequest(request, response) {
   console.log('Request for path: ' + request.url);
 
   var parts = [];
-  response.on('data', function (chunk) {
+  request.on('data', function (chunk) {
     parts.push(chunk);
   });
-  response.on('end', function () {
+  request.on('end', function () {
     var body = Buffer.concat(parts);
-    console.log(body.toString());
-    _onHTTPRequest(request, response, data);
+    console.log('Request data: ' + body.toString());
+    _onHTTPRequest(request, response, body);
   });
 }
 
