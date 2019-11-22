@@ -8,6 +8,16 @@ var RESULT_SUCCESS = "Success";
 var RESULT_FAILED = "Failed";
 
 var APP_JS_FILENAME = "./app.js";
+var MAIN_LOOP_DIR_PATH = truncateFile(process.argv[1]);
+
+function truncateFile(path) {
+  var tokens = path.split("/");
+  var truncatedPath = "";
+  for (var i = 0; i < tokens.length - 1; i++) {
+    truncatedPath += tokens[i] + "/";
+  }
+  return truncatedPath;
+}
 
 function parseUrl(url) {
   var urlTokens = url.split('/');
@@ -145,6 +155,31 @@ function onStopApp(request, data) {
   return results;
 }
 
+function onGetAppEditorPage(request, data) {
+  var results = {
+    message: RESULT_FAILED,
+    code: 500
+  };
+
+  var urlTokens = parseUrl(request.url);
+  urlTokens.splice(0, 1);
+  var path = MAIN_LOOP_DIR_PATH + "app-editor";
+  if(urlTokens.length == 0) {
+    path += "/index.html";
+  } else {
+    for (i in urlTokens) {
+      path += "/" + urlTokens[i];
+    }
+  }
+  console.log(path);
+  if (fs.existsSync(path)) {
+    var indexHtml = fs.readFileSync(path);
+    results.message = indexHtml;
+    results.code = 200;
+  }
+  return results;
+}
+
 function _onHTTPRequest(request, response, data) {
   response.setHeader('Content-Type', 'text/html');
   var urlTokens = parseUrl(request.url);
@@ -156,10 +191,16 @@ function _onHTTPRequest(request, response, data) {
   // console.log(urlTokens.toString());
 
   if (urlTokens.length == 0) {
-    // "/*"
+    // "/"
     if (request.method == "GET") {
       // GET "/": Alive message
       results = onAliveRequest(request, data);
+    }
+  } else if (urlTokens[0] == "app-editor") {
+    // "/alive"
+    if (request.method == "GET") {
+      // GET "/": Return app editor page
+      results = onGetAppEditorPage(request, data);
     }
   } else if (urlTokens[0] == "runtime") {
     // "/runtime*"
