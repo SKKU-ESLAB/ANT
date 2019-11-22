@@ -3,10 +3,12 @@ var console = require('console');
 var RESULT_SUCCESS = "Success";
 var RESULT_FAILED = "Failed";
 
-var APP_JS_FILENAME = "./app.js";
-
 /** Runtime API start **/
 var RuntimeAPI = { _current_app: undefined };
+
+RuntimeAPI._removeCurrentApp = function() {
+  this._current_app = undefined;
+};
 
 RuntimeAPI.setCurrentApp = function (onInitialize, onStart, onStop) {
   if (!(onInitialize instanceof Function)
@@ -41,6 +43,7 @@ App.prototype.start = function () {
   if (this.state == this.STATE.RUNNING) {
     return RESULT_FAILED;
   }
+  this.state = this.STATE.RUNNING;
   this.onStart();
   return RESULT_SUCCESS;
 };
@@ -49,6 +52,7 @@ App.prototype.stop = function () {
   if (this.state == this.STATE.IDLE) {
     return RESULT_FAILED;
   }
+  this.state = this.STATE.IDLE;
   this.onStop();
   return RESULT_SUCCESS;
 };
