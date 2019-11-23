@@ -63,6 +63,22 @@
       return $('#targetAddressInput').val();
     }
 
+    function setAppCode(appCode) {
+      $("#appCode").val(appCode);
+      $('.wrap').find('textarea').keyup();
+    }
+
+    function showSnackbar(message, actionText, handler, timeoutMS) {
+      var data = {
+        message: message,
+        timeout: timeoutMS,
+        actionHandler: handler,
+        actionText: actionText
+      };
+      var snackbarContainer = document.querySelector('#demo-snackbar-example');
+      snackbarContainer.MaterialSnackbar.showSnackbar(data);
+    }
+
     var RESULT_SUCCESS = "Success";
     var RESULT_FAILED = "Failed";
 
@@ -94,15 +110,59 @@
       });
     }
 
+    function onReloadCodeButton() {
+      console.log("onReloadCodeButton");
+      var url = "http://" + getTargetUrl() + "/runtime/currentApp/code";
+      var data = $("#appCode").val();
+      sendHTTPRequest(url, "GET", data, function (responseCode, responseText) {
+        if (responseCode == 200) {
+          setAppCode(responseText);
+          changeStatusLabel("Loading app code success");
+        } else {
+          changeStatusLabel("Loading app code failed: " + responseText);
+        }
+      });
+    }
+
+    function onLoadDefaultCodeButton() {
+      console.log("onLoadDefaultCodeButton");
+      var defaultAppCode = "var ant = require('ant');\n\
+var console = require('console');\n\
+\n\
+var on_initialize = function() {\n\
+  console.log('on_initialize');\n\
+};\n\
+\n\
+var on_start = function() {\n\
+  console.log('on_start');\n\
+};\n\
+\n\
+var on_stop = function() {\n\
+  console.log('on_stop');\n\
+};\n\
+\n\
+ant.runtime.setCurrentApp(on_initialize, on_start, on_stop);";
+      setAppCode(defaultAppCode);
+    }
+
+    /* Buttons setting */
     $(document).ready(function () {
       $('#installAppButton').click(onInstallAppButton);
       $('#removeAppButton').click(onRemoveAppButton);
+      $('#reloadCodeButton').click(onReloadCodeButton);
+      $('#loadDefaultCodeButton').click(onLoadDefaultCodeButton);
     });
+
+    /* Snackbar setting */
   </script>
   <title>ANT App Editor</title>
 </head>
 
 <body>
+  <div id="demo-snackbar-example" class="mdl-js-snackbar mdl-snackbar">
+    <div class="mdl-snackbar__text"></div>
+    <button class="mdl-snackbar__action" type="button"></button>
+  </div>
   <!-- Always shows a header, even in smaller screens. -->
   <div class="mdl-layout mdl-js-layout mdl-layout--fixed-header">
     <header class="mdl-layout__header">
@@ -122,13 +182,13 @@
     <main class="mdl-layout__content">
       <div class="page-content">
         <br />
-        <form>
-          <div class="mdl-textfield mdl-js-textfield mdl-textfield--floating-label">
-            <input class="mdl-textfield__input" type="text" id="targetAddressInput" value="192.168.0.33:8001" />
-            <label class="mdl-textfield__label" for="targetAddressInput">Target Device's Address (ex.
-              192.168.0.123:8001)</label>
-          </div>
-        </form>
+        <div class="mdl-textfield mdl-js-textfield mdl-textfield--floating-label">
+          <input class="mdl-textfield__input" type="text" id="targetAddressInput" value="192.168.0.33:8001" />
+          <!-- TODO: hardcoded IP address -->
+          <label class="mdl-textfield__label" for="targetAddressInput">Target Device's Address (ex.
+            192.168.0.123:8001)</label>
+        </div>
+        <br />
         <button type="button" id="installAppButton"
           class="mdl-button mdl-js-button mdl-button--raised mdl-js-ripple-effect mdl-button--accent">
           Install App
@@ -137,29 +197,20 @@
           class="mdl-button mdl-js-button mdl-button--raised mdl-js-ripple-effect mdl-button--accent">
           Remove App
         </button>
-        <h5 id="statusLabel">
+        <button type="button" id="reloadCodeButton"
+          class="mdl-button mdl-js-button mdl-button--raised mdl-js-ripple-effect mdl-button--accent">
+          Reload Code
+        </button>
+        <button type="button" id="loadDefaultCodeButton"
+          class="mdl-button mdl-js-button mdl-button--raised mdl-js-ripple-effect mdl-button--accent">
+          Load Default Code
+        </button>
+        <h4 id="statusLabel">
           Ready
-        </h5>
+        </h4>
+        <h5 id="appCodeLabel">App Code:</h5>
         <div class="wrap mdl-textfield mdl-js-textfield">
-          <textarea id="appCode" class="mdl-textfield__input">
-var ant = require('ant');
-var console = require('console');
-
-var on_initialize = function() {
-  console.log('on_initialize');
-};
-
-var on_start = function() {
-  console.log('on_start');
-};
-
-var on_stop = function() {
-  console.log('on_stop');
-};
-
-ant.runtime.setCurrentApp(on_initialize, on_start, on_stop);
-</textarea>
-          <label class="mdl-textfield__label" for="sample5">Write your ANT App...</label>
+          <textarea id="appCode" class="mdl-textfield__input"></textarea>
         </div>
 
       </div>
