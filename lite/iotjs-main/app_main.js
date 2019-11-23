@@ -14,21 +14,74 @@ var Config = function () {
   this.showHTTPRequestPath = true;
   this.showHTTPRequestData = false;
 };
-var config = new Config();
+var gConfig = new Config();
 /* App Main Config END */
 
+/* App File Name START */
 function AppFileName() {
   this.filename = undefined;
   this.fileindex = 0;
+  var MAX_FILE_INDEX = 2;
   this.get = function () {
     return this.filename;
   }
   this.set_new = function () {
-    this.fileindex = (this.fileindex + 1) % 2;
+    this.fileindex = (this.fileindex + 1) % MAX_FILE_INDEX;
     this.filename = "./app" + this.fileindex + ".js";
   }
+  this.initialize = function () {
+    var isFileExists = false;
+    for (var i = 0; i < MAX_FILE_INDEX; i++) {
+      this.set_new();
+      if (fs.existsSync(this.get())) {
+        isFileExists = true;
+        break;
+      }
+    }
+    if (!isFileExists) {
+      this.filename = undefined;
+    }
+  }
+  this.initialize();
 }
-var appFileName = new AppFileName();
+var gAppFileName = new AppFileName();
+/* App File Name END */
+
+/* App Loader START */
+function AppCodeManager() {
+  this.current_app_object = undefined;
+  this.load = function (appFileName) {
+    this.current_app_object = require(appFileName);
+  };
+  this.install = function (appCodeBuffer) {
+    // Write app code
+    gAppFileName.set_new();
+    var fd = fs.openSync(gAppFileName.get(), 'w');
+    fs.writeSync(fd, appCodeBuffer, 0, appCodeBuffer.length);
+    fs.closeSync(fd);
+
+    // Load app code
+    gAppCodeManager.load(gAppFileName.get());
+
+    if (ant.runtime.getCurrentApp() !== undefined) {
+      return true;
+    } else {
+      // IF failed, Remove app code
+      this.remove(gAppFileName.get());
+      return false;
+    }
+  };
+  this.remove = function (appFileName) {
+    // Remove app code
+    ant.runtime._removeCurrentApp();
+    if (fs.existsSync(appFileName)) {
+      fs.unlinkSync(appFileName);
+    }
+  };
+}
+var gAppCodeManager = new AppCodeManager();
+/* App Loader END */
+
 
 function truncateFile(path) {
   var tokens = path.split("/");
@@ -73,7 +126,6 @@ function onAppCommand(request, data) {
   return results;
 }
 
-var current_app_object = undefined;
 function onInstallApp(request, data) {
   var results = {
     message: RESULT_FAILED,
@@ -81,17 +133,9 @@ function onInstallApp(request, data) {
   };
 
   if (ant.runtime.getCurrentApp() === undefined) {
-    // Write app code
-    appFileName.set_new();
-    var fd = fs.openSync(appFileName.get(), 'w');
-    var appCode = data;
-    fs.writeSync(fd, appCode, 0, appCode.length);
-    fs.closeSync(fd);
-
-    // Execute app code with initializaiton function
-    current_app_object = require(appFileName.get());
-
-    if (ant.runtime.getCurrentApp() !== undefined) {
+    var appCodeBuffer = data;
+    var isSuccess = gAppCodeManager.install(appCodeBuffer);
+    if (isSuccess) {
       results.message = RESULT_SUCCESS;
       results.code = 200;
     }
@@ -106,10 +150,7 @@ function onRemoveApp(request, data) {
   };
 
   if (ant.runtime.getCurrentApp() !== undefined) {
-    ant.runtime._removeCurrentApp();
-    if (fs.existsSync(appFileName.get())) {
-      fs.unlinkSync(appFileName.get());
-    }
+    gAppCodeManager.remove(gAppFileName.get());
     results.message = RESULT_SUCCESS;
     results.code = 200;
   }
@@ -152,8 +193,8 @@ function onGetAppCode(request, data) {
     code: 500
   };
 
-  if (fs.existsSync(appFileName.get())) {
-    var appCode = fs.readFileSync(appFileName.get());
+  if (fs.existsSync(gAppFileName.get())) {
+    var appCode = fs.readFileSync(gAppFileName.get());
     results.message = appCode.toString();
     results.code = 200;
   }
@@ -264,7 +305,7 @@ function _onHTTPRequest(request, response, data) {
 }
 
 function onHTTPRequest(request, response) {
-  if (config.showHTTPRequestPath) {
+  if (gConfig.showHTTPRequestPath) {
     console.log('Request for path: ' + request.url);
   }
 
@@ -274,15 +315,37 @@ function onHTTPRequest(request, response) {
   });
   request.on('end', function () {
     var body = Buffer.concat(parts);
-    if (config.showHTTPRequestData) {
+    if (gConfig.showHTTPRequestData) {
       console.log('Request data: ' + body.toString());
     }
     _onHTTPRequest(request, response, body);
   });
 }
 
+function loadExistingAppCode() {
+  if (gAppFileName.get() === undefined) {
+    return false;
+  }
+
+  // Load app code
+  console.log("loadExistingAppCode");
+  gAppCodeManager.load(gAppFileName.get());
+
+  if (ant.runtime.getCurrentApp() === undefined) {
+    console.log("getCurrentApp" + ant.runtime.getCurrentApp());
+    return false;
+  }
+
+  return true;
+}
+
 function mainLoop() {
   console.log('main loop start');
+
+  var isAppExists = loadExistingAppCode();
+  if (isAppExists) {
+    console.log('Existing app loaded!');
+  }
 
   var server = http.createServer();
   server.on('request', onHTTPRequest);
