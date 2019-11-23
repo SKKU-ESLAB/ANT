@@ -67,6 +67,17 @@
       $("#appCode").val(appCode);
       $('.wrap').find('textarea').keyup();
     }
+    
+    function loadTargetAppCode(handler) {
+      var url = "http://" + getTargetUrl() + "/runtime/currentApp/code";
+      var data = $("#appCode").val();
+      sendHTTPRequest(url, "GET", data, function (responseCode, responseText) {
+        if (responseCode == 200) {
+          setAppCode(responseText);
+        }
+        handler(responseCode, responseText);
+      });
+    }
 
     function showSnackbar(message, actionText, handler, timeoutMS) {
       var data = {
@@ -112,11 +123,8 @@
 
     function onReloadCodeButton() {
       console.log("onReloadCodeButton");
-      var url = "http://" + getTargetUrl() + "/runtime/currentApp/code";
-      var data = $("#appCode").val();
-      sendHTTPRequest(url, "GET", data, function (responseCode, responseText) {
+      loadTargetAppCode(function (responseCode, responseText) {
         if (responseCode == 200) {
-          setAppCode(responseText);
           changeStatusLabel("Loading app code success");
         } else {
           changeStatusLabel("Loading app code failed: " + responseText);
@@ -151,6 +159,8 @@ ant.runtime.setCurrentApp(on_initialize, on_start, on_stop);";
       $('#removeAppButton').click(onRemoveAppButton);
       $('#reloadCodeButton').click(onReloadCodeButton);
       $('#loadDefaultCodeButton').click(onLoadDefaultCodeButton);
+
+      loadTargetAppCode();
     });
 
     /* Snackbar setting */
