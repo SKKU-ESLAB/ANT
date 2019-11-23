@@ -160,7 +160,11 @@ ant.runtime.setCurrentApp(on_initialize, on_start, on_stop);";
       $('#reloadCodeButton').click(onReloadCodeButton);
       $('#loadDefaultCodeButton').click(onLoadDefaultCodeButton);
 
-      loadTargetAppCode();
+      loadTargetAppCode(function (responseCode, responseText) {
+        if (responseCode == 200) {
+          changeStatusLabel("Existing app code is loaded");
+        }
+      });
     });
 
     /* Snackbar setting */
