@@ -7,8 +7,20 @@ var ant = require('ant');
 var RESULT_SUCCESS = "Success";
 var RESULT_FAILED = "Failed";
 
-var APP_JS_FILENAME = "./app.js";
 var MAIN_LOOP_DIR_PATH = truncateFile(process.argv[1]);
+
+function AppFileName() {
+  this.filename = undefined;
+  this.fileindex = 0;
+  this.get = function () {
+    return this.filename;
+  }
+  this.set_new = function () {
+    this.fileindex = (this.fileindex + 1) % 2;
+    this.filename = "./app" + this.fileindex + ".js";
+  }
+}
+var appFileName = new AppFileName();
 
 function truncateFile(path) {
   var tokens = path.split("/");
@@ -60,18 +72,17 @@ function onInstallApp(request, data) {
     code: 500
   };
 
-  console.log(ant.runtime.getCurrentApp());
   if (ant.runtime.getCurrentApp() === undefined) {
     // Write app code
-    var fd = fs.openSync(APP_JS_FILENAME, 'w');
+    appFileName.set_new();
+    var fd = fs.openSync(appFileName.get(), 'w');
     var appCode = data;
     fs.writeSync(fd, appCode, 0, appCode.length);
     fs.closeSync(fd);
 
     // Execute app code with initializaiton function
-    current_app_object = require(APP_JS_FILENAME);
+    current_app_object = require(appFileName.get());
 
-    console.log(ant.runtime.getCurrentApp());
     if (ant.runtime.getCurrentApp() !== undefined) {
       results.message = RESULT_SUCCESS;
       results.code = 200;
@@ -88,8 +99,8 @@ function onRemoveApp(request, data) {
 
   if (ant.runtime.getCurrentApp() !== undefined) {
     ant.runtime._removeCurrentApp();
-    if (fs.existsSync(APP_JS_FILENAME)) {
-      fs.unlinkSync(APP_JS_FILENAME);
+    if (fs.existsSync(appFileName.get())) {
+      fs.unlinkSync(appFileName.get());
     }
     results.message = RESULT_SUCCESS;
     results.code = 200;
@@ -133,8 +144,8 @@ function onGetAppCode(request, data) {
     code: 500
   };
 
-  if (fs.existsSync(APP_JS_FILENAME)) {
-    var appCode = fs.readFileSync(APP_JS_FILENAME);
+  if (fs.existsSync(appFileName.get())) {
+    var appCode = fs.readFileSync(appFileName.get());
     results.message = appCode.toString();
     results.code = 200;
   }
@@ -166,14 +177,14 @@ function onGetAppEditorPage(request, data) {
   var urlTokens = parseUrl(request.url);
   urlTokens.splice(0, 1);
   var path = MAIN_LOOP_DIR_PATH + "app-editor";
-  if(urlTokens.length == 0) {
+  if (urlTokens.length == 0) {
     path += "/index.html";
   } else {
     for (i in urlTokens) {
       path += "/" + urlTokens[i];
     }
   }
-  console.log(path);
+  // console.log(path);
   if (fs.existsSync(path)) {
     var indexHtml = fs.readFileSync(path);
     results.message = indexHtml;
