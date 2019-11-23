@@ -60,6 +60,7 @@ function onInstallApp(request, data) {
     code: 500
   };
 
+  console.log(ant.runtime.getCurrentApp());
   if (ant.runtime.getCurrentApp() === undefined) {
     // Write app code
     var fd = fs.openSync(APP_JS_FILENAME, 'w');
@@ -70,6 +71,7 @@ function onInstallApp(request, data) {
     // Execute app code with initializaiton function
     current_app_object = require(APP_JS_FILENAME);
 
+    console.log(ant.runtime.getCurrentApp());
     if (ant.runtime.getCurrentApp() !== undefined) {
       results.message = RESULT_SUCCESS;
       results.code = 200;
