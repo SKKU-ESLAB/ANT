@@ -9,6 +9,14 @@ var RESULT_FAILED = "Failed";
 
 var MAIN_LOOP_DIR_PATH = truncateFile(process.argv[1]);
 
+/* App Main Config START */
+var Config = function () {
+  this.showHTTPRequestPath = true;
+  this.showHTTPRequestData = false;
+};
+var config = new Config();
+/* App Main Config END */
+
 function AppFileName() {
   this.filename = undefined;
   this.fileindex = 0;
@@ -256,7 +264,9 @@ function _onHTTPRequest(request, response, data) {
 }
 
 function onHTTPRequest(request, response) {
-  console.log('Request for path: ' + request.url);
+  if (config.showHTTPRequestPath) {
+    console.log('Request for path: ' + request.url);
+  }
 
   var parts = [];
   request.on('data', function (chunk) {
@@ -264,7 +274,9 @@ function onHTTPRequest(request, response) {
   });
   request.on('end', function () {
     var body = Buffer.concat(parts);
-    console.log('Request data: ' + body.toString());
+    if (config.showHTTPRequestData) {
+      console.log('Request data: ' + body.toString());
+    }
     _onHTTPRequest(request, response, body);
   });
 }
