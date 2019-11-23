@@ -47,7 +47,7 @@ function AppFileName() {
 var gAppFileName = new AppFileName();
 /* App File Name END */
 
-/* App Loader START */
+/* App Code Manager START */
 function AppCodeManager() {
   this.current_app_object = undefined;
   this.load = function (appFileName) {
@@ -77,10 +77,11 @@ function AppCodeManager() {
     if (fs.existsSync(appFileName)) {
       fs.unlinkSync(appFileName);
     }
+    return true;
   };
 }
 var gAppCodeManager = new AppCodeManager();
-/* App Loader END */
+/* App Code Manager END */
 
 
 function truncateFile(path) {
@@ -150,9 +151,11 @@ function onRemoveApp(request, data) {
   };
 
   if (ant.runtime.getCurrentApp() !== undefined) {
-    gAppCodeManager.remove(gAppFileName.get());
-    results.message = RESULT_SUCCESS;
-    results.code = 200;
+    var isSuccess = gAppCodeManager.remove(gAppFileName.get());
+    if (isSuccess) {
+      results.message = RESULT_SUCCESS;
+      results.code = 200;
+    }
   }
   return results;
 }
