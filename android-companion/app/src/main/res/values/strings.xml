@@ -3,4 +3,5 @@
     <string name="title_home">Home</string>
     <string name="title_notifications">Notifications</string>
     <string name="title_streaming">Streaming</string>
+    <string name="defaultTargetAddress">192.168.0.33:8001</string>
 </resources>
