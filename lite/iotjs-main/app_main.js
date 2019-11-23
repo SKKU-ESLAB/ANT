@@ -172,6 +172,21 @@ function onStartApp(request, data) {
   return results;
 }
 
+function onStopApp(request, data) {
+  var results = {
+    message: RESULT_FAILED,
+    code: 500
+  };
+  var app = ant.runtime.getCurrentApp();
+  if (app != undefined) {
+    results.message = app.stop();
+    if (results.message == RESULT_SUCCESS) {
+      results.code = 200;
+    }
+  }
+  return results;
+}
+
 function onGetAppInfo(request, data) {
   var currentApp = ant.runtime.getCurrentApp();
   var results = {
@@ -199,21 +214,6 @@ function onGetAppCode(request, data) {
     results.code = 200;
   }
 
-  return results;
-}
-
-function onStopApp(request, data) {
-  var results = {
-    message: RESULT_FAILED,
-    code: 500
-  };
-  var app = ant.runtime.getCurrentApp();
-  if (app != undefined) {
-    results.message = app.stop();
-    if (results.message == RESULT_SUCCESS) {
-      results.code = 200;
-    }
-  }
   return results;
 }
 
