@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/container"
     android:layout_width="match_parent"
     android:layout_height="match_parent">
@@ -32,22 +33,22 @@
         app:navGraph="@navigation/mobile_navigation" />
 
     <Button
-        android:id="@+id/buttonConnect"
+        android:id="@+id/buttonAppStartStop"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginEnd="16dp"
-        android:text="Connect"
+        android:text="Start"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/buttonIpSetting" />
+        app:layout_constraintTop_toBottomOf="@+id/buttonConnect" />
 
-    <TextView
-        android:id="@+id/textIp"
+    <EditText
+        android:id="@+id/editTextTargetAddress"
         android:layout_width="254dp"
         android:layout_height="46dp"
         android:layout_marginStart="16dp"
         android:layout_marginTop="16dp"
         android:gravity="center_vertical"
-        android:text="IP: "
+        android:text="@string/defaultTargetAddress"
         android:textSize="24sp"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
@@ -61,15 +62,15 @@
         android:text="Not Connected"
         android:textSize="24sp"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/textIp" />
+        app:layout_constraintTop_toBottomOf="@+id/editTextTargetAddress" />
 
     <Button
-        android:id="@+id/buttonIpSetting"
+        android:id="@+id/buttonConnect"
         android:layout_width="89dp"
         android:layout_height="48dp"
         android:layout_marginTop="16dp"
         android:layout_marginEnd="16dp"
-        android:text="Setting"
+        android:text="Connect"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
 

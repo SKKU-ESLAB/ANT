@@ -6,14 +6,33 @@ import androidx.lifecycle.ViewModel;
 
 public class HomeViewModel extends ViewModel {
 
-    private MutableLiveData<String> mText;
+    private MutableLiveData<Boolean> mIsAppRunning;
 
     public HomeViewModel() {
-        mText = new MutableLiveData<>();
-        mText.setValue("This is home fragment");
+        this.connectTarget();
     }
 
-    public LiveData<String> getText() {
-        return mText;
+    public void connectTarget() {
+        // TODO: not yet implemented
+    }
+
+    private void checkAndUpdateAppStatus() {
+        // TODO: not yet implemented
+    }
+
+    public void startApp() {
+        // TODO: not yet implemented
+    }
+
+    public void stopApp() {
+        // TODO: not yet implemented
+    }
+
+    public void loadAppCode() {
+        // TODO: not yet implemented
+    }
+
+    public LiveData<Boolean> isAppRunning() {
+        return this.mIsAppRunning;
     }
 }
