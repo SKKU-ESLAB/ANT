@@ -16,7 +16,8 @@ public class StreamingFragment extends Fragment {
 
     private StreamingViewModel streamingViewModel;
 
-    public View onCreateView(@NonNull LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
+    public View onCreateView(@NonNull LayoutInflater inflater,
+                             ViewGroup container, Bundle savedInstanceState) {
         streamingViewModel =
                 ViewModelProviders.of(this).get(StreamingViewModel.class);
         View root =
