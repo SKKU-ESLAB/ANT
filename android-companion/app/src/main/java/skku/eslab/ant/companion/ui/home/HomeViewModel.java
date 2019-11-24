@@ -5,27 +5,9 @@ import androidx.lifecycle.MutableLiveData;
 import androidx.lifecycle.ViewModel;
 
 public class HomeViewModel extends ViewModel {
-
-    private MutableLiveData<Boolean> mIsAppRunning;
+    private MutableLiveData<Boolean> mIsAppRunning = new MutableLiveData<>();
 
     public HomeViewModel() {
-        this.connectTarget();
-    }
-
-    public void connectTarget() {
-        // TODO: not yet implemented
-    }
-
-    private void checkAndUpdateAppStatus() {
-        // TODO: not yet implemented
-    }
-
-    public void startApp() {
-        // TODO: not yet implemented
-    }
-
-    public void stopApp() {
-        // TODO: not yet implemented
     }
 
     public void loadAppCode() {
