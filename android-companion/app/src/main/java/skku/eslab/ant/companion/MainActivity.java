@@ -1,11 +1,20 @@
 package skku.eslab.ant.companion;
 
+import android.content.SharedPreferences;
+import android.os.AsyncTask;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.View;
 import android.widget.Button;
+import android.widget.EditText;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.google.android.material.bottomnavigation.BottomNavigationView;
+
+import java.io.IOException;
+import java.net.HttpURLConnection;
+import java.net.URL;
 
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.lifecycle.MutableLiveData;
@@ -16,11 +25,14 @@ import androidx.navigation.ui.AppBarConfiguration;
 import androidx.navigation.ui.NavigationUI;
 
 public class MainActivity extends AppCompatActivity {
+    private final String SP_FILENAME = "ANT";
+    private final String SP_TARGET_ADDRESS = "TargetAddress";
+    private final String SP_DEFAULT_TARGET_ADDRESS = "192.168.0.33:8001";
+
     private MutableLiveData<String> mConnectionStatus = new MutableLiveData<>();
     private final String CS_DISCONNECTED = "Disconnected";
-    private final String CS_CONNECTING = "Connecting";
     private final String CS_CONNECTED = "Connected";
-    // TODO: hardcoded: no CS_DISCONNECTING
+    // TODO: hardcoded: no CS_CONNECTING, CS_DISCONNECTING
 
     private MutableLiveData<String> mAppStatus = new MutableLiveData<>();
     private final String AS_IDLE = "Idle";
@@ -43,6 +55,12 @@ public class MainActivity extends AppCompatActivity {
                 appBarConfiguration);
         NavigationUI.setupWithNavController(navView, navController);
 
+        // Setting target address edit text
+        EditText targetAddressEditText = findViewById(R.id.targetAddressEditText);
+        SharedPreferences sharedPref = getSharedPreferences(SP_FILENAME, MODE_PRIVATE);
+        String targetAddress = sharedPref.getString(SP_TARGET_ADDRESS, SP_DEFAULT_TARGET_ADDRESS);
+        targetAddressEditText.setText(targetAddress);
+
         // Register data observers
         this.mConnectionStatus.observe(this, new Observer<String>() {
             @Override
@@ -62,22 +80,26 @@ public class MainActivity extends AppCompatActivity {
         this.mAppStatus.setValue(AS_IDLE);
 
         // Register button listeners
-        Button connectButton = findViewById(R.id.connectButton);
-        connectButton.setOnClickListener(onClickConnectButton);
-
         Button appStartStopButton = findViewById(R.id.appStartStopButton);
-        connectButton.setOnClickListener(onClickAppStartStopButton);
+        appStartStopButton.setOnClickListener(onClickAppStartStopButton);
 
-        // Try to connect target
-        this.connectTarget();
+        // Monitor thread
+        Thread monitorThread = new Thread() {
+            @Override
+            public void run() {
+                while (true) {
+                    checkConnectionStatus();
+                    checkAppStatus();
+                    try {
+                        Thread.sleep(1000);
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+                }
+            }
+        };
+        monitorThread.start();
     }
-
-    private View.OnClickListener onClickConnectButton = new View.OnClickListener() {
-        @Override
-        public void onClick(View view) {
-            connectTarget();
-        }
-    };
 
     private View.OnClickListener onClickAppStartStopButton = new View.OnClickListener() {
         @Override
@@ -86,10 +108,13 @@ public class MainActivity extends AppCompatActivity {
                 return;
             }
 
-            if (mAppStatus.getValue().equals(AS_IDLE)) {
-                startApp();
-            } else if (mAppStatus.getValue().equals(AS_RUNNING)) {
-                stopApp();
+            switch (mAppStatus.getValue()) {
+                case AS_IDLE:
+                    startApp();
+                    break;
+                case AS_RUNNING:
+                    stopApp();
+                    break;
             }
         }
     };
@@ -97,46 +122,135 @@ public class MainActivity extends AppCompatActivity {
     private void onUpdateConnectionStatus(String connectionStatus) {
         TextView statusLabel = findViewById(R.id.statusLabel);
         statusLabel.setText(connectionStatus);
-
-        Button connectButton = findViewById(R.id.connectButton);
-        if (connectionStatus.equals(CS_DISCONNECTED)) {
-            connectButton.setEnabled(true);
-        } else if (connectionStatus.equals(CS_CONNECTED)) {
-            connectButton.setEnabled(false);
-        }
     }
 
     private void onUpdateAppStatus(String appStatus) {
         Button appStartStopButton = findViewById(R.id.appStartStopButton);
-        if (appStatus.equals(AS_IDLE)) {
-            appStartStopButton.setText("Start");
-            appStartStopButton.setEnabled(true);
-        } else if (appStatus.equals(AS_RUNNING)) {
-            appStartStopButton.setText("Stop");
-            appStartStopButton.setEnabled(true);
-        } else if (appStatus.equals(AS_LAUNCHING)) {
-            appStartStopButton.setText("Now launching");
-            appStartStopButton.setEnabled(false);
-        } else if (appStatus.equals(AS_TERMINATING)) {
-            appStartStopButton.setText("Now terminating");
-            appStartStopButton.setEnabled(false);
+        switch (appStatus) {
+            case AS_IDLE:
+                appStartStopButton.setText("Start");
+                appStartStopButton.setEnabled(true);
+                break;
+            case AS_RUNNING:
+                appStartStopButton.setText("Stop");
+                appStartStopButton.setEnabled(true);
+                break;
+            case AS_LAUNCHING:
+                appStartStopButton.setText("Now launching");
+                appStartStopButton.setEnabled(false);
+                break;
+            case AS_TERMINATING:
+                appStartStopButton.setText("Now terminating");
+                appStartStopButton.setEnabled(false);
+                break;
         }
     }
 
-    private void connectTarget() {
-        // TODO: not yet implemented
-
+    private String getTargetAddress() {
+        EditText targetAddress = findViewById(R.id.targetAddressEditText);
+        return "http://" + targetAddress.getText().toString();
     }
 
-    private void checkAndUpdateAppStatus() {
-        // TODO: not yet implemented
+    interface HTTPResponseHandler {
+        void onHTTPResponse(int code, String message);
+    }
+
+    private void sendHTTPRequest(String url, String method,
+                                 String data, HTTPResponseHandler responseHandler) {
+        final String _url = url;
+        final String _method = method;
+        final String _data = data;
+        final HTTPResponseHandler _responseHandler = responseHandler;
+        AsyncTask.execute(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    // Create URL
+                    URL targetUrl = new URL(_url);
+                    // Create connection
+                    HttpURLConnection conn =
+                            (HttpURLConnection) targetUrl.openConnection();
+                    conn.setRequestMethod(_method);
+                    conn.setUseCaches(false);
+                    if (_data != null) {
+                        conn.setDoOutput(true);
+                        conn.getOutputStream().write(_data.getBytes());
+                    }
+
+                    _responseHandler.onHTTPResponse(conn.getResponseCode(),
+                            conn.getResponseMessage());
+                    Log.e("test",
+                            "response code: " + conn.getResponseCode()
+                                    + " / message: " + conn.getResponseMessage());
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+        });
+    }
+
+    private void checkConnectionStatus() {
+        String url = getTargetAddress() + "/alive";
+        sendHTTPRequest(url, "GET", null, new HTTPResponseHandler() {
+            @Override
+            public void onHTTPResponse(int code, String message) {
+                if (code == 200 && message.equals("Success")) {
+                    mConnectionStatus.setValue(CS_CONNECTED);
+                } else {
+                    mConnectionStatus.setValue(CS_DISCONNECTED);
+                }
+            }
+        });
+    }
+
+    private void checkAppStatus() {
+        String connectionStatus = this.mConnectionStatus.getValue();
+        if (!connectionStatus.equals(CS_CONNECTED)) return;
+
+        String url = getTargetAddress() + "/alive";
+        sendHTTPRequest(url, "GET", null, new HTTPResponseHandler() {
+            @Override
+            public void onHTTPResponse(int code, String message) {
+                if (code == 200 && message.equals("Success")) {
+                    mConnectionStatus.setValue(CS_CONNECTED);
+                } else {
+                    mConnectionStatus.setValue(CS_DISCONNECTED);
+                }
+            }
+        });
     }
 
     public void startApp() {
-        // TODO: not yet implemented
+        mAppStatus.setValue(AS_LAUNCHING);
+        String url = getTargetAddress() + "/runtime/currentApp/command";
+        sendHTTPRequest(url, "POST", "start", new HTTPResponseHandler() {
+            @Override
+            public void onHTTPResponse(int code, String message) {
+                if (code == 200 && message.equals("Success")) {
+                    mAppStatus.setValue(AS_RUNNING);
+                } else {
+                    Toast.makeText(MainActivity.this, "Failed to start app: " + message,
+                            Toast.LENGTH_SHORT).show();
+                    mAppStatus.setValue(AS_IDLE);
+                }
+            }
+        });
     }
 
     public void stopApp() {
-        // TODO: not yet implemented
+        mAppStatus.setValue(AS_LAUNCHING);
+        String url = getTargetAddress() + "/runtime/currentApp/command";
+        sendHTTPRequest(url, "POST", "stop", new HTTPResponseHandler() {
+            @Override
+            public void onHTTPResponse(int code, String message) {
+                if (code == 200 && message.equals("Success")) {
+                    mAppStatus.setValue(AS_RUNNING);
+                } else {
+                    Toast.makeText(MainActivity.this, "Failed to stop app: " + message,
+                            Toast.LENGTH_SHORT).show();
+                    mAppStatus.setValue(AS_IDLE);
+                }
+            }
+        });
     }
 }
