@@ -41,6 +41,31 @@ public class MainActivity extends AppCompatActivity {
     private final String AS_TERMINATING = "Terminating";
 
     @Override
+    protected void onStart() {
+        super.onStart();
+
+        // Setting to target address edit text
+        SharedPreferences sharedPref = getSharedPreferences(SP_FILENAME, MODE_PRIVATE);
+        String targetAddress = sharedPref.getString(SP_TARGET_ADDRESS, SP_DEFAULT_TARGET_ADDRESS);
+        EditText targetAddressEditText = findViewById(R.id.targetAddressEditText);
+        targetAddressEditText.setText(targetAddress);
+    }
+
+    @Override
+    protected void onStop() {
+        super.onStop();
+
+        // Setting from target address edit text
+        EditText targetAddressEditText = findViewById(R.id.targetAddressEditText);
+        String targetAddress = targetAddressEditText.getText().toString();
+
+        SharedPreferences sharedPref = getSharedPreferences(SP_FILENAME, MODE_PRIVATE);
+        SharedPreferences.Editor editor = sharedPref.edit();
+        editor.putString(SP_TARGET_ADDRESS, targetAddress);
+        editor.commit();
+    }
+
+    @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
@@ -54,12 +79,6 @@ public class MainActivity extends AppCompatActivity {
         NavigationUI.setupActionBarWithNavController(this, navController,
                 appBarConfiguration);
         NavigationUI.setupWithNavController(navView, navController);
-
-        // Setting target address edit text
-        EditText targetAddressEditText = findViewById(R.id.targetAddressEditText);
-        SharedPreferences sharedPref = getSharedPreferences(SP_FILENAME, MODE_PRIVATE);
-        String targetAddress = sharedPref.getString(SP_TARGET_ADDRESS, SP_DEFAULT_TARGET_ADDRESS);
-        targetAddressEditText.setText(targetAddress);
 
         // Register data observers
         this.mConnectionStatus.observe(this, new Observer<String>() {
