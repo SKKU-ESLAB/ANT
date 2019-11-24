@@ -1,10 +1,11 @@
 package skku.eslab.ant.companion;
 
 import android.content.SharedPreferences;
-import android.os.AsyncTask;
+import android.graphics.Color;
 import android.os.Bundle;
-import android.util.Log;
+import android.view.KeyEvent;
 import android.view.View;
+import android.view.inputmethod.EditorInfo;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.TextView;
@@ -12,9 +13,8 @@ import android.widget.Toast;
 
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 
-import java.io.IOException;
-import java.net.HttpURLConnection;
-import java.net.URL;
+import java.util.Timer;
+import java.util.TimerTask;
 
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.lifecycle.MutableLiveData;
@@ -49,6 +49,9 @@ public class MainActivity extends AppCompatActivity {
         String targetAddress = sharedPref.getString(SP_TARGET_ADDRESS, SP_DEFAULT_TARGET_ADDRESS);
         EditText targetAddressEditText = findViewById(R.id.targetAddressEditText);
         targetAddressEditText.setText(targetAddress);
+
+        ConnectionManager connectionManager = ConnectionManager.get();
+        connectionManager.setTargetAddress(targetAddress);
     }
 
     @Override
@@ -80,6 +83,10 @@ public class MainActivity extends AppCompatActivity {
                 appBarConfiguration);
         NavigationUI.setupWithNavController(navView, navController);
 
+        // Setting connection manager
+        ConnectionManager connectionManager = ConnectionManager.get();
+        connectionManager.setMotherActivity(this);
+
         // Register data observers
         this.mConnectionStatus.observe(this, new Observer<String>() {
             @Override
@@ -102,22 +109,27 @@ public class MainActivity extends AppCompatActivity {
         Button appStartStopButton = findViewById(R.id.appStartStopButton);
         appStartStopButton.setOnClickListener(onClickAppStartStopButton);
 
-        // Monitor thread
-        Thread monitorThread = new Thread() {
+        // Register edittext listeners
+        final EditText targetAddressEditText = findViewById(R.id.targetAddressEditText);
+        targetAddressEditText.setOnEditorActionListener(new TextView.OnEditorActionListener() {
+            @Override
+            public boolean onEditorAction(TextView textView, int actionId, KeyEvent keyEvent) {
+                if (actionId == EditorInfo.IME_ACTION_DONE) {
+                    onUpdateTargetAddress(targetAddressEditText.getText().toString());
+                }
+                return false;
+            }
+        });
+
+        // Monitoring task
+        TimerTask task = new TimerTask() {
             @Override
             public void run() {
-                while (true) {
-                    checkConnectionStatus();
-                    checkAppStatus();
-                    try {
-                        Thread.sleep(1000);
-                    } catch (InterruptedException e) {
-                        e.printStackTrace();
-                    }
-                }
+                checkConnectionStatus();
+                checkAppStatus();
             }
         };
-        monitorThread.start();
+        new Timer().scheduleAtFixedRate(task, 1000, 2000);
     }
 
     private View.OnClickListener onClickAppStartStopButton = new View.OnClickListener() {
@@ -141,6 +153,23 @@ public class MainActivity extends AppCompatActivity {
     private void onUpdateConnectionStatus(String connectionStatus) {
         TextView statusLabel = findViewById(R.id.statusLabel);
         statusLabel.setText(connectionStatus);
+        Button appStartStopButton = findViewById(R.id.appStartStopButton);
+
+        switch (connectionStatus) {
+            case CS_CONNECTED:
+                statusLabel.setTextColor(Color.parseColor("#0000ff"));
+                switch (this.mAppStatus.getValue()) {
+                    case AS_IDLE:
+                    case AS_RUNNING:
+                        appStartStopButton.setEnabled(true);
+                        break;
+                }
+                break;
+            case CS_DISCONNECTED:
+                statusLabel.setTextColor(Color.parseColor("#ff0000"));
+                appStartStopButton.setEnabled(false);
+                break;
+        }
     }
 
     private void onUpdateAppStatus(String appStatus) {
@@ -165,55 +194,18 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    private String getTargetAddress() {
-        EditText targetAddress = findViewById(R.id.targetAddressEditText);
-        return "http://" + targetAddress.getText().toString();
-    }
-
-    interface HTTPResponseHandler {
-        void onHTTPResponse(int code, String message);
-    }
-
-    private void sendHTTPRequest(String url, String method,
-                                 String data, HTTPResponseHandler responseHandler) {
-        final String _url = url;
-        final String _method = method;
-        final String _data = data;
-        final HTTPResponseHandler _responseHandler = responseHandler;
-        AsyncTask.execute(new Runnable() {
-            @Override
-            public void run() {
-                try {
-                    // Create URL
-                    URL targetUrl = new URL(_url);
-                    // Create connection
-                    HttpURLConnection conn =
-                            (HttpURLConnection) targetUrl.openConnection();
-                    conn.setRequestMethod(_method);
-                    conn.setUseCaches(false);
-                    if (_data != null) {
-                        conn.setDoOutput(true);
-                        conn.getOutputStream().write(_data.getBytes());
-                    }
-
-                    _responseHandler.onHTTPResponse(conn.getResponseCode(),
-                            conn.getResponseMessage());
-                    Log.e("test",
-                            "response code: " + conn.getResponseCode()
-                                    + " / message: " + conn.getResponseMessage());
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-            }
-        });
+    private void onUpdateTargetAddress(String targetAddress) {
+        ConnectionManager connectionManager = ConnectionManager.get();
+        connectionManager.setTargetAddress(targetAddress);
     }
 
     private void checkConnectionStatus() {
-        String url = getTargetAddress() + "/alive";
-        sendHTTPRequest(url, "GET", null, new HTTPResponseHandler() {
+        ConnectionManager connectionManager = ConnectionManager.get();
+        String url = connectionManager.getTargetAddress() + "/";
+        connectionManager.sendHTTPRequest(url, "GET", null, new HTTPResponseHandler() {
             @Override
             public void onHTTPResponse(int code, String message) {
-                if (code == 200 && message.equals("Success")) {
+                if (code == 200 && message.equals("Alive")) {
                     mConnectionStatus.setValue(CS_CONNECTED);
                 } else {
                     mConnectionStatus.setValue(CS_DISCONNECTED);
@@ -226,14 +218,20 @@ public class MainActivity extends AppCompatActivity {
         String connectionStatus = this.mConnectionStatus.getValue();
         if (!connectionStatus.equals(CS_CONNECTED)) return;
 
-        String url = getTargetAddress() + "/alive";
-        sendHTTPRequest(url, "GET", null, new HTTPResponseHandler() {
+        ConnectionManager connectionManager = ConnectionManager.get();
+        String url = connectionManager.getTargetAddress() + "/runtime/currentApp/state";
+        connectionManager.sendHTTPRequest(url, "GET", null, new HTTPResponseHandler() {
             @Override
             public void onHTTPResponse(int code, String message) {
-                if (code == 200 && message.equals("Success")) {
-                    mConnectionStatus.setValue(CS_CONNECTED);
-                } else {
-                    mConnectionStatus.setValue(CS_DISCONNECTED);
+                if (code == 200) {
+                    switch (message) {
+                        case "Idle":
+                            mAppStatus.setValue(AS_IDLE);
+                            break;
+                        case "Running":
+                            mAppStatus.setValue(AS_RUNNING);
+                            break;
+                    }
                 }
             }
         });
@@ -241,8 +239,10 @@ public class MainActivity extends AppCompatActivity {
 
     public void startApp() {
         mAppStatus.setValue(AS_LAUNCHING);
-        String url = getTargetAddress() + "/runtime/currentApp/command";
-        sendHTTPRequest(url, "POST", "start", new HTTPResponseHandler() {
+
+        ConnectionManager connectionManager = ConnectionManager.get();
+        String url = connectionManager.getTargetAddress() + "/runtime/currentApp/command";
+        connectionManager.sendHTTPRequest(url, "POST", "start", new HTTPResponseHandler() {
             @Override
             public void onHTTPResponse(int code, String message) {
                 if (code == 200 && message.equals("Success")) {
@@ -258,8 +258,10 @@ public class MainActivity extends AppCompatActivity {
 
     public void stopApp() {
         mAppStatus.setValue(AS_LAUNCHING);
-        String url = getTargetAddress() + "/runtime/currentApp/command";
-        sendHTTPRequest(url, "POST", "stop", new HTTPResponseHandler() {
+
+        ConnectionManager connectionManager = ConnectionManager.get();
+        String url = connectionManager.getTargetAddress() + "/runtime/currentApp/command";
+        connectionManager.sendHTTPRequest(url, "POST", "stop", new HTTPResponseHandler() {
             @Override
             public void onHTTPResponse(int code, String message) {
                 if (code == 200 && message.equals("Success")) {
