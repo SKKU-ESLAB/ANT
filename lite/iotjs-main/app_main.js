@@ -220,6 +220,20 @@ function onGetAppCode(request, data) {
   return results;
 }
 
+function onGetAppState(request, data) {
+  var currentApp = ant.runtime.getCurrentApp();
+  var results = {
+    message: "No App Found",
+    code: 500
+  };
+
+  if (currentApp != undefined) {
+    results.message = currentApp.getState();
+    results.code = 200;
+  }
+  return results;
+}
+
 function onGetAppEditorPage(request, data) {
   var results = {
     message: RESULT_FAILED,
@@ -296,6 +310,12 @@ function _onHTTPRequest(request, response, data) {
         if (request.method == "GET") {
           // GET "/runtime/currentApp/code"
           results = onGetAppCode(request, data);
+        }
+      } else if (urlTokens[2] == "state") {
+        // "/runtime/currentApp/state"
+        if (request.method == "GET") {
+          // GET "/runtime/currentApp/state"
+          results = onGetAppState(request, data);
         }
       }
     }

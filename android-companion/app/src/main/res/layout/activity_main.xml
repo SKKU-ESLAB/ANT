@@ -61,6 +61,7 @@
         android:layout_marginStart="16dp"
         android:gravity="center_vertical"
         android:text="Disconnected"
+        android:textColor="#ff0000"
         android:textSize="24sp"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/targetAddressEditText" />
