@@ -25,3 +25,9 @@
 [submodule "subprojects/selective-connection"]
 	path = subprojects/selective-connection
 	url = https://github.com/SKKU-ESLAB/selective-connection
+[submodule "subprojects/ACL-lowp"]
+	path = subprojects/ACL-lowp
+	url = https://github.com/SKKU-ESLAB/ACL-lowp
+[submodule "subprojects/CNN-on-flash"]
+	path = subprojects/CNN-on-flash
+	url = https://github.com/SKKU-ESLAB/CNN-on-flash
