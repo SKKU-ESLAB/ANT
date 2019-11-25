@@ -1,0 +1,235 @@
+<html>
+
+<head>
+  <!-- jQuery -->
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
+
+  <!-- Material Lite -->
+  <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
+  <link rel="stylesheet" href="https://code.getmdl.io/1.3.0/material.indigo-pink.min.css">
+  <script defer src="https://code.getmdl.io/1.3.0/material.min.js"></script>
+
+  <style>
+    /* auto-grow */
+    .wrap {
+      width: 500px;
+    }
+
+    .wrap textarea {
+      width: 100%;
+      resize: none;
+      overflow-y: hidden;
+      /* prevents scroll bar flash */
+      padding: 1.1em;
+      /* prevents text jump on Enter keypress */
+      padding-bottom: 0.2em;
+      line-height: 1.6;
+      font-family: 'Courier New', Courier, monospace;
+      font-size: 12pt;
+    }
+  </style>
+  <script>
+    /* auto-grow */
+    $(document).ready(function () {
+      $('.wrap').on('keyup', 'textarea', function (e) {
+        $(this).css('height', 'auto');
+        $(this).height(this.scrollHeight);
+      });
+      $('.wrap').find('textarea').keyup();
+    });
+
+    /* button event handlers */
+
+    function sendHTTPRequest(url, method, data, responseHandler) {
+      var xhr = new XMLHttpRequest();
+      xhr.open(method, url, true);
+      xhr.setRequestHeader('Content-Type', 'application/json');
+      try {
+        xhr.onload = function () {
+          if (responseHandler !== undefined) {
+            responseHandler(this.status, this.responseText);
+          }
+        }
+        if (data === undefined) {
+          data = null;
+        }
+        xhr.send(data);
+      } catch (e) {
+        changeStatusLabel(e.toString());
+      }
+    }
+
+    function getTargetUrl() {
+      return $('#targetAddressInput').val();
+    }
+
+    function setAppCode(appCode) {
+      $("#appCode").val(appCode);
+      $('.wrap').find('textarea').keyup();
+    }
+    
+    function loadTargetAppCode(handler) {
+      var url = "http://" + getTargetUrl() + "/runtime/currentApp/code";
+      var data = $("#appCode").val();
+      sendHTTPRequest(url, "GET", data, function (responseCode, responseText) {
+        if (responseCode == 200) {
+          setAppCode(responseText);
+        }
+        handler(responseCode, responseText);
+      });
+    }
+
+    function showSnackbar(message, actionText, handler, timeoutMS) {
+      var data = {
+        message: message,
+        timeout: timeoutMS,
+        actionHandler: handler,
+        actionText: actionText
+      };
+      var snackbarContainer = document.querySelector('#demo-snackbar-example');
+      snackbarContainer.MaterialSnackbar.showSnackbar(data);
+    }
+
+    var RESULT_SUCCESS = "Success";
+    var RESULT_FAILED = "Failed";
+
+    function changeStatusLabel(text) {
+      $('#statusLabel').text(text);
+    }
+
+    function onInstallAppButton() {
+      console.log("onInstallAppButton");
+      var url = "http://" + getTargetUrl() + "/runtime/currentApp";
+      var data = $("#appCode").val();
+      sendHTTPRequest(url, "POST", data, function (responseCode, responseText) {
+        if (responseCode == 200) {
+          changeStatusLabel("Install app success");
+        } else {
+          changeStatusLabel("Install app failed: " + responseText);
+        }
+      });
+    }
+    function onRemoveAppButton() {
+      console.log("onRemoveAppButton");
+      var url = "http://" + getTargetUrl() + "/runtime/currentApp";
+      sendHTTPRequest(url, "DELETE", undefined, function (responseCode, responseText) {
+        if (responseCode == 200) {
+          changeStatusLabel("Remove app success");
+        } else {
+          changeStatusLabel("Remove app failed: " + responseText);
+        }
+      });
+    }
+
+    function onReloadCodeButton() {
+      console.log("onReloadCodeButton");
+      loadTargetAppCode(function (responseCode, responseText) {
+        if (responseCode == 200) {
+          changeStatusLabel("Loading app code success");
+        } else {
+          changeStatusLabel("Loading app code failed: " + responseText);
+        }
+      });
+    }
+
+    function onLoadDefaultCodeButton() {
+      console.log("onLoadDefaultCodeButton");
+      var defaultAppCode = "var ant = require('ant');\n\
+var console = require('console');\n\
+\n\
+var on_initialize = function() {\n\
+  console.log('on_initialize');\n\
+};\n\
+\n\
+var on_start = function() {\n\
+  console.log('on_start');\n\
+};\n\
+\n\
+var on_stop = function() {\n\
+  console.log('on_stop');\n\
+};\n\
+\n\
+ant.runtime.setCurrentApp(on_initialize, on_start, on_stop);";
+      setAppCode(defaultAppCode);
+    }
+
+    /* Buttons setting */
+    $(document).ready(function () {
+      $('#installAppButton').click(onInstallAppButton);
+      $('#removeAppButton').click(onRemoveAppButton);
+      $('#reloadCodeButton').click(onReloadCodeButton);
+      $('#loadDefaultCodeButton').click(onLoadDefaultCodeButton);
+
+      loadTargetAppCode(function (responseCode, responseText) {
+        if (responseCode == 200) {
+          changeStatusLabel("Existing app code is loaded");
+        }
+      });
+    });
+
+    /* Snackbar setting */
+  </script>
+  <title>ANT App Editor</title>
+</head>
+
+<body>
+  <div id="demo-snackbar-example" class="mdl-js-snackbar mdl-snackbar">
+    <div class="mdl-snackbar__text"></div>
+    <button class="mdl-snackbar__action" type="button"></button>
+  </div>
+  <!-- Always shows a header, even in smaller screens. -->
+  <div class="mdl-layout mdl-js-layout mdl-layout--fixed-header">
+    <header class="mdl-layout__header">
+      <div class="mdl-layout__header-row">
+        <!-- Title -->
+        <span class="mdl-layout-title">ANT App Editor</span>
+        <!-- Add spacer, to align navigation to the right -->
+        <div class="mdl-layout-spacer"></div>
+        <!-- Navigation. We hide it in small screens. -->
+        <!-- <nav class="mdl-navigation mdl-layout--large-screen-only">
+          <a class="mdl-navigation__link" href="">Menu1</a>
+          <a class="mdl-navigation__link" href="">Menu2</a>
+          <a class="mdl-navigation__link" href="">Menu3</a>
+        </nav> -->
+      </div>
+    </header>
+    <main class="mdl-layout__content">
+      <div class="page-content">
+        <br />
+        <div class="mdl-textfield mdl-js-textfield mdl-textfield--floating-label">
+          <input class="mdl-textfield__input" type="text" id="targetAddressInput" value="192.168.0.33:8001" />
+          <!-- TODO: hardcoded IP address -->
+          <label class="mdl-textfield__label" for="targetAddressInput">Target Device's Address (ex.
+            192.168.0.123:8001)</label>
+        </div>
+        <br />
+        <button type="button" id="installAppButton"
+          class="mdl-button mdl-js-button mdl-button--raised mdl-js-ripple-effect mdl-button--accent">
+          Install App
+        </button>
+        <button type="button" id="removeAppButton"
+          class="mdl-button mdl-js-button mdl-button--raised mdl-js-ripple-effect mdl-button--accent">
+          Remove App
+        </button>
+        <button type="button" id="reloadCodeButton"
+          class="mdl-button mdl-js-button mdl-button--raised mdl-js-ripple-effect mdl-button--accent">
+          Reload Code
+        </button>
+        <button type="button" id="loadDefaultCodeButton"
+          class="mdl-button mdl-js-button mdl-button--raised mdl-js-ripple-effect mdl-button--accent">
+          Load Default Code
+        </button>
+        <h4 id="statusLabel">
+          Ready
+        </h4>
+        <h5 id="appCodeLabel">App Code:</h5>
+        <div class="wrap mdl-textfield mdl-js-textfield">
+          <textarea id="appCode" class="mdl-textfield__input"></textarea>
+        </div>
+
+      </div>
+    </main>
+  </div>
+</body>
+
+</html>
