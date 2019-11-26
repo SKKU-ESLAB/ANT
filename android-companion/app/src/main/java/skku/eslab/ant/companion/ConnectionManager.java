@@ -2,7 +2,6 @@ package skku.eslab.ant.companion;
 
 import android.app.Activity;
 import android.os.AsyncTask;
-import android.util.Log;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -41,8 +40,8 @@ public class ConnectionManager {
         return "http://" + this.mTargetAddress.toString();
     }
 
-    public void sendHTTPRequest(String url, String method,
-                                String data, HTTPResponseHandler responseHandler) {
+    public void sendHTTPRequest(String url, String method, String data,
+                                HTTPResponseHandler responseHandler) {
         if (mMotherActivity == null) {
             return;
         }
@@ -55,7 +54,8 @@ public class ConnectionManager {
             @Override
             public void run() {
                 try {
-                    Log.e("test", "http request: " + _url + " / " + _method + " / " + _data);
+//                    Log.d("test", "http request: " + _url + " / " + _method
+//                    + " / " + _data);
                     // Create URL
                     URL targetUrl = new URL(_url);
                     // Create connection
@@ -77,7 +77,8 @@ public class ConnectionManager {
                     final int responseCode = conn.getResponseCode();
 
                     InputStream is = conn.getInputStream();
-                    BufferedReader br = new BufferedReader(new InputStreamReader(is));
+                    BufferedReader br =
+                            new BufferedReader(new InputStreamReader(is));
                     String line;
                     final StringBuffer response = new StringBuffer();
                     while ((line = br.readLine()) != null) {
@@ -86,17 +87,23 @@ public class ConnectionManager {
                     br.close();
                     final String responseText = response.toString();
 
-                    Log.e("test", "response: (" + responseCode + ") " + responseText);
+//                    Log.d("test", "response: (" + responseCode + ") " + responseText);
                     if (_responseHandler != null) {
                         mMotherActivity.runOnUiThread(new Runnable() {
                             @Override
                             public void run() {
-                                _responseHandler.onHTTPResponse(responseCode, responseText);
+                                _responseHandler.onHTTPResponse(responseCode,
+                                        responseText);
                             }
                         });
                     }
                 } catch (IOException e) {
-                    e.printStackTrace();
+                    mMotherActivity.runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            _responseHandler.onHTTPResponse(404, "Not Found");
+                        }
+                    });
                 }
             }
         });
