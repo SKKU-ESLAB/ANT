@@ -121,6 +121,18 @@
       });
     }
 
+    function onStartAppButton() {
+      console.log("onStartAppButton");
+      var url = "http://" + getTargetUrl() + "/runtime/currentApp/command";
+      sendHTTPRequest(url, "POST", "start", function (responseCode, responseText) {
+        if (responseCode == 200) {
+          changeStatusLabel("Start app success");
+        } else {
+          changeStatusLabel("Start app failed: " + responseText);
+        }
+      });
+    }
+
     function onReloadCodeButton() {
       console.log("onReloadCodeButton");
       loadTargetAppCode(function (responseCode, responseText) {
@@ -159,6 +171,7 @@ ant.runtime.setCurrentApp(on_initialize, on_start, on_stop);";
       $('#removeAppButton').click(onRemoveAppButton);
       $('#reloadCodeButton').click(onReloadCodeButton);
       $('#loadDefaultCodeButton').click(onLoadDefaultCodeButton);
+      $('#startAppButton').click(onStartAppButton);
 
       loadTargetAppCode(function (responseCode, responseText) {
         if (responseCode == 200) {
@@ -218,6 +231,10 @@ ant.runtime.setCurrentApp(on_initialize, on_start, on_stop);";
         <button type="button" id="loadDefaultCodeButton"
           class="mdl-button mdl-js-button mdl-button--raised mdl-js-ripple-effect mdl-button--accent">
           Load Default Code
+        </button>
+        <button type="button" id="startAppButton"
+          class="mdl-button mdl-js-button mdl-button--raised mdl-js-ripple-effect mdl-button--accent">
+          Start App
         </button>
         <h4 id="statusLabel">
           Ready
