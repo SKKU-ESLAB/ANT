@@ -2,7 +2,9 @@ package skku.eslab.ant.companion;
 
 import android.content.SharedPreferences;
 import android.graphics.Color;
+import android.net.wifi.WifiManager;
 import android.os.Bundle;
+import android.text.format.Formatter;
 import android.view.KeyEvent;
 import android.view.View;
 import android.view.inputmethod.EditorInfo;
@@ -23,6 +25,10 @@ import androidx.navigation.NavController;
 import androidx.navigation.Navigation;
 import androidx.navigation.ui.AppBarConfiguration;
 import androidx.navigation.ui.NavigationUI;
+import skku.eslab.ant.companion.companionapi.CompanionAPI;
+import skku.eslab.ant.companion.companionapi.OnReceiveMessageListener;
+import skku.eslab.ant.companion.httpconnection.HTTPClient;
+import skku.eslab.ant.companion.httpconnection.HTTPResponseHandler;
 
 public class MainActivity extends AppCompatActivity {
     private final String SP_FILENAME = "ANT";
@@ -50,8 +56,8 @@ public class MainActivity extends AppCompatActivity {
         EditText targetAddressEditText = findViewById(R.id.targetAddressEditText);
         targetAddressEditText.setText(targetAddress);
 
-        ConnectionManager connectionManager = ConnectionManager.get();
-        connectionManager.setTargetAddress(targetAddress);
+        HTTPClient httpClient = HTTPClient.get();
+        httpClient.setTargetAddress(targetAddress);
     }
 
     @Override
@@ -65,7 +71,7 @@ public class MainActivity extends AppCompatActivity {
         SharedPreferences sharedPref = getSharedPreferences(SP_FILENAME, MODE_PRIVATE);
         SharedPreferences.Editor editor = sharedPref.edit();
         editor.putString(SP_TARGET_ADDRESS, targetAddress);
-        editor.commit();
+        editor.apply();
     }
 
     @Override
@@ -84,8 +90,8 @@ public class MainActivity extends AppCompatActivity {
         NavigationUI.setupWithNavController(navView, navController);
 
         // Setting connection manager
-        ConnectionManager connectionManager = ConnectionManager.get();
-        connectionManager.setMotherActivity(this);
+        HTTPClient httpClient = HTTPClient.get();
+        httpClient.setMotherActivity(this);
 
         // Register data observers
         this.mConnectionStatus.observe(this, new Observer<String>() {
@@ -127,10 +133,30 @@ public class MainActivity extends AppCompatActivity {
             public void run() {
                 checkConnectionStatus();
                 checkAppStatus();
+                requestSettingCompanionAddress();
             }
         };
         new Timer().scheduleAtFixedRate(task, 1000, 2000);
+
+        // Companion test
+        if (isCompanionTestEnabled) {
+            this.initializeCompanionTest();
+        }
     }
+
+    private final boolean isCompanionTestEnabled = true;
+
+    private void initializeCompanionTest() {
+        CompanionAPI.get().setOnReceiveMessage(this.mOnReceiveMessageListener);
+    }
+
+    private OnReceiveMessageListener mOnReceiveMessageListener = new OnReceiveMessageListener() {
+        @Override
+        public void onReceiveMessageListener(String message) {
+            // Test with echo message
+            CompanionAPI.get().sendMessage(message);
+        }
+    };
 
     private View.OnClickListener onClickAppStartStopButton = new View.OnClickListener() {
         @Override
@@ -194,15 +220,43 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    private String mRecentConnectionStatus = CS_DISCONNECTED;
+
+    private void requestSettingCompanionAddress() {
+        if (!this.mRecentConnectionStatus.equals(this.mConnectionStatus.getValue())) {
+            this.mRecentConnectionStatus = this.mConnectionStatus.getValue();
+
+            if (this.mRecentConnectionStatus == CS_CONNECTED) {
+                WifiManager wm = (WifiManager) getSystemService(WIFI_SERVICE);
+                String selfIpAddress =
+                        Formatter.formatIpAddress(wm.getConnectionInfo().getIpAddress());
+
+                HTTPClient httpClient = HTTPClient.get();
+                String url = httpClient.getTargetAddress() + "/runtime/currentApp" +
+                        "/companionAddress";
+                httpClient.sendHTTPRequest(url, "POST", selfIpAddress, new HTTPResponseHandler() {
+                    @Override
+                    public void onHTTPResponse(int code, String message) {
+                        if (code == 200 && message.equals("Success")) {
+                            mConnectionStatus.setValue(CS_CONNECTED);
+                        } else {
+                            mConnectionStatus.setValue(CS_DISCONNECTED);
+                        }
+                    }
+                });
+            }
+        }
+    }
+
     private void onUpdateTargetAddress(String targetAddress) {
-        ConnectionManager connectionManager = ConnectionManager.get();
-        connectionManager.setTargetAddress(targetAddress);
+        HTTPClient httpClient = HTTPClient.get();
+        httpClient.setTargetAddress(targetAddress);
     }
 
     private void checkConnectionStatus() {
-        ConnectionManager connectionManager = ConnectionManager.get();
-        String url = connectionManager.getTargetAddress() + "/";
-        connectionManager.sendHTTPRequest(url, "GET", null, new HTTPResponseHandler() {
+        HTTPClient httpClient = HTTPClient.get();
+        String url = httpClient.getTargetAddress() + "/";
+        httpClient.sendHTTPRequest(url, "GET", null, new HTTPResponseHandler() {
             @Override
             public void onHTTPResponse(int code, String message) {
                 if (code == 200 && message.equals("Alive")) {
@@ -216,11 +270,12 @@ public class MainActivity extends AppCompatActivity {
 
     private void checkAppStatus() {
         String connectionStatus = this.mConnectionStatus.getValue();
+        assert connectionStatus != null;
         if (!connectionStatus.equals(CS_CONNECTED)) return;
 
-        ConnectionManager connectionManager = ConnectionManager.get();
-        String url = connectionManager.getTargetAddress() + "/runtime/currentApp/state";
-        connectionManager.sendHTTPRequest(url, "GET", null, new HTTPResponseHandler() {
+        HTTPClient httpClient = HTTPClient.get();
+        String url = httpClient.getTargetAddress() + "/runtime/currentApp/state";
+        httpClient.sendHTTPRequest(url, "GET", null, new HTTPResponseHandler() {
             @Override
             public void onHTTPResponse(int code, String message) {
                 if (code == 200) {
@@ -240,9 +295,9 @@ public class MainActivity extends AppCompatActivity {
     public void startApp() {
         mAppStatus.setValue(AS_LAUNCHING);
 
-        ConnectionManager connectionManager = ConnectionManager.get();
-        String url = connectionManager.getTargetAddress() + "/runtime/currentApp/command";
-        connectionManager.sendHTTPRequest(url, "POST", "start", new HTTPResponseHandler() {
+        HTTPClient httpClient = HTTPClient.get();
+        String url = httpClient.getTargetAddress() + "/runtime/currentApp/command";
+        httpClient.sendHTTPRequest(url, "POST", "start", new HTTPResponseHandler() {
             @Override
             public void onHTTPResponse(int code, String message) {
                 if (code == 200 && message.equals("Success")) {
@@ -259,9 +314,9 @@ public class MainActivity extends AppCompatActivity {
     public void stopApp() {
         mAppStatus.setValue(AS_LAUNCHING);
 
-        ConnectionManager connectionManager = ConnectionManager.get();
-        String url = connectionManager.getTargetAddress() + "/runtime/currentApp/command";
-        connectionManager.sendHTTPRequest(url, "POST", "stop", new HTTPResponseHandler() {
+        HTTPClient httpClient = HTTPClient.get();
+        String url = httpClient.getTargetAddress() + "/runtime/currentApp/command";
+        httpClient.sendHTTPRequest(url, "POST", "stop", new HTTPResponseHandler() {
             @Override
             public void onHTTPResponse(int code, String message) {
                 if (code == 200 && message.equals("Success")) {
