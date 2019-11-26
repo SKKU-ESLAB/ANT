@@ -1,4 +1,5 @@
 var console = require('console');
+var http = require('http');
 
 var RESULT_SUCCESS = "Success";
 var RESULT_FAILED = "Failed";
@@ -80,14 +81,38 @@ App.prototype.getInfo = function () {
 
 /** Stream API start **/
 function StreamAPI() {
-
 }
 /** Stream API end **/
 
 /** Companion API start **/
 function CompanionAPI() {
-
+  this._companionAddress = undefined;
+  this._handler = undefined;
 }
+CompanionAPI._addCompanion = function(companionAddress) {
+  this._companionAddress = companionAddress;
+};
+CompanionAPI.sendMessage = function(message) {
+  if(this._companionAddress === undefined) {
+    console.log("Error: failed to send message due to no companion address");
+    return;
+  }
+
+  var options = {
+    method: 'POST',
+    port: 8383,
+    path: '/',
+    headers: {'Content-Length': message.length},
+  };
+
+  var client_request = http.request(options);
+  client_request.write(message);
+  client_request.end();
+  console.log("Send " + message + " to " + this._companionAddress);
+};
+CompanionAPI.setOnReceiveMessage = function(handler) {
+  this._handler = handler;
+};
 /** Companion API end **/
 
 
