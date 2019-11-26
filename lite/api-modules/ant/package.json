@@ -1,6 +1,6 @@
 {
   "name": "ant",
-  "version": "1.0",
+  "version": "1.0.0",
   "description": "ANT API module for node.js",
   "main": "js/ant.js",
   "repository": {
