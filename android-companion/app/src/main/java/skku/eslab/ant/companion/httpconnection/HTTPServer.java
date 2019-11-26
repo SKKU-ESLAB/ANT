@@ -1,6 +1,7 @@
 package skku.eslab.ant.companion.httpconnection;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.ArrayList;
 
 import fi.iki.elonen.NanoHTTPD;
@@ -43,8 +44,10 @@ public class HTTPServer extends NanoHTTPD {
                 int contentLength = Integer.parseInt(contentLengthStr);
                 byte[] buffer = new byte[contentLength];
                 try {
-                    session.getInputStream().read(buffer, 0, contentLength);
-                    String message = buffer.toString();
+                    InputStream is = session.getInputStream();
+                    is.read(buffer, 0, contentLength);
+                    is.close();
+                    String message = new String(buffer);
                     for (HTTPServerListener listener : this.mListeners) {
                         listener.onReceiveHTTPMessage(session.getUri(), message);
                     }

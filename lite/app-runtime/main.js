@@ -356,11 +356,10 @@ function loadExistingAppCode() {
   }
 
   // Load app code
-  console.log('loadExistingAppCode');
+  console.log('Load existing app code');
   gAppCodeManager.load(gAppFileName.get());
 
   if (ant.runtime.getCurrentApp() === undefined) {
-    console.log('getCurrentApp' + ant.runtime.getCurrentApp());
     return false;
   }
 
@@ -368,7 +367,7 @@ function loadExistingAppCode() {
 }
 
 function mainLoop() {
-  console.log('main loop start');
+  console.log('ANT app runtime start');
 
   var isAppExists = loadExistingAppCode();
   if (isAppExists) {

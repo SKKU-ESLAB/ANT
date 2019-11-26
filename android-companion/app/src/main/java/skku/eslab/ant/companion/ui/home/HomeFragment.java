@@ -11,7 +11,7 @@ import androidx.annotation.NonNull;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentActivity;
 import androidx.lifecycle.ViewModelProviders;
-import skku.eslab.ant.companion.httpconnection.HTTPConnectionManager;
+import skku.eslab.ant.companion.httpconnection.HTTPClient;
 import skku.eslab.ant.companion.httpconnection.HTTPResponseHandler;
 import skku.eslab.ant.companion.R;
 
@@ -35,9 +35,9 @@ public class HomeFragment extends Fragment {
     }
 
     private void updateAppCode() {
-        HTTPConnectionManager connectionManager = HTTPConnectionManager.get();
-        String url = connectionManager.getTargetAddress() + "/runtime/currentApp/code";
-        connectionManager.sendHTTPRequest(url, "GET", null, new HTTPResponseHandler() {
+        HTTPClient httpClient = HTTPClient.get();
+        String url = httpClient.getTargetAddress() + "/runtime/currentApp/code";
+        httpClient.sendHTTPRequest(url, "GET", null, new HTTPResponseHandler() {
             @Override
             public void onHTTPResponse(int code, String message) {
                 if (code == 200) {

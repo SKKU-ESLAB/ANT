@@ -2,9 +2,10 @@ package skku.eslab.ant.companion.companionapi;
 
 import android.util.Log;
 
+import java.io.IOException;
 import java.util.ArrayList;
 
-import skku.eslab.ant.companion.httpconnection.HTTPConnectionManager;
+import skku.eslab.ant.companion.httpconnection.HTTPClient;
 import skku.eslab.ant.companion.httpconnection.HTTPServer;
 import skku.eslab.ant.companion.httpconnection.HTTPServerListener;
 
@@ -25,12 +26,18 @@ public class CompanionAPI implements HTTPServerListener {
         final int port = 8002;
         this.mHTTPServer = new HTTPServer(port);
         this.mHTTPServer.addListener(this);
+
+        try {
+            this.mHTTPServer.start();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
     public void sendMessage(String message) {
-        HTTPConnectionManager httpConnectionManager = HTTPConnectionManager.get();
-        String url = httpConnectionManager.getTargetAddress() + "/runtime/currentApp/companion";
-        httpConnectionManager.sendHTTPRequest(url, "POST", message, null);
+        HTTPClient httpClient = HTTPClient.get();
+        String url = httpClient.getTargetAddress() + "/runtime/currentApp/companion";
+        httpClient.sendHTTPRequest(url, "POST", message, null);
     }
 
     public void setOnReceiveMessage(OnReceiveMessageListener listener) {

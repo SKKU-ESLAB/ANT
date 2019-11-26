@@ -27,7 +27,7 @@ import androidx.navigation.ui.AppBarConfiguration;
 import androidx.navigation.ui.NavigationUI;
 import skku.eslab.ant.companion.companionapi.CompanionAPI;
 import skku.eslab.ant.companion.companionapi.OnReceiveMessageListener;
-import skku.eslab.ant.companion.httpconnection.HTTPConnectionManager;
+import skku.eslab.ant.companion.httpconnection.HTTPClient;
 import skku.eslab.ant.companion.httpconnection.HTTPResponseHandler;
 
 public class MainActivity extends AppCompatActivity {
@@ -56,8 +56,8 @@ public class MainActivity extends AppCompatActivity {
         EditText targetAddressEditText = findViewById(R.id.targetAddressEditText);
         targetAddressEditText.setText(targetAddress);
 
-        HTTPConnectionManager connectionManager = HTTPConnectionManager.get();
-        connectionManager.setTargetAddress(targetAddress);
+        HTTPClient httpClient = HTTPClient.get();
+        httpClient.setTargetAddress(targetAddress);
     }
 
     @Override
@@ -90,8 +90,8 @@ public class MainActivity extends AppCompatActivity {
         NavigationUI.setupWithNavController(navView, navController);
 
         // Setting connection manager
-        HTTPConnectionManager connectionManager = HTTPConnectionManager.get();
-        connectionManager.setMotherActivity(this);
+        HTTPClient httpClient = HTTPClient.get();
+        httpClient.setMotherActivity(this);
 
         // Register data observers
         this.mConnectionStatus.observe(this, new Observer<String>() {
@@ -231,10 +231,10 @@ public class MainActivity extends AppCompatActivity {
                 String selfIpAddress =
                         Formatter.formatIpAddress(wm.getConnectionInfo().getIpAddress());
 
-                HTTPConnectionManager connectionManager = HTTPConnectionManager.get();
-                String url = connectionManager.getTargetAddress() + "/runtime/currentApp" +
+                HTTPClient httpClient = HTTPClient.get();
+                String url = httpClient.getTargetAddress() + "/runtime/currentApp" +
                         "/companionAddress";
-                connectionManager.sendHTTPRequest(url, "POST", selfIpAddress, new HTTPResponseHandler() {
+                httpClient.sendHTTPRequest(url, "POST", selfIpAddress, new HTTPResponseHandler() {
                     @Override
                     public void onHTTPResponse(int code, String message) {
                         if (code == 200 && message.equals("Success")) {
@@ -249,14 +249,14 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void onUpdateTargetAddress(String targetAddress) {
-        HTTPConnectionManager connectionManager = HTTPConnectionManager.get();
-        connectionManager.setTargetAddress(targetAddress);
+        HTTPClient httpClient = HTTPClient.get();
+        httpClient.setTargetAddress(targetAddress);
     }
 
     private void checkConnectionStatus() {
-        HTTPConnectionManager connectionManager = HTTPConnectionManager.get();
-        String url = connectionManager.getTargetAddress() + "/";
-        connectionManager.sendHTTPRequest(url, "GET", null, new HTTPResponseHandler() {
+        HTTPClient httpClient = HTTPClient.get();
+        String url = httpClient.getTargetAddress() + "/";
+        httpClient.sendHTTPRequest(url, "GET", null, new HTTPResponseHandler() {
             @Override
             public void onHTTPResponse(int code, String message) {
                 if (code == 200 && message.equals("Alive")) {
@@ -273,9 +273,9 @@ public class MainActivity extends AppCompatActivity {
         assert connectionStatus != null;
         if (!connectionStatus.equals(CS_CONNECTED)) return;
 
-        HTTPConnectionManager connectionManager = HTTPConnectionManager.get();
-        String url = connectionManager.getTargetAddress() + "/runtime/currentApp/state";
-        connectionManager.sendHTTPRequest(url, "GET", null, new HTTPResponseHandler() {
+        HTTPClient httpClient = HTTPClient.get();
+        String url = httpClient.getTargetAddress() + "/runtime/currentApp/state";
+        httpClient.sendHTTPRequest(url, "GET", null, new HTTPResponseHandler() {
             @Override
             public void onHTTPResponse(int code, String message) {
                 if (code == 200) {
@@ -295,9 +295,9 @@ public class MainActivity extends AppCompatActivity {
     public void startApp() {
         mAppStatus.setValue(AS_LAUNCHING);
 
-        HTTPConnectionManager connectionManager = HTTPConnectionManager.get();
-        String url = connectionManager.getTargetAddress() + "/runtime/currentApp/command";
-        connectionManager.sendHTTPRequest(url, "POST", "start", new HTTPResponseHandler() {
+        HTTPClient httpClient = HTTPClient.get();
+        String url = httpClient.getTargetAddress() + "/runtime/currentApp/command";
+        httpClient.sendHTTPRequest(url, "POST", "start", new HTTPResponseHandler() {
             @Override
             public void onHTTPResponse(int code, String message) {
                 if (code == 200 && message.equals("Success")) {
@@ -314,9 +314,9 @@ public class MainActivity extends AppCompatActivity {
     public void stopApp() {
         mAppStatus.setValue(AS_LAUNCHING);
 
-        HTTPConnectionManager connectionManager = HTTPConnectionManager.get();
-        String url = connectionManager.getTargetAddress() + "/runtime/currentApp/command";
-        connectionManager.sendHTTPRequest(url, "POST", "stop", new HTTPResponseHandler() {
+        HTTPClient httpClient = HTTPClient.get();
+        String url = httpClient.getTargetAddress() + "/runtime/currentApp/command";
+        httpClient.sendHTTPRequest(url, "POST", "stop", new HTTPResponseHandler() {
             @Override
             public void onHTTPResponse(int code, String message) {
                 if (code == 200 && message.equals("Success")) {
