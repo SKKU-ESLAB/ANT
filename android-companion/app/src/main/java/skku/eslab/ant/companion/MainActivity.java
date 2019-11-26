@@ -2,7 +2,9 @@ package skku.eslab.ant.companion;
 
 import android.content.SharedPreferences;
 import android.graphics.Color;
+import android.net.wifi.WifiManager;
 import android.os.Bundle;
+import android.text.format.Formatter;
 import android.view.KeyEvent;
 import android.view.View;
 import android.view.inputmethod.EditorInfo;
@@ -65,7 +67,7 @@ public class MainActivity extends AppCompatActivity {
         SharedPreferences sharedPref = getSharedPreferences(SP_FILENAME, MODE_PRIVATE);
         SharedPreferences.Editor editor = sharedPref.edit();
         editor.putString(SP_TARGET_ADDRESS, targetAddress);
-        editor.commit();
+        editor.apply();
     }
 
     @Override
@@ -127,6 +129,7 @@ public class MainActivity extends AppCompatActivity {
             public void run() {
                 checkConnectionStatus();
                 checkAppStatus();
+                requestSettingCompanionAddress();
             }
         };
         new Timer().scheduleAtFixedRate(task, 1000, 2000);
@@ -194,6 +197,34 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    private String mRecentConnectionStatus = CS_DISCONNECTED;
+
+    private void requestSettingCompanionAddress() {
+        if (!this.mRecentConnectionStatus.equals(this.mConnectionStatus.getValue())) {
+            this.mRecentConnectionStatus = this.mConnectionStatus.getValue();
+
+            if (this.mRecentConnectionStatus == CS_CONNECTED) {
+                WifiManager wm = (WifiManager) getSystemService(WIFI_SERVICE);
+                String selfIpAddress =
+                        Formatter.formatIpAddress(wm.getConnectionInfo().getIpAddress());
+
+                ConnectionManager connectionManager = ConnectionManager.get();
+                String url = connectionManager.getTargetAddress() + "/runtime/currentApp" +
+                        "/companionAddress";
+                connectionManager.sendHTTPRequest(url, "POST", selfIpAddress, new HTTPResponseHandler() {
+                    @Override
+                    public void onHTTPResponse(int code, String message) {
+                        if (code == 200 && message.equals("Success")) {
+                            mConnectionStatus.setValue(CS_CONNECTED);
+                        } else {
+                            mConnectionStatus.setValue(CS_DISCONNECTED);
+                        }
+                    }
+                });
+            }
+        }
+    }
+
     private void onUpdateTargetAddress(String targetAddress) {
         ConnectionManager connectionManager = ConnectionManager.get();
         connectionManager.setTargetAddress(targetAddress);
@@ -216,6 +247,7 @@ public class MainActivity extends AppCompatActivity {
 
     private void checkAppStatus() {
         String connectionStatus = this.mConnectionStatus.getValue();
+        assert connectionStatus != null;
         if (!connectionStatus.equals(CS_CONNECTED)) return;
 
         ConnectionManager connectionManager = ConnectionManager.get();
