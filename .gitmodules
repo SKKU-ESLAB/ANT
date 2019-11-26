@@ -31,3 +31,6 @@
 [submodule "subprojects/CNN-on-flash"]
 	path = subprojects/CNN-on-flash
 	url = https://github.com/SKKU-ESLAB/CNN-on-flash
+[submodule "dep/iotjs"]
+	path = dep/iotjs
+	url = https://github.com/SKKU-ESLAB/ANT-iotjs
