@@ -1,4 +1,4 @@
-package skku.eslab.ant.companion.companionapi;
+package skku.eslab.ant.companion.httpconnection;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -22,29 +22,14 @@ import fi.iki.elonen.NanoHTTPD;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-public class CompanionServer extends NanoHTTPD {
-    private ArrayList<CompanionServerListener> mListeners = new ArrayList<>();
+public class HTTPServer extends NanoHTTPD {
+    private ArrayList<HTTPServerListener> mListeners = new ArrayList<>();
 
-    private static CompanionServer singleton = null;
-
-    public static boolean setSingleton(int port) {
-        if (singleton == null) {
-            singleton = new CompanionServer(port);
-            return true;
-        } else {
-            return false;
-        }
-    }
-
-    public static CompanionServer get() {
-        return singleton;
-    }
-
-    private CompanionServer(int port) {
+    public HTTPServer(int port) {
         super(port);
     }
 
-    public void addListener(CompanionServerListener listener) {
+    public void addListener(HTTPServerListener listener) {
         this.mListeners.add(listener);
     }
 
@@ -60,8 +45,8 @@ public class CompanionServer extends NanoHTTPD {
                 try {
                     session.getInputStream().read(buffer, 0, contentLength);
                     String message = buffer.toString();
-                    for (CompanionServerListener listener : this.mListeners) {
-                        listener.onReceiveMessage(session.getUri(), message);
+                    for (HTTPServerListener listener : this.mListeners) {
+                        listener.onReceiveHTTPMessage(session.getUri(), message);
                     }
                     responseText = "Success";
                 } catch (IOException e) {
