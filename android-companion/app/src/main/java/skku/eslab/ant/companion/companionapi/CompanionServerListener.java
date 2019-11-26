@@ -1,4 +1,4 @@
-package skku.eslab.ant.companion.companionserver;
+package skku.eslab.ant.companion.companionapi;
 
 /* Copyright (c) 2019, contributors. All rights reserved.
  *
@@ -17,4 +17,5 @@ package skku.eslab.ant.companion.companionserver;
  * limitations under the License.
  */
 public interface CompanionServerListener {
+    public void onReceiveMessage(String uri, String message);
 }

@@ -4,13 +4,13 @@ var fs = require('fs');
 
 var ant = require('ant');
 
-var RESULT_SUCCESS = "Success";
-var RESULT_FAILED = "Failed";
+var RESULT_SUCCESS = 'Success';
+var RESULT_FAILED = 'Failed';
 
 var MAIN_LOOP_DIR_PATH = truncateFile(process.argv[1]);
 
 /* App Main Config START */
-var Config = function () {
+var Config = function() {
   this.showHTTPRequestPath = true;
   this.showHTTPRequestData = false;
 };
@@ -22,14 +22,14 @@ function AppFileName() {
   this.filename = undefined;
   this.fileindex = 0;
   var MAX_FILE_INDEX = 2;
-  this.get = function () {
+  this.get = function() {
     return this.filename;
-  }
-  this.set_new = function () {
+  };
+  this.set_new = function() {
     this.fileindex = (this.fileindex + 1) % MAX_FILE_INDEX;
-    this.filename = "./app" + this.fileindex + ".js";
-  }
-  this.initialize = function () {
+    this.filename = './app' + this.fileindex + '.js';
+  };
+  this.initialize = function() {
     var isFileExists = false;
     for (var i = 0; i < MAX_FILE_INDEX; i++) {
       this.set_new();
@@ -41,7 +41,7 @@ function AppFileName() {
     if (!isFileExists) {
       this.filename = undefined;
     }
-  }
+  };
   this.initialize();
 }
 var gAppFileName = new AppFileName();
@@ -50,10 +50,10 @@ var gAppFileName = new AppFileName();
 /* App Code Manager START */
 function AppCodeManager() {
   this.current_app_object = undefined;
-  this.load = function (appFileName) {
+  this.load = function(appFileName) {
     this.current_app_object = require(appFileName);
   };
-  this.install = function (appCodeBuffer) {
+  this.install = function(appCodeBuffer) {
     // Write app code
     gAppFileName.set_new();
     var fd = fs.openSync(gAppFileName.get(), 'w');
@@ -71,7 +71,7 @@ function AppCodeManager() {
       return false;
     }
   };
-  this.remove = function (appFileName) {
+  this.remove = function(appFileName) {
     // Remove app code
     ant.runtime._removeCurrentApp();
     if (fs.existsSync(appFileName)) {
@@ -85,10 +85,10 @@ var gAppCodeManager = new AppCodeManager();
 
 
 function truncateFile(path) {
-  var tokens = path.split("/");
-  var truncatedPath = "";
+  var tokens = path.split('/');
+  var truncatedPath = '';
   for (var i = 0; i < tokens.length - 1; i++) {
-    truncatedPath += tokens[i] + "/";
+    truncatedPath += tokens[i] + '/';
   }
   return truncatedPath;
 }
@@ -106,32 +106,23 @@ function parseUrl(url) {
 }
 
 function onAliveRequest(request, data) {
-  var results = {
-    message: "Alive",
-    code: 200
-  };
+  var results = {message: 'Alive', code: 200};
   return results;
 }
 
 function onAppCommand(request, data) {
-  var results = {
-    message: "Invalid command",
-    code: 500
-  };
+  var results = {message: 'Invalid command', code: 500};
   var command = data.toString();
-  if (command == "start") {
+  if (command == 'start') {
     results = onStartApp(request, data);
-  } else if (command == "stop") {
+  } else if (command == 'stop') {
     results = onStopApp(request, data);
   }
   return results;
 }
 
 function onInstallApp(request, data) {
-  var results = {
-    message: RESULT_FAILED,
-    code: 500
-  };
+  var results = {message: RESULT_FAILED, code: 500};
 
   if (ant.runtime.getCurrentApp() === undefined) {
     var appCodeBuffer = data;
@@ -145,10 +136,7 @@ function onInstallApp(request, data) {
 }
 
 function onRemoveApp(request, data) {
-  var results = {
-    message: RESULT_FAILED,
-    code: 500
-  };
+  var results = {message: RESULT_FAILED, code: 500};
 
   if (ant.runtime.getCurrentApp() !== undefined) {
     var isSuccess = gAppCodeManager.remove(gAppFileName.get());
@@ -161,10 +149,7 @@ function onRemoveApp(request, data) {
 }
 
 function onStartApp(request, data) {
-  var results = {
-    message: RESULT_FAILED,
-    code: 500
-  };
+  var results = {message: RESULT_FAILED, code: 500};
   var app = ant.runtime.getCurrentApp();
   if (app != undefined) {
     results.message = app.start();
@@ -176,10 +161,7 @@ function onStartApp(request, data) {
 }
 
 function onStopApp(request, data) {
-  var results = {
-    message: RESULT_FAILED,
-    code: 500
-  };
+  var results = {message: RESULT_FAILED, code: 500};
   var app = ant.runtime.getCurrentApp();
   if (app != undefined) {
     results.message = app.stop();
@@ -192,10 +174,7 @@ function onStopApp(request, data) {
 
 function onGetAppInfo(request, data) {
   var currentApp = ant.runtime.getCurrentApp();
-  var results = {
-    message: "No App Found",
-    code: 500
-  };
+  var results = {message: 'No App Found', code: 500};
 
   if (currentApp != undefined) {
     var appInfo = currentApp.getInfo();
@@ -206,10 +185,7 @@ function onGetAppInfo(request, data) {
 }
 
 function onGetAppCode(request, data) {
-  var results = {
-    message: "No App Code Found",
-    code: 500
-  };
+  var results = {message: 'No App Code Found', code: 500};
 
   if (fs.existsSync(gAppFileName.get())) {
     var appCode = fs.readFileSync(gAppFileName.get());
@@ -222,10 +198,7 @@ function onGetAppCode(request, data) {
 
 function onGetAppState(request, data) {
   var currentApp = ant.runtime.getCurrentApp();
-  var results = {
-    message: "No App Found",
-    code: 500
-  };
+  var results = {message: 'No App Found', code: 500};
 
   if (currentApp != undefined) {
     results.message = currentApp.getState();
@@ -235,19 +208,16 @@ function onGetAppState(request, data) {
 }
 
 function onGetAppEditorPage(request, data) {
-  var results = {
-    message: RESULT_FAILED,
-    code: 500
-  };
+  var results = {message: RESULT_FAILED, code: 500};
 
   var urlTokens = parseUrl(request.url);
   urlTokens.splice(0, 1);
-  var path = MAIN_LOOP_DIR_PATH + "app-editor";
+  var path = MAIN_LOOP_DIR_PATH + 'app-editor';
   if (urlTokens.length == 0) {
-    path += "/index.html";
+    path += '/index.html';
   } else {
     for (i in urlTokens) {
-      path += "/" + urlTokens[i];
+      path += '/' + urlTokens[i];
     }
   }
   // console.log(path);
@@ -259,63 +229,98 @@ function onGetAppEditorPage(request, data) {
   return results;
 }
 
+function onSetCompanionAddress(request, data) {
+  var results = {message: RESULT_FAILED, code: 500};
+  // TODO: hardcoded port, path
+  var companionHost = data.toString();
+  var companionPort = 8002;
+  var companionPath = '/companion';
+  var result = ant.companion._setCompanionAddress(
+      companionHost, companionPort, companionPath);
+  if (result == true) {
+    results.message = RESULT_SUCCESS;
+    results.code = 200;
+  }
+  return results;
+}
+
+function onReceiveMessageFromCompanion(request, data) {
+  var results = {message: RESULT_FAILED, code: 500};
+  if (data !== undefined && data !== null) {
+    var message = data.toString();
+    ant.companion._onReceiveMessageFromCompanion(message);
+    results.message = RESULT_SUCCESS;
+    results.code = 200;
+  }
+  return results;
+}
+
 function _onHTTPRequest(request, response, data) {
   response.setHeader('Content-Type', 'text/html');
   var urlTokens = parseUrl(request.url);
-  var results = {
-    message: "Not Found Entry",
-    code: 404
-  };
+  var results = {message: 'Not Found Entry', code: 404};
 
   // console.log(urlTokens.toString());
 
   if (urlTokens.length == 0) {
     // "/"
-    if (request.method == "GET") {
+    if (request.method == 'GET') {
       // GET "/": Alive message
       results = onAliveRequest(request, data);
     }
-  } else if (urlTokens[0] == "app-editor") {
+  } else if (urlTokens[0] == 'app-editor') {
     // "/alive"
-    if (request.method == "GET") {
+    if (request.method == 'GET') {
       // GET "/": Return app editor page
       results = onGetAppEditorPage(request, data);
     }
-  } else if (urlTokens[0] == "runtime") {
+  } else if (urlTokens[0] == 'runtime') {
     // "/runtime*"
     if (urlTokens.length == 1) {
       // "/runtime": Not found
-    } else if (urlTokens[1] == "currentApp") {
+    } else if (urlTokens[1] == 'currentApp') {
       // "/runtime/currentApp*"
       if (urlTokens.length == 2) {
         // "/runtime/currentApp"
-        if (request.method == "GET") {
+        if (request.method == 'GET') {
           // GET "/runtime/currentApp"
           results = onGetAppInfo(request, data);
-        } else if (request.method == "POST") {
+        } else if (request.method == 'POST') {
           // POST "/runtime/currentApp"
           results = onInstallApp(request, data);
-        } else if (request.method == "DELETE") {
+        } else if (request.method == 'DELETE') {
           // DELETE "/runtime/currentApp"
           results = onRemoveApp(request, data);
         }
-      } else if (urlTokens[2] == "command") {
+      } else if (urlTokens[2] == 'command') {
         // "/runtime/currentApp/command"
-        if (request.method == "POST") {
+        if (request.method == 'POST') {
           // POST "/runtime/currentApp/command"
           results = onAppCommand(request, data);
         }
-      } else if (urlTokens[2] == "code") {
+      } else if (urlTokens[2] == 'code') {
         // "/runtime/currentApp/code"
-        if (request.method == "GET") {
+        if (request.method == 'GET') {
           // GET "/runtime/currentApp/code"
           results = onGetAppCode(request, data);
         }
-      } else if (urlTokens[2] == "state") {
+      } else if (urlTokens[2] == 'state') {
         // "/runtime/currentApp/state"
-        if (request.method == "GET") {
+        if (request.method == 'GET') {
           // GET "/runtime/currentApp/state"
           results = onGetAppState(request, data);
+        }
+      } else if (urlTokens[2] == 'companionAddress') {
+        // "/runtime/currentApp/companionAddress"
+        if (request.method == 'POST') {
+          // POST "/runtime/currentApp/companionAddress"
+          results = onSetCompanionAddress(request, data);
+        }
+      } else if (urlTokens[2] == 'companion') {
+        // "/runtime/currentApp/companion"
+        if (request.method == 'POST') {
+          // POST "/runtime/currentApp/companion"
+          results = onReceiveMessageFromCompanion(request, data);
         }
       }
     }
@@ -333,10 +338,10 @@ function onHTTPRequest(request, response) {
   }
 
   var parts = [];
-  request.on('data', function (chunk) {
+  request.on('data', function(chunk) {
     parts.push(chunk);
   });
-  request.on('end', function () {
+  request.on('end', function() {
     var body = Buffer.concat(parts);
     if (gConfig.showHTTPRequestData) {
       console.log('Request data: ' + body.toString());
@@ -351,11 +356,11 @@ function loadExistingAppCode() {
   }
 
   // Load app code
-  console.log("loadExistingAppCode");
+  console.log('loadExistingAppCode');
   gAppCodeManager.load(gAppFileName.get());
 
   if (ant.runtime.getCurrentApp() === undefined) {
-    console.log("getCurrentApp" + ant.runtime.getCurrentApp());
+    console.log('getCurrentApp' + ant.runtime.getCurrentApp());
     return false;
   }
 
@@ -374,8 +379,8 @@ function mainLoop() {
   server.on('request', onHTTPRequest);
 
   var port = 8001;
-  server.listen(port, function () {
-    console.log("ANT core listening on port: " + port);
+  server.listen(port, function() {
+    console.log('ANT core listening on port: ' + port);
   });
 }
 

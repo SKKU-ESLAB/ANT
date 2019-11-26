@@ -1,20 +1,19 @@
 var console = require('console');
 var http = require('http');
 
-var RESULT_SUCCESS = "Success";
-var RESULT_FAILED = "Failed";
+var RESULT_SUCCESS = 'Success';
+var RESULT_FAILED = 'Failed';
 
 /** Runtime API start **/
-var RuntimeAPI = { _current_app: undefined };
+var RuntimeAPI = {_current_app: undefined};
 
 RuntimeAPI._removeCurrentApp = function() {
   this._current_app = undefined;
 };
 
-RuntimeAPI.setCurrentApp = function (onInitialize, onStart, onStop) {
-  if (!(onInitialize instanceof Function)
-    || !(onStart instanceof Function)
-    || !(onStop instanceof Function)) {
+RuntimeAPI.setCurrentApp = function(onInitialize, onStart, onStop) {
+  if (!(onInitialize instanceof Function) || !(onStart instanceof Function) ||
+      !(onStop instanceof Function)) {
     return RESULT_FAILED;
   }
   this._current_app = new App(onInitialize, onStart, onStop);
@@ -22,7 +21,7 @@ RuntimeAPI.setCurrentApp = function (onInitialize, onStart, onStop) {
   return RESULT_SUCCESS;
 };
 
-RuntimeAPI.getCurrentApp = function () {
+RuntimeAPI.getCurrentApp = function() {
   return this._current_app;
 };
 
@@ -40,7 +39,7 @@ App.prototype.STATE = {};
 App.prototype.STATE.IDLE = 0;
 App.prototype.STATE.RUNNING = 1;
 
-App.prototype.start = function () {
+App.prototype.start = function() {
   if (this.state == this.STATE.RUNNING) {
     return RESULT_FAILED;
   }
@@ -49,7 +48,7 @@ App.prototype.start = function () {
   return RESULT_SUCCESS;
 };
 
-App.prototype.stop = function () {
+App.prototype.stop = function() {
   if (this.state == this.STATE.IDLE) {
     return RESULT_FAILED;
   }
@@ -58,20 +57,18 @@ App.prototype.stop = function () {
   return RESULT_SUCCESS;
 };
 
-App.prototype.getState = function () {
+App.prototype.getState = function() {
   if (this.state == this.STATE.IDLE) {
-    return "Idle";
+    return 'Idle';
   } else if (this.state == this.STATE.RUNNING) {
-    return "Running";
+    return 'Running';
   } else {
-    return "Unknown";
+    return 'Unknown';
   }
 };
 
-App.prototype.getInfo = function () {
-  var appInfo = {
-    "state": this.getState()
-  };
+App.prototype.getInfo = function() {
+  var appInfo = {'state': this.getState()};
   return appInfo;
 };
 /* App end */
@@ -80,36 +77,51 @@ App.prototype.getInfo = function () {
 
 
 /** Stream API start **/
-function StreamAPI() {
-}
+function StreamAPI() {}
 /** Stream API end **/
 
 /** Companion API start **/
 function CompanionAPI() {
-  this._companionAddress = undefined;
+  this._companionHost = undefined;
+  this._companionPort = undefined;
+  this._companionPath = undefined;
   this._handler = undefined;
 }
-CompanionAPI._addCompanion = function(companionAddress) {
-  this._companionAddress = companionAddress;
+
+CompanionAPI._setCompanionAddress = function(
+    companionHost, companionPort, companionPath) {
+  this._companionHost = companionHost;
+  this._companionPort = companionPort;
+  this._companionPath = companionPath;
 };
+
+CompanionAPI._onReceiveMessageFromCompanion = function(message) {
+  this._handler(message);
+};
+
 CompanionAPI.sendMessage = function(message) {
-  if(this._companionAddress === undefined) {
-    console.log("Error: failed to send message due to no companion address");
-    return;
+  if (this._companionPath === undefined) {
+    console.log('Error: failed to send message due to no companion address');
+    return false;
   }
 
   var options = {
     method: 'POST',
-    port: 8383,
-    path: '/',
+    host: this._companionHost,
+    port: this._companionPort,
+    path: this._companionPath,
     headers: {'Content-Length': message.length},
   };
 
   var client_request = http.request(options);
   client_request.write(message);
   client_request.end();
-  console.log("Send " + message + " to " + this._companionAddress);
+  console.log(
+      'Send ' + message + ' to http://' + this._companionHost + ':' +
+      this._companionPort + this._companionPath);
+  return true;
 };
+
 CompanionAPI.setOnReceiveMessage = function(handler) {
   this._handler = handler;
 };
@@ -117,14 +129,12 @@ CompanionAPI.setOnReceiveMessage = function(handler) {
 
 
 /** Compression Server API start **/
-function CompressionServerAPI() {
-}
+function CompressionServerAPI() {}
 /** Compression Server API end **/
 
 
 /** ANT main object start **/
-function ANT() {
-}
+function ANT() {}
 
 ANT.prototype.runtime = RuntimeAPI;
 ANT.prototype.stream = StreamAPI;
