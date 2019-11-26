@@ -1,7 +1,4 @@
-package skku.eslab.ant.companion.ui;
-
-import fi.iki.elonen.NanoHTTPD;
-
+package skku.eslab.ant.companion.companionserver;
 
 /* Copyright (c) 2019, contributors. All rights reserved.
  *
@@ -19,9 +16,5 @@ import fi.iki.elonen.NanoHTTPD;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-public class CompanionServer extends NanoHTTPD {
-    public ComapnionServer(int port) {
-        super(port);
-    }
-    
+public interface CompanionServerListener {
 }
