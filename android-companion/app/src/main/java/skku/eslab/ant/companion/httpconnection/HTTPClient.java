@@ -2,6 +2,7 @@ package skku.eslab.ant.companion.httpconnection;
 
 import android.app.Activity;
 import android.os.AsyncTask;
+import android.util.Log;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -11,17 +12,17 @@ import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
 
-public class HTTPConnectionManager {
-    private static HTTPConnectionManager singleton;
+public class HTTPClient {
+    private static HTTPClient singleton;
 
-    public static HTTPConnectionManager get() {
+    public static HTTPClient get() {
         if (singleton == null) {
-            singleton = new HTTPConnectionManager();
+            singleton = new HTTPClient();
         }
         return singleton;
     }
 
-    private HTTPConnectionManager() {
+    private HTTPClient() {
     }
 
     private Activity mMotherActivity;
@@ -54,8 +55,8 @@ public class HTTPConnectionManager {
             @Override
             public void run() {
                 try {
-//                    Log.d("test", "http request: " + _url + " / " + _method
-//                    + " / " + _data);
+                    Log.d("test", "http request: " + _url + " / " + _method
+                            + " / " + _data);
                     // Create URL
                     URL targetUrl = new URL(_url);
                     // Create connection
@@ -87,11 +88,12 @@ public class HTTPConnectionManager {
                     br.close();
                     final String responseText = response.toString();
 
-//                    Log.d("test", "response: (" + responseCode + ") " + responseText);
+                    Log.d("test", "response: (" + responseCode + ") " + responseText);
                     if (_responseHandler != null) {
                         mMotherActivity.runOnUiThread(new Runnable() {
                             @Override
                             public void run() {
+                                Log.d("test", "code: " + responseCode + " / text: " + responseText);
                                 _responseHandler.onHTTPResponse(responseCode,
                                         responseText);
                             }
@@ -101,7 +103,10 @@ public class HTTPConnectionManager {
                     mMotherActivity.runOnUiThread(new Runnable() {
                         @Override
                         public void run() {
-                            _responseHandler.onHTTPResponse(404, "Not Found");
+                            Log.d("test", "code: " + 408 + " / text: " + "Request Timeout");
+                            if (_responseHandler != null) {
+                                _responseHandler.onHTTPResponse(408, "Request timeout");
+                            }
                         }
                     });
                 }

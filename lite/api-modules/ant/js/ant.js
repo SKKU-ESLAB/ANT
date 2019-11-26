@@ -93,6 +93,7 @@ CompanionAPI._setCompanionAddress = function(
   this._companionHost = companionHost;
   this._companionPort = companionPort;
   this._companionPath = companionPath;
+  return true;
 };
 
 CompanionAPI._onReceiveMessageFromCompanion = function(message) {
@@ -112,13 +113,12 @@ CompanionAPI.sendMessage = function(message) {
     path: this._companionPath,
     headers: {'Content-Length': message.length},
   };
-
   var client_request = http.request(options);
   client_request.write(message);
   client_request.end();
-  console.log(
-      'Send ' + message + ' to http://' + this._companionHost + ':' +
-      this._companionPort + this._companionPath);
+  // console.log(
+  //     'Send ' + message + ' to http://' + this._companionHost + ':' +
+  //     this._companionPort + this._companionPath);
   return true;
 };
 
