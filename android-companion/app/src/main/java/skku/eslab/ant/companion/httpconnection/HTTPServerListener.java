@@ -1,4 +1,4 @@
-package skku.eslab.ant.companion.companionapi;
+package skku.eslab.ant.companion.httpconnection;
 
 /* Copyright (c) 2019, contributors. All rights reserved.
  *
@@ -16,6 +16,6 @@ package skku.eslab.ant.companion.companionapi;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-public interface CompanionServerListener {
-    public void onReceiveMessage(String uri, String message);
+public interface HTTPServerListener {
+    public void onReceiveHTTPMessage(String uri, String message);
 }

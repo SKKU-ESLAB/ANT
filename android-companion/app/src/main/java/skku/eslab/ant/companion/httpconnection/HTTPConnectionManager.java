@@ -1,4 +1,4 @@
-package skku.eslab.ant.companion;
+package skku.eslab.ant.companion.httpconnection;
 
 import android.app.Activity;
 import android.os.AsyncTask;
@@ -11,17 +11,17 @@ import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
 
-public class ConnectionManager {
-    private static ConnectionManager singleton;
+public class HTTPConnectionManager {
+    private static HTTPConnectionManager singleton;
 
-    public static ConnectionManager get() {
+    public static HTTPConnectionManager get() {
         if (singleton == null) {
-            singleton = new ConnectionManager();
+            singleton = new HTTPConnectionManager();
         }
         return singleton;
     }
 
-    private ConnectionManager() {
+    private HTTPConnectionManager() {
     }
 
     private Activity mMotherActivity;
