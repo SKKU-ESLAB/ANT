@@ -47,7 +47,7 @@ public class CompanionAPI implements HTTPServerListener {
     @Override
     public void onReceiveHTTPMessage(String uri, String message) {
         Log.d("test", "receive message: " + uri + " / " + message);
-        if (uri.equals("/companion")) {
+        if (uri.contains("/companion")) {
             for (OnReceiveMessageListener listener : mListeners) {
                 listener.onReceiveMessageListener(message);
             }

@@ -4,7 +4,9 @@
       "js_file": "js/ant.js",
       "require": [
         "buffer",
-        "console"
+        "console",
+        "ant_runtime",
+        "http"
       ]
     }
   }
