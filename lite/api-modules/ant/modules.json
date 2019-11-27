@@ -2,7 +2,10 @@
   "modules": {
     "ant": {
       "js_file": "js/ant.js",
-      "require": ["buffer", "console"]
+      "require": [
+        "buffer",
+        "console"
+      ]
     }
   }
 }
