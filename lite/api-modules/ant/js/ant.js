@@ -78,6 +78,20 @@ App.prototype.getInfo = function () {
 
 /** Stream API start **/
 function StreamAPI() { }
+StreamAPI.createPipeline = function(pipeline_name) {
+  return new Pipeline(pipeline_name);
+};
+StreamAPI.createElement() = function(element_name) {
+  return new Element(element_name);
+};
+
+function Pipeline(name) {
+  this.name = name;
+}
+function Element(name) {
+  this.name = name;
+}
+
 /** Stream API end **/
 
 /** Companion API start **/
