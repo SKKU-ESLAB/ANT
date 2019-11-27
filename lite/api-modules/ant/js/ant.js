@@ -77,6 +77,7 @@ App.prototype.getInfo = function () {
 
 
 /** Stream API start **/
+// TODO: native-side Stream API implementation is required.
 function StreamAPI() { }
 StreamAPI.createPipeline = function(pipeline_name) {
   return new Pipeline(pipeline_name);
@@ -154,9 +155,6 @@ CompanionAPI.sendMessage = function (message) {
   var client_request = http.request(options);
   client_request.write(message);
   client_request.end();
-  // console.log(
-  //     'Send ' + message + ' to http://' + this._companionHost + ':' +
-  //     this._companionPort + this._companionPath);
   return true;
 };
 
