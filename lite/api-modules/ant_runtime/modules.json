@@ -1,0 +1,10 @@
+{
+  "modules": {
+    "ant": {
+      "js_file": "js/ant_runtime.js",
+      "require": [
+        "console"
+      ]
+    }
+  }
+}
