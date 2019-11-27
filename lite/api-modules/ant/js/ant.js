@@ -77,7 +77,46 @@ App.prototype.getInfo = function () {
 
 
 /** Stream API start **/
+// TODO: native-side Stream API implementation is required.
 function StreamAPI() { }
+StreamAPI.createPipeline = function (pipeline_name) {
+  return new Pipeline(pipeline_name);
+};
+StreamAPI.createElement() = function (element_name) {
+  return new Element(element_name);
+};
+
+function Pipeline(name) {
+  this.name = name;
+  this.elements = [];
+}
+Pipeline.prototype.add = function (element) {
+  // TODO: type check for element is required
+  this.elements.push(element);
+}
+
+function Element(name) {
+  this.name = name;
+  this.properties = {};
+  this.isSinkElement = false;
+  this.handlers = {};
+}
+Element.prototype.setProperty = function (key, value) {
+  // TODO: type check for key, value is required
+  // TODO: check for existing property is required
+  // TODO: success/failed result is required
+  this.properties[key] = value;
+}
+Element.prototype.setSinkElement = function (isSinkElement) {
+  this.isSinkElement = isSinkElement;
+}
+Element.prototype.connect = function (detailedSignal, handler) {
+  // TODO: type check for detailedSignal and handler is required
+  // TODO: check for existing handler is required
+  // TODO: success/failed result is required
+  this.handlers[detailedSignal] = handler;
+}
+
 /** Stream API end **/
 
 /** Companion API start **/
@@ -116,9 +155,6 @@ CompanionAPI.sendMessage = function (message) {
   var client_request = http.request(options);
   client_request.write(message);
   client_request.end();
-  // console.log(
-  //     'Send ' + message + ' to http://' + this._companionHost + ':' +
-  //     this._companionPort + this._companionPath);
   return true;
 };
 
@@ -129,7 +165,20 @@ CompanionAPI.setOnReceiveMessage = function (handler) {
 
 
 /** Compression Server API start **/
-function CompressionServerAPI() { }
+function CompressionServerAPI() {
+  this.ipAddress = undefined;
+}
+CompressionServerAPI.connect = function (ipAddress) {
+  this.ipAddress = ipAddress;
+};
+CompressionServerAPI.downloadModel = function (modelId) {
+  if (this.ipAddress === undefined)
+    return undefined;
+};
+CompressionServerAPI.downloadKernel = function (kernelId) {
+  if (this.ipAddress === undefined)
+    return undefined;
+};
 /** Compression Server API end **/
 
 
