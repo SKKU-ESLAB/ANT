@@ -97,10 +97,23 @@ Pipeline.prototype.add = function(element) {
 function Element(name) {
   this.name = name;
   this.properties = {};
+  this.isSinkElement = false;
+  this.handlers = {};
 }
 Element.prototype.setProperty = function(key, value) {
   // TODO: type check for key, value is required
+  // TODO: check for existing property is required
+  // TODO: success/failed result is required
   this.properties[key] = value;
+}
+Element.prototype.setSinkElement = function(isSinkElement) {
+  this.isSinkElement = isSinkElement;
+}
+Element.prototype.connect = function(detailedSignal, handler) {
+  // TODO: type check for detailedSignal and handler is required
+  // TODO: check for existing handler is required
+  // TODO: success/failed result is required
+  this.handlers[detailedSignal] = handler;
 }
 
 /** Stream API end **/
