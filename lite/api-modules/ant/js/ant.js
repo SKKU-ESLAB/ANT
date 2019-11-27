@@ -5,15 +5,15 @@ var RESULT_SUCCESS = 'Success';
 var RESULT_FAILED = 'Failed';
 
 /** Runtime API start **/
-var RuntimeAPI = {_current_app: undefined};
+var RuntimeAPI = { _current_app: undefined };
 
-RuntimeAPI._removeCurrentApp = function() {
+RuntimeAPI._removeCurrentApp = function () {
   this._current_app = undefined;
 };
 
-RuntimeAPI.setCurrentApp = function(onInitialize, onStart, onStop) {
+RuntimeAPI.setCurrentApp = function (onInitialize, onStart, onStop) {
   if (!(onInitialize instanceof Function) || !(onStart instanceof Function) ||
-      !(onStop instanceof Function)) {
+    !(onStop instanceof Function)) {
     return RESULT_FAILED;
   }
   this._current_app = new App(onInitialize, onStart, onStop);
@@ -21,7 +21,7 @@ RuntimeAPI.setCurrentApp = function(onInitialize, onStart, onStop) {
   return RESULT_SUCCESS;
 };
 
-RuntimeAPI.getCurrentApp = function() {
+RuntimeAPI.getCurrentApp = function () {
   return this._current_app;
 };
 
@@ -39,7 +39,7 @@ App.prototype.STATE = {};
 App.prototype.STATE.IDLE = 0;
 App.prototype.STATE.RUNNING = 1;
 
-App.prototype.start = function() {
+App.prototype.start = function () {
   if (this.state == this.STATE.RUNNING) {
     return RESULT_FAILED;
   }
@@ -48,7 +48,7 @@ App.prototype.start = function() {
   return RESULT_SUCCESS;
 };
 
-App.prototype.stop = function() {
+App.prototype.stop = function () {
   if (this.state == this.STATE.IDLE) {
     return RESULT_FAILED;
   }
@@ -57,7 +57,7 @@ App.prototype.stop = function() {
   return RESULT_SUCCESS;
 };
 
-App.prototype.getState = function() {
+App.prototype.getState = function () {
   if (this.state == this.STATE.IDLE) {
     return 'Idle';
   } else if (this.state == this.STATE.RUNNING) {
@@ -67,8 +67,8 @@ App.prototype.getState = function() {
   }
 };
 
-App.prototype.getInfo = function() {
-  var appInfo = {'state': this.getState()};
+App.prototype.getInfo = function () {
+  var appInfo = { 'state': this.getState() };
   return appInfo;
 };
 /* App end */
@@ -77,7 +77,7 @@ App.prototype.getInfo = function() {
 
 
 /** Stream API start **/
-function StreamAPI() {}
+function StreamAPI() { }
 /** Stream API end **/
 
 /** Companion API start **/
@@ -88,19 +88,19 @@ function CompanionAPI() {
   this._handler = undefined;
 }
 
-CompanionAPI._setCompanionAddress = function(
-    companionHost, companionPort, companionPath) {
+CompanionAPI._setCompanionAddress = function (
+  companionHost, companionPort, companionPath) {
   this._companionHost = companionHost;
   this._companionPort = companionPort;
   this._companionPath = companionPath;
   return true;
 };
 
-CompanionAPI._onReceiveMessageFromCompanion = function(message) {
+CompanionAPI._onReceiveMessageFromCompanion = function (message) {
   this._handler(message);
 };
 
-CompanionAPI.sendMessage = function(message) {
+CompanionAPI.sendMessage = function (message) {
   if (this._companionPath === undefined) {
     console.log('Error: failed to send message due to no companion address');
     return false;
@@ -111,7 +111,7 @@ CompanionAPI.sendMessage = function(message) {
     host: this._companionHost,
     port: this._companionPort,
     path: this._companionPath,
-    headers: {'Content-Length': message.length},
+    headers: { 'Content-Length': message.length },
   };
   var client_request = http.request(options);
   client_request.write(message);
@@ -122,19 +122,19 @@ CompanionAPI.sendMessage = function(message) {
   return true;
 };
 
-CompanionAPI.setOnReceiveMessage = function(handler) {
+CompanionAPI.setOnReceiveMessage = function (handler) {
   this._handler = handler;
 };
 /** Companion API end **/
 
 
 /** Compression Server API start **/
-function CompressionServerAPI() {}
+function CompressionServerAPI() { }
 /** Compression Server API end **/
 
 
 /** ANT main object start **/
-function ANT() {}
+function ANT() { }
 
 ANT.prototype.runtime = RuntimeAPI;
 ANT.prototype.stream = StreamAPI;

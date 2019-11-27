@@ -10,7 +10,7 @@ var RESULT_FAILED = 'Failed';
 var MAIN_LOOP_DIR_PATH = truncateFile(process.argv[1]);
 
 /* App Main Config START */
-var Config = function() {
+var Config = function () {
   this.showHTTPRequestPath = true;
   this.showHTTPRequestData = false;
 };
@@ -22,14 +22,14 @@ function AppFileName() {
   this.filename = undefined;
   this.fileindex = 0;
   var MAX_FILE_INDEX = 2;
-  this.get = function() {
+  this.get = function () {
     return this.filename;
   };
-  this.set_new = function() {
+  this.set_new = function () {
     this.fileindex = (this.fileindex + 1) % MAX_FILE_INDEX;
     this.filename = './app' + this.fileindex + '.js';
   };
-  this.initialize = function() {
+  this.initialize = function () {
     var isFileExists = false;
     for (var i = 0; i < MAX_FILE_INDEX; i++) {
       this.set_new();
@@ -50,10 +50,10 @@ var gAppFileName = new AppFileName();
 /* App Code Manager START */
 function AppCodeManager() {
   this.current_app_object = undefined;
-  this.load = function(appFileName) {
+  this.load = function (appFileName) {
     this.current_app_object = require(appFileName);
   };
-  this.install = function(appCodeBuffer) {
+  this.install = function (appCodeBuffer) {
     // Write app code
     gAppFileName.set_new();
     var fd = fs.openSync(gAppFileName.get(), 'w');
@@ -71,7 +71,7 @@ function AppCodeManager() {
       return false;
     }
   };
-  this.remove = function(appFileName) {
+  this.remove = function (appFileName) {
     // Remove app code
     ant.runtime._removeCurrentApp();
     if (fs.existsSync(appFileName)) {
@@ -106,12 +106,12 @@ function parseUrl(url) {
 }
 
 function onAliveRequest(request, data) {
-  var results = {message: 'Alive', code: 200};
+  var results = { message: 'Alive', code: 200 };
   return results;
 }
 
 function onAppCommand(request, data) {
-  var results = {message: 'Invalid command', code: 500};
+  var results = { message: 'Invalid command', code: 500 };
   var command = data.toString();
   if (command == 'start') {
     results = onStartApp(request, data);
@@ -122,7 +122,7 @@ function onAppCommand(request, data) {
 }
 
 function onInstallApp(request, data) {
-  var results = {message: RESULT_FAILED, code: 500};
+  var results = { message: RESULT_FAILED, code: 500 };
 
   if (ant.runtime.getCurrentApp() === undefined) {
     var appCodeBuffer = data;
@@ -136,7 +136,7 @@ function onInstallApp(request, data) {
 }
 
 function onRemoveApp(request, data) {
-  var results = {message: RESULT_FAILED, code: 500};
+  var results = { message: RESULT_FAILED, code: 500 };
 
   if (ant.runtime.getCurrentApp() !== undefined) {
     var isSuccess = gAppCodeManager.remove(gAppFileName.get());
@@ -149,7 +149,7 @@ function onRemoveApp(request, data) {
 }
 
 function onStartApp(request, data) {
-  var results = {message: RESULT_FAILED, code: 500};
+  var results = { message: RESULT_FAILED, code: 500 };
   var app = ant.runtime.getCurrentApp();
   if (app != undefined) {
     results.message = app.start();
@@ -161,7 +161,7 @@ function onStartApp(request, data) {
 }
 
 function onStopApp(request, data) {
-  var results = {message: RESULT_FAILED, code: 500};
+  var results = { message: RESULT_FAILED, code: 500 };
   var app = ant.runtime.getCurrentApp();
   if (app != undefined) {
     results.message = app.stop();
@@ -174,7 +174,7 @@ function onStopApp(request, data) {
 
 function onGetAppInfo(request, data) {
   var currentApp = ant.runtime.getCurrentApp();
-  var results = {message: 'No App Found', code: 500};
+  var results = { message: 'No App Found', code: 500 };
 
   if (currentApp != undefined) {
     var appInfo = currentApp.getInfo();
@@ -185,7 +185,7 @@ function onGetAppInfo(request, data) {
 }
 
 function onGetAppCode(request, data) {
-  var results = {message: 'No App Code Found', code: 500};
+  var results = { message: 'No App Code Found', code: 500 };
 
   if (fs.existsSync(gAppFileName.get())) {
     var appCode = fs.readFileSync(gAppFileName.get());
@@ -198,7 +198,7 @@ function onGetAppCode(request, data) {
 
 function onGetAppState(request, data) {
   var currentApp = ant.runtime.getCurrentApp();
-  var results = {message: 'No App Found', code: 500};
+  var results = { message: 'No App Found', code: 500 };
 
   if (currentApp != undefined) {
     results.message = currentApp.getState();
@@ -208,7 +208,7 @@ function onGetAppState(request, data) {
 }
 
 function onGetAppEditorPage(request, data) {
-  var results = {message: RESULT_FAILED, code: 500};
+  var results = { message: RESULT_FAILED, code: 500 };
 
   var urlTokens = parseUrl(request.url);
   urlTokens.splice(0, 1);
@@ -230,13 +230,13 @@ function onGetAppEditorPage(request, data) {
 }
 
 function onSetCompanionAddress(request, data) {
-  var results = {message: RESULT_FAILED, code: 500};
+  var results = { message: RESULT_FAILED, code: 500 };
   // TODO: hardcoded port, path
   var companionHost = data.toString();
   var companionPort = 8002;
   var companionPath = '/companion';
   var result = ant.companion._setCompanionAddress(
-      companionHost, companionPort, companionPath);
+    companionHost, companionPort, companionPath);
   if (result == true) {
     results.message = RESULT_SUCCESS;
     results.code = 200;
@@ -245,7 +245,7 @@ function onSetCompanionAddress(request, data) {
 }
 
 function onReceiveMessageFromCompanion(request, data) {
-  var results = {message: RESULT_FAILED, code: 500};
+  var results = { message: RESULT_FAILED, code: 500 };
   if (data !== undefined && data !== null) {
     var message = data.toString();
     ant.companion._onReceiveMessageFromCompanion(message);
@@ -258,7 +258,7 @@ function onReceiveMessageFromCompanion(request, data) {
 function _onHTTPRequest(request, response, data) {
   response.setHeader('Content-Type', 'text/html');
   var urlTokens = parseUrl(request.url);
-  var results = {message: 'Not Found Entry', code: 404};
+  var results = { message: 'Not Found Entry', code: 404 };
 
   // console.log(urlTokens.toString());
 
@@ -338,10 +338,10 @@ function onHTTPRequest(request, response) {
   }
 
   var parts = [];
-  request.on('data', function(chunk) {
+  request.on('data', function (chunk) {
     parts.push(chunk);
   });
-  request.on('end', function() {
+  request.on('end', function () {
     var body = Buffer.concat(parts);
     if (gConfig.showHTTPRequestData) {
       console.log('Request data: ' + body.toString());
@@ -378,7 +378,7 @@ function mainLoop() {
   server.on('request', onHTTPRequest);
 
   var port = 8001;
-  server.listen(port, function() {
+  server.listen(port, function () {
     console.log('ANT core listening on port: ' + port);
   });
 }
