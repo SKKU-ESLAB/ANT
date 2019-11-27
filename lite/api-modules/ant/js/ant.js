@@ -87,9 +87,20 @@ StreamAPI.createElement() = function(element_name) {
 
 function Pipeline(name) {
   this.name = name;
+  this.elements = [];
 }
+Pipeline.prototype.add = function(element) {
+  // TODO: type check for element is required
+  this.elements.push(element);
+}
+
 function Element(name) {
   this.name = name;
+  this.properties = {};
+}
+Element.prototype.setProperty = function(key, value) {
+  // TODO: type check for key, value is required
+  this.properties[key] = value;
 }
 
 /** Stream API end **/
