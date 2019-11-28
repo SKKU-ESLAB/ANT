@@ -1,7 +1,7 @@
 #!/bin/bash
 MODULE_PATH=../../lite/api-modules/
 cd ../../dep/iotjs/
-./tools/build.py --target-board=rpi3 --cmake-param='-DENABLE_MODULE_ANT=ON -DENABLE_MODULE_ANT_RUNTIME=ON' \
+./tools/build.py --target-board=rpi3 --cmake-param=-DENABLE_MODULE_ANT=ON \
     --external-modules=${MODULE_PATH}/ant,${MODULE_PATH}/ant_runtime
 cd -
 
