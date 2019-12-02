@@ -2,6 +2,11 @@
 
 #include <glib.h>
 #include <gst/gst.h>
+
+#include <dbus/dbus-glib-lowlevel.h>
+#include <dbus/dbus-glib.h>
+#include <dbus/dbus-protocol.h>
+
 #include <pthread.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -38,11 +43,25 @@ static gboolean bus_call(GstBus *bus, GstMessage *msg, gpointer data) {
 char g_ip_address[100];
 pthread_t g_test_pipeline_thread;
 
+DBusHandlerResult msg_dbus_filter(DBusConnection *connection, DBusMessage *msg,
+                                  void *data) {
+  if (dbus_message_is_signal(msg, "org.ant.streamthread", "sendMessage")) {
+    const char *message_string;
+    dbus_message_get_args(msg, NULL, DBUS_TYPE_STRING, &(message_string),
+                          DBUS_TYPE_INVALID);
+    g_print("Message catched: %s", message_string);
+    return DBUS_HANDLER_RESULT_HANDLED;
+  } else {
+    return DBUS_HANDLER_RESULT_NOT_YET_HANDLED;
+  }
+}
+
 void *test_pipeline_thread_fn(void *arg) {
   GstElement *pipeline, *source, *converter, *omxh264enc, *h264parse,
       *rtph264pay, *gdppay, *sink;
   guint bus_watch_id;
   GMainLoop *loop;
+  DBusConnection *dbus_connection;
   char *ipAddress;
   ipAddress = g_ip_address;
 
@@ -90,7 +109,37 @@ void *test_pipeline_thread_fn(void *arg) {
   /* Start playing */
   gst_element_set_state(pipeline, GST_STATE_PLAYING);
 
-  /* Wait until error or EOS */
+  /* Initialize gdbus filter */
+  {
+    DBusError dbus_error;
+    void *data = NULL;
+
+    dbus_error_init(&dbus_error);
+    dbus_connection = dbus_bus_get(DBUS_BUS_SESSION, &dbus_error);
+    if (dbus_error_is_set(&this->mDBusError)) {
+      g_printerr("D-bus bus system registration failed");
+      dbus_error_free(&dbus_error);
+      return NULL;
+    }
+
+    dbus_bus_add_match(dbus_connection,
+                       "type='signal', interface='org.ant.streamthread'",
+                       &dbus_error);
+    if (dbus_error_is_set(&this->mDBusError)) {
+      g_printerr("D-bus add a match rule failed");
+      dbus_error_free(&dbus_error);
+      return NULL;
+    }
+
+    if (!dbus_connection_add_filter(dbus_connection, (*filter), data, NULL)) {
+      ANT_LOG_ERR(CAM, "D-Bus add filter failed");
+      return false;
+    }
+
+    dbus_connection_setup_with_g_main(dbus_connection, NULL);
+  }
+
+  /* gstreamer main loop: wait until error or EOS */
   {
     GstBus *bus;
     bus = gst_element_get_bus(pipeline);
@@ -107,6 +156,8 @@ void *test_pipeline_thread_fn(void *arg) {
   g_main_loop_unref(loop);
 
   pthread_exit(NULL);
+
+  // TODO: notify IoT.js to set "ant.stream._mIsInitialized = false"
 }
 
 bool ant_stream_testPipeline_internal(const char *ipAddress) {
@@ -115,6 +166,4 @@ bool ant_stream_testPipeline_internal(const char *ipAddress) {
   return true;
 }
 
-bool ant_stream_testMessage_internal(const char *message) {
-  return true;
-}
+bool ant_stream_testMessage_internal(const char *message) { return true; }
