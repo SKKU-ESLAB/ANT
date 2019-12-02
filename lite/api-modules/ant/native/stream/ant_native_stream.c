@@ -2,6 +2,9 @@
 
 #include <glib.h>
 #include <gst/gst.h>
+#include <pthread.h>
+#include <stdio.h>
+#include <stdlib.h>
 
 static gboolean bus_call(GstBus *bus, GstMessage *msg, gpointer data) {
   GMainLoop *loop = (GMainLoop *)data;
@@ -33,11 +36,17 @@ static gboolean bus_call(GstBus *bus, GstMessage *msg, gpointer data) {
   return TRUE;
 }
 
-bool ant_stream_testPipeline_internal(const char *ipAddress) {
+char g_ip_address[100];
+pthread_t g_test_pipeline_thread;
+
+void *test_pipeline_thread_fn(void *arg) {
   GstElement *pipeline, *source, *converter, *omxh264enc, *h264parse,
       *rtph264pay, *gdppay, *sink;
   guint bus_watch_id;
   GMainLoop *loop;
+  char *ipAddress;
+  ipAddress = g_ip_address;
+  printf("IP Address: %s\n", ipAddress);
 
   /* Initialize GStreamer */
   gst_init(NULL, NULL);
@@ -59,8 +68,7 @@ bool ant_stream_testPipeline_internal(const char *ipAddress) {
   if (!pipeline || !source || !converter || !omxh264enc || !h264parse ||
       !rtph264pay || !gdppay || !sink) {
     g_printerr("One element could not be created. Existing.\n");
-
-    return false;
+    return NULL;
   }
 
   // videotestsrc
@@ -93,16 +101,19 @@ bool ant_stream_testPipeline_internal(const char *ipAddress) {
   }
   g_print("Main Loop for Gstreamer Running...\n");
   g_main_loop_run(loop);
-  // msg = gst_bus_timed_pop_filtered(bus, GST_CLOCK_TIME_NONE,
-  //                                  GST_MESSAGE_ERROR | GST_MESSAGE_EOS);
 
   /* Free resources */
-  // if (msg != NULL)
-  //   gst_message_unref(msg);
   g_source_remove(bus_watch_id);
   gst_element_set_state(pipeline, GST_STATE_NULL);
   gst_object_unref(pipeline);
   g_main_loop_unref(loop);
 
+  pthread_exit(NULL);
+}
+
+bool ant_stream_testPipeline_internal(const char *ipAddress) {
+  printf("IP Address': %s\n", ipAddress);
+  snprintf(g_ip_address, 100, ipAddress);
+  pthread_create(&g_test_pipeline_thread, NULL, &test_pipeline_thread_fn, NULL);
   return true;
 }

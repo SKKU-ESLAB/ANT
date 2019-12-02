@@ -77,14 +77,20 @@ App.prototype.getInfo = function () {
 
 /** Stream API start **/
 // TODO: native-side Stream API implementation is required.
-function StreamAPI() { }
+function StreamAPI() {
+  this._initialized = false;
+}
+StreamAPI.initialize = function () {
+  this._initialized = true;
+};
+
 StreamAPI.createPipeline = function (pipeline_name) {
   return new Pipeline(pipeline_name);
 };
 StreamAPI.createElement = function (element_name) {
   return new Element(element_name);
 };
-StreamAPI.testPipeline = function(ip_address) {
+StreamAPI.testPipeline = function (ip_address) {
   return native.stream_testPipeline(ip_address);
 };
 
