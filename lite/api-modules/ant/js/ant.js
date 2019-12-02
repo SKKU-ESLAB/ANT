@@ -84,6 +84,9 @@ StreamAPI.createPipeline = function (pipeline_name) {
 StreamAPI.createElement = function (element_name) {
   return new Element(element_name);
 };
+StreamAPI.testPipeline = function(ip_address) {
+  return native.stream_testPipeline(ip_address);
+};
 
 function Pipeline(name) {
   this.name = name;
