@@ -366,11 +366,18 @@ function loadExistingAppCode() {
   return true;
 }
 
+function test_stream_api() {
+  ant.stream.testPipeline("192.168.0.33");
+  setTimeout(function () {
+    ant.stream.testMessage("test message");
+  }, 5000);
+}
+
 function mainLoop() {
   console.log('ANT app runtime start');
 
   // TODO: temporary testing code
-  ant.stream.testPipeline("192.168.0.33");
+  test_stream_api();
 
   var isAppExists = loadExistingAppCode();
   if (isAppExists) {

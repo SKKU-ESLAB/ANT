@@ -79,6 +79,7 @@ App.prototype.getInfo = function () {
 // TODO: native-side Stream API implementation is required.
 function StreamAPI() {
   this._mIsInitialized = false;
+  this._mIsTestInitialized = false;
 }
 StreamAPI.initialize = function () {
   this._mIsInitialized = true;
@@ -101,14 +102,26 @@ StreamAPI.createElement = function (element_name) {
   // TODO: add native function call
   return new Element(element_name);
 };
+StreamAPI.sendMessage = function (message) {
+  // TODO: implement it after testMessage()'s implementation
+};
+
 StreamAPI.testPipeline = function (ip_address) {
   if (ip_address === undefined || typeof ip_address !== "string") {
     console.error("ERROR: invalid arguments: " + ip_address);
     return false;
   }
-  return native.stream_testPipeline(ip_address);
+  var result = native.stream_testPipeline(ip_address);
+  if (result) {
+    this._mIsTestInitialized = true;
+  }
+  return result;
 };
 StreamAPI.testMesssage = function (message) {
+  if (!this._mIsTestInitialized) {
+    console.error("ERROR: Stream API is not initialized");
+    return false;
+  }
   return native.stream_testMessage(message);
 };
 
