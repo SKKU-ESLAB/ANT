@@ -10,7 +10,6 @@ static gboolean bus_call(GstBus *bus, GstMessage *msg, gpointer data) {
   GMainLoop *loop = (GMainLoop *)data;
 
   switch (GST_MESSAGE_TYPE(msg)) {
-
   case GST_MESSAGE_EOS:
     g_print("End of stream\n");
     g_main_loop_quit(loop);
@@ -46,7 +45,6 @@ void *test_pipeline_thread_fn(void *arg) {
   GMainLoop *loop;
   char *ipAddress;
   ipAddress = g_ip_address;
-  printf("IP Address: %s\n", ipAddress);
 
   /* Initialize GStreamer */
   gst_init(NULL, NULL);
@@ -112,8 +110,11 @@ void *test_pipeline_thread_fn(void *arg) {
 }
 
 bool ant_stream_testPipeline_internal(const char *ipAddress) {
-  printf("IP Address': %s\n", ipAddress);
   snprintf(g_ip_address, 100, ipAddress);
   pthread_create(&g_test_pipeline_thread, NULL, &test_pipeline_thread_fn, NULL);
+  return true;
+}
+
+bool ant_stream_testMessage_internal(const char *message) {
   return true;
 }

@@ -10,6 +10,7 @@ JS_FUNCTION(ant_stream_testPipeline) {
   DJS_CHECK_ARGS(1, string);
   argIpAddress = JS_GET_ARG(0, string);
 
+  // Internal native function call
   result = ant_stream_testPipeline_internal(iotjs_string_data(&argIpAddress));
 
   // Destroy iotjs objects
@@ -17,9 +18,27 @@ JS_FUNCTION(ant_stream_testPipeline) {
   return jerry_create_boolean(result);
 }
 
+JS_FUNCTION(ant_stream_testMessage) {
+  iotjs_string_t argMessage;
+  bool result;
+
+  // Function input arguments
+  DJS_CHECK_ARGS(1, string);
+  argMessage = JS_GET_ARG(0, string);
+
+  // Internal native function call
+  result = ant_stream_testMessage_internal(iotjs_string_data(&argMessage));
+
+  // Destroy iotjs objects
+  iotjs_string_destroy(&argMessage);
+  return jerry_create_boolean(result);
+}
+
 jerry_value_t InitANTNative() {
   jerry_value_t mymodule = jerry_create_object();
   // iotjs_jval_set_property_string_raw(mymodule, "message", "Hello world!");
-  iotjs_jval_set_method(mymodule, "stream_testPipeline", ant_stream_testPipeline);
+  iotjs_jval_set_method(mymodule, "stream_testPipeline",
+                        ant_stream_testPipeline);
+  iotjs_jval_set_method(mymodule, "stream_testMessage", ant_stream_testMessage);
   return mymodule;
 }
