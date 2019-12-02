@@ -369,9 +369,6 @@ function loadExistingAppCode() {
 function mainLoop() {
   console.log('ANT app runtime start');
 
-  // TODO: remove it (debug purpose)
-  ant.stream.testPipeline("192.168.0.33");
-
   var isAppExists = loadExistingAppCode();
   if (isAppExists) {
     console.log('Existing app loaded!');
