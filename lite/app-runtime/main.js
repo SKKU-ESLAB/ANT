@@ -369,7 +369,7 @@ function loadExistingAppCode() {
 function test_stream_api() {
   ant.stream.testPipeline("192.168.0.33");
   setTimeout(function () {
-    ant.stream.testMessage("test message");
+    ant.stream.sendDbusSignal("test message");
   }, 5000);
 }
 

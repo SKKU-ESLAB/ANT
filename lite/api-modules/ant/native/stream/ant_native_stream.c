@@ -85,7 +85,7 @@ void on_dbus_bus_acquired_fn(GDBusConnection *connection, const gchar *name,
   DBusError dbus_error;
   void *data = NULL;
 
-  g_print("Acquired a message bus connection\n");
+  g_print("Acquired a bus connection\n");
 
   dbus_error_init(&dbus_error);
   g_dbus_connection = dbus_bus_get(DBUS_BUS_SESSION, &dbus_error);
@@ -202,7 +202,7 @@ bool ant_stream_testPipeline_internal(const char *ipAddress) {
   return true;
 }
 
-bool ant_stream_testMessage_internal(const char *message) {
+bool ant_stream_sendDbusSignal_internal(const char *message) {
   DBusError dbus_error;
   DBusConnection *dbus_connection;
   DBusMessage *dbus_message;
@@ -233,5 +233,6 @@ bool ant_stream_testMessage_internal(const char *message) {
 }
 
 void initANTStream(void) {
-  setenv("DBUS_SESSION_BUS_ADDRESS", "unix:path=/run/dbus/system_bus_socket", 1);
+  setenv("DBUS_SESSION_BUS_ADDRESS", "unix:path=/run/dbus/system_bus_socket",
+         1);
 }

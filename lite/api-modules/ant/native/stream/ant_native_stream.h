@@ -4,7 +4,7 @@
 #include <stdbool.h>
 
 bool ant_stream_testPipeline_internal(const char *ipAddress);
-bool ant_stream_testMessage_internal(const char *message);
+bool ant_stream_sendDbusSignal_internal(const char *message);
 
 void initANTStream(void);
 
