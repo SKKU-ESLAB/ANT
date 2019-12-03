@@ -18,50 +18,22 @@
 #define ANT_STREAMTHREAD_DBUS_INTERFACE "org.ant.streamthread"
 #define ANT_STREAMTHREAD_DBUS_SIGNAL "sendMessage"
 #define ANT_STREAMTHREAD_DBUS_METHOD "callMethod"
-#define ANT_STREAMTHREAD_DBUS_NAME "org.ant.streamThreadServer"
 #define ANT_STREAMTHREAD_DBUS_SIGNAL_RULE                                      \
   "type='signal', interface='" ANT_STREAMTHREAD_DBUS_INTERFACE "'"
+
+// "     <signal name='" ANT_STREAMTHREAD_DBUS_SIGNAL "'>"
+//     "       <arg type='s' />"
+//     "     </signal>"
 
 static const gchar g_introspection_xml[] =
     "<node name='" ANT_STREAMTHREAD_DBUS_PATH "'>"
     "   <interface name='" ANT_STREAMTHREAD_DBUS_INTERFACE "'>"
-    "     <signal name='" ANT_STREAMTHREAD_DBUS_SIGNAL "'>"
-    "       <arg type='s' />"
-    "     </signal>"
     "     <method name='" ANT_STREAMTHREAD_DBUS_METHOD "'>"
     "       <arg type='s' direction='in' />"
+    "       <arg type='s' direction='out' />"
     "     </method>"
     "   </interface>"
     "</node>";
-
-static gboolean bus_call(GstBus *bus, GstMessage *msg, gpointer data) {
-  GMainLoop *loop = (GMainLoop *)data;
-
-  switch (GST_MESSAGE_TYPE(msg)) {
-  case GST_MESSAGE_EOS:
-    g_print("End of stream\n");
-    g_main_loop_quit(loop);
-    break;
-
-  case GST_MESSAGE_ERROR: {
-    gchar *debug;
-    GError *error;
-
-    gst_message_parse_error(msg, &error, &debug);
-    g_free(debug);
-
-    g_printerr("Error: %s\n", error->message);
-    g_error_free(error);
-
-    g_main_loop_quit(loop);
-    break;
-  }
-  default:
-    break;
-  }
-
-  return TRUE;
-}
 
 char g_ip_address[100];
 pthread_t g_test_pipeline_thread;
@@ -104,43 +76,99 @@ DBusHandlerResult dbus_message_filter_fn(DBusConnection *dbus_connection,
   }
 }
 
-DBusConnection *g_dbus_connection;
-GDBusNodeInfo *g_dbus_introspection_data;
-void on_dbus_bus_acquired_fn(GDBusConnection *connection, const gchar *name,
-                             gpointer user_data) {
-  DBusError dbus_error;
-  void *data = NULL;
+static void
+handle_method_call_fn(GDBusConnection *connection, const gchar *sender,
+                      const gchar *object_path, const gchar *interface_name,
+                      const gchar *method_name, GVariant *parameters,
+                      GDBusMethodInvocation *invocation, gpointer user_data) {
+  if (g_strcmp0(method_name, ANT_STREAMTHREAD_DBUS_METHOD) == 0) {
+    const gchar *inputMessage;
+    gchar *responseMessage;
+    g_variant_get(parameters, "(&s)", &inputMessage);
 
-  dbus_error_init(&dbus_error);
-  g_dbus_connection = dbus_bus_get(DBUS_BUS_SESSION, &dbus_error);
-  if (dbus_error_is_set(&dbus_error)) {
-    g_printerr("D-bus bus system registration failed: %s / %s\n",
-               dbus_error.name, dbus_error.message);
-    dbus_error_free(&dbus_error);
-    return;
+    // TODO: put handlers here
+    g_print("Incoming method call message: %s\n", inputMessage);
+
+    responseMessage = g_strdup_printf("Response for '%s'", inputMessage);
+    g_dbus_method_invocation_return_value(
+        invocation, g_variant_new("(s)", responseMessage));
+    g_free(responseMessage);
   }
+}
 
-  dbus_bus_add_match(g_dbus_connection, ANT_STREAMTHREAD_DBUS_SIGNAL_RULE,
-                     &dbus_error);
-  if (dbus_error_is_set(&dbus_error)) {
-    g_printerr("D-bus add a match signal rule failed\n");
-    dbus_error_free(&dbus_error);
-    return;
-  }
+// static GVariant *handle_get_property(GDBusConnection *connection,
+//                                      const gchar *sender,
+//                                      const gchar *object_path,
+//                                      const gchar *interface_name,
+//                                      const gchar *property_name, GError
+//                                      **error, gpointer user_data) {
+//   // Not implemented
+//   return NULL;
+// }
 
-  if (!dbus_connection_add_filter(g_dbus_connection, (*dbus_message_filter_fn),
-                                  data, NULL)) {
-    g_printerr("D-Bus add filter failed\n");
-    return;
-  }
+// static gboolean handle_set_property(GDBusConnection *connection,
+//                                     const gchar *sender,
+//                                     const gchar *object_path,
+//                                     const gchar *interface_name,
+//                                     const gchar *property_name, GVariant
+//                                     *value, GError **error, gpointer
+//                                     user_data) {
+//   // Not implemented
+//   return true;
+// }
 
-  dbus_connection_setup_with_g_main(g_dbus_connection, NULL);
+static const GDBusInterfaceVTable g_interface_vtable = {
+    .method_call = handle_method_call_fn,
+    .get_property = NULL,
+    .set_property = NULL};
+
+// DBusConnection *g_dbus_connection;
+GDBusNodeInfo *g_gdbus_introspection;
+void on_dbus_bus_acquired_fn(GDBusConnection *gdbus_connection,
+                             const gchar *name, gpointer user_data) {
+  guint registration_id;
+
+  // DBusError dbus_error;
+  // void *data = NULL;
+
+  // dbus_error_init(&dbus_error);
+  // g_dbus_connection = dbus_bus_get(DBUS_BUS_SESSION, &dbus_error);
+  // if (dbus_error_is_set(&dbus_error)) {
+  //   g_printerr("D-bus bus system registration failed: %s / %s\n",
+  //              dbus_error.name, dbus_error.message);
+  //   dbus_error_free(&dbus_error);
+  //   return;
+  // }
+
+  // dbus_bus_add_match(g_dbus_connection, ANT_STREAMTHREAD_DBUS_SIGNAL_RULE,
+  //                    &dbus_error);
+  // if (dbus_error_is_set(&dbus_error)) {
+  //   g_printerr("D-bus add a match signal rule failed\n");
+  //   dbus_error_free(&dbus_error);
+  //   return;
+  // }
+
+  // if (!dbus_connection_add_filter(g_dbus_connection,
+  // (*dbus_message_filter_fn),
+  //                                 data, NULL)) {
+  //   g_printerr("D-Bus add filter failed\n");
+  //   return;
+  // }
+
+  // dbus_connection_setup_with_g_main(g_dbus_connection, NULL);
+
+  g_dbus_connection_register_object(gdbus_connection,
+                                    ANT_STREAMTHREAD_DBUS_PATH,
+                                    g_gdbus_introspection->interfaces[0],
+                                    &g_interface_vtable, NULL, NULL, NULL);
+  assert(registration_id > 0);
 }
 
 void *test_pipeline_thread_fn(void *arg) {
   GstElement *pipeline, *source, *converter, *omxh264enc, *h264parse,
       *rtph264pay, *gdppay, *sink;
-  guint bus_watch_id;
+  // guint bus_watch_id;
+  guint bus_owner_id;
   GMainLoop *loop;
   char *ipAddress;
   ipAddress = g_ip_address;
@@ -190,30 +218,25 @@ void *test_pipeline_thread_fn(void *arg) {
   gst_element_set_state(pipeline, GST_STATE_PLAYING);
 
   /* Initialize gdbus filter */
-  g_dbus_introspection_data =
+  g_gdbus_introspection =
       g_dbus_node_info_new_for_xml(g_introspection_xml, NULL);
-  g_assert(g_dbus_introspection_data != NULL);
-  g_bus_own_name(G_BUS_TYPE_SESSION, ANT_STREAMTHREAD_DBUS_BUS,
-                 (GBusNameOwnerFlags)(G_BUS_NAME_OWNER_FLAGS_ALLOW_REPLACEMENT |
-                                      G_BUS_NAME_OWNER_FLAGS_REPLACE),
-                 on_dbus_bus_acquired_fn, NULL, NULL, NULL, NULL);
+  g_assert(g_gdbus_introspection != NULL);
+  bus_owner_id =
+      g_bus_own_name(G_BUS_TYPE_SESSION, ANT_STREAMTHREAD_DBUS_BUS,
+                     G_BUS_NAME_OWNER_FLAGS_NONE, on_dbus_bus_acquired_fn, NULL,
+                     NULL, NULL, NULL);
 
   /* gstreamer main loop: wait until error or EOS */
-  {
-    GstBus *bus;
-    bus = gst_element_get_bus(pipeline);
-    bus_watch_id = gst_bus_add_watch(bus, bus_call, loop);
-    gst_object_unref(bus);
-  }
   g_print("Main Loop for Gstreamer Running...\n");
   g_main_loop_run(loop);
 
   /* Free resources */
-  g_source_remove(bus_watch_id);
+  // g_source_remove(bus_watch_id);
+  g_bus_unown_name(bus_owner_id);
   gst_element_set_state(pipeline, GST_STATE_NULL);
   gst_object_unref(pipeline);
   g_main_loop_unref(loop);
-  // g_dbus_node_info_unref(g_dbus_introspection_data);
+  g_dbus_node_info_unref(g_gdbus_introspection);
 
   pthread_exit(NULL);
 
