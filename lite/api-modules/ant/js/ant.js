@@ -102,10 +102,13 @@ StreamAPI.createElement = function (element_name) {
   // TODO: add native function call
   return new Element(element_name);
 };
-StreamAPI.sendMessage = function (message) {
-  // TODO: implement it after testMessage()'s implementation
+StreamAPI.sendDbusSignal = function (message) {
+  if (!this._mIsTestInitialized) {
+    console.error("ERROR: Stream API is not initialized");
+    return false;
+  }
+  return native.stream_sendDbusSignal(message);
 };
-
 StreamAPI.testPipeline = function (ip_address) {
   if (ip_address === undefined || typeof ip_address !== "string") {
     console.error("ERROR: invalid arguments: " + ip_address);
@@ -116,13 +119,6 @@ StreamAPI.testPipeline = function (ip_address) {
     this._mIsTestInitialized = true;
   }
   return result;
-};
-StreamAPI.testMessage = function (message) {
-  if (!this._mIsTestInitialized) {
-    console.error("ERROR: Stream API is not initialized");
-    return false;
-  }
-  return native.stream_testMessage(message);
 };
 
 function Pipeline(name) {
