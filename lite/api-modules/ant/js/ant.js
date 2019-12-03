@@ -103,11 +103,18 @@ StreamAPI.createElement = function (element_name) {
   return new Element(element_name);
 };
 StreamAPI.sendDbusSignal = function (message) {
-  if (!this._mIsTestInitialized) {
+  if (!this._mIsTestInitialized && !this._mIsInitialized) {
     console.error("ERROR: Stream API is not initialized");
     return false;
   }
   return native.stream_sendDbusSignal(message);
+};
+StreamAPI.callDbusMethod = function (message) {
+  if (!this._mIsTestInitialized && !this._mIsInitialized) {
+    console.error("ERROR: Stream API is not initialized");
+    return false;
+  }
+  return native.stream_callDbusMethod(message);
 };
 StreamAPI.testPipeline = function (ip_address) {
   if (ip_address === undefined || typeof ip_address !== "string") {
