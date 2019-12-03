@@ -40,5 +40,8 @@ jerry_value_t InitANTNative() {
   iotjs_jval_set_method(mymodule, "stream_testPipeline",
                         ant_stream_testPipeline);
   iotjs_jval_set_method(mymodule, "stream_testMessage", ant_stream_testMessage);
+
+  initANTStream();
+  
   return mymodule;
 }

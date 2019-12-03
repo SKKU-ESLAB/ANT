@@ -117,7 +117,7 @@ StreamAPI.testPipeline = function (ip_address) {
   }
   return result;
 };
-StreamAPI.testMesssage = function (message) {
+StreamAPI.testMessage = function (message) {
   if (!this._mIsTestInitialized) {
     console.error("ERROR: Stream API is not initialized");
     return false;
