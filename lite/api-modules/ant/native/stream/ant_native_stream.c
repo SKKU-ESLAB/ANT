@@ -17,15 +17,20 @@
 #define ANT_STREAMTHREAD_DBUS_PATH "/org/ant/streamThread"
 #define ANT_STREAMTHREAD_DBUS_INTERFACE "org.ant.streamthread"
 #define ANT_STREAMTHREAD_DBUS_SIGNAL "sendMessage"
-#define ANT_STREAMTHREAD_DBUS_RULE                                             \
+#define ANT_STREAMTHREAD_DBUS_METHOD "callMethod"
+#define ANT_STREAMTHREAD_DBUS_NAME "org.ant.streamThreadServer"
+#define ANT_STREAMTHREAD_DBUS_SIGNAL_RULE                                      \
   "type='signal', interface='" ANT_STREAMTHREAD_DBUS_INTERFACE "'"
 
 static const gchar g_introspection_xml[] =
-    "<node>"
+    "<node name='" ANT_STREAMTHREAD_DBUS_PATH "'>"
     "   <interface name='" ANT_STREAMTHREAD_DBUS_INTERFACE "'>"
     "     <signal name='" ANT_STREAMTHREAD_DBUS_SIGNAL "'>"
-    "       <arg type='s' name='message' />"
+    "       <arg type='s' />"
     "     </signal>"
+    "     <method name='" ANT_STREAMTHREAD_DBUS_METHOD "'>"
+    "       <arg type='s' direction='in' />"
+    "     </method>"
     "   </interface>"
     "</node>";
 
@@ -61,17 +66,38 @@ static gboolean bus_call(GstBus *bus, GstMessage *msg, gpointer data) {
 char g_ip_address[100];
 pthread_t g_test_pipeline_thread;
 
-DBusHandlerResult dbus_message_filter_fn(DBusConnection *connection,
-                                         DBusMessage *msg, void *data) {
+DBusHandlerResult dbus_message_filter_fn(DBusConnection *dbus_connection,
+                                         DBusMessage *dbus_message,
+                                         void *data) {
   DBusError dbus_error;
   dbus_error_init(&dbus_error);
 
-  if (dbus_message_is_signal(msg, ANT_STREAMTHREAD_DBUS_INTERFACE,
+  if (dbus_message_is_signal(dbus_message, ANT_STREAMTHREAD_DBUS_INTERFACE,
                              ANT_STREAMTHREAD_DBUS_SIGNAL)) {
     const char *message_string;
-    dbus_message_get_args(msg, &dbus_error, DBUS_TYPE_STRING, &(message_string),
-                          DBUS_TYPE_INVALID);
-    g_print("Message catched: %s\n", message_string);
+
+    dbus_message_get_args(dbus_message, &dbus_error, DBUS_TYPE_STRING,
+                          &(message_string), DBUS_TYPE_INVALID);
+    g_print("Incoming signal: %s\n", message_string);
+    // TODO: handlers that parse message
+    return DBUS_HANDLER_RESULT_HANDLED;
+  } else if (dbus_message_is_method_call(dbus_message,
+                                         ANT_STREAMTHREAD_DBUS_INTERFACE,
+                                         ANT_STREAMTHREAD_DBUS_METHOD)) {
+    DBusMessage *dbus_reply_message;
+    const char *inputMessage_string;
+    char resultMessage[] = "method results";
+
+    dbus_message_get_args(dbus_message, &dbus_error, DBUS_TYPE_STRING,
+                          &(inputMessage_string), DBUS_TYPE_INVALID);
+    g_print("Incoming method call: %s\n", inputMessage_string);
+    // TODO: handlers that parse message and make result
+    dbus_reply_message = dbus_message_new_method_return(dbus_message);
+    dbus_message_append_args(dbus_reply_message, DBUS_TYPE_STRING,
+                             &(resultMessage), DBUS_TYPE_INVALID);
+    dbus_connection_send(dbus_connection, dbus_reply_message, NULL);
+    dbus_connection_flush(dbus_connection);
+    dbus_message_unref(dbus_reply_message);
     return DBUS_HANDLER_RESULT_HANDLED;
   } else {
     return DBUS_HANDLER_RESULT_NOT_YET_HANDLED;
@@ -85,28 +111,26 @@ void on_dbus_bus_acquired_fn(GDBusConnection *connection, const gchar *name,
   DBusError dbus_error;
   void *data = NULL;
 
-  g_print("Acquired a bus connection\n");
-
   dbus_error_init(&dbus_error);
   g_dbus_connection = dbus_bus_get(DBUS_BUS_SESSION, &dbus_error);
   if (dbus_error_is_set(&dbus_error)) {
-    g_printerr("D-bus bus system registration failed: %s / %s", dbus_error.name,
-               dbus_error.message);
+    g_printerr("D-bus bus system registration failed: %s / %s\n",
+               dbus_error.name, dbus_error.message);
     dbus_error_free(&dbus_error);
     return;
   }
 
-  dbus_bus_add_match(g_dbus_connection, ANT_STREAMTHREAD_DBUS_RULE,
+  dbus_bus_add_match(g_dbus_connection, ANT_STREAMTHREAD_DBUS_SIGNAL_RULE,
                      &dbus_error);
   if (dbus_error_is_set(&dbus_error)) {
-    g_printerr("D-bus add a match rule failed");
+    g_printerr("D-bus add a match signal rule failed\n");
     dbus_error_free(&dbus_error);
     return;
   }
 
   if (!dbus_connection_add_filter(g_dbus_connection, (*dbus_message_filter_fn),
                                   data, NULL)) {
-    g_printerr("D-Bus add filter failed");
+    g_printerr("D-Bus add filter failed\n");
     return;
   }
 
@@ -140,7 +164,7 @@ void *test_pipeline_thread_fn(void *arg) {
 
   if (!pipeline || !source || !converter || !omxh264enc || !h264parse ||
       !rtph264pay || !gdppay || !sink) {
-    g_printerr("One element could not be created. Existing.\n");
+    g_printerr("One element could not be created.\n");
     return NULL;
   }
 
@@ -189,7 +213,7 @@ void *test_pipeline_thread_fn(void *arg) {
   gst_element_set_state(pipeline, GST_STATE_NULL);
   gst_object_unref(pipeline);
   g_main_loop_unref(loop);
-  g_dbus_node_info_unref(g_dbus_introspection_data);
+  // g_dbus_node_info_unref(g_dbus_introspection_data);
 
   pthread_exit(NULL);
 
@@ -208,31 +232,101 @@ bool ant_stream_sendDbusSignal_internal(const char *message) {
   DBusMessage *dbus_message;
 
   if (message == NULL) {
-    g_printerr("Invalid d-bus message contents!");
+    g_printerr("Invalid d-bus message contents!\n");
     return false;
   }
 
   dbus_error_init(&dbus_error);
   dbus_connection = dbus_bus_get(DBUS_BUS_SESSION, &dbus_error);
   if (dbus_error_is_set(&dbus_error) || dbus_connection == NULL) {
-    g_printerr("Invalid dbus connection!: %s / %s", dbus_error.name,
+    g_printerr("Invalid dbus connection!: %s / %s\n", dbus_error.name,
                dbus_error.message);
     dbus_error_free(&dbus_error);
     return false;
   }
 
+  // Send d-bus signal
   dbus_message = dbus_message_new_signal(ANT_STREAMTHREAD_DBUS_PATH,
                                          ANT_STREAMTHREAD_DBUS_INTERFACE,
                                          ANT_STREAMTHREAD_DBUS_SIGNAL);
-
   dbus_message_append_args(dbus_message, DBUS_TYPE_STRING, &(message),
                            DBUS_TYPE_INVALID);
   dbus_connection_send(dbus_connection, dbus_message, NULL);
+  dbus_connection_flush(dbus_connection);
+
+  dbus_message_unref(dbus_message);
 
   return true;
 }
 
+void ant_stream_callDbusMethod_internal(const char *inputMessage,
+                                        char *resultMessage) {
+  DBusError dbus_error;
+  DBusConnection *dbus_connection;
+  DBusMessage *dbus_message, *dbus_reply_message;
+  DBusPendingCall *pending_call;
+
+  if (inputMessage == NULL) {
+    g_printerr("Invalid d-bus input message!\n");
+    return;
+  } else if (resultMessage == NULL) {
+    g_printerr("Invalid d-bus output message!\n");
+    return;
+  }
+
+  dbus_error_init(&dbus_error);
+  dbus_connection = dbus_bus_get(DBUS_BUS_SESSION, &dbus_error);
+  if (dbus_error_is_set(&dbus_error) || dbus_connection == NULL) {
+    g_printerr("Invalid dbus connection!: %s / %s\n", dbus_error.name,
+               dbus_error.message);
+    dbus_error_free(&dbus_error);
+    return;
+  }
+
+  // Call d-bus method
+  dbus_message = dbus_message_new_method_call(
+      ANT_STREAMTHREAD_DBUS_BUS, ANT_STREAMTHREAD_DBUS_PATH,
+      ANT_STREAMTHREAD_DBUS_INTERFACE, ANT_STREAMTHREAD_DBUS_METHOD);
+  dbus_message_append_args(dbus_message, DBUS_TYPE_STRING, &(inputMessage),
+                           DBUS_TYPE_INVALID);
+  dbus_connection_send_with_reply(dbus_connection, dbus_message, &pending_call,
+                                  -1);
+  if (pending_call == NULL) {
+    g_printerr("Pending call null!\n");
+    dbus_message_unref(dbus_message);
+    return;
+  }
+  dbus_connection_flush(dbus_connection);
+  dbus_message_unref(dbus_message);
+
+  // Block for pending call
+  dbus_pending_call_block(pending_call);
+  dbus_reply_message = dbus_pending_call_steal_reply(pending_call);
+  if (dbus_reply_message == NULL) {
+    g_printerr("Reply message null!\n");
+    return;
+  }
+  dbus_pending_call_unref(pending_call);
+
+  // Read result parameters
+  {
+    const char *message_string;
+    dbus_message_get_args(dbus_reply_message, &dbus_error, DBUS_TYPE_STRING,
+                          &(message_string), DBUS_TYPE_INVALID);
+    if (dbus_error_is_set(&dbus_error)) {
+      g_printerr("Invalid dbus connection!: %s / %s\n", dbus_error.name,
+                 dbus_error.message);
+      dbus_error_free(&dbus_error);
+      return;
+    }
+    snprintf(resultMessage, 100, message_string);
+    dbus_message_unref(dbus_reply_message);
+  }
+  return;
+}
+
 void initANTStream(void) {
+  // Environment setting for opening of d-bus session bus
   setenv("DBUS_SESSION_BUS_ADDRESS", "unix:path=/run/dbus/system_bus_socket",
          1);
 }
