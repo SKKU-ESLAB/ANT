@@ -102,13 +102,6 @@ StreamAPI.createElement = function (element_name) {
   // TODO: add native function call
   return new Element(element_name);
 };
-StreamAPI.sendDbusSignal = function (message) {
-  if (!this._mIsTestInitialized && !this._mIsInitialized) {
-    console.error("ERROR: Stream API is not initialized");
-    return false;
-  }
-  return native.stream_sendDbusSignal(message);
-};
 StreamAPI.callDbusMethod = function (message) {
   if (!this._mIsTestInitialized && !this._mIsInitialized) {
     console.error("ERROR: Stream API is not initialized");

@@ -368,10 +368,6 @@ function loadExistingAppCode() {
 
 function test_stream_api() {
   ant.stream.testPipeline("192.168.0.33");
-  // setTimeout(function () {
-  //   var result = ant.stream.sendDbusSignal("test signal");
-  //   console.log("Signal result: " + result);
-  // }, 5000);
   setTimeout(function () {
     var result = ant.stream.callDbusMethod("test method");
     console.log("Method result: " + result);

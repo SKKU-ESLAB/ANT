@@ -18,22 +18,6 @@ JS_FUNCTION(ant_stream_testPipeline) {
   return jerry_create_boolean(result);
 }
 
-JS_FUNCTION(ant_stream_sendDbusSignal) {
-  iotjs_string_t argMessage;
-  bool result;
-
-  // Function input arguments
-  DJS_CHECK_ARGS(1, string);
-  argMessage = JS_GET_ARG(0, string);
-
-  // Internal native function call
-  result = ant_stream_sendDbusSignal_internal(iotjs_string_data(&argMessage));
-
-  // Destroy iotjs objects
-  iotjs_string_destroy(&argMessage);
-  return jerry_create_boolean(result);
-}
-
 JS_FUNCTION(ant_stream_callDbusMethod) {
   iotjs_string_t argMessage;
   char result_string[100];
@@ -56,8 +40,6 @@ jerry_value_t InitANTNative() {
   // iotjs_jval_set_property_string_raw(mymodule, "message", "Hello world!");
   iotjs_jval_set_method(mymodule, "stream_testPipeline",
                         ant_stream_testPipeline);
-  iotjs_jval_set_method(mymodule, "stream_sendDbusSignal",
-                        ant_stream_sendDbusSignal);
   iotjs_jval_set_method(mymodule, "stream_callDbusMethod",
                         ant_stream_callDbusMethod);
 
