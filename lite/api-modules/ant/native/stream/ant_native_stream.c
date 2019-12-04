@@ -19,6 +19,8 @@
 #define ANT_STREAMTHREAD_DBUS_METHOD "callMethod"
 #define ANT_STREAMTHREAD_DBUS_ADDRESS "tcp:host=0.0.0.0,port=40001"
 
+// I refered a gdlib tutorial for inter-thread communication
+// https://www.freedesktop.org/software/gstreamer-sdk/data/docs/latest/gio/GDBusServer.html
 static const gchar g_introspection_xml[] =
     "<node name='" ANT_STREAMTHREAD_DBUS_PATH "'>"
     "   <interface name='" ANT_STREAMTHREAD_DBUS_INTERFACE "'>"
@@ -29,8 +31,31 @@ static const gchar g_introspection_xml[] =
     "   </interface>"
     "</node>";
 
-char g_ip_address[100];
-pthread_t g_test_pipeline_thread;
+static const GDBusInterfaceVTable g_interface_vtable = {
+    .method_call = handle_method_call_fn,
+    .get_property = NULL,
+    .set_property = NULL};
+GDBusNodeInfo *g_gdbus_introspection;
+pthread_t g_stream_thread;
+
+#define ELEMENT_REGISTRY_SIZE 100
+int g_element_registry_index = 0;
+GstElement *g_element_registry[ELEMENT_REGISTRY_SIZE] = {
+    0,
+};
+int registerElement(GstElement *element) {
+  if (g_element_registry_index >= (ELEMENT_REGISTRY_SIZE - 1)) {
+    g_printerr("Element registry is full! (max size: %d)\n",
+               ELEMENT_REGISTRY_SIZE);
+    return -1;
+  } else {
+    int index = g_element_registry_index;
+    g_element_registry[index];
+    g_element_registry_index++;
+    return index;
+  }
+}
+inline GstElement *getElement(int index) { return g_element_registry[index]; }
 
 static void
 handle_method_call_fn(GDBusConnection *connection, const gchar *sender,
@@ -52,13 +77,6 @@ handle_method_call_fn(GDBusConnection *connection, const gchar *sender,
   }
 }
 
-static const GDBusInterfaceVTable g_interface_vtable = {
-    .method_call = handle_method_call_fn,
-    .get_property = NULL,
-    .set_property = NULL};
-
-GDBusNodeInfo *g_gdbus_introspection;
-
 static gboolean on_new_connection_fn(GDBusServer *gdbus_server,
                                      GDBusConnection *gdbus_connection,
                                      gpointer user_data) {
@@ -76,58 +94,24 @@ static gboolean on_new_connection_fn(GDBusServer *gdbus_server,
   return TRUE;
 }
 
-void *test_pipeline_thread_fn(void *arg) {
-  GstElement *pipeline, *source, *converter, *omxh264enc, *h264parse,
-      *rtph264pay, *gdppay, *sink;
-  // guint bus_watch_id;
-  // guint bus_owner_id;
+int rpc_streamapi_createPipeline(char *pipeline_name) {
+  // On Stream Thread
+  GstElement *pipeline;
+  int element_index;
+  pipeline = gst_pipeline_new(pipeline_name);
+  element_index = registerElement(pipeline);
+  return element_index;
+}
+
+// TODO: implement extra rpc functions
+
+void *stream_thread_fn(void *arg) {
+  // On Stream Thread
   GMainLoop *loop;
-  char *ipAddress;
-  ipAddress = g_ip_address;
 
   /* Initialize GStreamer */
   gst_init(NULL, NULL);
   loop = g_main_loop_new(NULL, FALSE);
-
-  /* Build the pipeline */
-  /* videotestsrc pattern=snow ! videoconvert ! omxh264enc ! h264parse !
-   * rtph264pay pt=96 config-interval=1 ! gdppay ! tcpserversink sync=f
-   * host=192.168.0.33 port=5000 */
-  pipeline = gst_pipeline_new("test");
-  source = gst_element_factory_make("videotestsrc", NULL);
-  converter = gst_element_factory_make("videoconvert", NULL);
-  omxh264enc = gst_element_factory_make("omxh264enc", NULL);
-  h264parse = gst_element_factory_make("h264parse", NULL);
-  rtph264pay = gst_element_factory_make("rtph264pay", NULL);
-  gdppay = gst_element_factory_make("gdppay", NULL);
-  sink = gst_element_factory_make("tcpserversink", NULL);
-
-  if (!pipeline || !source || !converter || !omxh264enc || !h264parse ||
-      !rtph264pay || !gdppay || !sink) {
-    g_printerr("One element could not be created.\n");
-    return NULL;
-  }
-
-  // videotestsrc
-  g_object_set(G_OBJECT(source), "pattern", 1, NULL);
-
-  // videoconvert
-  // omxh264enc
-  // h264parse
-  // rtph264pay
-  g_object_set(G_OBJECT(rtph264pay), "pt", 96, "config-interval", 1, NULL);
-  // gdppay
-  // tcpserversink
-  g_object_set(G_OBJECT(sink), "sync", FALSE, "host", ipAddress, "port", 5000,
-               NULL);
-
-  gst_bin_add_many(GST_BIN(pipeline), source, converter, omxh264enc, h264parse,
-                   rtph264pay, gdppay, sink, NULL);
-  gst_element_link_many(source, converter, omxh264enc, h264parse, rtph264pay,
-                        gdppay, sink, NULL);
-
-  /* Start playing */
-  gst_element_set_state(pipeline, GST_STATE_PLAYING);
 
   /* Initialize gdbus filter */
   g_gdbus_introspection =
@@ -159,6 +143,7 @@ void *test_pipeline_thread_fn(void *arg) {
     g_signal_connect(gdbus_server, "new-connection",
                      G_CALLBACK(on_new_connection_fn), NULL);
   }
+
   /* gstreamer main loop: wait until error or EOS */
   g_print("Main Loop for Gstreamer Running...\n");
   g_main_loop_run(loop);
@@ -174,10 +159,8 @@ void *test_pipeline_thread_fn(void *arg) {
   // TODO: notify IoT.js to set "ant.stream._mIsInitialized = false"
 }
 
-bool ant_stream_testPipeline_internal(const char *ipAddress) {
-  snprintf(g_ip_address, 100, ipAddress);
-  pthread_create(&g_test_pipeline_thread, NULL, &test_pipeline_thread_fn, NULL);
-  return true;
+void ant_stream_initializeStream_internal() {
+  pthread_create(&g_stream_thread, NULL, &stream_thread_fn, NULL);
 }
 
 void ant_stream_callDbusMethod_internal(const char *inputMessage,
@@ -225,3 +208,41 @@ void initANTStream(void) {
   setenv("DBUS_SESSION_BUS_ADDRESS", "unix:path=/run/dbus/system_bus_socket",
          1);
 }
+
+// void *test_pipeline_thread_fn(void *arg) {
+//   GstElement *pipeline, *source, *converter, *omxh264enc, *h264parse,
+//       *rtph264pay, *gdppay, *sink;
+//   char *ipAddress;
+//   ipAddress = g_ip_address;
+
+//   /* Build the pipeline */
+//   pipeline = gst_pipeline_new("test");
+//   source = gst_element_factory_make("videotestsrc", NULL);
+//   converter = gst_element_factory_make("videoconvert", NULL);
+//   omxh264enc = gst_element_factory_make("omxh264enc", NULL);
+//   h264parse = gst_element_factory_make("h264parse", NULL);
+//   rtph264pay = gst_element_factory_make("rtph264pay", NULL);
+//   gdppay = gst_element_factory_make("gdppay", NULL);
+//   sink = gst_element_factory_make("tcpserversink", NULL);
+
+//   if (!pipeline || !source || !converter || !omxh264enc || !h264parse ||
+//       !rtph264pay || !gdppay || !sink) {
+//     g_printerr("One element could not be created.\n");
+//     return NULL;
+//   }
+
+//   g_object_set(G_OBJECT(source), "pattern", 1, NULL);
+//   g_object_set(G_OBJECT(rtph264pay), "pt", 96, "config-interval", 1, NULL);
+//   g_object_set(G_OBJECT(sink), "sync", FALSE, "host", ipAddress, "port",
+//   5000,
+//                NULL);
+
+//   gst_bin_add_many(GST_BIN(pipeline), source, converter, omxh264enc,
+//   h264parse,
+//                    rtph264pay, gdppay, sink, NULL);
+//   gst_element_link_many(source, converter, omxh264enc, h264parse, rtph264pay,
+//                         gdppay, sink, NULL);
+
+//   /* Start playing */
+//   gst_element_set_state(pipeline, GST_STATE_PLAYING);
+// }

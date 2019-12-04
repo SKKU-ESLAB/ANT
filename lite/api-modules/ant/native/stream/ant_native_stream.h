@@ -3,9 +3,16 @@
 
 #include <stdbool.h>
 
+#define ANT_API_INTERNAL_DEF_STRING_TO_STRING(api_name, function_name)         \
+  void ant_##api_name##_##function_name##_internal(const char *inputMessage,   \
+                                                   char *resultMessage);
+#define ANT_API_INTERNAL_DEF_VOID_TO_VOID(api_name, function_name)             \
+  void ant_##api_name##_##function_name##_internal();
+
 bool ant_stream_testPipeline_internal(const char *ipAddress);
-void ant_stream_callDbusMethod_internal(const char *inputMessage,
-                                        char *resultMessage);
+
+ANT_API_INTERNAL_DEF_STRING_TO_STRING(stream, callDbusMethod);
+ANT_API_INTERNAL_DEF_VOID_TO_VOID(stream, initializeStream);
 
 void initANTStream(void);
 

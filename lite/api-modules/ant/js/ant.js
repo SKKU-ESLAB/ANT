@@ -76,87 +76,135 @@ App.prototype.getInfo = function () {
 /** Runtime API end **/
 
 /** Stream API start **/
-// TODO: native-side Stream API implementation is required.
 function StreamAPI() {
   this._mIsInitialized = false;
-  this._mIsTestInitialized = false;
 }
-StreamAPI.initialize = function () {
-  this._mIsInitialized = true;
-  // TODO: add native function call
+StreamAPI.callDbusMethod = function (message) {
+  if (!this._mIsInitialized) {
+    console.error("ERROR: Stream API is not initialized");
+    return false;
+  }
+  return native.stream_callDbusMethod(message);
 };
 
+StreamAPI.isInitialized = function () {
+  return this._mIsInitialized;
+};
+
+StreamAPI.initialize = function () {
+  this._mIsInitialized = true;
+  native.stream_initializeStream();
+};
 StreamAPI.createPipeline = function (pipeline_name) {
   if (!this._mIsInitialized) {
     console.error("ERROR: Stream API is not initialized");
     return undefined;
   }
-  // TODO: add native function call
-  return new Pipeline(pipeline_name);
+  var element_index = Number(this.callDbusMethod(
+    "createPipeline\n" + pipeline_name));
+  return new Pipeline(this, pipeline_name, element_index);
 };
 StreamAPI.createElement = function (element_name) {
   if (!this._mIsInitialized) {
     console.error("ERROR: Stream API is not initialized");
     return undefined;
   }
-  // TODO: add native function call
-  return new Element(element_name);
+  var element_index = Number(this.callDbusMethod(
+    "createElement\n" + element_name));
+  return new Element(this, element_name, element_index);
 };
-StreamAPI.callDbusMethod = function (message) {
-  if (!this._mIsTestInitialized && !this._mIsInitialized) {
+
+function Pipeline(streamapi, name, element_index) {
+  this._streamapi = streamapi;
+  this._element_index = element_index;
+
+  this.name = name;
+  this.elements = [];
+
+  this.GST_STATE_VOID_PENDING = 0;
+  this.GST_STATE_NULL = 1;
+  this.GST_STATE_READY = 2;
+  this.GST_STATE_PAUSED = 3;
+  this.GST_STATE_PLAYING = 4;
+}
+Pipeline.prototype.bin_add = function (element) {
+  if (!this._streamapi.isInitialized()) {
+    console.error("ERROR: Stream API is not initialized");
+    return false;
+  } else if (element.constructor.name !== "Element") {
+    console.error("ERROR: Invalid element");
+    return false;
+  }
+  this.elements.push(element);
+  var result = Boolean(this._streamapi.callDbusMethod(
+    "pipelineBinAdd\n" + element._element_index));
+  return result;
+};
+Pipeline.prototype.setState = function (state) {
+  if (!this._streamapi.isInitialized()) {
     console.error("ERROR: Stream API is not initialized");
     return false;
   }
-  return native.stream_callDbusMethod(message);
-};
-StreamAPI.testPipeline = function (ip_address) {
-  if (ip_address === undefined || typeof ip_address !== "string") {
-    console.error("ERROR: invalid arguments: " + ip_address);
+  if (typeof state !== "number") {
+    console.error("ERROR: Invalid state! " + state);
     return false;
   }
-  var result = native.stream_testPipeline(ip_address);
-  if (result) {
-    this._mIsTestInitialized = true;
-  }
+  var result = Boolean(this._streamapi.callDbusMethod(
+    "pipelineSetState\n" + state));
   return result;
 };
-
-function Pipeline(name) {
-  this.name = name;
-  this.elements = [];
-}
-Pipeline.prototype.add = function (element) {
-  // TODO: type check for element is required
-  this.elements.push(element);
-  // TODO: add native function call
-};
 Pipeline.prototype.link_many = function (elements) {
-  // TODO: not yet implemented (low priority)
-};
-Pipeline.prototype.setState = function (state) {
-  // TODO: add native function call
+  if (!this._streamapi.isInitialized()) {
+    console.error("ERROR: Stream API is not initialized");
+    return false;
+  }
+  console.error("ERROR: not yet implemented");
+  return false;
 };
 
-function Element(name) {
-  this.name = name;
-  this.properties = {};
-  this.isSinkElement = false;
+function Element(streamapi, name, element_index) {
+  this._streamapi = streamapi;
+  this._element_index = element_index;
+  this.name = name;  // copy of native
+  this.properties = {}; // copy of native
+  this.isSinkElement = false; // copy of native
   this.handlers = {};
   this.srcElement = undefined;
   this.sinkElement = undefined;
 }
-
 Element.prototype.setProperty = function (key, value) {
-  // TODO: type check for key, value is required
-  // TODO: check for existing property is required
-  // TODO: success/failed result is required
+  if (!this._streamapi.isInitialized()) {
+    console.error("ERROR: Stream API is not initialized");
+    return false;
+  }
+  if (typeof key !== "string") {
+    console.error("ERROR: Invalid key: " + key);
+    return false;
+  } else if (typeof value !== "string" && typeof value !== "number") {
+    console.error("ERROR: Invalid value: " + value);
+    return false;
+  }
+
+  var type = (typeof value === "number") ? 1 : 0;
+  var result = Boolean(this._streamapi.callDbusMethod(
+    "elementSetProperty\n" + key + "\n" + type + "\n" + value));
   this.properties[key] = value;
-  // TODO: add native function call
+  return result;
 }
 Element.prototype.setSinkElement = function (isSinkElement) {
+  if (!this._streamapi.isInitialized()) {
+    console.error("ERROR: Stream API is not initialized");
+    return false;
+  }
   this.isSinkElement = isSinkElement;
+  console.error("ERROR: not yet implemented");
+  return false;
 }
 Element.prototype.connect = function (detailedSignal, handler) {
+  if (!this._streamapi.isInitialized()) {
+    console.error("ERROR: Stream API is not initialized");
+    return;
+  }
   // TODO: type check for detailedSignal and handler is required
   // TODO: check for existing handler is required
   // TODO: success/failed result is required
@@ -164,11 +212,16 @@ Element.prototype.connect = function (detailedSignal, handler) {
   // TODO: add native function call
 }
 Element.prototype.link = function (sinkElement) {
-  if (sinkElement !== undefined) {
-    this.sinkElement = sinkElement;
-    sinkElement.srcElement = this;
-    // TODO: add native function call
+  if (sinkElement === undefined || sinkElement.constructor.name !== "Element") {
+    console.error("ERROR: Invalid sink element");
+    return false;
   }
+  this.sinkElement = sinkElement;
+  sinkElement.srcElement = this;
+
+  var result = Boolean(this._streamapi.callDbusMethod(
+    "elementLink\n" + this._element_index + "\n" + sinkElement._element_index));
+  return result;
 }
 
 /** Stream API end **/
