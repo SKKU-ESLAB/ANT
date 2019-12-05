@@ -44,6 +44,7 @@ static const GDBusInterfaceVTable g_interface_vtable = {
     .set_property = NULL};
 GDBusNodeInfo *g_gdbus_introspection;
 pthread_t g_stream_thread;
+GMainLoop *g_main_loop;
 
 #define ELEMENT_REGISTRY_SIZE 100
 int g_element_registry_index = 0;
@@ -68,6 +69,21 @@ GstElement *getElement(int index) { return g_element_registry[index]; }
 // TODO: hardcoded args, argv length
 #define RPC_MAX_ARGC 10
 #define MAX_ARG_LENGTH 100
+void rpc_streamapi_quitMainLoop(int argc, char argv[][MAX_ARG_LENGTH],
+                                char *responseMessage) {
+  // Input arguments
+  if (argc != 1) {
+    g_printerr("Invalid arguments!\n");
+    return;
+  }
+
+  // Internal
+  g_main_loop_quit(g_main_loop);
+
+  // Response message
+  snprintf(responseMessage, MAX_RESULT_MESSAGE_LENGTH, "true");
+}
+
 void rpc_streamapi_createPipeline(int argc, char argv[][MAX_ARG_LENGTH],
                                   char *responseMessage) {
   // On Stream Thread
@@ -165,6 +181,27 @@ void rpc_pipeline_setState(int argc, char argv[][MAX_ARG_LENGTH],
   snprintf(responseMessage, MAX_RESULT_MESSAGE_LENGTH, "%d", (int)result);
 }
 
+void rpc_pipeline_unref(int argc, char argv[][MAX_ARG_LENGTH],
+                        char *responseMessage) {
+  // On Stream Thread
+  GstElement *pipeline;
+  int pipeline_element_index;
+
+  // Input arguments
+  if (argc != 2) {
+    g_printerr("Invalid arguments!\n");
+    return;
+  }
+  sscanf(argv[1], "%d", &pipeline_element_index);
+  pipeline = getElement(pipeline_element_index);
+
+  // Internal
+  gst_object_unref(pipeline);
+
+  // Response message
+  snprintf(responseMessage, MAX_RESULT_MESSAGE_LENGTH, "true");
+}
+
 void rpc_element_setProperty(int argc, char argv[][MAX_ARG_LENGTH],
                              char *responseMessage) {
   // On Stream Thread
@@ -239,7 +276,6 @@ void rpc_element_setCapsProperty(int argc, char argv[][MAX_ARG_LENGTH],
   element = getElement(element_index);
 
   // Internal
-  g_print("caps key: %s / value: %s\n", key, value);
   caps = gst_caps_from_string(value);
   g_object_set(G_OBJECT(element), key, caps, NULL);
   gst_caps_unref(caps);
@@ -283,7 +319,10 @@ void handle_method_call_internal(int argc, char argv[][MAX_ARG_LENGTH],
     g_printerr("Empty arguments!\n");
     return;
   }
-  if (strncmp(argv[0], "streamapi_createPipeline", MAX_ARG_LENGTH) == 0) {
+  if (strncmp(argv[0], "streamapi_quitMainLoop", MAX_ARG_LENGTH) == 0) {
+    rpc_streamapi_quitMainLoop(argc, argv, responseMessage);
+  } else if (strncmp(argv[0], "streamapi_createPipeline", MAX_ARG_LENGTH) ==
+             0) {
     rpc_streamapi_createPipeline(argc, argv, responseMessage);
   } else if (strncmp(argv[0], "streamapi_createElement", MAX_ARG_LENGTH) == 0) {
     rpc_streamapi_createElement(argc, argv, responseMessage);
@@ -291,6 +330,8 @@ void handle_method_call_internal(int argc, char argv[][MAX_ARG_LENGTH],
     rpc_pipeline_binAdd(argc, argv, responseMessage);
   } else if (strncmp(argv[0], "pipeline_setState", MAX_ARG_LENGTH) == 0) {
     rpc_pipeline_setState(argc, argv, responseMessage);
+  } else if (strncmp(argv[0], "pipeline_unref", MAX_ARG_LENGTH) == 0) {
+    rpc_pipeline_unref(argc, argv, responseMessage);
   } else if (strncmp(argv[0], "element_setProperty", MAX_ARG_LENGTH) == 0) {
     rpc_element_setProperty(argc, argv, responseMessage);
   } else if (strncmp(argv[0], "element_setCapsProperty", MAX_ARG_LENGTH) == 0) {
@@ -353,11 +394,10 @@ static gboolean on_new_connection_fn(GDBusServer *gdbus_server,
 
 void *stream_thread_fn(void *arg) {
   // On Stream Thread
-  GMainLoop *loop;
 
   /* Initialize GStreamer */
   gst_init(NULL, NULL);
-  loop = g_main_loop_new(NULL, FALSE);
+  g_main_loop = g_main_loop_new(NULL, FALSE);
 
   /* Initialize gdbus filter */
   g_gdbus_introspection =
@@ -392,11 +432,12 @@ void *stream_thread_fn(void *arg) {
 
   /* gstreamer main loop: wait until error or EOS */
   g_print("Stream thread launched!\n");
-  g_main_loop_run(loop);
+  g_main_loop_run(g_main_loop);
+  g_print("Stream thread terminated!\n");
 
   /* Free resources */
   // TODO: free gstremaer pipeline, elements
-  g_main_loop_unref(loop);
+  g_main_loop_unref(g_main_loop);
   g_dbus_node_info_unref(g_gdbus_introspection);
 
   pthread_exit(NULL);

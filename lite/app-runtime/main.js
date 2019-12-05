@@ -389,6 +389,9 @@ function test_stream_api() {
     pipeline.binAdd([source, filter, converter, omxh264enc, rtph264pay, gdppay, sink]);
     pipeline.linkMany([source, filter, converter, omxh264enc, rtph264pay, gdppay, sink]);
     pipeline.setState(pipeline.STATE_PLAYING);
+  }, 2000);
+  setTimeout(function () {
+    ant.stream.finalize();
   }, 5000);
 }
 
