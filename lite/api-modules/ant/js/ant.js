@@ -5,7 +5,8 @@ var RESULT_SUCCESS = 'Success';
 var RESULT_FAILED = 'Failed';
 
 /** Runtime API start **/
-var RuntimeAPI = { _mCurrentApp: undefined };
+function RuntimeAPI() { }
+RuntimeAPI._mCurrentApp = undefined;
 
 RuntimeAPI._removeCurrentApp = function () {
   this._mCurrentApp = undefined;
@@ -76,9 +77,10 @@ App.prototype.getInfo = function () {
 /** Runtime API end **/
 
 /** Stream API start **/
-function StreamAPI() {
-  this._mIsInitialized = false;
-}
+function StreamAPI() { }
+StreamAPI._mIsInitialized = false;
+StreamAPI.pipelines = [];
+
 StreamAPI.callDbusMethod = function (message) {
   if (!this._mIsInitialized) {
     console.error("ERROR: Stream API is not initialized");
@@ -95,6 +97,22 @@ StreamAPI.initialize = function () {
   this._mIsInitialized = true;
   native.stream_initializeStream();
 };
+StreamAPI.finalize = function () {
+  var streamapi = this;
+  var quitMainLoop = function () {
+    var result = Boolean(streamapi.callDbusMethod("streamapi_quitMainLoop"));
+    if (result) {
+      this._mIsInitialized = false;
+    }
+    return result;
+  };
+  quitMainLoop();
+  for (var i in this.pipelines) {
+    this.pipelines[i].setState(this.pipelines[i].STATE_PAUSED);
+    this.pipelines[i].unref();
+    this.pipelines.splice(i, 1);
+  }
+};
 StreamAPI.createPipeline = function (pipeline_name) {
   if (!this._mIsInitialized) {
     console.error("ERROR: Stream API is not initialized");
@@ -102,7 +120,9 @@ StreamAPI.createPipeline = function (pipeline_name) {
   }
   var element_index = Number(this.callDbusMethod(
     "streamapi_createPipeline\n" + pipeline_name));
-  return new Pipeline(this, pipeline_name, element_index);
+  var pipeline = new Pipeline(this, pipeline_name, element_index);
+  this.pipelines.push(pipeline);
+  return pipeline;
 };
 StreamAPI.createElement = function (element_name) {
   if (!this._mIsInitialized) {
@@ -185,6 +205,11 @@ Pipeline.prototype.linkMany = function (elements) {
     prevElement = elements[i];
   }
   return true;
+};
+Pipeline.prototype.unref = function () {
+  var result = Boolean(this._streamapi.callDbusMethod(
+    "pipeline_unref\n" + this._element_index));
+  return result;
 };
 
 function Element(streamapi, name, element_index) {
@@ -275,12 +300,11 @@ Element.prototype.setSinkElement = function (isSinkElement) {
 /** Stream API end **/
 
 /** Companion API start **/
-function CompanionAPI() {
-  this._mCompanionHost = undefined;
-  this._mCompanionPort = undefined;
-  this._mCompanionPath = undefined;
-  this._mHandler = undefined;
-}
+function CompanionAPI() { }
+CompanionAPI._mCompanionHost = undefined;
+CompanionAPI._mCompanionPort = undefined;
+CompanionAPI._mCompanionPath = undefined;
+CompanionAPI._mHandler = undefined;
 
 CompanionAPI._setCompanionAddress = function (
   companionHost, companionPort, companionPath) {
@@ -329,9 +353,9 @@ CompanionAPI.setOnReceiveMessage = function (handler) {
 
 
 /** Compression Server API start **/
-function CompressionServerAPI() {
-  this.ipAddress = undefined;
-}
+function CompressionServerAPI() { }
+CompressionServerAPI.ipAddress = undefined;
+
 CompressionServerAPI.connect = function (ipAddress) {
   this.ipAddress = ipAddress;
 };
