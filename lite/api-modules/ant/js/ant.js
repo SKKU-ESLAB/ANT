@@ -217,7 +217,6 @@ function Element(streamapi, name, element_index) {
   this._element_index = element_index;
   this.name = name;  // copy of native
   this.properties = {}; // copy of native
-  this.isSinkElement = false; // copy of native
   this.handlers = {};
   this.srcElement = undefined;
   this.sinkElement = undefined;
@@ -268,12 +267,21 @@ Element.prototype.connectSignal = function (detailedSignal, handler) {
   if (!this._streamapi.isInitialized()) {
     console.error("ERROR: Stream API is not initialized");
     return;
+  } else if (typeof detailedSignal !== "string") {
+    console.error("ERROR: Invalid detailedSignal: " + detailedSignal);
+    return false;
+  } else if (typeof handler !== "function") {
+    console.error("ERROR: Invalid handler for " + detailedSignal);
+    return false;
+  } else if (this.handlers[detailedSignal] !== undefined) {
+    console.error("ERROR: Handler already exists for " + detailedSignal);
+    return false;
   }
-  // TODO: type check for detailedSignal and handler is required
-  // TODO: check for existing handler is required
-  // TODO: success/failed result is required
-  this.handlers[detailedSignal] = handler;
-  // TODO: add native function call
+  var result = native.stream_elementConnectSignal(detailedSignal, handler);
+  if (result) {
+    this.handlers[detailedSignal] = handler;
+  }
+  return result;
 };
 Element.prototype.link = function (destElement) {
   if (destElement === undefined || !(destElement instanceof Element)) {
@@ -286,15 +294,6 @@ Element.prototype.link = function (destElement) {
   var result = Boolean(this._streamapi.callDbusMethod(
     "element_link\n" + this._element_index + "\n" + destElement._element_index));
   return result;
-};
-Element.prototype.setSinkElement = function (isSinkElement) {
-  if (!this._streamapi.isInitialized()) {
-    console.error("ERROR: Stream API is not initialized");
-    return false;
-  }
-  this.isSinkElement = isSinkElement;
-  console.error("ERROR: not yet implemented");
-  return false;
 };
 
 /** Stream API end **/
