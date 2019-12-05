@@ -12,6 +12,7 @@
 #include <pthread.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 #define ANT_STREAMTHREAD_DBUS_BUS "org.ant.streamThread"
 #define ANT_STREAMTHREAD_DBUS_PATH "/org/ant/streamThread"
@@ -21,6 +22,12 @@
 
 // I refered a gdlib tutorial for inter-thread communication
 // https://www.freedesktop.org/software/gstreamer-sdk/data/docs/latest/gio/GDBusServer.html
+
+static void handle_method_call_fn(GDBusConnection *, const gchar *,
+                                  const gchar *, const gchar *, const gchar *,
+                                  GVariant *, GDBusMethodInvocation *,
+                                  gpointer);
+
 static const gchar g_introspection_xml[] =
     "<node name='" ANT_STREAMTHREAD_DBUS_PATH "'>"
     "   <interface name='" ANT_STREAMTHREAD_DBUS_INTERFACE "'>"
@@ -50,12 +57,216 @@ int registerElement(GstElement *element) {
     return -1;
   } else {
     int index = g_element_registry_index;
-    g_element_registry[index];
+    g_element_registry[index] = element;
     g_element_registry_index++;
     return index;
   }
 }
-inline GstElement *getElement(int index) { return g_element_registry[index]; }
+GstElement *getElement(int index) { return g_element_registry[index]; }
+
+// RPC functions
+#define RPC_MAX_ARGC 5
+#define MAX_ARG_LENGTH 50
+void rpc_streamapi_createPipeline(int argc, char argv[][MAX_ARG_LENGTH],
+                                  char *responseMessage) {
+  // On Stream Thread
+  GstElement *pipeline;
+  int element_index;
+  const char *pipeline_name;
+
+  // Input arguments
+  if (argc != 2) {
+    g_printerr("Invalid arguments!\n");
+    return;
+  }
+  pipeline_name = argv[1];
+
+  // Internal
+  pipeline = gst_pipeline_new(pipeline_name);
+  element_index = registerElement(pipeline);
+
+  // Response message
+  snprintf(responseMessage, MAX_RESULT_MESSAGE_LENGTH, "%d", element_index);
+}
+
+void rpc_streamapi_createElement(int argc, char argv[][MAX_ARG_LENGTH],
+                                 char *responseMessage) {
+  // On Stream Thread
+  GstElement *element;
+  int element_index;
+  const char *element_name;
+
+  // Input arguments
+  if (argc != 2) {
+    g_printerr("Invalid arguments!\n");
+    return;
+  }
+  element_name = argv[1];
+
+  // Internal
+  element = gst_element_factory_make(element_name, NULL);
+  element_index = registerElement(element);
+
+  // Response message
+  snprintf(responseMessage, MAX_RESULT_MESSAGE_LENGTH, "%d", element_index);
+}
+
+void rpc_pipeline_binAdd(int argc, char argv[][MAX_ARG_LENGTH],
+                         char *responseMessage) {
+  // On Stream Thread
+  GstElement *pipeline, *element;
+  int pipeline_element_index;
+  int element_index;
+  gboolean result;
+
+  // Input arguments
+  if (argc != 3) {
+    g_printerr("Invalid arguments!\n");
+    return;
+  }
+  sscanf(argv[1], "%d", &pipeline_element_index);
+  sscanf(argv[2], "%d", &element_index);
+  pipeline = getElement(pipeline_element_index);
+  element = getElement(element_index);
+
+  // Internal
+  result = gst_bin_add(GST_BIN(pipeline), element);
+
+  // Response message
+  if (result) {
+    snprintf(responseMessage, MAX_RESULT_MESSAGE_LENGTH, "true");
+  } else {
+    snprintf(responseMessage, MAX_RESULT_MESSAGE_LENGTH, "false");
+  }
+}
+
+void rpc_pipeline_setState(int argc, char argv[][MAX_ARG_LENGTH],
+                           char *responseMessage) {
+  // On Stream Thread
+  GstElement *pipeline;
+  int pipeline_element_index;
+  int state;
+  GstStateChangeReturn result;
+
+  // Input arguments
+  if (argc != 3) {
+    g_printerr("Invalid arguments!\n");
+    return;
+  }
+  sscanf(argv[1], "%d", &pipeline_element_index);
+  sscanf(argv[2], "%d", &state);
+  pipeline = getElement(pipeline_element_index);
+
+  // Internal
+  result = gst_element_set_state(pipeline, state);
+
+  // Response message
+  snprintf(responseMessage, MAX_RESULT_MESSAGE_LENGTH, "%d", (int)result);
+}
+
+void rpc_element_setProperty(int argc, char argv[][MAX_ARG_LENGTH],
+                             char *responseMessage) {
+  // On Stream Thread
+  GstElement *element;
+  int element_index;
+  const char *key;
+  int type;
+
+  // Input arguments
+  if (argc != 5) {
+    g_printerr("Invalid arguments!\n");
+    return;
+  }
+  sscanf(argv[1], "%d", &element_index);
+  key = argv[2];
+  sscanf(argv[3], "%d", &type);
+  element = getElement(element_index);
+
+  // Internal
+  switch (type) {
+  case 0: { // boolean
+    gboolean value_boolean;
+    if (strncmp(argv[4], "true", MAX_ARG_LENGTH) == 0) {
+      value_boolean = TRUE;
+    } else {
+      value_boolean = FALSE;
+    }
+    g_object_set(G_OBJECT(element), key, value_boolean, NULL);
+    break;
+  }
+  case 1: { // string
+    const char *value_string;
+    value_string = argv[4];
+    g_object_set(G_OBJECT(element), key, value_string, NULL);
+    break;
+  }
+  case 2: { // integer
+    int value_integer;
+    sscanf(argv[4], "%d", &value_integer);
+    g_object_set(G_OBJECT(element), key, value_integer, NULL);
+    break;
+  }
+  case 3: { // float
+    float value_float;
+    sscanf(argv[4], "%f", &value_float);
+    g_object_set(G_OBJECT(element), key, value_float, NULL);
+    break;
+  }
+  }
+
+  // Response message
+  snprintf(responseMessage, MAX_RESULT_MESSAGE_LENGTH, "true");
+}
+
+void rpc_element_link(int argc, char argv[][MAX_ARG_LENGTH],
+                      char *responseMessage) {
+  // On Stream Thread
+  GstElement *src_element, *dest_element;
+  int src_element_index;
+  int dest_element_index;
+  gboolean result;
+
+  // Input arguments
+  if (argc != 3) {
+    g_printerr("Invalid arguments!\n");
+    return;
+  }
+  sscanf(argv[1], "%d", &src_element_index);
+  sscanf(argv[2], "%d", &dest_element_index);
+  src_element = getElement(src_element_index);
+  dest_element = getElement(dest_element_index);
+
+  // Internal
+  result = gst_element_link(src_element, dest_element);
+
+  // Response message
+  if (result) {
+    snprintf(responseMessage, MAX_RESULT_MESSAGE_LENGTH, "true");
+  } else {
+    snprintf(responseMessage, MAX_RESULT_MESSAGE_LENGTH, "false");
+  }
+}
+
+void handle_method_call_internal(int argc, char argv[][MAX_ARG_LENGTH],
+                                 char *responseMessage) {
+  if (argc == 0) {
+    g_printerr("Empty arguments!\n");
+    return;
+  }
+  if (strncmp(argv[0], "streamapi_createPipeline", MAX_ARG_LENGTH) == 0) {
+    rpc_streamapi_createPipeline(argc, argv, responseMessage);
+  } else if (strncmp(argv[0], "streamapi_createElement", MAX_ARG_LENGTH) == 0) {
+    rpc_streamapi_createElement(argc, argv, responseMessage);
+  } else if (strncmp(argv[0], "pipeline_binAdd", MAX_ARG_LENGTH) == 0) {
+    rpc_pipeline_binAdd(argc, argv, responseMessage);
+  } else if (strncmp(argv[0], "pipeline_setState", MAX_ARG_LENGTH) == 0) {
+    rpc_pipeline_setState(argc, argv, responseMessage);
+  } else if (strncmp(argv[0], "element_setProperty", MAX_ARG_LENGTH) == 0) {
+    rpc_element_setProperty(argc, argv, responseMessage);
+  } else if (strncmp(argv[0], "element_link", MAX_ARG_LENGTH) == 0) {
+    rpc_element_link(argc, argv, responseMessage);
+  }
+}
 
 static void
 handle_method_call_fn(GDBusConnection *connection, const gchar *sender,
@@ -64,16 +275,28 @@ handle_method_call_fn(GDBusConnection *connection, const gchar *sender,
                       GDBusMethodInvocation *invocation, gpointer user_data) {
   if (g_strcmp0(method_name, ANT_STREAMTHREAD_DBUS_METHOD) == 0) {
     const gchar *inputMessage;
-    gchar *responseMessage;
+    int argc = 0;
+    char argv[RPC_MAX_ARGC][MAX_ARG_LENGTH];
+    char responseMessage[MAX_RESULT_MESSAGE_LENGTH] = "";
     g_variant_get(parameters, "(&s)", &inputMessage);
 
-    // TODO: put handlers here
-    g_print("Incoming method call message: %s\n", inputMessage);
+    // Parsing arguments
+    {
+      char *token;
+      token = strtok((char *)inputMessage, "\n");
+      while (token != NULL) {
+        if (argc < RPC_MAX_ARGC) {
+          snprintf(argv[argc], MAX_ARG_LENGTH, token);
+        }
+        argc++;
+        token = strtok(NULL, "\n");
+      }
+    }
+    g_print("Incoming method call message:%s\n", argv[0]);
+    handle_method_call_internal(argc, argv, responseMessage);
 
-    responseMessage = g_strdup_printf("Response for '%s'", inputMessage);
     g_dbus_method_invocation_return_value(
         invocation, g_variant_new("(s)", responseMessage));
-    g_free(responseMessage);
   }
 }
 
@@ -93,17 +316,6 @@ static gboolean on_new_connection_fn(GDBusServer *gdbus_server,
 
   return TRUE;
 }
-
-int rpc_streamapi_createPipeline(char *pipeline_name) {
-  // On Stream Thread
-  GstElement *pipeline;
-  int element_index;
-  pipeline = gst_pipeline_new(pipeline_name);
-  element_index = registerElement(pipeline);
-  return element_index;
-}
-
-// TODO: implement extra rpc functions
 
 void *stream_thread_fn(void *arg) {
   // On Stream Thread
@@ -149,8 +361,7 @@ void *stream_thread_fn(void *arg) {
   g_main_loop_run(loop);
 
   /* Free resources */
-  gst_element_set_state(pipeline, GST_STATE_NULL);
-  gst_object_unref(pipeline);
+  // TODO: free gstremaer pipeline, elements
   g_main_loop_unref(loop);
   g_dbus_node_info_unref(g_gdbus_introspection);
 
@@ -197,7 +408,7 @@ void ant_stream_callDbusMethod_internal(const char *inputMessage,
     return;
   }
   g_variant_get(value, "(&s)", &resultMessageBuffer);
-  snprintf(resultMessage, 100, resultMessageBuffer);
+  snprintf(resultMessage, MAX_RESULT_MESSAGE_LENGTH, resultMessageBuffer);
   g_variant_unref(value);
 
   g_object_unref(connection);
@@ -208,41 +419,3 @@ void initANTStream(void) {
   setenv("DBUS_SESSION_BUS_ADDRESS", "unix:path=/run/dbus/system_bus_socket",
          1);
 }
-
-// void *test_pipeline_thread_fn(void *arg) {
-//   GstElement *pipeline, *source, *converter, *omxh264enc, *h264parse,
-//       *rtph264pay, *gdppay, *sink;
-//   char *ipAddress;
-//   ipAddress = g_ip_address;
-
-//   /* Build the pipeline */
-//   pipeline = gst_pipeline_new("test");
-//   source = gst_element_factory_make("videotestsrc", NULL);
-//   converter = gst_element_factory_make("videoconvert", NULL);
-//   omxh264enc = gst_element_factory_make("omxh264enc", NULL);
-//   h264parse = gst_element_factory_make("h264parse", NULL);
-//   rtph264pay = gst_element_factory_make("rtph264pay", NULL);
-//   gdppay = gst_element_factory_make("gdppay", NULL);
-//   sink = gst_element_factory_make("tcpserversink", NULL);
-
-//   if (!pipeline || !source || !converter || !omxh264enc || !h264parse ||
-//       !rtph264pay || !gdppay || !sink) {
-//     g_printerr("One element could not be created.\n");
-//     return NULL;
-//   }
-
-//   g_object_set(G_OBJECT(source), "pattern", 1, NULL);
-//   g_object_set(G_OBJECT(rtph264pay), "pt", 96, "config-interval", 1, NULL);
-//   g_object_set(G_OBJECT(sink), "sync", FALSE, "host", ipAddress, "port",
-//   5000,
-//                NULL);
-
-//   gst_bin_add_many(GST_BIN(pipeline), source, converter, omxh264enc,
-//   h264parse,
-//                    rtph264pay, gdppay, sink, NULL);
-//   gst_element_link_many(source, converter, omxh264enc, h264parse, rtph264pay,
-//                         gdppay, sink, NULL);
-
-//   /* Start playing */
-//   gst_element_set_state(pipeline, GST_STATE_PLAYING);
-// }

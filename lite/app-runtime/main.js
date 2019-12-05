@@ -367,10 +367,28 @@ function loadExistingAppCode() {
 }
 
 function test_stream_api() {
-  ant.stream.testPipeline("192.168.0.33");
+  ant.stream.initialize();
   setTimeout(function () {
     var result = ant.stream.callDbusMethod("test method");
     console.log("Method result: " + result);
+
+    var pipeline = ant.stream.createPipeline("test");
+
+    var source = ant.stream.createElement("videotestsrc");
+    source.setProperty("pattern", 1);
+    var converter = ant.stream.createElement("videoconvert");
+    var omxh264enc = ant.stream.createElement("omxh264enc");
+    var rtph264pay = ant.stream.createElement("rtph264pay");
+    rtph264pay.setProperty("pt", 06);
+    rtph264pay.setProperty("config-interval", 1);
+    var gdppay = ant.stream.createElement("gdppay");
+    var sink = ant.stream.createElement("tcpserversink");
+    sink.setProperty("sync", false);
+    sink.setProperty("host", "192.168.0.33");
+    sink.setProperty("port", 5000);
+    pipeline.binAdd([source, converter, omxh264enc, rtph264pay, gdppay, sink]);
+    pipeline.linkMany([source, converter, omxh264enc, rtph264pay, gdppay, sink]);
+    pipeline.setState(pipeline.STATE_PLAYING);
   }, 5000);
 }
 

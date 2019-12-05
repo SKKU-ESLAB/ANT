@@ -101,7 +101,7 @@ StreamAPI.createPipeline = function (pipeline_name) {
     return undefined;
   }
   var element_index = Number(this.callDbusMethod(
-    "createPipeline\n" + pipeline_name));
+    "streamapi_createPipeline\n" + pipeline_name));
   return new Pipeline(this, pipeline_name, element_index);
 };
 StreamAPI.createElement = function (element_name) {
@@ -110,7 +110,9 @@ StreamAPI.createElement = function (element_name) {
     return undefined;
   }
   var element_index = Number(this.callDbusMethod(
-    "createElement\n" + element_name));
+    "streamapi_createElement\n" + element_name));
+  // TODO: embedding Pipeline.bin_add()
+  // console.log("Element: " + element_name + " / " + element_index);
   return new Element(this, element_name, element_index);
 };
 
@@ -121,24 +123,37 @@ function Pipeline(streamapi, name, element_index) {
   this.name = name;
   this.elements = [];
 
-  this.GST_STATE_VOID_PENDING = 0;
-  this.GST_STATE_NULL = 1;
-  this.GST_STATE_READY = 2;
-  this.GST_STATE_PAUSED = 3;
-  this.GST_STATE_PLAYING = 4;
+  this.STATE_VOID_PENDING = 0;
+  this.STATE_NULL = 1;
+  this.STATE_READY = 2;
+  this.STATE_PAUSED = 3;
+  this.STATE_PLAYING = 4;
 }
-Pipeline.prototype.bin_add = function (element) {
+Pipeline.prototype.binAdd = function (element_or_elements) {
   if (!this._streamapi.isInitialized()) {
     console.error("ERROR: Stream API is not initialized");
     return false;
-  } else if (element.constructor.name !== "Element") {
+  }
+  if (Array.isArray(element_or_elements)) {
+    var elements = element_or_elements;
+    for (var i in elements) {
+      var result = this.binAdd(elements[i]);
+      if (!result) {
+        console.error("ERROR: Failed to add to bin at " + i);
+        return false;
+      }
+    }
+    return true;
+  } else if (element_or_elements instanceof Element) {
+    var element = element_or_elements;
+    this.elements.push(element);
+    var result = Boolean(this._streamapi.callDbusMethod(
+      "pipeline_binAdd\n" + this._element_index + "\n" + element._element_index));
+    return result;
+  } else {
     console.error("ERROR: Invalid element");
     return false;
   }
-  this.elements.push(element);
-  var result = Boolean(this._streamapi.callDbusMethod(
-    "pipelineBinAdd\n" + element._element_index));
-  return result;
 };
 Pipeline.prototype.setState = function (state) {
   if (!this._streamapi.isInitialized()) {
@@ -149,17 +164,27 @@ Pipeline.prototype.setState = function (state) {
     console.error("ERROR: Invalid state! " + state);
     return false;
   }
-  var result = Boolean(this._streamapi.callDbusMethod(
-    "pipelineSetState\n" + state));
+  var result = Number(this._streamapi.callDbusMethod(
+    "pipeline_setState\n" + this._element_index + "\n" + state));
   return result;
 };
-Pipeline.prototype.link_many = function (elements) {
+Pipeline.prototype.linkMany = function (elements) {
   if (!this._streamapi.isInitialized()) {
     console.error("ERROR: Stream API is not initialized");
     return false;
   }
-  console.error("ERROR: not yet implemented");
-  return false;
+  var prevElement = undefined;
+  for (var i in elements) {
+    if (prevElement !== undefined) {
+      var result = prevElement.link(elements[i]);
+      if (!result) {
+        console.error("ERROR: Failed to link element at " + (i - 1) + " with one at " + (i));
+        return false;
+      }
+    }
+    prevElement = elements[i];
+  }
+  return true;
 };
 
 function Element(streamapi, name, element_index) {
@@ -176,31 +201,29 @@ Element.prototype.setProperty = function (key, value) {
   if (!this._streamapi.isInitialized()) {
     console.error("ERROR: Stream API is not initialized");
     return false;
-  }
-  if (typeof key !== "string") {
+  } else if (typeof key !== "string") {
     console.error("ERROR: Invalid key: " + key);
     return false;
-  } else if (typeof value !== "string" && typeof value !== "number") {
+  } else if (typeof value !== "string" && typeof value !== "number" && typeof value !== "boolean") {
     console.error("ERROR: Invalid value: " + value);
     return false;
   }
-
-  var type = (typeof value === "number") ? 1 : 0;
+  var type;
+  if (typeof value === "boolean") {
+    type = 0;
+  } else if (typeof value === "string") {
+    type = 1;
+  } else if (value === parseInt(value, 10)) {
+    type = 2;
+  } else {
+    type = 3;
+  }
   var result = Boolean(this._streamapi.callDbusMethod(
-    "elementSetProperty\n" + key + "\n" + type + "\n" + value));
+    "element_setProperty\n" + this._element_index + "\n" + key + "\n" + type + "\n" + value));
   this.properties[key] = value;
   return result;
 }
-Element.prototype.setSinkElement = function (isSinkElement) {
-  if (!this._streamapi.isInitialized()) {
-    console.error("ERROR: Stream API is not initialized");
-    return false;
-  }
-  this.isSinkElement = isSinkElement;
-  console.error("ERROR: not yet implemented");
-  return false;
-}
-Element.prototype.connect = function (detailedSignal, handler) {
+Element.prototype.connectSignal = function (detailedSignal, handler) {
   if (!this._streamapi.isInitialized()) {
     console.error("ERROR: Stream API is not initialized");
     return;
@@ -211,17 +234,26 @@ Element.prototype.connect = function (detailedSignal, handler) {
   this.handlers[detailedSignal] = handler;
   // TODO: add native function call
 }
-Element.prototype.link = function (sinkElement) {
-  if (sinkElement === undefined || sinkElement.constructor.name !== "Element") {
+Element.prototype.link = function (destElement) {
+  if (destElement === undefined || !(destElement instanceof Element)) {
     console.error("ERROR: Invalid sink element");
     return false;
   }
-  this.sinkElement = sinkElement;
-  sinkElement.srcElement = this;
+  this.sinkElement = destElement;
+  destElement.srcElement = this;
 
   var result = Boolean(this._streamapi.callDbusMethod(
-    "elementLink\n" + this._element_index + "\n" + sinkElement._element_index));
+    "element_link\n" + this._element_index + "\n" + destElement._element_index));
   return result;
+}
+Element.prototype.setSinkElement = function (isSinkElement) {
+  if (!this._streamapi.isInitialized()) {
+    console.error("ERROR: Stream API is not initialized");
+    return false;
+  }
+  this.isSinkElement = isSinkElement;
+  console.error("ERROR: not yet implemented");
+  return false;
 }
 
 /** Stream API end **/
