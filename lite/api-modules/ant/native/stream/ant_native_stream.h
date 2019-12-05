@@ -3,6 +3,8 @@
 
 #include <stdbool.h>
 
+#define MAX_RESULT_MESSAGE_LENGTH 100
+
 #define ANT_API_INTERNAL_DEF_STRING_TO_STRING(api_name, function_name)         \
   void ant_##api_name##_##function_name##_internal(const char *inputMessage,   \
                                                    char *resultMessage);
