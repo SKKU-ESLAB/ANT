@@ -489,6 +489,12 @@ void ant_stream_callDbusMethod_internal(const char *inputMessage,
   g_object_unref(connection);
 }
 
+bool ant_stream_elementConnectSignal_internal(const char *argString,
+                                              native_handler handler) {
+  // const char *detailedSignal = argString;
+  return true;
+}
+
 void initANTStream(void) {
   // Environment setting for opening of d-bus session bus
   setenv("DBUS_SESSION_BUS_ADDRESS", "unix:path=/run/dbus/system_bus_socket",
