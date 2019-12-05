@@ -3,6 +3,7 @@
 
 #include <stdbool.h>
 
+// TODO: hardcoded result message length
 #define MAX_RESULT_MESSAGE_LENGTH 100
 
 #define ANT_API_INTERNAL_DEF_STRING_TO_STRING(api_name, function_name)         \
