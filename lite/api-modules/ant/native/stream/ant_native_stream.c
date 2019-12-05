@@ -65,8 +65,9 @@ int registerElement(GstElement *element) {
 GstElement *getElement(int index) { return g_element_registry[index]; }
 
 // RPC functions
-#define RPC_MAX_ARGC 5
-#define MAX_ARG_LENGTH 50
+// TODO: hardcoded args, argv length
+#define RPC_MAX_ARGC 10
+#define MAX_ARG_LENGTH 100
 void rpc_streamapi_createPipeline(int argc, char argv[][MAX_ARG_LENGTH],
                                   char *responseMessage) {
   // On Stream Thread
@@ -218,6 +219,35 @@ void rpc_element_setProperty(int argc, char argv[][MAX_ARG_LENGTH],
   snprintf(responseMessage, MAX_RESULT_MESSAGE_LENGTH, "true");
 }
 
+void rpc_element_setCapsProperty(int argc, char argv[][MAX_ARG_LENGTH],
+                                 char *responseMessage) {
+  // On Stream Thread
+  GstCaps *caps;
+  GstElement *element;
+  int element_index;
+  const char *key;
+  const char *value;
+
+  // Input arguments
+  if (argc != 4) {
+    g_printerr("Invalid arguments!\n");
+    return;
+  }
+  sscanf(argv[1], "%d", &element_index);
+  key = argv[2];
+  value = argv[3];
+  element = getElement(element_index);
+
+  // Internal
+  g_print("caps key: %s / value: %s\n", key, value);
+  caps = gst_caps_from_string(value);
+  g_object_set(G_OBJECT(element), key, caps, NULL);
+  gst_caps_unref(caps);
+
+  // Response message
+  snprintf(responseMessage, MAX_RESULT_MESSAGE_LENGTH, "true");
+}
+
 void rpc_element_link(int argc, char argv[][MAX_ARG_LENGTH],
                       char *responseMessage) {
   // On Stream Thread
@@ -263,8 +293,12 @@ void handle_method_call_internal(int argc, char argv[][MAX_ARG_LENGTH],
     rpc_pipeline_setState(argc, argv, responseMessage);
   } else if (strncmp(argv[0], "element_setProperty", MAX_ARG_LENGTH) == 0) {
     rpc_element_setProperty(argc, argv, responseMessage);
+  } else if (strncmp(argv[0], "element_setCapsProperty", MAX_ARG_LENGTH) == 0) {
+    rpc_element_setCapsProperty(argc, argv, responseMessage);
   } else if (strncmp(argv[0], "element_link", MAX_ARG_LENGTH) == 0) {
     rpc_element_link(argc, argv, responseMessage);
+  } else {
+    g_printerr("Invalid method call!\n");
   }
 }
 
@@ -292,7 +326,7 @@ handle_method_call_fn(GDBusConnection *connection, const gchar *sender,
         token = strtok(NULL, "\n");
       }
     }
-    g_print("Incoming method call message:%s\n", argv[0]);
+    // g_print("Incoming method call message:%s\n", argv[0]);
     handle_method_call_internal(argc, argv, responseMessage);
 
     g_dbus_method_invocation_return_value(
@@ -357,7 +391,7 @@ void *stream_thread_fn(void *arg) {
   }
 
   /* gstreamer main loop: wait until error or EOS */
-  g_print("Main Loop for Gstreamer Running...\n");
+  g_print("Stream thread launched!\n");
   g_main_loop_run(loop);
 
   /* Free resources */

@@ -222,7 +222,23 @@ Element.prototype.setProperty = function (key, value) {
     "element_setProperty\n" + this._element_index + "\n" + key + "\n" + type + "\n" + value));
   this.properties[key] = value;
   return result;
-}
+};
+Element.prototype.setCapsProperty = function (key, value) {
+  if (!this._streamapi.isInitialized()) {
+    console.error("ERROR: Stream API is not initialized");
+    return false;
+  } else if (typeof key !== "string") {
+    console.error("ERROR: Invalid key: " + key);
+    return false;
+  } else if (typeof value !== "string") {
+    console.error("ERROR: Invalid value: " + value);
+    return false;
+  }
+  var result = Boolean(this._streamapi.callDbusMethod(
+    "element_setCapsProperty\n" + this._element_index + "\n" + key + "\n" + value));
+  this.properties[key] = value;
+  return result;
+};
 Element.prototype.connectSignal = function (detailedSignal, handler) {
   if (!this._streamapi.isInitialized()) {
     console.error("ERROR: Stream API is not initialized");
@@ -233,7 +249,7 @@ Element.prototype.connectSignal = function (detailedSignal, handler) {
   // TODO: success/failed result is required
   this.handlers[detailedSignal] = handler;
   // TODO: add native function call
-}
+};
 Element.prototype.link = function (destElement) {
   if (destElement === undefined || !(destElement instanceof Element)) {
     console.error("ERROR: Invalid sink element");
@@ -245,7 +261,7 @@ Element.prototype.link = function (destElement) {
   var result = Boolean(this._streamapi.callDbusMethod(
     "element_link\n" + this._element_index + "\n" + destElement._element_index));
   return result;
-}
+};
 Element.prototype.setSinkElement = function (isSinkElement) {
   if (!this._streamapi.isInitialized()) {
     console.error("ERROR: Stream API is not initialized");
@@ -254,7 +270,7 @@ Element.prototype.setSinkElement = function (isSinkElement) {
   this.isSinkElement = isSinkElement;
   console.error("ERROR: not yet implemented");
   return false;
-}
+};
 
 /** Stream API end **/
 
