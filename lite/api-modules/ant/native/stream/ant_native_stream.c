@@ -84,10 +84,27 @@ void rpc_streamapi_quitMainLoop(int argc, char argv[][MAX_ARG_LENGTH],
   snprintf(responseMessage, MAX_RESULT_MESSAGE_LENGTH, "true");
 }
 
+/* This function is called when an error message is posted on the bus */
+static void error_cb(GstBus *bus, GstMessage *msg, void *data) {
+  GError *err;
+  gchar *debug_info;
+
+  /* Print error details on the screen */
+  gst_message_parse_error(msg, &err, &debug_info);
+  g_printerr("Error received from element %s: %s\n", GST_OBJECT_NAME(msg->src),
+             err->message);
+  g_printerr("Debugging information: %s\n", debug_info ? debug_info : "none");
+  g_clear_error(&err);
+  g_free(debug_info);
+
+  g_main_loop_quit(g_main_loop);
+}
+
 void rpc_streamapi_createPipeline(int argc, char argv[][MAX_ARG_LENGTH],
                                   char *responseMessage) {
   // On Stream Thread
   GstElement *pipeline;
+  GstBus *bus;
   int element_index;
   const char *pipeline_name;
 
@@ -101,6 +118,11 @@ void rpc_streamapi_createPipeline(int argc, char argv[][MAX_ARG_LENGTH],
   // Internal
   pipeline = gst_pipeline_new(pipeline_name);
   element_index = registerElement(pipeline);
+
+  bus = gst_element_get_bus(pipeline);
+  gst_bus_add_signal_watch(bus);
+  g_signal_connect(G_OBJECT(bus), "message::error", (GCallback)error_cb, NULL);
+  gst_object_unref(bus);
 
   // Response message
   snprintf(responseMessage, MAX_RESULT_MESSAGE_LENGTH, "%d", element_index);
@@ -489,10 +511,60 @@ void ant_stream_callDbusMethod_internal(const char *inputMessage,
   g_object_unref(connection);
 }
 
-bool ant_stream_elementConnectSignal_internal(const char *argString,
-                                              native_handler handler) {
-  // const char *detailedSignal = argString;
-  return true;
+/* The appsink has received a buffer */
+// TODO: Hardcoding: unique handler
+ant_async_handler g_ant_async_handler;
+static GstFlowReturn gst_signal_handler_ant_async(GstElement *element,
+                                                  char *element_name) {
+  // gst signal handler -> call ant async handler
+  GstSample *sample;
+
+  /* Retrieve the buffer */
+  g_signal_emit_by_name(element, "pull-sample", &sample);
+  if (sample) {
+    GstBuffer *buffer;
+    GstMapInfo info;
+    gboolean mapping_result;
+    /* The only thing we do in this example is print a * to indicate a received
+     * buffer */
+    buffer = gst_sample_get_buffer(sample);
+    mapping_result = gst_buffer_map(buffer, &info, GST_MAP_READ);
+    if (mapping_result) {
+      g_print("*"); // TODO: remove it after test
+      // call ant async handler with data
+      g_ant_async_handler(element_name, info.data, info.size);
+      gst_buffer_unmap(buffer, &info);
+    } else {
+      g_printerr("gst_buffer_map not successful...\n");
+    }
+    gst_sample_unref(sample);
+    return GST_FLOW_OK;
+  } else {
+    g_printerr("GST_FLOW_ERROR occurs\n");
+    return GST_FLOW_ERROR;
+  }
+}
+
+bool ant_stream_elementConnectSignal_internal(
+    int element_index, const char *detailed_signal,
+    ant_async_handler _ant_async_handler) {
+  GstElement *element;
+  gchar *element_name;
+  gulong result;
+
+  element = getElement(element_index);
+  element_name = g_strdup_printf(gst_element_get_name(element));
+
+  g_ant_async_handler = _ant_async_handler;
+
+  result =
+      g_signal_connect(element, detailed_signal,
+                       G_CALLBACK(gst_signal_handler_ant_async), element_name);
+  if (result > 0) {
+    return true;
+  } else {
+    return false;
+  }
 }
 
 void initANTStream(void) {
