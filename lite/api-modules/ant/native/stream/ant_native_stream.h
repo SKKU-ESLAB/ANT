@@ -17,9 +17,10 @@ bool ant_stream_testPipeline_internal(const char *ipAddress);
 ANT_API_INTERNAL_DEF_STRING_TO_STRING(stream, callDbusMethod);
 ANT_API_INTERNAL_DEF_VOID_TO_VOID(stream, initializeStream);
 
-typedef void (*native_handler)(const char *);
-bool ant_stream_elementConnectSignal_internal(const char *argString,
-                                              native_handler handler);
+typedef void (*ant_async_handler)(const char *, unsigned char *, unsigned long);
+bool ant_stream_elementConnectSignal_internal(int element_index,
+                                              const char *detailed_signal,
+                                              ant_async_handler handler);
 
 void initANTStream(void);
 

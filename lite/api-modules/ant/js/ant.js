@@ -277,7 +277,7 @@ Element.prototype.connectSignal = function (detailedSignal, handler) {
     console.error("ERROR: Handler already exists for " + detailedSignal);
     return false;
   }
-  var result = native.stream_elementConnectSignal(detailedSignal, handler);
+  var result = native.stream_elementConnectSignal(this._element_index, detailedSignal, handler);
   if (result) {
     this.handlers[detailedSignal] = handler;
   }
