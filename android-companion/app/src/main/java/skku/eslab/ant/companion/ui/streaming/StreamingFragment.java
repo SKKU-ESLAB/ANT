@@ -21,6 +21,7 @@ import androidx.fragment.app.FragmentActivity;
 import androidx.lifecycle.Observer;
 import androidx.lifecycle.ViewModelProviders;
 import skku.eslab.ant.companion.R;
+import skku.eslab.ant.companion.remoteuiapi.RemoteUIAPI;
 
 public class StreamingFragment extends Fragment
         implements SurfaceHolder.Callback {
@@ -36,15 +37,6 @@ public class StreamingFragment extends Fragment
         this.mModel = ViewModelProviders.of(this).get(StreamingViewModel.class);
         View root =
                 inflater.inflate(R.layout.fragment_streaming, container, false);
-        this.mModel.getPipeline().observe(this, new Observer<String>() {
-            @Override
-            public void onChanged(@Nullable String value) {
-                // not implemented
-                if (value != null && !value.isEmpty()) {
-                    onChangePipeline(value);
-                }
-            }
-        });
         this.mVideoSurfaceView = root.findViewById(R.id.videoSurfaceView);
         this.mMessageTextView = root.findViewById(R.id.messageTextView);
 
@@ -61,21 +53,30 @@ public class StreamingFragment extends Fragment
         StrictMode.ThreadPolicy policy =
                 new StrictMode.ThreadPolicy.Builder().permitAll().build();
         StrictMode.setThreadPolicy(policy);
-        SurfaceHolder sh = this.mVideoSurfaceView.getHolder();
-        sh.addCallback(this);
+        SurfaceHolder surfaceHolder = this.mVideoSurfaceView.getHolder();
+        surfaceHolder.addCallback(this);
 
         // Retrieve our previous state, or connectChannel it to default values
         this.mIsPlayingDesired = false;
 
-        Log.i("GStreamer", "playing: " + mIsPlayingDesired);
+        RemoteUIAPI.get().getPipeline().observe(this, new Observer<String>() {
+            @Override
+            public void onChanged(@Nullable String value) {
+                updateVideoSurfaceView();
+            }
+        });
         return root;
     }
 
     @Override
     public void onDestroyView() {
         super.onDestroyView();
+
+        SurfaceHolder surfaceHolder = this.mVideoSurfaceView.getHolder();
+        surfaceHolder.removeCallback(this);
+
         // Finalize gstreamer
-        this.nativeFinalize();
+        this.finalizeGstreamer();
     }
 
     // Initialize native code, build pipeline, etc
@@ -111,7 +112,11 @@ public class StreamingFragment extends Fragment
 
     private Object mDelayedSurface;
 
-    private void onChangePipeline(String pipeline) {
+    private void updateVideoSurfaceView() {
+        String pipeline = RemoteUIAPI.get().getPipeline().getValue();
+        if (pipeline == null || pipeline.isEmpty()) {
+            return;
+        }
         if (this.mIsPlayingDesired) {
             this.finalizeGstreamer();
         }
@@ -121,6 +126,9 @@ public class StreamingFragment extends Fragment
     // Initialize Gstreamer connection
     private void initializeGstreamer(String pipeline) {
         Log.d("CameraViewerActivity", "initializeGstreamer()");
+        if (this.mDelayedSurface == null) {
+            return;
+        }
         this.nativeInit(pipeline);
 
         try {
@@ -160,6 +168,8 @@ public class StreamingFragment extends Fragment
         Log.d("GStreamer", "GetSurface(): " + holder.getSurface());
         nativeSurfaceInit(holder.getSurface());
         this.mDelayedSurface = holder.getSurface();
+
+        updateVideoSurfaceView();
 
         Log.d("GStreamer", "end surfaceChanged");
     }

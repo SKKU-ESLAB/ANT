@@ -56,7 +56,7 @@ typedef struct _CustomData {
   gboolean is_live;   /* Live streams do not use buffering */
 } CustomData;
 
-gchar *pipeline;
+gchar *g_pipeline;
 
 /* playbin2 flags */
 typedef enum {
@@ -273,7 +273,7 @@ static void *app_function(void *userdata) {
   data->context = g_main_context_new();
   g_main_context_push_thread_default(data->context);
 
-  data->pipeline = gst_parse_launch(pipeline, &error);
+  data->pipeline = gst_parse_launch(g_pipeline, &error);
 
   if (error) {
     gchar *message =
@@ -351,7 +351,7 @@ static void gst_native_init(JNIEnv *env, jobject thiz, jstring pipeline) {
   const gchar *pipeline_cstr =
       (gchar *)(*env)->GetStringUTFChars(env, pipeline, NULL);
 
-  pipeline = g_strjoin("", pipeline_cstr, NULL);
+  g_pipeline = g_strjoin("", pipeline_cstr, NULL);
 
   (*env)->ReleaseStringUTFChars(env, pipeline, pipeline_cstr);
 

@@ -105,12 +105,12 @@ StreamAPI.finalize = function () {
     }
     return result;
   };
-  quitMainLoop();
   for (var i in this.pipelines) {
     this.pipelines[i].setState(this.pipelines[i].STATE_PAUSED);
     this.pipelines[i].unref();
     this.pipelines.splice(i, 1);
   }
+  quitMainLoop();
 };
 StreamAPI.createPipeline = function (pipeline_name) {
   if (!this._mIsInitialized) {
@@ -362,8 +362,8 @@ CompanionAPI.unregisterOnReceiveMessage = function (handler) {
 /** Remote UI API start **/
 function RemoteUIAPI() {
 }
-RemoteUIAPI.setStreamingViewPipeline = function (pipeline) {
-  ResourceAPI.requestPost("remoteui/streamingview/pipeline", pipeline, undefined);
+RemoteUIAPI.setStreamingViewPipeline = function (pipeline, handler) {
+  ResourceAPI.requestPost("/remoteui/streamingview/pipeline", pipeline, handler);
 };
 /** Remote UI API end **/
 
@@ -375,8 +375,8 @@ ResourceAPI._mOnResourceResponseDict = {};
 // TODO: implement hosting resource
 
 ResourceAPI._initialize = function () {
-  this._mIsInitialized = true;
-  CompanionAPI.registerOnReceiveMessage(this._onReceiveRawMessage);
+  ResourceAPI._mIsInitialized = true;
+  CompanionAPI.registerOnReceiveMessage(ResourceAPI._onReceiveRawMessage);
 };
 ResourceAPI._onReceiveRawMessage = function (rawMessage) {
   var firstLineEnd = rawMessage.indexOf("\n");
@@ -397,24 +397,24 @@ ResourceAPI._onReceiveRawMessage = function (rawMessage) {
   var targetUri = fourthLine;
   var message = otherLines;
 
-  var onResourceResponse = this._mOnResourceResponseDict[requestId];
+  var onResourceResponse = ResourceAPI._mOnResourceResponseDict[requestId];
   if (onResourceResponse !== undefined) {
     onResourceResponse(method, targetUri, message);
-    delete this._mOnResourceResponseDict[requestId];
+    delete ResourceAPI._mOnResourceResponseDict[requestId];
   }
 };
 
 // ResourceHandler arguments: (String method, String targetUri, String message)
 ResourceAPI._sendRequest = function (method, targetUri, message, onResourceResponse) {
-  if (!this._mIsInitialized) {
-    this._initialize();
+  if (!ResourceAPI._mIsInitialized) {
+    ResourceAPI._initialize();
   }
-  var rawMessage = "" + "ResourceRequest\n" + this._mRequestId + "\n" + method + "\n" + targetUri + "\n" + message;
-  this._mRequestId++;
+  var rawMessage = "" + "ResourceRequest\n" + ResourceAPI._mRequestId + "\n" + method + "\n" + targetUri + "\n" + message;
+  ResourceAPI._mRequestId++;
 
   CompanionAPI.sendMessage(rawMessage);
   if (onResourceResponse !== undefined) {
-    this._mOnResourceResponseDict[this._mRequestId] = onResourceResponse;
+    ResourceAPI._mOnResourceResponseDict[ResourceAPI._mRequestId] = onResourceResponse;
   }
 };
 
@@ -460,6 +460,7 @@ ANT.prototype.runtime = RuntimeAPI;
 ANT.prototype.stream = StreamAPI;
 ANT.prototype.companion = CompanionAPI;
 ANT.prototype.resource = ResourceAPI;
+ANT.prototype.remoteui = RemoteUIAPI;
 ANT.prototype.compressionServer = CompressionServerAPI;
 
 /** ANT main object end **/

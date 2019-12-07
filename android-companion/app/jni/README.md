@@ -21,6 +21,8 @@
   * Then you can get shared libraries:
     * ```ant/android-companion/app/libs/arm64-v8a/libgstreamer_android.so```
     * ```ant/android-companion/app/libs/arm64-v8a/libstreaming-fragment.so```
+  2. Copy those shared libraries to following directory:
+    * ```ant/android-companion/app/src/main/jniLibs/arm64-v8a```
 
 # Additional Issues
 ## Build for armv7 target

@@ -8,6 +8,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.util.Objects;
 
 public class GStreamer {
     private static native void nativeInit(Context context) throws Exception;
@@ -31,14 +32,13 @@ public class GStreamer {
             /* Copy the config file */
             copyFile(assetManager, "fontconfig/fonts.conf", fontsCfg);
             /* Copy the fonts */
-            for (String filename : assetManager
-                    .list("fontconfig/fonts/truetype")) {
+            for (String filename : Objects.requireNonNull(
+                    assetManager.list("fontconfig/fonts/truetype"))) {
                 File font = new File(fontsDir, filename);
                 copyFile(assetManager, "fontconfig/fonts/truetype/" + filename,
                         font);
             }
-        } catch (IOException e) {
-            e.printStackTrace();
+        } catch (IOException ignored) {
         }
     }
 
@@ -54,8 +54,7 @@ public class GStreamer {
         try {
             /* Copy the certificates file */
             copyFile(assetManager, "ssl/certs/ca-certificates.crt", certs);
-        } catch (IOException e) {
-            e.printStackTrace();
+        } catch (IOException ignored) {
         }
     }
 

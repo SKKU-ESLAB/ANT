@@ -63,7 +63,7 @@ public class ResourceRequest {
     }
 
     public String toRawMessage() {
-        return "ResourceRequest\n" + this.mRequestId + "\n" + this.mMessage +
+        return "ResourceRequest\n" + this.mRequestId + "\n" + this.mMethod +
                 "\n" + this.mTargetUri + "\n" + mMessage;
     }
 }

@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:paddingTop="@dimen/fragment_padding_top">
@@ -9,18 +10,19 @@
         android:id="@+id/messageTextView"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginBottom="4dip"
         android:gravity="center_horizontal"
         app:layout_constraintLeft_toLeftOf="parent"
-        app:layout_constraintTop_toTopOf="parent" />
+        app:layout_constraintTop_toTopOf="parent"
+        tools:text="Ready" />
 
     <com.ant.ant_manager.view.cameraviewer.GStreamerSurfaceView
         android:id="@+id/videoSurfaceView"
         android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
+        android:layout_height="0dp"
         android:layout_gravity="center_vertical|center_horizontal"
+        android:layout_marginTop="9dp"
         app:layout_constraintLeft_toLeftOf="parent"
-        app:layout_constraintTop_toTopOf="@+id/messageTextView" />
+        app:layout_constraintTop_toBottomOf="@+id/messageTextView" />
 
 
 </androidx.constraintlayout.widget.ConstraintLayout>
