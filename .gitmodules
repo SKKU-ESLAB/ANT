@@ -34,3 +34,6 @@
 [submodule "dep/iotjs"]
 	path = dep/iotjs
 	url = https://github.com/SKKU-ESLAB/ANT-iotjs
+[submodule "android-companion/app/libs"]
+	path = android-companion/app/libs
+	url = https://github.com/SKKU-ESLAB/ant-android-libs-armeabi

@@ -1,6 +1,5 @@
 var console = require('console');
 var http = require('http');
-
 var RESULT_SUCCESS = 'Success';
 var RESULT_FAILED = 'Failed';
 
@@ -120,7 +119,7 @@ StreamAPI.createPipeline = function (pipeline_name) {
   }
   var element_index = Number(this.callDbusMethod(
     "streamapi_createPipeline\n" + pipeline_name));
-  var pipeline = new Pipeline(this, pipeline_name, element_index);
+  var pipeline = new Pipeline(pipeline_name, element_index);
   this.pipelines.push(pipeline);
   return pipeline;
 };
@@ -133,11 +132,10 @@ StreamAPI.createElement = function (element_name) {
     "streamapi_createElement\n" + element_name));
   // TODO: embedding Pipeline.bin_add()
   // console.log("Element: " + element_name + " / " + element_index);
-  return new Element(this, element_name, element_index);
+  return new Element(element_name, element_index);
 };
 
-function Pipeline(streamapi, name, element_index) {
-  this._streamapi = streamapi;
+function Pipeline(name, element_index) {
   this._element_index = element_index;
 
   this.name = name;
@@ -150,7 +148,7 @@ function Pipeline(streamapi, name, element_index) {
   this.STATE_PLAYING = 4;
 }
 Pipeline.prototype.binAdd = function (element_or_elements) {
-  if (!this._streamapi.isInitialized()) {
+  if (!StreamAPI.isInitialized()) {
     console.error("ERROR: Stream API is not initialized");
     return false;
   }
@@ -167,7 +165,7 @@ Pipeline.prototype.binAdd = function (element_or_elements) {
   } else if (element_or_elements instanceof Element) {
     var element = element_or_elements;
     this.elements.push(element);
-    var result = Boolean(this._streamapi.callDbusMethod(
+    var result = Boolean(StreamAPI.callDbusMethod(
       "pipeline_binAdd\n" + this._element_index + "\n" + element._element_index));
     return result;
   } else {
@@ -176,7 +174,7 @@ Pipeline.prototype.binAdd = function (element_or_elements) {
   }
 };
 Pipeline.prototype.setState = function (state) {
-  if (!this._streamapi.isInitialized()) {
+  if (!StreamAPI.isInitialized()) {
     console.error("ERROR: Stream API is not initialized");
     return false;
   }
@@ -184,12 +182,12 @@ Pipeline.prototype.setState = function (state) {
     console.error("ERROR: Invalid state! " + state);
     return false;
   }
-  var result = Number(this._streamapi.callDbusMethod(
+  var result = Number(StreamAPI.callDbusMethod(
     "pipeline_setState\n" + this._element_index + "\n" + state));
   return result;
 };
 Pipeline.prototype.linkMany = function (elements) {
-  if (!this._streamapi.isInitialized()) {
+  if (!StreamAPI.isInitialized()) {
     console.error("ERROR: Stream API is not initialized");
     return false;
   }
@@ -207,13 +205,12 @@ Pipeline.prototype.linkMany = function (elements) {
   return true;
 };
 Pipeline.prototype.unref = function () {
-  var result = Boolean(this._streamapi.callDbusMethod(
+  var result = Boolean(StreamAPI.callDbusMethod(
     "pipeline_unref\n" + this._element_index));
   return result;
 };
 
-function Element(streamapi, name, element_index) {
-  this._streamapi = streamapi;
+function Element(name, element_index) {
   this._element_index = element_index;
   this.name = name;  // copy of native
   this.properties = {}; // copy of native
@@ -222,7 +219,7 @@ function Element(streamapi, name, element_index) {
   this.sinkElement = undefined;
 }
 Element.prototype.setProperty = function (key, value) {
-  if (!this._streamapi.isInitialized()) {
+  if (!StreamAPI.isInitialized()) {
     console.error("ERROR: Stream API is not initialized");
     return false;
   } else if (typeof key !== "string") {
@@ -242,13 +239,13 @@ Element.prototype.setProperty = function (key, value) {
   } else {
     type = 3;
   }
-  var result = Boolean(this._streamapi.callDbusMethod(
+  var result = Boolean(StreamAPI.callDbusMethod(
     "element_setProperty\n" + this._element_index + "\n" + key + "\n" + type + "\n" + value));
   this.properties[key] = value;
   return result;
 };
 Element.prototype.setCapsProperty = function (key, value) {
-  if (!this._streamapi.isInitialized()) {
+  if (!StreamAPI.isInitialized()) {
     console.error("ERROR: Stream API is not initialized");
     return false;
   } else if (typeof key !== "string") {
@@ -258,13 +255,13 @@ Element.prototype.setCapsProperty = function (key, value) {
     console.error("ERROR: Invalid value: " + value);
     return false;
   }
-  var result = Boolean(this._streamapi.callDbusMethod(
+  var result = Boolean(StreamAPI.callDbusMethod(
     "element_setCapsProperty\n" + this._element_index + "\n" + key + "\n" + value));
   this.properties[key] = value;
   return result;
 };
 Element.prototype.connectSignal = function (detailedSignal, handler) {
-  if (!this._streamapi.isInitialized()) {
+  if (!StreamAPI.isInitialized()) {
     console.error("ERROR: Stream API is not initialized");
     return;
   } else if (typeof detailedSignal !== "string") {
@@ -291,7 +288,7 @@ Element.prototype.link = function (destElement) {
   this.sinkElement = destElement;
   destElement.srcElement = this;
 
-  var result = Boolean(this._streamapi.callDbusMethod(
+  var result = Boolean(StreamAPI.callDbusMethod(
     "element_link\n" + this._element_index + "\n" + destElement._element_index));
   return result;
 };
@@ -303,7 +300,7 @@ function CompanionAPI() { }
 CompanionAPI._mCompanionHost = undefined;
 CompanionAPI._mCompanionPort = undefined;
 CompanionAPI._mCompanionPath = undefined;
-CompanionAPI._mHandler = undefined;
+CompanionAPI._mHandlers = [];
 
 CompanionAPI._setCompanionAddress = function (
   companionHost, companionPort, companionPath) {
@@ -314,7 +311,9 @@ CompanionAPI._setCompanionAddress = function (
 };
 
 CompanionAPI._onReceiveMessageFromCompanion = function (message) {
-  this._mHandler(message);
+  for (var i in this._mHandlers) {
+    this._mHandlers[i](message);
+  }
 };
 
 CompanionAPI.sendMessage = function (message) {
@@ -345,11 +344,91 @@ CompanionAPI.sendMessage = function (message) {
   return true;
 };
 
-CompanionAPI.setOnReceiveMessage = function (handler) {
-  this._mHandler = handler;
+CompanionAPI.registerOnReceiveMessage = function (handler) {
+  this._mHandlers.push(handler);
+};
+CompanionAPI.unregisterOnReceiveMessage = function (handler) {
+  if (handler === undefined) return false;
+  for (var i in this._mHandlers) {
+    if (this._mHandlers[i] === handler) {
+      this._mHandlers.splice(i, 1);
+      return true;
+    }
+  }
+  return false;
 };
 /** Companion API end **/
 
+/** Remote UI API start **/
+function RemoteUIAPI() {
+}
+RemoteUIAPI.setStreamingView = function(pipeline) {
+  ResourceAPI.requestPost("remoteui/streamingview", pipeline, undefined);
+};
+/** Remote UI API end **/
+
+/** Resource API start **/
+function ResourceAPI() { }
+ResourceAPI._mIsInitialized = false;
+ResourceAPI._mRequestId = 0;
+ResourceAPI._mHandlersDict = {};
+
+ResourceAPI._initialize = function () {
+  this._mIsInitialized = true;
+  CompanionAPI.registerOnReceiveMessage(this._onReceiveResponse);
+};
+ResourceAPI._onReceiveResponse = function (rawMessage) {
+  var firstLineEnd = rawMessage.indexOf("\n");
+  var firstLine = rawMessage.substring(0, firstLineEnd);
+  if (firstLine == "ResourceResponse") {
+    var secondLineEnd = rawMessage.indexOf("\n", firstLineEnd + 1);
+    var secondLine = rawMessage.substring(firstLineEnd + 1, secondLineEnd);
+    var thirdLineEnd = rawMessage.indexOf("\n", secondLineEnd + 1);
+    var thirdLine = rawMessage.substring(secondLineEnd + 1, thirdLineEnd);
+    var fourthLineEnd = rawMessage.indexOf("\n", fourthLineEnd + 1);
+    var fourthLine = rawMessage.substring(thirdLineEnd + 1, fourthLineEnd);
+    var otherLine = rawMessage.substring(fourthLineEnd + 1);
+
+    var requestId = secondLine;
+    var method = thirdLine;
+    var targetUri = fourthLine;
+    var message = otherLine;
+
+    var handler = this._mHandlersDict[requestId];
+    if (handler !== undefined) {
+      handler(method, targetUri, message);
+    }
+  }
+};
+
+// ResourceHandler arguments: (String method, String targetUri, String message)
+ResourceAPI._sendMessage = function (method, targetUri, message, handler) {
+  if (!this._mIsInitialized) {
+    this._initialize();
+  }
+  var rawMessage = "" + "ResourceRequest\n" + this._mRequestId + "\n" + method + "\n" + targetUri + "\n" + message;
+  this._mRequestId++;
+
+  CompanionAPI.sendMessage(rawMessage);
+  if (handler !== undefined) {
+    this._mHandlersDict[this._mRequestId] = handler;
+  }
+};
+
+ResourceAPI.reqeustGet = function (targetUri, message, handler) {
+  CompanionAPI.sendMessage("GET", targetUri, message, handler);
+};
+ResourceAPI.requestPost = function (targetUri, message, handler) {
+  CompanionAPI.sendMessage("POST", targetUri, message, handler);
+};
+ResourceAPI.requestPut = function (targetUri, message, handler) {
+  CompanionAPI.sendMessage("PUT", targetUri, message, handler);
+};
+ResourceAPI.requestDelete = function (targetUri, message, handler) {
+  CompanionAPI.sendMessage("DELETE", targetUri, message, handler);
+};
+
+/** Resource API end */
 
 /** Compression Server API start **/
 function CompressionServerAPI() { }
@@ -377,6 +456,7 @@ function ANT() { }
 ANT.prototype.runtime = RuntimeAPI;
 ANT.prototype.stream = StreamAPI;
 ANT.prototype.companion = CompanionAPI;
+ANT.prototype.resource = ResourceAPI;
 ANT.prototype.compressionServer = CompressionServerAPI;
 
 /** ANT main object end **/

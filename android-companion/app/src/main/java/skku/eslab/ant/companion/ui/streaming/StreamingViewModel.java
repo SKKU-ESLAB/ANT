@@ -6,14 +6,14 @@ import androidx.lifecycle.ViewModel;
 
 public class StreamingViewModel extends ViewModel {
 
-    private MutableLiveData<String> mText;
-
+    private MutableLiveData<String> mPipeline;
+    // TODO: Add StreamingView Handling with Resource API
     public StreamingViewModel() {
-        mText = new MutableLiveData<>();
-        mText.setValue("This is dashboard fragment");
+        mPipeline = new MutableLiveData<>();
+        mPipeline.setValue("");
     }
 
-    public LiveData<String> getText() {
-        return mText;
+    public LiveData<String> getPipeline() {
+        return mPipeline;
     }
 }
