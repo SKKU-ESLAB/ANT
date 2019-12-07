@@ -51,9 +51,12 @@ public class MainActivity extends AppCompatActivity {
         super.onStart();
 
         // Setting to target address edit text
-        SharedPreferences sharedPref = getSharedPreferences(SP_FILENAME, MODE_PRIVATE);
-        String targetAddress = sharedPref.getString(SP_TARGET_ADDRESS, SP_DEFAULT_TARGET_ADDRESS);
-        EditText targetAddressEditText = findViewById(R.id.targetAddressEditText);
+        SharedPreferences sharedPref =
+                getSharedPreferences(SP_FILENAME, MODE_PRIVATE);
+        String targetAddress = sharedPref
+                .getString(SP_TARGET_ADDRESS, SP_DEFAULT_TARGET_ADDRESS);
+        EditText targetAddressEditText =
+                findViewById(R.id.targetAddressEditText);
         targetAddressEditText.setText(targetAddress);
 
         HTTPClient httpClient = HTTPClient.get();
@@ -65,10 +68,12 @@ public class MainActivity extends AppCompatActivity {
         super.onStop();
 
         // Setting from target address edit text
-        EditText targetAddressEditText = findViewById(R.id.targetAddressEditText);
+        EditText targetAddressEditText =
+                findViewById(R.id.targetAddressEditText);
         String targetAddress = targetAddressEditText.getText().toString();
 
-        SharedPreferences sharedPref = getSharedPreferences(SP_FILENAME, MODE_PRIVATE);
+        SharedPreferences sharedPref =
+                getSharedPreferences(SP_FILENAME, MODE_PRIVATE);
         SharedPreferences.Editor editor = sharedPref.edit();
         editor.putString(SP_TARGET_ADDRESS, targetAddress);
         editor.apply();
@@ -82,9 +87,11 @@ public class MainActivity extends AppCompatActivity {
         // Passing each menu ID as a set of Ids because each
         // menu should be considered as top level destinations.
         AppBarConfiguration appBarConfiguration =
-                new AppBarConfiguration.Builder(R.id.navigation_home, R.id.navigation_dashboard,
+                new AppBarConfiguration.Builder(R.id.navigation_home,
+                        R.id.navigation_dashboard,
                         R.id.navigation_notifications).build();
-        NavController navController = Navigation.findNavController(this, R.id.nav_host_fragment);
+        NavController navController =
+                Navigation.findNavController(this, R.id.nav_host_fragment);
         NavigationUI.setupActionBarWithNavController(this, navController,
                 appBarConfiguration);
         NavigationUI.setupWithNavController(navView, navController);
@@ -116,16 +123,21 @@ public class MainActivity extends AppCompatActivity {
         appStartStopButton.setOnClickListener(onClickAppStartStopButton);
 
         // Register edittext listeners
-        final EditText targetAddressEditText = findViewById(R.id.targetAddressEditText);
-        targetAddressEditText.setOnEditorActionListener(new TextView.OnEditorActionListener() {
-            @Override
-            public boolean onEditorAction(TextView textView, int actionId, KeyEvent keyEvent) {
-                if (actionId == EditorInfo.IME_ACTION_DONE) {
-                    onUpdateTargetAddress(targetAddressEditText.getText().toString());
-                }
-                return false;
-            }
-        });
+        final EditText targetAddressEditText =
+                findViewById(R.id.targetAddressEditText);
+        targetAddressEditText.setOnEditorActionListener(
+                new TextView.OnEditorActionListener() {
+                    @Override
+                    public boolean onEditorAction(TextView textView,
+                                                  int actionId,
+                                                  KeyEvent keyEvent) {
+                        if (actionId == EditorInfo.IME_ACTION_DONE) {
+                            onUpdateTargetAddress(
+                                    targetAddressEditText.getText().toString());
+                        }
+                        return false;
+                    }
+                });
 
         // Monitoring task
         TimerTask task = new TimerTask() {
@@ -150,31 +162,34 @@ public class MainActivity extends AppCompatActivity {
         CompanionAPI.get().setOnReceiveMessage(this.mOnReceiveMessageListener);
     }
 
-    private OnReceiveMessageListener mOnReceiveMessageListener = new OnReceiveMessageListener() {
-        @Override
-        public void onReceiveMessageListener(String message) {
-            // Test with echo message
-            CompanionAPI.get().sendMessage(message);
-        }
-    };
+    private OnReceiveMessageListener mOnReceiveMessageListener =
+            new OnReceiveMessageListener() {
+                @Override
+                public void onReceiveMessageListener(String message) {
+                    // Test with echo message
+                    // TODO: make it with Resource API
+                    CompanionAPI.get().sendMessage(message);
+                }
+            };
 
-    private View.OnClickListener onClickAppStartStopButton = new View.OnClickListener() {
-        @Override
-        public void onClick(View view) {
-            if (!mConnectionStatus.getValue().equals(CS_CONNECTED)) {
-                return;
-            }
+    private View.OnClickListener onClickAppStartStopButton =
+            new View.OnClickListener() {
+                @Override
+                public void onClick(View view) {
+                    if (!mConnectionStatus.getValue().equals(CS_CONNECTED)) {
+                        return;
+                    }
 
-            switch (mAppStatus.getValue()) {
-                case AS_IDLE:
-                    startApp();
-                    break;
-                case AS_RUNNING:
-                    stopApp();
-                    break;
-            }
-        }
-    };
+                    switch (mAppStatus.getValue()) {
+                        case AS_IDLE:
+                            startApp();
+                            break;
+                        case AS_RUNNING:
+                            stopApp();
+                            break;
+                    }
+                }
+            };
 
     private void onUpdateConnectionStatus(String connectionStatus) {
         TextView statusLabel = findViewById(R.id.statusLabel);
@@ -223,27 +238,31 @@ public class MainActivity extends AppCompatActivity {
     private String mRecentConnectionStatus = CS_DISCONNECTED;
 
     private void requestSettingCompanionAddress() {
-        if (!this.mRecentConnectionStatus.equals(this.mConnectionStatus.getValue())) {
+        if (!this.mRecentConnectionStatus
+                .equals(this.mConnectionStatus.getValue())) {
             this.mRecentConnectionStatus = this.mConnectionStatus.getValue();
 
             if (this.mRecentConnectionStatus == CS_CONNECTED) {
                 WifiManager wm = (WifiManager) getSystemService(WIFI_SERVICE);
-                String selfIpAddress =
-                        Formatter.formatIpAddress(wm.getConnectionInfo().getIpAddress());
+                String selfIpAddress = Formatter
+                        .formatIpAddress(wm.getConnectionInfo().getIpAddress());
 
                 HTTPClient httpClient = HTTPClient.get();
-                String url = httpClient.getTargetAddress() + "/runtime/currentApp" +
-                        "/companionAddress";
-                httpClient.sendHTTPRequest(url, "POST", selfIpAddress, new HTTPResponseHandler() {
-                    @Override
-                    public void onHTTPResponse(int code, String message) {
-                        if (code == 200 && message.equals("Success")) {
-                            mConnectionStatus.setValue(CS_CONNECTED);
-                        } else {
-                            mConnectionStatus.setValue(CS_DISCONNECTED);
-                        }
-                    }
-                });
+                String url =
+                        httpClient.getTargetAddress() + "/runtime/currentApp" +
+                                "/companionAddress";
+                httpClient.sendHTTPRequest(url, "POST", selfIpAddress,
+                        new HTTPResponseHandler() {
+                            @Override
+                            public void onHTTPResponse(int code,
+                                                       String message) {
+                                if (code == 200 && message.equals("Success")) {
+                                    mConnectionStatus.setValue(CS_CONNECTED);
+                                } else {
+                                    mConnectionStatus.setValue(CS_DISCONNECTED);
+                                }
+                            }
+                        });
             }
         }
     }
@@ -271,10 +290,12 @@ public class MainActivity extends AppCompatActivity {
     private void checkAppStatus() {
         String connectionStatus = this.mConnectionStatus.getValue();
         assert connectionStatus != null;
-        if (!connectionStatus.equals(CS_CONNECTED)) return;
+        if (!connectionStatus.equals(CS_CONNECTED))
+            return;
 
         HTTPClient httpClient = HTTPClient.get();
-        String url = httpClient.getTargetAddress() + "/runtime/currentApp/state";
+        String url =
+                httpClient.getTargetAddress() + "/runtime/currentApp/state";
         httpClient.sendHTTPRequest(url, "GET", null, new HTTPResponseHandler() {
             @Override
             public void onHTTPResponse(int code, String message) {
@@ -296,37 +317,43 @@ public class MainActivity extends AppCompatActivity {
         mAppStatus.setValue(AS_LAUNCHING);
 
         HTTPClient httpClient = HTTPClient.get();
-        String url = httpClient.getTargetAddress() + "/runtime/currentApp/command";
-        httpClient.sendHTTPRequest(url, "POST", "start", new HTTPResponseHandler() {
-            @Override
-            public void onHTTPResponse(int code, String message) {
-                if (code == 200 && message.equals("Success")) {
-                    mAppStatus.setValue(AS_RUNNING);
-                } else {
-                    Toast.makeText(MainActivity.this, "Failed to start app: " + message,
-                            Toast.LENGTH_SHORT).show();
-                    mAppStatus.setValue(AS_IDLE);
-                }
-            }
-        });
+        String url =
+                httpClient.getTargetAddress() + "/runtime/currentApp/command";
+        httpClient.sendHTTPRequest(url, "POST", "start",
+                new HTTPResponseHandler() {
+                    @Override
+                    public void onHTTPResponse(int code, String message) {
+                        if (code == 200 && message.equals("Success")) {
+                            mAppStatus.setValue(AS_RUNNING);
+                        } else {
+                            Toast.makeText(MainActivity.this,
+                                    "Failed to start app: " + message,
+                                    Toast.LENGTH_SHORT).show();
+                            mAppStatus.setValue(AS_IDLE);
+                        }
+                    }
+                });
     }
 
     public void stopApp() {
         mAppStatus.setValue(AS_LAUNCHING);
 
         HTTPClient httpClient = HTTPClient.get();
-        String url = httpClient.getTargetAddress() + "/runtime/currentApp/command";
-        httpClient.sendHTTPRequest(url, "POST", "stop", new HTTPResponseHandler() {
-            @Override
-            public void onHTTPResponse(int code, String message) {
-                if (code == 200 && message.equals("Success")) {
-                    mAppStatus.setValue(AS_RUNNING);
-                } else {
-                    Toast.makeText(MainActivity.this, "Failed to stop app: " + message,
-                            Toast.LENGTH_SHORT).show();
-                    mAppStatus.setValue(AS_IDLE);
-                }
-            }
-        });
+        String url =
+                httpClient.getTargetAddress() + "/runtime/currentApp/command";
+        httpClient.sendHTTPRequest(url, "POST", "stop",
+                new HTTPResponseHandler() {
+                    @Override
+                    public void onHTTPResponse(int code, String message) {
+                        if (code == 200 && message.equals("Success")) {
+                            mAppStatus.setValue(AS_RUNNING);
+                        } else {
+                            Toast.makeText(MainActivity.this,
+                                    "Failed to stop app: " + message,
+                                    Toast.LENGTH_SHORT).show();
+                            mAppStatus.setValue(AS_IDLE);
+                        }
+                    }
+                });
     }
 }

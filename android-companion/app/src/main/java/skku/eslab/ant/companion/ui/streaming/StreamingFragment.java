@@ -1,33 +1,220 @@
 package skku.eslab.ant.companion.ui.streaming;
 
 import android.os.Bundle;
+import android.os.StrictMode;
+import android.util.Log;
 import android.view.LayoutInflater;
+import android.view.SurfaceHolder;
+import android.view.SurfaceView;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.TextView;
+import android.widget.Toast;
+
+import com.ant.ant_manager.view.cameraviewer.GStreamerSurfaceView;
+
+import org.freedesktop.gstreamer.GStreamer;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
+import androidx.fragment.app.FragmentActivity;
 import androidx.lifecycle.Observer;
 import androidx.lifecycle.ViewModelProviders;
 import skku.eslab.ant.companion.R;
 
-public class StreamingFragment extends Fragment {
+public class StreamingFragment extends Fragment
+        implements SurfaceHolder.Callback {
 
-    private StreamingViewModel streamingViewModel;
+    private StreamingViewModel mModel;
 
+    @Override
     public View onCreateView(@NonNull LayoutInflater inflater,
                              ViewGroup container, Bundle savedInstanceState) {
-        streamingViewModel =
-                ViewModelProviders.of(this).get(StreamingViewModel.class);
+        this.mModel = ViewModelProviders.of(this).get(StreamingViewModel.class);
         View root =
                 inflater.inflate(R.layout.fragment_streaming, container, false);
-        streamingViewModel.getText().observe(this, new Observer<String>() {
+        this.mModel.getPipeline().observe(this, new Observer<String>() {
             @Override
-            public void onChanged(@Nullable String s) {
-                //
+            public void onChanged(@Nullable String value) {
+                // not implemented
+                if (value != null && !value.isEmpty()) {
+                    onChangePipeline(value);
+                }
             }
         });
         return root;
+    }
+
+    // Initialize native code, build pipeline, etc
+    private native void nativeInit(String pipeline);
+
+    // Destroy pipeline and shutdown native code
+    private native void nativeFinalize();
+
+    // Set the URI of the media to play
+    private native void nativeSetUri(String uri);
+
+    // Set pipeline to PLAYING
+    private native void nativePlay();
+
+    // Set pipeline to PAUSED
+    private native void nativePause();
+
+    // Initialize native class: cache Method IDs for callbacks
+    private static native boolean nativeClassInit();
+
+    // A new surface is available
+    private native void nativeSurfaceInit(Object surface);
+
+    // Surface about to be destroyed
+    private native void nativeSurfaceFinalize();
+
+    // Native code will use this to keep private data
+    // DO NOT REMOVE IT! (Called by native function)
+    private long native_custom_data;
+
+    // Whether the user asked to go to PLAYING
+    private boolean mIsPlayingDesired;
+
+    private Object mDelayedSurface;
+
+    // Called when the activity is first created.
+    @Override
+    public void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        FragmentActivity activity = getActivity();
+        assert activity != null;
+        // Initialize GStreamer and warn if it fails
+        try {
+            GStreamer.init(activity);
+        } catch (Exception e) {
+            Toast.makeText(activity, e.getMessage(), Toast.LENGTH_LONG).show();
+            activity.finish();
+            return;
+        }
+
+        StrictMode.ThreadPolicy policy =
+                new StrictMode.ThreadPolicy.Builder().permitAll().build();
+        StrictMode.setThreadPolicy(policy);
+
+        SurfaceView sv = activity.findViewById(R.id.surface_video);
+        SurfaceHolder sh = sv.getHolder();
+        sh.addCallback(this);
+
+        // Retrieve our previous state, or connectChannel it to default values
+        this.mIsPlayingDesired = false;
+
+        Log.i("GStreamer", "playing: " + mIsPlayingDesired);
+    }
+
+    @Override
+    public void onPause() {
+        super.onPause();
+
+        // Finalize gstreamer
+        this.nativeFinalize();
+    }
+
+    private void onChangePipeline(String pipeline) {
+        if (this.mIsPlayingDesired) {
+            this.finalizeGstreamer();
+        }
+        this.initializeGstreamer(pipeline);
+    }
+
+    // Initialize Gstreamer connection
+    private void initializeGstreamer(String pipeline) {
+        Log.d("CameraViewerActivity", "initializeGstreamer()");
+        this.nativeInit(pipeline);
+
+        try {
+            // Wait until gstreamer app function is launched
+            Thread.sleep(2000);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+
+        this.nativeSurfaceInit(this.mDelayedSurface);
+
+        this.mIsPlayingDesired = true;
+        this.nativePlay();
+    }
+
+    private void finalizeGstreamer() {
+        if (!this.mIsPlayingDesired) {
+            return;
+        }
+
+        this.nativePause();
+        this.nativeFinalize();
+        this.mIsPlayingDesired = false;
+    }
+
+    static {
+        System.loadLibrary("gstreamer_android");
+        System.loadLibrary("streaming-fragment");
+        nativeClassInit();
+    }
+
+    public void surfaceChanged(SurfaceHolder holder, int format, int width,
+                               int height) {
+        Log.d("GStreamer",
+                "Surface changed to format " + format + " width " + width +
+                        " height " + height);
+        Log.d("GStreamer", "GetSurface(): " + holder.getSurface());
+        nativeSurfaceInit(holder.getSurface());
+        this.mDelayedSurface = holder.getSurface();
+
+        Log.d("GStreamer", "end surfaceChanged");
+    }
+
+    public void surfaceCreated(SurfaceHolder holder) {
+        Log.d("GStreamer", "Surface created: " + holder.getSurface());
+    }
+
+    public void surfaceDestroyed(SurfaceHolder holder) {
+        Log.d("GStreamer", "Surface destroyed");
+        nativeSurfaceFinalize();
+    }
+
+    // Called from native code. This sets the content of the TextView from
+    // the UI thread.
+    // DO NOT REMOVE IT! (Called by native function)
+    private void setMessage(final String message) {
+        FragmentActivity activity = getActivity();
+        final TextView tv =
+                (TextView) activity.findViewById(R.id.textview_message);
+        activity.runOnUiThread(new Runnable() {
+            public void run() {
+                tv.setText(message);
+            }
+        });
+    }
+
+    // Called from native code. Native code calls this once it has created
+    // its pipeline and the camera_viewer loop is running, so it is ready to
+    // accept commands.
+    // DO NOT REMOVE IT! (Called by native function)
+    private void onGStreamerInitialized() {
+        nativePlay();
+    }
+
+    // DO NOT REMOVE IT! (Called by native function)
+    // Called from native code when the size of the media changes or is first
+    // detected.
+    // Inform the video surface about the new size and recalculate the layout.
+    private void onMediaSizeChanged(int width, int height) {
+        Log.i("GStreamer", "Media size changed to " + width + "x" + height);
+        FragmentActivity activity = getActivity();
+        final GStreamerSurfaceView gsv = (GStreamerSurfaceView) activity
+                .findViewById(R.id.surface_video);
+        gsv.media_width = width;
+        gsv.media_height = height;
+        activity.runOnUiThread(new Runnable() {
+            public void run() {
+                gsv.requestLayout();
+            }
+        });
     }
 }
