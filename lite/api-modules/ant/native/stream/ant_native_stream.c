@@ -416,6 +416,7 @@ static gboolean on_new_connection_fn(GDBusServer *gdbus_server,
 
 void *stream_thread_fn(void *arg) {
   // On Stream Thread
+  GDBusServer *gdbus_server;
 
   /* Initialize GStreamer */
   gst_init(NULL, NULL);
@@ -426,7 +427,6 @@ void *stream_thread_fn(void *arg) {
       g_dbus_node_info_new_for_xml(g_introspection_xml, NULL);
   g_assert(g_gdbus_introspection != NULL);
   {
-    GDBusServer *gdbus_server;
     gchar *gdbus_guid;
     GDBusServerFlags gdbus_server_flags;
     GError *gerror;
@@ -461,6 +461,8 @@ void *stream_thread_fn(void *arg) {
   // TODO: free gstremaer pipeline, elements
   g_main_loop_unref(g_main_loop);
   g_dbus_node_info_unref(g_gdbus_introspection);
+
+  g_dbus_server_stop(gdbus_server);
 
   pthread_exit(NULL);
 
