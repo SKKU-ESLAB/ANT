@@ -106,11 +106,13 @@ StreamAPI.finalize = function () {
     return result;
   };
   for (var i in this.pipelines) {
-    this.pipelines[i].setState(this.pipelines[i].STATE_PAUSED);
+    this.pipelines[i].setState(this.pipelines[i].STATE_NULL);
     this.pipelines[i].unref();
     this.pipelines.splice(i, 1);
   }
+  console.log("quitMainLoop()");
   quitMainLoop();
+  console.log("end");
 };
 StreamAPI.createPipeline = function (pipeline_name) {
   if (!this._mIsInitialized) {
