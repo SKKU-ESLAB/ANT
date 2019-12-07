@@ -25,8 +25,10 @@ import androidx.navigation.NavController;
 import androidx.navigation.Navigation;
 import androidx.navigation.ui.AppBarConfiguration;
 import androidx.navigation.ui.NavigationUI;
+import skku.eslab.ant.companion.companionapi.CompanionAPI;
 import skku.eslab.ant.companion.httpconnection.HTTPClient;
 import skku.eslab.ant.companion.httpconnection.HTTPResponseHandler;
+import skku.eslab.ant.companion.remoteuiapi.RemoteUIAPI;
 import skku.eslab.ant.companion.resourceapi.OnResourceRequestListener;
 import skku.eslab.ant.companion.resourceapi.Resource;
 import skku.eslab.ant.companion.resourceapi.ResourceAPI;
@@ -63,6 +65,11 @@ public class MainActivity extends AppCompatActivity {
 
         HTTPClient httpClient = HTTPClient.get();
         httpClient.setTargetAddress(targetAddress);
+
+        // Initialize APIs
+        CompanionAPI.get();
+        ResourceAPI.get();
+        RemoteUIAPI.get();
     }
 
     @Override

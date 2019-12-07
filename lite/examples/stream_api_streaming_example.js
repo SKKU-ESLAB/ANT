@@ -44,6 +44,10 @@ var on_start = function () {
     pipeline.linkMany([source, filter, converter, omxh264enc, rtph264pay, gdppay, sink]);
     pipeline.setState(pipeline.STATE_PLAYING);
     console.log("Pipeline ready! (" + settings.my_ip_address + ":" + settings.my_port + ")");
+
+    var remote_pipeline = "tcpclientsrc host=" + settings.my_ip_address + " port=" + settings.my_port
+      + " ! gdpdepay ! rtph264depay ! h264parse ! avdec_h264 ! videoconvert ! autovideosink sync=false";
+    ant.remoteui.setStreamingViewPipeline(remote_pipeline);
   }, 2000);
 };
 
