@@ -362,8 +362,8 @@ CompanionAPI.unregisterOnReceiveMessage = function (handler) {
 /** Remote UI API start **/
 function RemoteUIAPI() {
 }
-RemoteUIAPI.setStreamingView = function(pipeline) {
-  ResourceAPI.requestPost("remoteui/streamingview", pipeline, undefined);
+RemoteUIAPI.setStreamingViewPipeline = function (pipeline) {
+  ResourceAPI.requestPost("remoteui/streamingview/pipeline", pipeline, undefined);
 };
 /** Remote UI API end **/
 
@@ -371,38 +371,41 @@ RemoteUIAPI.setStreamingView = function(pipeline) {
 function ResourceAPI() { }
 ResourceAPI._mIsInitialized = false;
 ResourceAPI._mRequestId = 0;
-ResourceAPI._mHandlersDict = {};
+ResourceAPI._mOnResourceResponseDict = {};
+// TODO: implement hosting resource
 
 ResourceAPI._initialize = function () {
   this._mIsInitialized = true;
-  CompanionAPI.registerOnReceiveMessage(this._onReceiveResponse);
+  CompanionAPI.registerOnReceiveMessage(this._onReceiveRawMessage);
 };
-ResourceAPI._onReceiveResponse = function (rawMessage) {
+ResourceAPI._onReceiveRawMessage = function (rawMessage) {
   var firstLineEnd = rawMessage.indexOf("\n");
   var firstLine = rawMessage.substring(0, firstLineEnd);
-  if (firstLine == "ResourceResponse") {
-    var secondLineEnd = rawMessage.indexOf("\n", firstLineEnd + 1);
-    var secondLine = rawMessage.substring(firstLineEnd + 1, secondLineEnd);
-    var thirdLineEnd = rawMessage.indexOf("\n", secondLineEnd + 1);
-    var thirdLine = rawMessage.substring(secondLineEnd + 1, thirdLineEnd);
-    var fourthLineEnd = rawMessage.indexOf("\n", fourthLineEnd + 1);
-    var fourthLine = rawMessage.substring(thirdLineEnd + 1, fourthLineEnd);
-    var otherLine = rawMessage.substring(fourthLineEnd + 1);
+  if (firstLine != "ResourceResponse") {
+    return;
+  }
+  var secondLineEnd = rawMessage.indexOf("\n", firstLineEnd + 1);
+  var secondLine = rawMessage.substring(firstLineEnd + 1, secondLineEnd);
+  var thirdLineEnd = rawMessage.indexOf("\n", secondLineEnd + 1);
+  var thirdLine = rawMessage.substring(secondLineEnd + 1, thirdLineEnd);
+  var fourthLineEnd = rawMessage.indexOf("\n", thirdLineEnd + 1);
+  var fourthLine = rawMessage.substring(thirdLineEnd + 1, fourthLineEnd);
+  var otherLines = rawMessage.substring(fourthLineEnd + 1);
 
-    var requestId = secondLine;
-    var method = thirdLine;
-    var targetUri = fourthLine;
-    var message = otherLine;
+  var requestId = Number(secondLine);
+  var method = thirdLine;
+  var targetUri = fourthLine;
+  var message = otherLines;
 
-    var handler = this._mHandlersDict[requestId];
-    if (handler !== undefined) {
-      handler(method, targetUri, message);
-    }
+  var onResourceResponse = this._mOnResourceResponseDict[requestId];
+  if (onResourceResponse !== undefined) {
+    onResourceResponse(method, targetUri, message);
+    delete this._mOnResourceResponseDict[requestId];
   }
 };
 
 // ResourceHandler arguments: (String method, String targetUri, String message)
-ResourceAPI._sendMessage = function (method, targetUri, message, handler) {
+ResourceAPI._sendRequest = function (method, targetUri, message, onResourceResponse) {
   if (!this._mIsInitialized) {
     this._initialize();
   }
@@ -410,22 +413,22 @@ ResourceAPI._sendMessage = function (method, targetUri, message, handler) {
   this._mRequestId++;
 
   CompanionAPI.sendMessage(rawMessage);
-  if (handler !== undefined) {
-    this._mHandlersDict[this._mRequestId] = handler;
+  if (onResourceResponse !== undefined) {
+    this._mOnResourceResponseDict[this._mRequestId] = onResourceResponse;
   }
 };
 
-ResourceAPI.reqeustGet = function (targetUri, message, handler) {
-  CompanionAPI.sendMessage("GET", targetUri, message, handler);
+ResourceAPI.reqeustGet = function (targetUri, message, onResourceResponse) {
+  ResourceAPI._sendRequest("GET", targetUri, message, onResourceResponse);
 };
-ResourceAPI.requestPost = function (targetUri, message, handler) {
-  CompanionAPI.sendMessage("POST", targetUri, message, handler);
+ResourceAPI.requestPost = function (targetUri, message, onResourceResponse) {
+  ResourceAPI._sendRequest("POST", targetUri, message, onResourceResponse);
 };
-ResourceAPI.requestPut = function (targetUri, message, handler) {
-  CompanionAPI.sendMessage("PUT", targetUri, message, handler);
+ResourceAPI.requestPut = function (targetUri, message, onResourceResponse) {
+  ResourceAPI._sendRequest("PUT", targetUri, message, onResourceResponse);
 };
-ResourceAPI.requestDelete = function (targetUri, message, handler) {
-  CompanionAPI.sendMessage("DELETE", targetUri, message, handler);
+ResourceAPI.requestDelete = function (targetUri, message, onResourceResponse) {
+  ResourceAPI._sendRequest("DELETE", targetUri, message, onResourceResponse);
 };
 
 /** Resource API end */

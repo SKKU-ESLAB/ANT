@@ -25,10 +25,12 @@ import androidx.navigation.NavController;
 import androidx.navigation.Navigation;
 import androidx.navigation.ui.AppBarConfiguration;
 import androidx.navigation.ui.NavigationUI;
-import skku.eslab.ant.companion.companionapi.CompanionAPI;
-import skku.eslab.ant.companion.companionapi.OnReceiveMessageListener;
 import skku.eslab.ant.companion.httpconnection.HTTPClient;
 import skku.eslab.ant.companion.httpconnection.HTTPResponseHandler;
+import skku.eslab.ant.companion.resourceapi.OnResourceRequestListener;
+import skku.eslab.ant.companion.resourceapi.Resource;
+import skku.eslab.ant.companion.resourceapi.ResourceAPI;
+import skku.eslab.ant.companion.resourceapi.ResourceRequest;
 
 public class MainActivity extends AppCompatActivity {
     private final String SP_FILENAME = "ANT";
@@ -158,19 +160,18 @@ public class MainActivity extends AppCompatActivity {
 
     private final boolean isCompanionTestEnabled = true;
 
-    private void initializeCompanionTest() {
-        CompanionAPI.get().setOnReceiveMessage(this.mOnReceiveMessageListener);
-    }
+    private Resource mTesterResource;
 
-    private OnReceiveMessageListener mOnReceiveMessageListener =
-            new OnReceiveMessageListener() {
-                @Override
-                public void onReceiveMessageListener(String message) {
-                    // Test with echo message
-                    // TODO: make it with Resource API
-                    CompanionAPI.get().sendMessage(message);
-                }
-            };
+    private void initializeCompanionTest() {
+        this.mTesterResource = new Resource("/tester");
+        this.mTesterResource.setOnPost(new OnResourceRequestListener() {
+            @Override
+            public void onResourceRequest(ResourceRequest request) {
+                ResourceAPI.get().sendResponse(request, request.getMessage());
+            }
+        });
+        ResourceAPI.get().registerResource(this.mTesterResource);
+    }
 
     private View.OnClickListener onClickAppStartStopButton =
             new View.OnClickListener() {
