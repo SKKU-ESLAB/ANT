@@ -5,7 +5,6 @@ import android.os.StrictMode;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.SurfaceHolder;
-import android.view.SurfaceView;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
@@ -28,6 +27,9 @@ public class StreamingFragment extends Fragment
 
     private StreamingViewModel mModel;
 
+    private GStreamerSurfaceView mVideoSurfaceView;
+    private TextView mMessageTextView;
+
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater,
                              ViewGroup container, Bundle savedInstanceState) {
@@ -43,7 +45,37 @@ public class StreamingFragment extends Fragment
                 }
             }
         });
+        this.mVideoSurfaceView = root.findViewById(R.id.videoSurfaceView);
+        this.mMessageTextView = root.findViewById(R.id.messageTextView);
+
+        FragmentActivity activity = getActivity();
+        assert activity != null;
+        // Initialize GStreamer and warn if it fails
+        try {
+            GStreamer.init(activity);
+        } catch (Exception e) {
+            Toast.makeText(activity, e.getMessage(), Toast.LENGTH_LONG).show();
+            activity.finish();
+        }
+
+        StrictMode.ThreadPolicy policy =
+                new StrictMode.ThreadPolicy.Builder().permitAll().build();
+        StrictMode.setThreadPolicy(policy);
+        SurfaceHolder sh = this.mVideoSurfaceView.getHolder();
+        sh.addCallback(this);
+
+        // Retrieve our previous state, or connectChannel it to default values
+        this.mIsPlayingDesired = false;
+
+        Log.i("GStreamer", "playing: " + mIsPlayingDesired);
         return root;
+    }
+
+    @Override
+    public void onDestroyView() {
+        super.onDestroyView();
+        // Finalize gstreamer
+        this.nativeFinalize();
     }
 
     // Initialize native code, build pipeline, etc
@@ -78,43 +110,6 @@ public class StreamingFragment extends Fragment
     private boolean mIsPlayingDesired;
 
     private Object mDelayedSurface;
-
-    // Called when the activity is first created.
-    @Override
-    public void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        FragmentActivity activity = getActivity();
-        assert activity != null;
-        // Initialize GStreamer and warn if it fails
-        try {
-            GStreamer.init(activity);
-        } catch (Exception e) {
-            Toast.makeText(activity, e.getMessage(), Toast.LENGTH_LONG).show();
-            activity.finish();
-            return;
-        }
-
-        StrictMode.ThreadPolicy policy =
-                new StrictMode.ThreadPolicy.Builder().permitAll().build();
-        StrictMode.setThreadPolicy(policy);
-
-        SurfaceView sv = activity.findViewById(R.id.surface_video);
-        SurfaceHolder sh = sv.getHolder();
-        sh.addCallback(this);
-
-        // Retrieve our previous state, or connectChannel it to default values
-        this.mIsPlayingDesired = false;
-
-        Log.i("GStreamer", "playing: " + mIsPlayingDesired);
-    }
-
-    @Override
-    public void onPause() {
-        super.onPause();
-
-        // Finalize gstreamer
-        this.nativeFinalize();
-    }
 
     private void onChangePipeline(String pipeline) {
         if (this.mIsPlayingDesired) {
@@ -183,11 +178,9 @@ public class StreamingFragment extends Fragment
     // DO NOT REMOVE IT! (Called by native function)
     private void setMessage(final String message) {
         FragmentActivity activity = getActivity();
-        final TextView tv =
-                (TextView) activity.findViewById(R.id.textview_message);
         activity.runOnUiThread(new Runnable() {
             public void run() {
-                tv.setText(message);
+                mMessageTextView.setText(message);
             }
         });
     }
@@ -206,14 +199,12 @@ public class StreamingFragment extends Fragment
     // Inform the video surface about the new size and recalculate the layout.
     private void onMediaSizeChanged(int width, int height) {
         Log.i("GStreamer", "Media size changed to " + width + "x" + height);
-        FragmentActivity activity = getActivity();
-        final GStreamerSurfaceView gsv = (GStreamerSurfaceView) activity
-                .findViewById(R.id.surface_video);
-        gsv.media_width = width;
-        gsv.media_height = height;
+        FragmentActivity activity = this.getActivity();
+        this.mVideoSurfaceView.media_width = width;
+        this.mVideoSurfaceView.media_height = height;
         activity.runOnUiThread(new Runnable() {
             public void run() {
-                gsv.requestLayout();
+                mVideoSurfaceView.requestLayout();
             }
         });
     }

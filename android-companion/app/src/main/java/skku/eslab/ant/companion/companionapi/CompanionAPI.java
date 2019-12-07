@@ -36,12 +36,24 @@ public class CompanionAPI implements HTTPServerListener {
 
     public void sendMessage(String message) {
         HTTPClient httpClient = HTTPClient.get();
-        String url = httpClient.getTargetAddress() + "/runtime/currentApp/companion";
+        String url =
+                httpClient.getTargetAddress() + "/runtime/currentApp/companion";
         httpClient.sendHTTPRequest(url, "POST", message, null);
     }
 
-    public void setOnReceiveMessage(OnReceiveMessageListener listener) {
+    public void registerOnReceiveMessage(OnReceiveMessageListener listener) {
         this.mListeners.add(listener);
+    }
+
+    public boolean unregisterOnReceiveMessage(
+            OnReceiveMessageListener listener) {
+        for (OnReceiveMessageListener item : this.mListeners) {
+            if (item == listener) {
+                this.mListeners.remove(item);
+                return true;
+            }
+        }
+        return false;
     }
 
     @Override

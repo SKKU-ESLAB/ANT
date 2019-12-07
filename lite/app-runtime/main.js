@@ -261,7 +261,7 @@ function _onHTTPRequest(request, response, data) {
   var results = { message: 'Not Found Entry', code: 404 };
 
   // console.log(urlTokens.toString());
-
+  // TODO: move them to Resource API except app-editor
   if (urlTokens.length == 0) {
     // "/"
     if (request.method == 'GET') {
