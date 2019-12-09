@@ -1,14 +1,14 @@
 var console = require('console');
 var http = require('http');
-
 var RESULT_SUCCESS = 'Success';
 var RESULT_FAILED = 'Failed';
 
 /** Runtime API start **/
-var RuntimeAPI = { _current_app: undefined };
+function RuntimeAPI() { }
+RuntimeAPI._mCurrentApp = undefined;
 
 RuntimeAPI._removeCurrentApp = function () {
-  this._current_app = undefined;
+  this._mCurrentApp = undefined;
 };
 
 RuntimeAPI.setCurrentApp = function (onInitialize, onStart, onStop) {
@@ -16,13 +16,13 @@ RuntimeAPI.setCurrentApp = function (onInitialize, onStart, onStop) {
     !(onStop instanceof Function)) {
     return RESULT_FAILED;
   }
-  this._current_app = new App(onInitialize, onStart, onStop);
+  this._mCurrentApp = new App(onInitialize, onStart, onStop);
 
   return RESULT_SUCCESS;
 };
 
 RuntimeAPI.getCurrentApp = function () {
-  return this._current_app;
+  return this._mCurrentApp;
 };
 
 /* App start */
@@ -75,109 +75,382 @@ App.prototype.getInfo = function () {
 
 /** Runtime API end **/
 
-
 /** Stream API start **/
-// TODO: native-side Stream API implementation is required.
 function StreamAPI() { }
-StreamAPI.createPipeline = function (pipeline_name) {
-  return new Pipeline(pipeline_name);
-};
-StreamAPI.createElement() = function (element_name) {
-  return new Element(element_name);
+StreamAPI._mIsInitialized = false;
+StreamAPI.pipelines = [];
+
+StreamAPI.callDbusMethod = function (message) {
+  if (!this._mIsInitialized) {
+    console.error("ERROR: Stream API is not initialized");
+    return false;
+  }
+  return native.stream_callDbusMethod(message);
 };
 
-function Pipeline(name) {
+StreamAPI.isInitialized = function () {
+  return this._mIsInitialized;
+};
+
+StreamAPI.initialize = function () {
+  this._mIsInitialized = true;
+  native.stream_initializeStream();
+};
+StreamAPI.finalize = function () {
+  var streamapi = this;
+  var quitMainLoop = function () {
+    var result = Boolean(streamapi.callDbusMethod("streamapi_quitMainLoop"));
+    if (result) {
+      this._mIsInitialized = false;
+    }
+    return result;
+  };
+  for (var i in this.pipelines) {
+    this.pipelines[i].setState(this.pipelines[i].STATE_NULL);
+    this.pipelines[i].unref();
+    this.pipelines.splice(i, 1);
+  }
+  console.log("quitMainLoop()");
+  quitMainLoop();
+  console.log("end");
+};
+StreamAPI.createPipeline = function (pipeline_name) {
+  if (!this._mIsInitialized) {
+    console.error("ERROR: Stream API is not initialized");
+    return undefined;
+  }
+  var element_index = Number(this.callDbusMethod(
+    "streamapi_createPipeline\n" + pipeline_name));
+  var pipeline = new Pipeline(pipeline_name, element_index);
+  this.pipelines.push(pipeline);
+  return pipeline;
+};
+StreamAPI.createElement = function (element_name) {
+  if (!this._mIsInitialized) {
+    console.error("ERROR: Stream API is not initialized");
+    return undefined;
+  }
+  var element_index = Number(this.callDbusMethod(
+    "streamapi_createElement\n" + element_name));
+  // TODO: embedding Pipeline.bin_add()
+  // console.log("Element: " + element_name + " / " + element_index);
+  return new Element(element_name, element_index);
+};
+
+function Pipeline(name, element_index) {
+  this._element_index = element_index;
+
   this.name = name;
   this.elements = [];
-}
-Pipeline.prototype.add = function (element) {
-  // TODO: type check for element is required
-  this.elements.push(element);
-}
 
-function Element(name) {
-  this.name = name;
-  this.properties = {};
-  this.isSinkElement = false;
+  this.STATE_VOID_PENDING = 0;
+  this.STATE_NULL = 1;
+  this.STATE_READY = 2;
+  this.STATE_PAUSED = 3;
+  this.STATE_PLAYING = 4;
+}
+Pipeline.prototype.binAdd = function (element_or_elements) {
+  if (!StreamAPI.isInitialized()) {
+    console.error("ERROR: Stream API is not initialized");
+    return false;
+  }
+  if (Array.isArray(element_or_elements)) {
+    var elements = element_or_elements;
+    for (var i in elements) {
+      var result = this.binAdd(elements[i]);
+      if (!result) {
+        console.error("ERROR: Failed to add to bin at " + i);
+        return false;
+      }
+    }
+    return true;
+  } else if (element_or_elements instanceof Element) {
+    var element = element_or_elements;
+    this.elements.push(element);
+    var result = Boolean(StreamAPI.callDbusMethod(
+      "pipeline_binAdd\n" + this._element_index + "\n" + element._element_index));
+    return result;
+  } else {
+    console.error("ERROR: Invalid element");
+    return false;
+  }
+};
+Pipeline.prototype.setState = function (state) {
+  if (!StreamAPI.isInitialized()) {
+    console.error("ERROR: Stream API is not initialized");
+    return false;
+  }
+  if (typeof state !== "number") {
+    console.error("ERROR: Invalid state! " + state);
+    return false;
+  }
+  var result = Number(StreamAPI.callDbusMethod(
+    "pipeline_setState\n" + this._element_index + "\n" + state));
+  return result;
+};
+Pipeline.prototype.linkMany = function (elements) {
+  if (!StreamAPI.isInitialized()) {
+    console.error("ERROR: Stream API is not initialized");
+    return false;
+  }
+  var prevElement = undefined;
+  for (var i in elements) {
+    if (prevElement !== undefined) {
+      var result = prevElement.link(elements[i]);
+      if (!result) {
+        console.error("ERROR: Failed to link element at " + (i - 1) + " with one at " + (i));
+        return false;
+      }
+    }
+    prevElement = elements[i];
+  }
+  return true;
+};
+Pipeline.prototype.unref = function () {
+  var result = Boolean(StreamAPI.callDbusMethod(
+    "pipeline_unref\n" + this._element_index));
+  return result;
+};
+
+function Element(name, element_index) {
+  this._element_index = element_index;
+  this.name = name;  // copy of native
+  this.properties = {}; // copy of native
   this.handlers = {};
+  this.srcElement = undefined;
+  this.sinkElement = undefined;
 }
 Element.prototype.setProperty = function (key, value) {
-  // TODO: type check for key, value is required
-  // TODO: check for existing property is required
-  // TODO: success/failed result is required
+  if (!StreamAPI.isInitialized()) {
+    console.error("ERROR: Stream API is not initialized");
+    return false;
+  } else if (typeof key !== "string") {
+    console.error("ERROR: Invalid key: " + key);
+    return false;
+  } else if (typeof value !== "string" && typeof value !== "number" && typeof value !== "boolean") {
+    console.error("ERROR: Invalid value: " + value);
+    return false;
+  }
+  var type;
+  if (typeof value === "boolean") {
+    type = 0;
+  } else if (typeof value === "string") {
+    type = 1;
+  } else if (value === parseInt(value, 10)) {
+    type = 2;
+  } else {
+    type = 3;
+  }
+  var result = Boolean(StreamAPI.callDbusMethod(
+    "element_setProperty\n" + this._element_index + "\n" + key + "\n" + type + "\n" + value));
   this.properties[key] = value;
-}
-Element.prototype.setSinkElement = function (isSinkElement) {
-  this.isSinkElement = isSinkElement;
-}
-Element.prototype.connect = function (detailedSignal, handler) {
-  // TODO: type check for detailedSignal and handler is required
-  // TODO: check for existing handler is required
-  // TODO: success/failed result is required
-  this.handlers[detailedSignal] = handler;
-}
+  return result;
+};
+Element.prototype.setCapsProperty = function (key, value) {
+  if (!StreamAPI.isInitialized()) {
+    console.error("ERROR: Stream API is not initialized");
+    return false;
+  } else if (typeof key !== "string") {
+    console.error("ERROR: Invalid key: " + key);
+    return false;
+  } else if (typeof value !== "string") {
+    console.error("ERROR: Invalid value: " + value);
+    return false;
+  }
+  var result = Boolean(StreamAPI.callDbusMethod(
+    "element_setCapsProperty\n" + this._element_index + "\n" + key + "\n" + value));
+  this.properties[key] = value;
+  return result;
+};
+Element.prototype.connectSignal = function (detailedSignal, handler) {
+  if (!StreamAPI.isInitialized()) {
+    console.error("ERROR: Stream API is not initialized");
+    return;
+  } else if (typeof detailedSignal !== "string") {
+    console.error("ERROR: Invalid detailedSignal: " + detailedSignal);
+    return false;
+  } else if (typeof handler !== "function") {
+    console.error("ERROR: Invalid handler for " + detailedSignal);
+    return false;
+  } else if (this.handlers[detailedSignal] !== undefined) {
+    console.error("ERROR: Handler already exists for " + detailedSignal);
+    return false;
+  }
+  var result = native.stream_elementConnectSignal(this._element_index, detailedSignal, handler);
+  if (result) {
+    this.handlers[detailedSignal] = handler;
+  }
+  return result;
+};
+Element.prototype.link = function (destElement) {
+  if (destElement === undefined || !(destElement instanceof Element)) {
+    console.error("ERROR: Invalid sink element");
+    return false;
+  }
+  this.sinkElement = destElement;
+  destElement.srcElement = this;
+
+  var result = Boolean(StreamAPI.callDbusMethod(
+    "element_link\n" + this._element_index + "\n" + destElement._element_index));
+  return result;
+};
 
 /** Stream API end **/
 
 /** Companion API start **/
-function CompanionAPI() {
-  this._companionHost = undefined;
-  this._companionPort = undefined;
-  this._companionPath = undefined;
-  this._handler = undefined;
-}
+function CompanionAPI() { }
+CompanionAPI._mCompanionHost = undefined;
+CompanionAPI._mCompanionPort = undefined;
+CompanionAPI._mCompanionPath = undefined;
+CompanionAPI._mHandlers = [];
 
 CompanionAPI._setCompanionAddress = function (
   companionHost, companionPort, companionPath) {
-  this._companionHost = companionHost;
-  this._companionPort = companionPort;
-  this._companionPath = companionPath;
+  this._mCompanionHost = companionHost;
+  this._mCompanionPort = companionPort;
+  this._mCompanionPath = companionPath;
   return true;
 };
 
 CompanionAPI._onReceiveMessageFromCompanion = function (message) {
-  this._handler(message);
+  for (var i in this._mHandlers) {
+    this._mHandlers[i](message);
+  }
 };
 
 CompanionAPI.sendMessage = function (message) {
-  if (this._companionPath === undefined) {
+  if (this._mCompanionPath === undefined) {
     console.log('Error: failed to send message due to no companion address');
     return false;
   }
 
+  // IoT.js ----
   var options = {
     method: 'POST',
-    host: this._companionHost,
-    port: this._companionPort,
-    path: this._companionPath,
+    host: this._mCompanionHost,
+    port: this._mCompanionPort,
+    path: this._mCompanionPath,
     headers: { 'Content-Length': message.length },
   };
   var client_request = http.request(options);
   client_request.write(message);
   client_request.end();
+  // node.js ----
+  // var options = {
+  //   method: 'POST',
+  //   uri: 'http://' + this._mCompanionHost + ':' + this._mCompanionPort + '/' + this._mCompanionPath,
+  //   body: message
+  // };
+  // request.post(options, function (err, httpResponse, body) {
+  // });
   return true;
 };
 
-CompanionAPI.setOnReceiveMessage = function (handler) {
-  this._handler = handler;
+CompanionAPI.registerOnReceiveMessage = function (handler) {
+  this._mHandlers.push(handler);
+};
+CompanionAPI.unregisterOnReceiveMessage = function (handler) {
+  if (handler === undefined) return false;
+  for (var i in this._mHandlers) {
+    if (this._mHandlers[i] === handler) {
+      this._mHandlers.splice(i, 1);
+      return true;
+    }
+  }
+  return false;
 };
 /** Companion API end **/
 
+/** Remote UI API start **/
+function RemoteUIAPI() {
+}
+RemoteUIAPI.setStreamingViewPipeline = function (pipeline, handler) {
+  ResourceAPI.requestPost("/remoteui/streamingview/pipeline", pipeline, handler);
+};
+/** Remote UI API end **/
+
+/** Resource API start **/
+function ResourceAPI() { }
+ResourceAPI._mIsInitialized = false;
+ResourceAPI._mRequestId = 0;
+ResourceAPI._mOnResourceResponseDict = {};
+// TODO: implement hosting resource
+
+ResourceAPI._initialize = function () {
+  ResourceAPI._mIsInitialized = true;
+  CompanionAPI.registerOnReceiveMessage(ResourceAPI._onReceiveRawMessage);
+};
+ResourceAPI._onReceiveRawMessage = function (rawMessage) {
+  var firstLineEnd = rawMessage.indexOf("\n");
+  var firstLine = rawMessage.substring(0, firstLineEnd);
+  if (firstLine != "ResourceResponse") {
+    return;
+  }
+  var secondLineEnd = rawMessage.indexOf("\n", firstLineEnd + 1);
+  var secondLine = rawMessage.substring(firstLineEnd + 1, secondLineEnd);
+  var thirdLineEnd = rawMessage.indexOf("\n", secondLineEnd + 1);
+  var thirdLine = rawMessage.substring(secondLineEnd + 1, thirdLineEnd);
+  var fourthLineEnd = rawMessage.indexOf("\n", thirdLineEnd + 1);
+  var fourthLine = rawMessage.substring(thirdLineEnd + 1, fourthLineEnd);
+  var otherLines = rawMessage.substring(fourthLineEnd + 1);
+
+  var requestId = Number(secondLine);
+  var method = thirdLine;
+  var targetUri = fourthLine;
+  var message = otherLines;
+
+  var onResourceResponse = ResourceAPI._mOnResourceResponseDict[requestId];
+  if (onResourceResponse !== undefined) {
+    onResourceResponse(method, targetUri, message);
+    delete ResourceAPI._mOnResourceResponseDict[requestId];
+  }
+};
+
+// ResourceHandler arguments: (String method, String targetUri, String message)
+ResourceAPI._sendRequest = function (method, targetUri, message, onResourceResponse) {
+  if (!ResourceAPI._mIsInitialized) {
+    ResourceAPI._initialize();
+  }
+  var rawMessage = "" + "ResourceRequest\n" + ResourceAPI._mRequestId + "\n" + method + "\n" + targetUri + "\n" + message;
+  ResourceAPI._mRequestId++;
+
+  CompanionAPI.sendMessage(rawMessage);
+  if (onResourceResponse !== undefined) {
+    ResourceAPI._mOnResourceResponseDict[ResourceAPI._mRequestId] = onResourceResponse;
+  }
+};
+
+ResourceAPI.reqeustGet = function (targetUri, message, onResourceResponse) {
+  ResourceAPI._sendRequest("GET", targetUri, message, onResourceResponse);
+};
+ResourceAPI.requestPost = function (targetUri, message, onResourceResponse) {
+  ResourceAPI._sendRequest("POST", targetUri, message, onResourceResponse);
+};
+ResourceAPI.requestPut = function (targetUri, message, onResourceResponse) {
+  ResourceAPI._sendRequest("PUT", targetUri, message, onResourceResponse);
+};
+ResourceAPI.requestDelete = function (targetUri, message, onResourceResponse) {
+  ResourceAPI._sendRequest("DELETE", targetUri, message, onResourceResponse);
+};
+
+/** Resource API end */
 
 /** Compression Server API start **/
-function CompressionServerAPI() {
-  this.ipAddress = undefined;
-}
+function CompressionServerAPI() { }
+CompressionServerAPI.ipAddress = undefined;
+
 CompressionServerAPI.connect = function (ipAddress) {
   this.ipAddress = ipAddress;
 };
 CompressionServerAPI.downloadModel = function (modelId) {
   if (this.ipAddress === undefined)
     return undefined;
+  // TODO: implement details
 };
 CompressionServerAPI.downloadKernel = function (kernelId) {
   if (this.ipAddress === undefined)
     return undefined;
+  // TODO: implement details
 };
 /** Compression Server API end **/
 
@@ -188,6 +461,8 @@ function ANT() { }
 ANT.prototype.runtime = RuntimeAPI;
 ANT.prototype.stream = StreamAPI;
 ANT.prototype.companion = CompanionAPI;
+ANT.prototype.resource = ResourceAPI;
+ANT.prototype.remoteui = RemoteUIAPI;
 ANT.prototype.compressionServer = CompressionServerAPI;
 
 /** ANT main object end **/
