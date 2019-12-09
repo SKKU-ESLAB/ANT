@@ -261,7 +261,7 @@ function _onHTTPRequest(request, response, data) {
   var results = { message: 'Not Found Entry', code: 404 };
 
   // console.log(urlTokens.toString());
-
+  // TODO: move them to Resource API except app-editor
   if (urlTokens.length == 0) {
     // "/"
     if (request.method == 'GET') {
@@ -379,7 +379,7 @@ function mainLoop() {
 
   var port = 8001;
   server.listen(port, function () {
-    console.log('ANT core listening on port: ' + port);
+    console.log('ANT core listening: port=' + port);
   });
 }
 

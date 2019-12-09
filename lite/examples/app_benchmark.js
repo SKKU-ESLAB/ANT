@@ -6,7 +6,7 @@ var on_initialize = function () {
 };
 
 var on_start = function () {
-  ant.companion.setOnReceiveMessage(on_receive_message);
+  ant.companion.registerOnReceiveMessage(on_receive_message);
 
   var func = function () {
     var startTime = '' + new Date().valueOf();

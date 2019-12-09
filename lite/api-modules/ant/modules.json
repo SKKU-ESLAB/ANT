@@ -2,9 +2,16 @@
   "modules": {
     "ant": {
       "js_file": "js/ant.js",
+      "native_files": [
+        "native/ant_native.c"
+      ],
+      "init": "InitANTNative",
+      "cmakefile": "native/ant_native.cmake",
       "require": [
         "buffer",
-        "console"
+        "console",
+        "ant_runtime",
+        "http"
       ]
     }
   }
