@@ -2,6 +2,7 @@
 
 #include <gio/gio.h>
 #include <glib.h>
+#include <glib/gstdio.h>
 #include <gst/gst.h>
 
 #include <dbus/dbus-glib-lowlevel.h>
@@ -9,16 +10,26 @@
 #include <dbus/dbus-protocol.h>
 
 #include <assert.h>
+#include <fcntl.h>
 #include <pthread.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/stat.h>
+#include <sys/types.h>
 
 #define ANT_STREAMTHREAD_DBUS_BUS "org.ant.streamThread"
 #define ANT_STREAMTHREAD_DBUS_PATH "/org/ant/streamThread"
 #define ANT_STREAMTHREAD_DBUS_INTERFACE "org.ant.streamthread"
 #define ANT_STREAMTHREAD_DBUS_METHOD "callMethod"
-#define ANT_STREAMTHREAD_DBUS_ADDRESS "tcp:host=0.0.0.0,port=40001"
+
+#ifdef G_OS_UNIX
+static gboolean is_unix = TRUE;
+#else
+static gboolean is_unix = FALSE;
+#endif
+gchar *g_gdbus_address = NULL;
+gchar *g_gdbus_tmpdir = NULL;
 
 // I refered a gdlib tutorial for inter-thread communication
 // https://www.freedesktop.org/software/gstreamer-sdk/data/docs/latest/gio/GDBusServer.html
@@ -428,23 +439,27 @@ void *stream_thread_fn(void *arg) {
   g_assert(g_gdbus_introspection != NULL);
   {
     gchar *gdbus_guid;
-    GDBusServerFlags gdbus_server_flags;
     GError *gerror;
 
     gdbus_guid = g_dbus_generate_guid();
-    gdbus_server_flags = G_DBUS_SERVER_FLAGS_NONE |
-                         G_DBUS_SERVER_FLAGS_AUTHENTICATION_ALLOW_ANONYMOUS;
     gerror = NULL;
 
-    gdbus_server = g_dbus_server_new_sync(ANT_STREAMTHREAD_DBUS_ADDRESS,
-                                          gdbus_server_flags, gdbus_guid, NULL,
-                                          NULL, &gerror);
+    // if (is_unix) {
+    g_gdbus_tmpdir = g_dir_make_tmp("gdbus-ant-XXXXXX", NULL);
+    g_gdbus_address =
+        g_strdup_printf("unix:path=%s/gdbus-peer-socket", g_gdbus_tmpdir);
+    // } else
+    //   g_gdbus_address = g_strdup("nonce-tcp:host=127.0.0.1");
+    gdbus_server = g_dbus_server_new_sync(
+        g_gdbus_address, G_DBUS_SERVER_FLAGS_AUTHENTICATION_ALLOW_ANONYMOUS,
+        gdbus_guid, NULL, NULL, &gerror);
+    g_gdbus_address = g_strdup(g_dbus_server_get_client_address(gdbus_server));
     g_dbus_server_start(gdbus_server);
     g_free(gdbus_guid);
 
     if (gdbus_server == NULL) {
-      g_printerr("Error creating server at address %s: %s\n",
-                 ANT_STREAMTHREAD_DBUS_ADDRESS, gerror->message);
+      g_printerr("Error creating server at address %s: %s\n", g_gdbus_address,
+                 gerror->message);
       g_error_free(gerror);
       return NULL;
     }
@@ -464,6 +479,13 @@ void *stream_thread_fn(void *arg) {
 
   g_dbus_server_stop(gdbus_server);
 
+  if (is_unix)
+    g_free(g_gdbus_address);
+  if (g_gdbus_tmpdir) {
+    g_rmdir(g_gdbus_tmpdir);
+    g_free(g_gdbus_tmpdir);
+  }
+
   pthread_exit(NULL);
 
   // TODO: notify IoT.js to set "ant.stream._mIsInitialized = false"
@@ -481,16 +503,20 @@ void ant_stream_callDbusMethod_internal(const char *inputMessage,
   const gchar *resultMessageBuffer;
   GError *gerror;
 
+  if (g_gdbus_address == NULL) {
+    g_printerr("GDBus server is not set!");
+    return;
+  }
+
   gerror = NULL;
   connection = g_dbus_connection_new_for_address_sync(
-      ANT_STREAMTHREAD_DBUS_ADDRESS,
-      G_DBUS_CONNECTION_FLAGS_AUTHENTICATION_CLIENT,
+      g_gdbus_address, G_DBUS_CONNECTION_FLAGS_AUTHENTICATION_CLIENT,
       NULL, /* GDBusAuthObserver */
       NULL, /* GCancellable */
       &gerror);
   if (connection == NULL) {
-    g_printerr("Error connecting to D-Bus address %s: %s\n",
-               ANT_STREAMTHREAD_DBUS_ADDRESS, gerror->message);
+    g_printerr("Error connecting to D-Bus address %s: %s\n", g_gdbus_address,
+               gerror->message);
     g_error_free(gerror);
     return;
   }
@@ -502,7 +528,7 @@ void ant_stream_callDbusMethod_internal(const char *inputMessage,
       ANT_STREAMTHREAD_DBUS_METHOD, g_variant_new("(s)", inputMessageBuffer),
       G_VARIANT_TYPE("(s)"), G_DBUS_CALL_FLAGS_NONE, -1, NULL, &gerror);
   if (value == NULL) {
-    g_printerr("Error invoking HelloWorld(): %s\n", gerror->message);
+    g_printerr("Error invoking method: %s\n", gerror->message);
     g_error_free(gerror);
     return;
   }
