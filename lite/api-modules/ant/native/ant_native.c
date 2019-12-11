@@ -1,4 +1,5 @@
 #include "stream/ant_native_stream.h"
+#include "stream/ll.h"
 
 #include "iotjs_def.h"
 #include "iotjs_uv_request.h"
@@ -34,13 +35,23 @@ ANT_API_STRING_TO_STRING(stream, callDbusMethod);
 
 // TODO: add a function to reset g_uv_async (hardcoded now)
 // Async handler order: gstreamer signal -> ant async -> uv async -> js
-#define ASYNC_NAME_LENGTH 100
 // uv async handler
 bool g_is_async_handler_set = false;
 uv_async_t g_uv_async;
-char g_async_name[ASYNC_NAME_LENGTH];
-unsigned char *g_async_data;
-unsigned long g_async_data_size;
+typedef struct async_handler_args async_handler_args_t;
+struct async_handler_args {
+  char *element_name;
+  unsigned char *buffer_data;
+  unsigned long buffer_size;
+};
+ll_t *g_async_args_ll;
+void async_handler_args_teardown(void *item) {
+  async_handler_args_t *args_item;
+  args_item = (async_handler_args_t *)item;
+  free(args_item->element_name);
+  free(args_item->buffer_data);
+  free(args_item);
+}
 // js async handler
 jerry_value_t g_js_async_handler;
 
@@ -48,29 +59,61 @@ static void stream_elementConnectSignal_ant_async_handler(
     const char *element_name, unsigned char *data, unsigned long data_size) {
   // ant async handler -> call uv async handler
   if (g_is_async_handler_set) {
-    g_async_data = (unsigned char *)malloc(sizeof(unsigned char) * data_size);
-    memcpy(g_async_data, data, data_size);
+    async_handler_args_t *args =
+        (async_handler_args_t *)malloc(sizeof(async_handler_args_t));
+    args->element_name =
+        (char *)malloc(sizeof(char) * (strlen(element_name) + 1));
+    snprintf(args->element_name, (strlen(element_name) + 1), "%s",
+             element_name);
+    args->buffer_data =
+        (unsigned char *)malloc(sizeof(unsigned char) * data_size);
+    memcpy(args->buffer_data, data, data_size);
+    args->buffer_size = data_size;
+    ll_insert_last(g_async_args_ll, args);
+
     uv_async_send(&g_uv_async);
   }
 }
 
 static void stream_elementConnectSignal_uv_handler(uv_async_t *handle) {
   // uv async handler -> call js handler
-  jerry_value_t js_args[2];
+  jerry_value_t js_arg_element_name;
+  jerry_value_t js_arg_buffer;
   iotjs_bufferwrap_t *buffer_wrap;
+  async_handler_args_t *async_args;
+  int last_index;
+  last_index = g_async_args_ll->len - 1;
+  if (last_index < 0) {
+    return;
+  }
+  async_args = (async_handler_args_t *)ll_get_n(g_async_args_ll, last_index);
+  if (async_args == NULL) {
+    return;
+  }
 
-  js_args[0] = jerry_create_string((const jerry_char_t *)g_async_name);
+  js_arg_element_name =
+      jerry_create_string((const jerry_char_t *)async_args->element_name);
+  js_arg_buffer =
+      iotjs_bufferwrap_create_buffer((size_t)async_args->buffer_size);
+  buffer_wrap = iotjs_bufferwrap_from_jbuffer(js_arg_buffer);
+  iotjs_bufferwrap_copy(buffer_wrap, (const char *)async_args->buffer_data,
+                        (size_t)async_args->buffer_size);
 
-  js_args[1] = iotjs_bufferwrap_create_buffer((size_t)g_async_data_size);
-  buffer_wrap = iotjs_bufferwrap_from_jbuffer(js_args[1]);
-  iotjs_bufferwrap_copy(buffer_wrap, (const char *)g_async_data,
-                        (size_t)g_async_data_size);
+  {
+    jerry_value_t js_args[] = {js_arg_element_name, js_arg_buffer};
+    iotjs_invoke_callback(g_js_async_handler, jerry_create_undefined(), js_args,
+                          2);
+  }
+  jerry_release_value(js_arg_element_name);
+  jerry_release_value(js_arg_buffer);
 
-  iotjs_invoke_callback(g_js_async_handler, jerry_create_undefined(), js_args,
-                        2);
-  jerry_release_value(js_args[0]);
-  jerry_release_value(js_args[1]);
-  free(g_async_data);
+  {
+    int i;
+    int ll_len = g_async_args_ll->len;
+    for (i = 0; i < ll_len - 1; i++) {
+      ll_remove_first(g_async_args_ll);
+    }
+  }
 }
 
 JS_FUNCTION(ant_stream_elementConnectSignal) {
@@ -98,6 +141,7 @@ JS_FUNCTION(ant_stream_elementConnectSignal) {
   {
     iotjs_environment_t *env = iotjs_environment_get();
     uv_loop_t *loop = iotjs_environment_loop(env);
+    g_async_args_ll = ll_new(async_handler_args_teardown);
     uv_async_init(loop, &g_uv_async, stream_elementConnectSignal_uv_handler);
   }
 

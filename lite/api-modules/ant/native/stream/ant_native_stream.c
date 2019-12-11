@@ -23,11 +23,6 @@
 #define ANT_STREAMTHREAD_DBUS_INTERFACE "org.ant.streamthread"
 #define ANT_STREAMTHREAD_DBUS_METHOD "callMethod"
 
-#ifdef G_OS_UNIX
-static gboolean is_unix = TRUE;
-#else
-static gboolean is_unix = FALSE;
-#endif
 gchar *g_gdbus_address = NULL;
 gchar *g_gdbus_tmpdir = NULL;
 
@@ -444,12 +439,9 @@ void *stream_thread_fn(void *arg) {
     gdbus_guid = g_dbus_generate_guid();
     gerror = NULL;
 
-    // if (is_unix) {
     g_gdbus_tmpdir = g_dir_make_tmp("gdbus-ant-XXXXXX", NULL);
     g_gdbus_address =
         g_strdup_printf("unix:path=%s/gdbus-peer-socket", g_gdbus_tmpdir);
-    // } else
-    //   g_gdbus_address = g_strdup("nonce-tcp:host=127.0.0.1");
     gdbus_server = g_dbus_server_new_sync(
         g_gdbus_address, G_DBUS_SERVER_FLAGS_AUTHENTICATION_ALLOW_ANONYMOUS,
         gdbus_guid, NULL, NULL, &gerror);
@@ -479,9 +471,8 @@ void *stream_thread_fn(void *arg) {
 
   g_dbus_server_stop(gdbus_server);
 
-  if (is_unix)
-    g_free(g_gdbus_address);
-  if (g_gdbus_tmpdir) {
+  g_free(g_gdbus_address);
+  if (g_gdbus_tmpdir != NULL) {
     g_rmdir(g_gdbus_tmpdir);
     g_free(g_gdbus_tmpdir);
   }
@@ -558,7 +549,6 @@ static GstFlowReturn gst_signal_handler_ant_async(GstElement *element,
     buffer = gst_sample_get_buffer(sample);
     mapping_result = gst_buffer_map(buffer, &info, GST_MAP_READ);
     if (mapping_result) {
-      g_print("*"); // TODO: remove it after test
       // call ant async handler with data
       g_ant_async_handler(element_name, info.data, info.size);
       gst_buffer_unmap(buffer, &info);
