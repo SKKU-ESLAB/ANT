@@ -1,3 +1,0 @@
-#!/bin/bash
-
-scons TARGET_ARCH=arm TARGET_OS=linux -j4
