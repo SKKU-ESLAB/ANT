@@ -389,7 +389,7 @@ handle_method_call_fn(GDBusConnection *connection, const gchar *sender,
       token = strtok((char *)inputMessage, "\n");
       while (token != NULL) {
         if (argc < RPC_MAX_ARGC) {
-          snprintf(argv[argc], MAX_ARG_LENGTH, token);
+          snprintf(argv[argc], MAX_ARG_LENGTH, "%s", token);
         }
         argc++;
         token = strtok(NULL, "\n");
@@ -512,7 +512,7 @@ void ant_stream_callDbusMethod_internal(const char *inputMessage,
     return;
   }
 
-  inputMessageBuffer = g_strdup_printf(inputMessage);
+  inputMessageBuffer = g_strdup_printf("%s", inputMessage);
   value = g_dbus_connection_call_sync(
       connection, NULL, /* bus_name */
       ANT_STREAMTHREAD_DBUS_PATH, ANT_STREAMTHREAD_DBUS_INTERFACE,
@@ -524,7 +524,7 @@ void ant_stream_callDbusMethod_internal(const char *inputMessage,
     return;
   }
   g_variant_get(value, "(&s)", &resultMessageBuffer);
-  snprintf(resultMessage, MAX_RESULT_MESSAGE_LENGTH, resultMessageBuffer);
+  snprintf(resultMessage, MAX_RESULT_MESSAGE_LENGTH, "%s", resultMessageBuffer);
   g_variant_unref(value);
 
   g_object_unref(connection);
@@ -571,7 +571,7 @@ bool ant_stream_elementConnectSignal_internal(
   gulong result;
 
   element = getElement(element_index);
-  element_name = g_strdup_printf(gst_element_get_name(element));
+  element_name = g_strdup_printf("%s", gst_element_get_name(element));
 
   g_ant_async_handler = _ant_async_handler;
 
