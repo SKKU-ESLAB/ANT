@@ -1,3 +1,0 @@
-source "apps/system/Kconfig"
-
-source "apps/sample/Kconfig"
