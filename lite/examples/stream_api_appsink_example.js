@@ -37,7 +37,7 @@ var on_start = function () {
     var gdppay = ant.stream.createElement("gdppay");
     var sink = ant.stream.createElement("appsink");
     sink.setProperty("emit-signals", true);
-    sink.connectSignal("new-sample", function (name, data, arg2) {
+    sink.connectSignal("new-sample", function (name, data) {
       console.log("New sample: name=" + name);
       console.log("Data: size=" + data.length);
     });

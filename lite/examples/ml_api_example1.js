@@ -1,6 +1,5 @@
-// Streaming Example
-//  - Video Source => TCP Network (video) => Smartphone Streaming View
-
+// ML Example 1
+//  - Video Source => MobileNet => TCP Network => Smartphone Streaming View (Video + Label)
 
 var ant = require('ant');
 var console = require('console');
@@ -18,6 +17,13 @@ settings.video_framerate = "30/1";
 settings.video_sink_sync = false;
 settings.my_ip_address = "192.168.0.33";
 settings.my_port = 5000;
+
+settings.ml = {};
+settings.ml.model_name = "sample-models/rpi3_mobilenet_full";
+settings.ml.input_shape = [3, 224, 224, 1];
+settings.ml.input_type = "uint8";
+settings.ml.output_shape = [1000, 1, 1, 1];
+settings.ml.output_type = "float32";
 
 var on_initialize = function () {
   console.log('on_initialize');
@@ -78,43 +84,60 @@ var on_start = function () {
       elements.push(convertfilter);
     }
 
-    // h264 encoder
-    if (settings.is_h264_enabled) {
-      var omxh264enc = ant.stream.createElement("omxh264enc");
-      var rtph264pay = ant.stream.createElement("rtph264pay");
-      rtph264pay.setProperty("pt", 06);
-      rtph264pay.setProperty("config-interval", 1);
-      elements.push(omxh264enc);
-      elements.push(rtph264pay);
-    }
+    // tensor_converter
+    var tensor_converter = ant.stream.createElement("tensor_converter");
+    elements.push(tensor_converter);
 
-    // gdppay
-    var gdppay = ant.stream.createElement("gdppay");
+    // tensor_filter (ml element)
+    var ml_element = ant.ml.createMLElement(settings.ml.model_name,
+      settings.ml.input_shape, settings.ml.input_type,
+      settings.ml.output_shape, settings.ml.output_type);
+    elements.push(ml_element);
 
-    // tcpserversink
-    var sink = ant.stream.createElement("tcpserversink");
-    sink.setProperty("sync", settings.video_sink_sync);
-    sink.setProperty("host", settings.my_ip_address);
-    sink.setProperty("port", settings.my_port);
-    elements.push(gdppay);
+    var sink = ant.stream.createElement("appsink");
+    sink.setProperty("emit-signals", true);
+    sink.connectSignal("new-sample", function (name, data) {
+      ant.remoteui.setStreamingViewLabelText("Data: size=" + data.length);
+    });
     elements.push(sink);
+
+    // // h264 encoder
+    // if (settings.is_h264_enabled) {
+    //   var omxh264enc = ant.stream.createElement("omxh264enc");
+    //   var rtph264pay = ant.stream.createElement("rtph264pay");
+    //   rtph264pay.setProperty("pt", 06);
+    //   rtph264pay.setProperty("config-interval", 1);
+    //   elements.push(omxh264enc);
+    //   elements.push(rtph264pay);
+    // }
+
+    // // gdppay
+    // var gdppay = ant.stream.createElement("gdppay");
+
+    // // tcpserversink
+    // var sink = ant.stream.createElement("tcpserversink");
+    // sink.setProperty("sync", settings.video_sink_sync);
+    // sink.setProperty("host", settings.my_ip_address);
+    // sink.setProperty("port", settings.my_port);
+    // elements.push(gdppay);
+    // elements.push(sink);
 
     pipeline.binAdd(elements);
     pipeline.linkMany(elements);
     pipeline.setState(pipeline.STATE_PLAYING);
-    console.log("Pipeline ready! (" + settings.my_ip_address + ":" + settings.my_port + ")");
+    // console.log("Pipeline ready! (" + settings.my_ip_address + ":" + settings.my_port + ")");
 
     // Remote pipeline
-    var remote_pipeline;
-    if (settings.is_h264_enabled) {
-      remote_pipeline = "tcpclientsrc host=" + settings.my_ip_address + " port=" + settings.my_port
-        + " ! gdpdepay ! rtph264depay ! h264parse ! avdec_h264 ! videoconvert ! autovideosink sync=false";
-    } else {
-      remote_pipeline = "tcpclientsrc host=" + settings.my_ip_address + " port=" + settings.my_port
-        + " ! gdpdepay ! videoconvert ! autovideosink sync=false";
-    }
-    ant.remoteui.setStreamingViewPipeline(remote_pipeline);
-    ant.remoteui.setStreamingViewLabelText("ON");
+    // var remote_pipeline;
+    // if (settings.is_h264_enabled) {
+    //   remote_pipeline = "tcpclientsrc host=" + settings.my_ip_address + " port=" + settings.my_port
+    //     + " ! gdpdepay ! rtph264depay ! h264parse ! avdec_h264 ! videoconvert ! autovideosink sync=false";
+    // } else {
+    //   remote_pipeline = "tcpclientsrc host=" + settings.my_ip_address + " port=" + settings.my_port
+    //     + " ! gdpdepay ! videoconvert ! autovideosink sync=false";
+    // }
+    // ant.remoteui.setStreamingViewPipeline(remote_pipeline);
+    ant.remoteui.setStreamingViewLabelText("Ready...");
   }, 2000);
 };
 
