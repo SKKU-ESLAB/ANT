@@ -6,7 +6,7 @@ sudo apt-get install -y libdbus-1-dev glib-2.0 libdbus-glib-1-2 libdbus-glib-1-d
 sudo apt-get install -y libgstreamer1.0-dev gstreamer1.0-doc gstreamer1.0-tools \
   gstreamer1.0-plugins-base libgstreamer-plugins-base1.0-dev \
   gstreamer1.0-plugins-good gstreamer1.0-plugins-bad gstreamer1.0-plugins-ugly \
-  gstreamer1.0-libav gstreamer-omx
+  gstreamer1.0-libav
 
 # TVM dependencies
 sudo apt-get install -y python3 python3-dev python3-pip python3-setuptools gcc \
