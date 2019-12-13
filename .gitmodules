@@ -37,3 +37,6 @@
 [submodule "android-companion/app/src/main/jniLibs"]
 	path = android-companion/app/src/main/jniLibs
 	url = https://github.com/SKKU-ESLAB/ant-android-libs-armeabi
+[submodule "lite/ml/sample-models"]
+	path = lite/ml/sample-models
+	url = https://github.com/SKKU-ESLAB/ant-sample-ml-models

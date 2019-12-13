@@ -29,7 +29,8 @@ public class StreamingFragment extends Fragment
     private StreamingViewModel mModel;
 
     private GStreamerSurfaceView mVideoSurfaceView;
-    private TextView mMessageTextView;
+    private TextView mStatusTextView;
+    private TextView mLabelTextView;
 
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater,
@@ -38,7 +39,8 @@ public class StreamingFragment extends Fragment
         View root =
                 inflater.inflate(R.layout.fragment_streaming, container, false);
         this.mVideoSurfaceView = root.findViewById(R.id.videoSurfaceView);
-        this.mMessageTextView = root.findViewById(R.id.messageTextView);
+        this.mStatusTextView = root.findViewById(R.id.statusTextView);
+        this.mLabelTextView = root.findViewById(R.id.labelTextView);
 
         FragmentActivity activity = getActivity();
         assert activity != null;
@@ -63,6 +65,12 @@ public class StreamingFragment extends Fragment
             @Override
             public void onChanged(@Nullable String value) {
                 updateVideoSurfaceView();
+            }
+        });
+        RemoteUIAPI.get().getLabelText().observe(this, new Observer<String>() {
+            @Override
+            public void onChanged(String s) {
+                updateLabelTextView();
             }
         });
         return root;
@@ -121,6 +129,11 @@ public class StreamingFragment extends Fragment
             this.finalizeGstreamer();
         }
         this.initializeGstreamer(pipeline);
+    }
+
+    private void updateLabelTextView() {
+        String labelText = RemoteUIAPI.get().getLabelText().getValue();
+        this.mLabelTextView.setText(labelText);
     }
 
     // Initialize Gstreamer connection
@@ -190,7 +203,7 @@ public class StreamingFragment extends Fragment
         FragmentActivity activity = getActivity();
         activity.runOnUiThread(new Runnable() {
             public void run() {
-                mMessageTextView.setText(message);
+                mStatusTextView.setText(message);
             }
         });
     }

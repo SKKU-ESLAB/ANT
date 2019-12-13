@@ -12,5 +12,6 @@ cd iotjs
 cp ../../../dep/iotjs/build/arm-linux/debug/bin/iotjs ./
 cp -r ../../app-runtime/* ./
 
-# Install ANT-NN
-cp -r ../../nn ./
+# Install ANT-ML
+cp -r ../../ml/*.py ./
+cp -r ../../ml/sample-models ./
