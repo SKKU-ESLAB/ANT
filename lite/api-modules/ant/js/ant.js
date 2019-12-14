@@ -443,7 +443,8 @@ CompanionAPI.unregisterOnReceiveMessage = function (handler) {
 };
 
 CompanionAPI.getMyIPAddress = function (interfaceName) {
-  return native.companion_getMyIPAddress(interfaceName);
+  var antcompanion = require("antcompanion");
+  return antcompanion.getMyIPAddress(interfaceName);
 };
 /** Companion API end **/
 

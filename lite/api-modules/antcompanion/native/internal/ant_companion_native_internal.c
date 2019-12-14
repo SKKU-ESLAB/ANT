@@ -1,4 +1,4 @@
-#include "ant_native_companion.h"
+#include "ant_companion_native_internal.h"
 
 #include <arpa/inet.h>
 #include <net/if.h>
@@ -30,7 +30,7 @@ void ant_companion_getMyIPAddress_internal(const char *interfaceName,
   close(fd);
 
   ipAddress = inet_ntoa(((struct sockaddr_in *)&ifr.ifr_addr)->sin_addr);
-  strncpy(resultIPAddress, ipAddress, strlen(ipAddress));
+  strncpy(resultIPAddress, ipAddress, strlen(ipAddress) + 1);
   return;
 }
 

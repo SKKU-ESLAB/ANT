@@ -1,0 +1,30 @@
+{
+  "modules": {
+    "ant": {
+      "js_file": "ant/js/ant.js",
+      "native_files": [
+        "ant/native/ant_native.c"
+      ],
+      "init": "InitANTNative",
+      "cmakefile": "ant/native/ant_native.cmake",
+      "require": [
+        "buffer",
+        "console",
+        "http"
+      ]
+    },
+    "antcompanion": {
+      "js_file": "antcompanion/js/antcompanion.js",
+      "native_files": [
+        "antcompanion/native/ant_companion_native.c"
+      ],
+      "init": "InitANTCompanionNative",
+      "cmakefile": "antcompanion/native/ant_companion_native.cmake",
+      "require": [
+        "buffer",
+        "console",
+        "http"
+      ]
+    }
+  }
+}
