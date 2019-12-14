@@ -4,20 +4,25 @@ echo "Install ANT dependencies..."
 sudo apt-get update
 sudo apt-get install -y cmake git
 sudo apt-get install -y libdbus-1-dev glib-2.0 libdbus-glib-1-2 libdbus-glib-1-dev
-sudo apt-get install -y libraspberrypi-dev
+#sudo apt-get install -y libraspberrypi-dev
 
-# TVM dependencies
+# Install TVM dependencies
 echo "Install TVM dependencies..."
 sudo apt-get install -y python3 python3-dev python3-pip python3-setuptools gcc \
   libtinfo-dev zlib1g-dev build-essential cmake libedit-dev libxml2-dev libtinfo-dev \
   python3-opencv
+
+# Build TVM
 cd ../../dep/tvm
-make runtime -j2
+make runtime -j4
 echo "export PYTHONPATH=$PWD/python:$PYTHONPATH" >> ~/.bashrc
+export PYTHONPATH=$PWD/python:$PYTHONPATH
+cd -
 
 # Build IoT.js
 cd ../../dep/iotjs
 ./tools/build.py --target-board=rpi3
+cd -
 
 # Install Gstreamer and its elements
 sudo apt-get install -y libgstreamer1.0-dev gstreamer1.0-doc gstreamer1.0-tools \
