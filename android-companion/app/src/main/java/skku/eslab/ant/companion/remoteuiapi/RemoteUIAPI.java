@@ -24,10 +24,13 @@ import skku.eslab.ant.companion.resourceapi.ResourceRequest;
  * limitations under the License.
  */
 public class RemoteUIAPI {
-    private final String kUri = "/remoteui/streamingview/pipeline";
+    private final String kPipelineUri = "/remoteui/streamingview/pipeline";
+    private final String kLabelTextUri = "/remoteui/streamingview/labelText";
     private static RemoteUIAPI singleton;
     private MutableLiveData<String> mPipeline;
+    private MutableLiveData<String> mLabelText;
     private Resource mPipelineResource;
+    private Resource mLabelTextResource;
 
     public static RemoteUIAPI get() {
         if (singleton == null) {
@@ -39,12 +42,15 @@ public class RemoteUIAPI {
     private RemoteUIAPI() {
         mPipeline = new MutableLiveData<>();
         mPipeline.setValue("");
+        mLabelText = new MutableLiveData<>();
+        mLabelText.setValue("");
 
-        this.initializeResource();
+        this.initializePipelineResource();
+        this.initializeLabelTextResource();
     }
 
-    private void initializeResource() {
-        this.mPipelineResource = new Resource(kUri);
+    private void initializePipelineResource() {
+        this.mPipelineResource = new Resource(kPipelineUri);
         this.mPipelineResource.setOnPost(new OnResourceRequestListener() {
             @Override
             public void onResourceRequest(ResourceRequest request) {
@@ -63,7 +69,31 @@ public class RemoteUIAPI {
         ResourceAPI.get().registerResource(this.mPipelineResource);
     }
 
+    private void initializeLabelTextResource() {
+        this.mLabelTextResource = new Resource(kLabelTextUri);
+        this.mLabelTextResource.setOnPost(new OnResourceRequestListener() {
+            @Override
+            public void onResourceRequest(ResourceRequest request) {
+                String labelText = request.getMessage();
+                mLabelText.postValue(labelText);
+                ResourceAPI.get().sendResponse(request, "Success");
+            }
+        });
+        this.mLabelTextResource.setOnGet(new OnResourceRequestListener() {
+            @Override
+            public void onResourceRequest(ResourceRequest request) {
+                String labelText = mLabelText.getValue();
+                ResourceAPI.get().sendResponse(request, labelText);
+            }
+        });
+        ResourceAPI.get().registerResource(this.mLabelTextResource);
+    }
+
     public LiveData<String> getPipeline() {
-        return mPipeline;
+        return this.mPipeline;
+    }
+
+    public MutableLiveData<String> getLabelText() {
+        return this.mLabelText;
     }
 }

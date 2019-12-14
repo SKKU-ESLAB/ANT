@@ -1,6 +1,0 @@
-<?xml version="1.0"?>
-<application>
-	<icon>icon.png</icon>
-	<label>Machine Learning</label>
-	<mainFile>index.js</mainFile>
-</application>

@@ -1,6 +1,0 @@
-<?xml version="1.0"?>
-<application>
-	<icon>icon.png</icon>
-	<label>QuickCam</label>
-	<mainFile>index.js</mainFile>
-</application>
