@@ -1,6 +1,5 @@
 #include "internal/ant_native_ml.h"
 #include "internal/ant_native_stream.h"
-#include "internal/ant_native_companion.h"
 #include "internal/ll.h"
 
 #include "iotjs_def.h"
@@ -41,7 +40,6 @@
 
 ANT_API_VOID_TO_VOID(stream, initializeStream);
 ANT_API_STRING_TO_STRING(stream, callDbusMethod);
-ANT_API_STRING_TO_STRING(companion, getMyIPAddress);
 
 // TODO: add a function to reset g_uv_async (hardcoded now)
 // Async handler order: gstreamer signal -> ant async -> uv async -> js
@@ -255,7 +253,6 @@ jerry_value_t InitANTNative() {
   REGISTER_ANT_API(antNative, stream, callDbusMethod);
   REGISTER_ANT_API(antNative, stream, elementConnectSignal);
   REGISTER_ANT_API(antNative, ml, getMaxOfBuffer);
-  REGISTER_ANT_API(antNative, companion, getMyIPAddress);
 
   initANTStream();
 
