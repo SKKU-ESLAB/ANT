@@ -1,4 +1,4 @@
-// ML Example 1
+// ML Example
 //  - Video Source => MobileNet => TCP Network => Smartphone Streaming View (Video + Label)
 
 var ant = require('ant');
@@ -46,6 +46,7 @@ var on_start = function () {
   // Because ant.stream.initialize() is an async function without finish callback,
   // pipeline setting should be executed by setTimeout.
   ant.stream.initialize();
+  console.log('Wait until stream thread is ready...');
   setTimeout(function () {
     var pipeline = ant.stream.createPipeline("test");
     var mainpipe_elements = [];
@@ -106,7 +107,7 @@ var on_start = function () {
     // queue
     var queue1 = ant.stream.createElement("queue");
     subpipe1_elements.push(queue1);
-    
+
     // tensor_converter
     var tensor_converter = ant.stream.createElement("tensor_converter");
     subpipe1_elements.push(tensor_converter);
@@ -180,7 +181,7 @@ var on_start = function () {
     }
     ant.remoteui.setStreamingViewPipeline(remote_pipeline);
     ant.remoteui.setStreamingViewLabelText("Waiting for Inference...");
-  }, 2000);
+  }, 5000);
 };
 
 var on_stop = function () {

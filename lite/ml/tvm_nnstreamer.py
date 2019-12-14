@@ -15,6 +15,8 @@ def shape_str_to_npshape(shape_str):
 def datatype_str_to_nptype(datatype_str):
     if datatype_str == "float32":
         return np.float32
+    elif datatype_str == "int32":
+        return np.int32
     elif datatype_str == "uint8":
         return np.uint8
     else:
@@ -24,10 +26,7 @@ def datatype_str_to_nptype(datatype_str):
 class CustomFilter(object):
     def __init__(self, *args):
         # TVM
-        ctx = tvm.cpu()
-
-        batch_size = 1
-        image_shape = (3, 224, 224)
+        ctx = tvm.cpu()  # Hardcoded backend
 
         model_path = args[0] + '/'
         input_shape = shape_str_to_npshape(args[1])
@@ -35,14 +34,14 @@ class CustomFilter(object):
         output_shape = shape_str_to_npshape(args[3])
         output_type = datatype_str_to_nptype(args[4])
 
-        self.input_dims = [nns.TensorShape(input_shape, np.uint8)]
-        self.output_dims = [nns.TensorShape(output_shape, np.float32)]
         if input_type == None:
             print("Invalid input_shape")
             return None
         elif output_type == None:
             print("Invalid output_shape")
             return None
+        self.input_dims = [nns.TensorShape(input_shape, input_type)]
+        self.output_dims = [nns.TensorShape(output_shape, output_type)]
 
         loaded_json = open(model_path + 'deploy_graph.json').read()
         loaded_lib = tvm.module.load(model_path + 'deploy_lib.tar')
@@ -72,7 +71,9 @@ class CustomFilter(object):
 
 
 def transform_image(image):
+    # TODO: Hardcoded image mean
     image = np.array(image) - np.array([103.939, 116.779, 123.68])
+    image = image / np.array([57.375, 57.12, 58.395])
     image = image.transpose((2, 0, 1))
     image = image[np.newaxis, :]
     return image

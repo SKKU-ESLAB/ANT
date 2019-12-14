@@ -40,3 +40,6 @@
 [submodule "lite/ml/sample-models"]
 	path = lite/ml/sample-models
 	url = https://github.com/SKKU-ESLAB/ant-sample-ml-models
+[submodule "dep/tvm"]
+	path = dep/tvm
+	url = https://github.com/apache/incubator-tvm
