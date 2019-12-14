@@ -1,5 +1,6 @@
 #include "internal/ant_native_ml.h"
 #include "internal/ant_native_stream.h"
+#include "internal/ant_native_companion.h"
 #include "internal/ll.h"
 
 #include "iotjs_def.h"

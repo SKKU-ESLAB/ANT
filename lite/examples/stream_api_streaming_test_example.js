@@ -16,7 +16,7 @@ settings.video_height = 224;
 settings.video_format = "RGB";
 settings.video_framerate = "30/1";
 settings.video_sink_sync = false;
-settings.my_ip_address = "192.168.0.33";
+settings.my_ip_address = ant.companion.getMyIPAddress("eth0");
 settings.my_port = 5000;
 
 var on_initialize = function () {
