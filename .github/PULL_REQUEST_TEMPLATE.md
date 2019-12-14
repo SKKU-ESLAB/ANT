@@ -1,5 +1,4 @@
 # Details
-
 ## Major Changes
 
 ## Minor Changes
