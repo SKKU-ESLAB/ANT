@@ -13,5 +13,6 @@ cp ../../../dep/iotjs/build/arm-linux/debug/bin/iotjs ./
 cp -r ../../app-runtime/* ./
 
 # Install ANT-ML
-cp -r ../../ml/*.py ./
+mkdir -p ml
+cp -r ../../ml/*.py ./ml/
 cp -r ../../ml/sample-models ./

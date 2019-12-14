@@ -1,4 +1,4 @@
-// ML Example 1
+// ML Example
 //  - Video Source => MobileNet => TCP Network => Smartphone Streaming View (Video + Label)
 
 var ant = require('ant');
@@ -106,7 +106,7 @@ var on_start = function () {
     // queue
     var queue1 = ant.stream.createElement("queue");
     subpipe1_elements.push(queue1);
-    
+
     // tensor_converter
     var tensor_converter = ant.stream.createElement("tensor_converter");
     subpipe1_elements.push(tensor_converter);

@@ -9,12 +9,12 @@ ANT is being migrated to ANT lite, so its current build process is temporary.
 ### How to Get the Source Code
 
 ```
-$ git clone https://github.com/SKKU-ESLAB/ANT ant
+$ git clone https://github.com/SKKU-ESLAB/ANT ant --recursive
 ```
 
 ### Prerequisites
 ```
-$ cd lite/test
+$ cd ant/lite/test
 $ ./install-prerequisites-on-rpi3.sh
 ```
 <!--
@@ -35,7 +35,6 @@ $ ./menuconfig.py
 
 ### How to Build
 ```
-$ cd lite/test
 $ ./build-ant.sh
 ```
 <!--
@@ -54,7 +53,6 @@ $ sudo make install
 -->
 ### How to Run
 ```
-$ cd lite/test
 $ ./ant.sh
 ```
 <!--
