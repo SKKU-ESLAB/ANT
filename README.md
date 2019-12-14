@@ -4,6 +4,8 @@
 <img src="https://raw.githubusercontent.com/SKKU-ESLAB/ANT/master/docs/logo.png" width="30%" align="right" />
 
 ## Quick Start
+ANT is being migrated to ANT lite, so its current build process is temporary.
+
 ### How to Get the Source Code
 
 ```
@@ -11,14 +13,16 @@ $ git clone https://github.com/SKKU-ESLAB/ANT ant
 ```
 
 ### Prerequisites
-It is dependent on target device.
-
 ```
-$ sudo apt-get install cmake python3 pip3
-$ sudo pip3 install kconfiglib
-
+$ cd lite/test
+$ ./install-prerequisites-on-rpi3.sh
+```
+<!--
+```
 # TARGET_BOARD=[rpi2,rpi3,oxu3,oxu4,tx1,tx2]
 $ ./tools/install-deps.sh --target-board={TARGET_BOARD}
+$ sudo apt-get install cmake python3 pip3
+$ sudo pip3 install kconfiglib
 ```
 
 ### Build Configuration
@@ -27,9 +31,14 @@ You can configure how to build ANT framework with following commands.
 ```
 $ ./menuconfig.py
 ```
+-->
 
 ### How to Build
-
+```
+$ cd lite/test
+$ ./build-ant.sh
+```
+<!--
 ```
 $ mkdir build && cd build
 $ cmake ..
@@ -42,11 +51,17 @@ If you changed your build configuration, you should make your ```build``` direct
 ```
 $ sudo make install
 ```
+-->
 ### How to Run
-
+```
+$ cd lite/test
+$ ./ant.sh
+```
+<!--
 ```
 $ sudo run_ant
 ```
+-->
 
 ## Demo Video
 
