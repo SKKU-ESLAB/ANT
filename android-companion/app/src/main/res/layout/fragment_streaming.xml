@@ -17,15 +17,6 @@
         app:layout_constraintTop_toTopOf="parent"
         tools:text="-" />
 
-    <TextView
-        android:id="@+id/statusTextView"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:gravity="center_horizontal"
-        app:layout_constraintLeft_toLeftOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/labelTextView"
-        tools:text="Ready" />
-
     <com.ant.ant_manager.view.cameraviewer.GStreamerSurfaceView
         android:id="@+id/videoSurfaceView"
         android:layout_width="wrap_content"
@@ -33,7 +24,17 @@
         android:layout_gravity="center_vertical|center_horizontal"
         android:layout_marginTop="9dp"
         app:layout_constraintLeft_toLeftOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/statusTextView" />
+        app:layout_constraintTop_toBottomOf="@+id/labelTextView"
+         />
+
+    <TextView
+        android:id="@+id/statusTextView"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center_horizontal"
+        app:layout_constraintLeft_toLeftOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/videoSurfaceView"
+        tools:text="Ready" />
 
 
 </androidx.constraintlayout.widget.ConstraintLayout>

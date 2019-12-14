@@ -246,33 +246,30 @@ public class MainActivity extends AppCompatActivity {
     private String mRecentConnectionStatus = CS_DISCONNECTED;
 
     private void requestSettingCompanionAddress() {
-        if (!this.mRecentConnectionStatus
-                .equals(this.mConnectionStatus.getValue())) {
-            this.mRecentConnectionStatus = this.mConnectionStatus.getValue();
+//        if (!this.mRecentConnectionStatus
+//                .equals(this.mConnectionStatus.getValue())) {
+//            if (this.mRecentConnectionStatus == CS_CONNECTED) {
+        WifiManager wm = (WifiManager) getSystemService(WIFI_SERVICE);
+        String selfIpAddress = Formatter
+                .formatIpAddress(wm.getConnectionInfo().getIpAddress());
 
-            if (this.mRecentConnectionStatus == CS_CONNECTED) {
-                WifiManager wm = (WifiManager) getSystemService(WIFI_SERVICE);
-                String selfIpAddress = Formatter
-                        .formatIpAddress(wm.getConnectionInfo().getIpAddress());
-
-                HTTPClient httpClient = HTTPClient.get();
-                String url =
-                        httpClient.getTargetAddress() + "/runtime/currentApp" +
-                                "/companionAddress";
-                httpClient.sendHTTPRequest(url, "POST", selfIpAddress,
-                        new HTTPResponseHandler() {
-                            @Override
-                            public void onHTTPResponse(int code,
-                                                       String message) {
-                                if (code == 200 && message.equals("Success")) {
-                                    mConnectionStatus.setValue(CS_CONNECTED);
-                                } else {
-                                    mConnectionStatus.setValue(CS_DISCONNECTED);
-                                }
-                            }
-                        });
-            }
-        }
+        HTTPClient httpClient = HTTPClient.get();
+        String url = httpClient.getTargetAddress() + "/runtime/currentApp" +
+                "/companionAddress";
+        httpClient.sendHTTPRequest(url, "POST", selfIpAddress,
+                new HTTPResponseHandler() {
+                    @Override
+                    public void onHTTPResponse(int code, String message) {
+                        if (code == 200 && message.equals("Success")) {
+                            mConnectionStatus.setValue(CS_CONNECTED);
+                        } else {
+                            mConnectionStatus.setValue(CS_DISCONNECTED);
+                        }
+                    }
+                });
+//    }
+//}
+//        this.mRecentConnectionStatus = this.mConnectionStatus.getValue();
     }
 
     private void onUpdateTargetAddress(String targetAddress) {

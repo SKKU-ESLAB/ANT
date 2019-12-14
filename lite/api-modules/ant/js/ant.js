@@ -351,9 +351,12 @@ MLAPI.createMLElement = function (model_name, input_shape, input_type, output_sh
   var custom = model_name + " " + input_shape_str + " " + input_type
     + " " + output_shape_str + " " + output_type;
   tensor_filter.setProperty("custom", custom);
-  console.log(custom);
   return tensor_filter;
 };
+
+MLAPI.getMaxOfBuffer = function (buffer, type) {
+  return native.ml_getMaxOfBuffer(buffer, type);
+}
 
 MLAPI.connectCompressionServer = function (ipAddress) {
   return new CompressionServer(ipAddress);

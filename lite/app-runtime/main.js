@@ -11,7 +11,7 @@ var MAIN_LOOP_DIR_PATH = truncateFile(process.argv[1]);
 
 /* App Main Config START */
 var Config = function () {
-  this.showHTTPRequestPath = true;
+  this.showHTTPRequestPath = false;
   this.showHTTPRequestData = false;
 };
 var gConfig = new Config();
