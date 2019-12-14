@@ -4,4 +4,4 @@ set(MODULE_NAME "ant")
 
 add_subdirectory(${MODULE_DIR}/internal/ ${CMAKE_BINARY_DIR}/out/)
 
-list(APPEND EXTERNAL_LIBS ant_native_stream ant_native_ml)
+list(APPEND EXTERNAL_LIBS ant_native_stream ant_native_ml ant_native_companion)
