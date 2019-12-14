@@ -1,9 +1,7 @@
-# Summary
+# Details
 
 ## Major Changes
 
 ## Minor Changes
-
-# Details
 
 # Test Result
