@@ -441,6 +441,10 @@ CompanionAPI.unregisterOnReceiveMessage = function (handler) {
   }
   return false;
 };
+
+CompanionAPI.getMyIPAddress = function (interfaceName) {
+  return native.companion_getMyIPAddress(interfaceName);
+};
 /** Companion API end **/
 
 /** Remote UI API start **/

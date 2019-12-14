@@ -9,3 +9,5 @@ add_library(ant_native_stream SHARED ant_native_stream.c ll.c)
 target_link_libraries(ant_native_stream dbus-1 glib-2.0 dbus-glib-1 gstreamer-1.0 gstapp-1.0 gobject-2.0 gmodule-2.0 gio-2.0 pthread)
 
 add_library(ant_native_ml SHARED ant_native_ml.c)
+
+add_library(ant_native_companion SHARED ant_native_companion.c)

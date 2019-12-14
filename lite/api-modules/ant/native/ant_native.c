@@ -21,18 +21,26 @@
     return jerry_create_string((const jerry_char_t *)result_string);           \
   }
 
-#define ANT_API_VOID_TO_VOID(api_name, function_name)                          \
-  JS_FUNCTION(ant_##api_name##_##function_name) {                              \
-    ant_##api_name##_##function_name##_internal();                             \
-    return jerry_create_undefined();                                           \
+#define ANT_API_VOID_TO_STRING(api_name, function_name)              \
+  JS_FUNCTION(ant_##api_name##_##function_name) {                    \
+    char result_string[MAX_RESULT_MESSAGE_LENGTH];                   \
+    ant_##api_name##_##function_name##_internal(result_string);      \
+    return jerry_create_string((const jerry_char_t *)result_string); \
   }
 
-#define REGISTER_ANT_API(module, api_name, function_name)                      \
-  iotjs_jval_set_method(module, #api_name "_" #function_name,                  \
+#define ANT_API_VOID_TO_VOID(api_name, function_name) \
+  JS_FUNCTION(ant_##api_name##_##function_name) {     \
+    ant_##api_name##_##function_name##_internal();    \
+    return jerry_create_undefined();                  \
+  }
+
+#define REGISTER_ANT_API(module, api_name, function_name)     \
+  iotjs_jval_set_method(module, #api_name "_" #function_name, \
                         ant_##api_name##_##function_name);
 
 ANT_API_VOID_TO_VOID(stream, initializeStream);
 ANT_API_STRING_TO_STRING(stream, callDbusMethod);
+ANT_API_STRING_TO_STRING(companion, getMyIPAddress);
 
 // TODO: add a function to reset g_uv_async (hardcoded now)
 // Async handler order: gstreamer signal -> ant async -> uv async -> js
@@ -128,8 +136,9 @@ JS_FUNCTION(ant_stream_elementConnectSignal) {
   argHandler = JS_GET_ARG(2, function);
 
   if (g_is_async_handler_set) {
-    fprintf(stderr, "ERROR: JS handler already registered!"
-                    " (unique handler constraint)");
+    fprintf(stderr,
+            "ERROR: JS handler already registered!"
+            " (unique handler constraint)");
     return jerry_create_boolean(false);
   }
   g_is_async_handler_set = true;
@@ -179,7 +188,7 @@ JS_FUNCTION(ant_ml_getMaxOfBuffer) {
     iotjs_string_destroy(&argType);
     return jerry_create_undefined();
   }
-  
+
   if (strncmp(type, "uint8", strlen("uint8")) == 0) {
     unsigned char *data_array = (unsigned char *)buffer_wrap->buffer;
     size_t data_len = buffer_len / sizeof(unsigned char);
@@ -245,6 +254,7 @@ jerry_value_t InitANTNative() {
   REGISTER_ANT_API(antNative, stream, callDbusMethod);
   REGISTER_ANT_API(antNative, stream, elementConnectSignal);
   REGISTER_ANT_API(antNative, ml, getMaxOfBuffer);
+  REGISTER_ANT_API(antNative, companion, getMyIPAddress);
 
   initANTStream();
 
