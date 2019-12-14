@@ -15,7 +15,7 @@ $ git clone https://github.com/SKKU-ESLAB/ANT ant --recursive
 ### Prerequisites
 ```
 $ cd ant/lite/test
-$ ./install-prerequisites-on-rpi3.sh
+$ ./install-prerequisites-on-ubuntu.sh
 ```
 <!--
 ```
