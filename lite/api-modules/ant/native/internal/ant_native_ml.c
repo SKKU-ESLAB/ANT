@@ -1,12 +1,7 @@
 #include "ant_native_ml.h"
 
-#include <assert.h>
-#include <fcntl.h>
-#include <pthread.h>
 #include <stdio.h>
-#include <stdlib.h>
 #include <string.h>
-#include <sys/stat.h>
 #include <sys/types.h>
 
 void ant_ml_getMaxOfBuffer_internal_uint8(const unsigned char *data_array,

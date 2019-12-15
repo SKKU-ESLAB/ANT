@@ -441,6 +441,11 @@ CompanionAPI.unregisterOnReceiveMessage = function (handler) {
   }
   return false;
 };
+
+CompanionAPI.getMyIPAddress = function (interfaceName) {
+  var antcompanion = require("antcompanion");
+  return antcompanion.getMyIPAddress(interfaceName);
+};
 /** Companion API end **/
 
 /** Remote UI API start **/
