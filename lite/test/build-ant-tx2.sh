@@ -1,0 +1,18 @@
+#!/bin/bash
+# Build ANT API and App Runtime for IoT.js
+MODULE_PATH=../../lite/api-modules/
+cd ../../dep/iotjs/
+./tools/build.py --target-board=tx2 --cmake-param=-DENABLE_MODULE_ANT=ON \
+    --external-modules=${MODULE_PATH}/ant
+cd -
+
+# Install ANT API and App Runtime for IoT.js
+mkdir -p iotjs
+cd iotjs
+cp ../../../dep/iotjs/build/aarch64-linux/debug/bin/iotjs ./
+cp -r ../../app-runtime/* ./
+
+# Install ANT-ML
+mkdir -p ml
+cp -r ../../ml/*.py ./ml/
+cp -r ../../ml/sample-models ./
