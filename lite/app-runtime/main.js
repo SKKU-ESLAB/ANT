@@ -379,7 +379,8 @@ function mainLoop() {
 
   var port = 8001;
   server.listen(port, function () {
-    console.log('ANT core listening: port=' + port);
+    var ipAddress = ant.companion.getMyIPAddress("eth0");
+    console.log('ANT core listening: http://' + ipAddress + ":" + port);
   });
 }
 
