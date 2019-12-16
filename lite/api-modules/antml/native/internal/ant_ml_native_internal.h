@@ -1,5 +1,5 @@
-#ifndef __ANT_NATIVE_ML_H__
-#define __ANT_NATIVE_ML_H__
+#ifndef __ANT_ML_NATIVE_INTERNAL_H__
+#define __ANT_ML_NATIVE_INTERNAL_H__
 
 #include <sys/types.h>
 
@@ -18,4 +18,4 @@ void ant_ml_getMaxOfBuffer_internal_float32(const float *data_array,
 
 void initANTML(void);
 
-#endif /* !defined(__ANT_NATIVE_ML_H__) */
+#endif /* !defined(__ANT_ML_NATIVE_INTERNAL_H__) */

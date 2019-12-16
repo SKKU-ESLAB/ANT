@@ -2,7 +2,10 @@
 # Build ANT API and App Runtime for IoT.js
 MODULE_PATH=../../lite/api-modules/
 cd ../../dep/iotjs/
-./tools/build.py --target-board=rpi3 --cmake-param=-DENABLE_MODULE_ANT=ON --cmake-param=-DENABLE_MODULE_ANTCOMPANION=ON \
+./tools/build.py --target-board=rpi3 \
+    --cmake-param=-DENABLE_MODULE_ANT=ON \
+    --cmake-param=-DENABLE_MODULE_ANTCOMPANION=ON \
+    --cmake-param=-DENABLE_MODULE_ANTML=ON \
     --external-modules=${MODULE_PATH}
 cd -
 

@@ -1,4 +1,5 @@
 #include "ant_companion_native_internal.h"
+#include "../../../common/native/ant_common.h"
 
 #include <arpa/inet.h>
 #include <net/if.h>

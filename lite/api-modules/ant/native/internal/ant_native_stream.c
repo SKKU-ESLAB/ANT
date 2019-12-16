@@ -1,4 +1,5 @@
 #include "ant_native_stream.h"
+#include "../../../common/native/ant_common.h"
 
 #include <gio/gio.h>
 #include <glib.h>
