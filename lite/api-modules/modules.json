@@ -25,6 +25,19 @@
         "console",
         "http"
       ]
+    },
+    "antml": {
+      "js_file": "antml/js/antml.js",
+      "native_files": [
+        "antml/native/ant_ml_native.c"
+      ],
+      "init": "InitANTMLNative",
+      "cmakefile": "antml/native/ant_ml_native.cmake",
+      "require": [
+        "buffer",
+        "console",
+        "http"
+      ]
     }
   }
 }
