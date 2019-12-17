@@ -3,9 +3,6 @@
 
 #include <sys/types.h>
 
-// TODO: hardcoded result message length
-#define MAX_RESULT_MESSAGE_LENGTH 100
-
 void ant_companion_getMyIPAddress_internal(const char *interfaceName, char *resultIPAddress);
 
 void initANTCompanion(void);

@@ -1,3 +1,6 @@
+// App Benchmark
+// It requires no other APIs. (option0)
+
 var ant = require('ant');
 var console = require('console');
 

@@ -1,3 +1,6 @@
+// App Benchmark
+// It requires Companion, Resource API. (option1)
+
 var ant = require('ant');
 var console = require('console');
 
@@ -6,11 +9,11 @@ var on_initialize = function () {
 };
 
 var on_start = function () {
-  ant.companion.registerOnReceiveMessage(on_receive_message);
+
 
   var func = function () {
     var startTime = '' + new Date().valueOf();
-    ant.companion.sendMessage(startTime);
+    ant.resource.requestPost("/tester", startTime, on_receive_message);
     if (totalCount < 100)
       setTimeout(func, 2000);
   };
@@ -19,7 +22,7 @@ var on_start = function () {
 
 var totalTimeMS = 0;
 var totalCount = 0;
-var on_receive_message = function (message) {
+var on_receive_message = function (method, targetUri, message) {
   var startTime = parseInt(message);
   var endTime = new Date().valueOf();
   var timeMS = endTime - startTime;
@@ -27,7 +30,7 @@ var on_receive_message = function (message) {
   totalCount++;
   console.log(
     '(' + totalCount + ')' +
-    'Companion API elapsed time: ' + (timeMS) +
+    'Resource API elapsed time: ' + (timeMS) +
     'ms / average: ' + (totalTimeMS / totalCount) + 'ms');
 };
 

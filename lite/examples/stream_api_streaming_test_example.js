@@ -1,6 +1,6 @@
 // Streaming Example
+// It requires Companion, Resource, Remote UI, Stream API. (option2)
 //  - Video Source => TCP Network (video) => Smartphone Streaming View
-
 
 var ant = require('ant');
 var console = require('console');
