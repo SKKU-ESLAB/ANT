@@ -1,3 +1,9 @@
+var console = require('console');
+var http = require('http');
+
+var RESULT_SUCCESS = 'Success';
+var RESULT_FAILED = 'Failed';
+
 function ANTCompanion() { }
 
 ANTCompanion.prototype._mCompanionHost = undefined;
@@ -66,7 +72,7 @@ ANTCompanion.prototype.getMyIPAddress = function (interfaceName) {
   return antcompanion.getMyIPAddress(interfaceName);
 };
 
-ANTCompanion.prototype.getMyIPAddress = function(interfaceName) {
+ANTCompanion.prototype.getMyIPAddress = function (interfaceName) {
   return native.companion_getMyIPAddress(interfaceName);
 };
 
