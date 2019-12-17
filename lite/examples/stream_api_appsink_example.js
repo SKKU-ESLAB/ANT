@@ -1,3 +1,6 @@
+// Streaming with AppSink Example
+// It requires Companion, Resource, Remote UI, Stream API. (option2)
+
 var ant = require('ant');
 var console = require('console');
 

@@ -8,7 +8,6 @@ cd ../../dep/iotjs/
     --cmake-param=-DENABLE_MODULE_ANTRESOURCE=ON \
     --cmake-param=-DENABLE_MODULE_ANTREMOTEUI=ON \
     --cmake-param=-DENABLE_MODULE_ANTSTREAM=ON \
-    --cmake-param=-DENABLE_MODULE_ANTML=ON \
     --external-modules=${MODULE_PATH}
 cd -
 

@@ -1,4 +1,5 @@
 // ML Example
+// It requires Companion, Resource, Remote UI, Stream, ML API. (option3)
 //  - Video Source => MobileNet => TCP Network => Smartphone Streaming View (Video + Label)
 
 var ant = require('ant');
