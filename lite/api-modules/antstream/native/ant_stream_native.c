@@ -1,6 +1,6 @@
-#include "internal/ant_native_stream.h"
-#include "internal/ll.h"
 #include "../../common/native/ant_common.h"
+#include "internal/ant_stream_native_internal.h"
+#include "internal/ll.h"
 
 #include "iotjs_def.h"
 #include "iotjs_uv_request.h"
@@ -106,9 +106,8 @@ JS_FUNCTION(ant_stream_elementConnectSignal) {
   argHandler = JS_GET_ARG(2, function);
 
   if (g_is_async_handler_set) {
-    fprintf(stderr,
-            "ERROR: JS handler already registered!"
-            " (unique handler constraint)");
+    fprintf(stderr, "ERROR: JS handler already registered!"
+                    " (unique handler constraint)");
     return jerry_create_boolean(false);
   }
   g_is_async_handler_set = true;
@@ -134,13 +133,13 @@ JS_FUNCTION(ant_stream_elementConnectSignal) {
   return jerry_create_boolean(result);
 }
 
-jerry_value_t InitANTNative() {
-  jerry_value_t antNative = jerry_create_object();
-  REGISTER_ANT_API(antNative, stream, initializeStream);
-  REGISTER_ANT_API(antNative, stream, callDbusMethod);
-  REGISTER_ANT_API(antNative, stream, elementConnectSignal);
+jerry_value_t InitANTStreamNative() {
+  jerry_value_t antStreamNative = jerry_create_object();
+  REGISTER_ANT_API(antStreamNative, stream, initializeStream);
+  REGISTER_ANT_API(antStreamNative, stream, callDbusMethod);
+  REGISTER_ANT_API(antStreamNative, stream, elementConnectSignal);
 
   initANTStream();
 
-  return antNative;
+  return antStreamNative;
 }

@@ -6,6 +6,7 @@ cd ../../dep/iotjs/
     --cmake-param=-DENABLE_MODULE_ANT=ON \
     --cmake-param=-DENABLE_MODULE_ANTCOMPANION=ON \
     --cmake-param=-DENABLE_MODULE_ANTML=ON \
+    --cmake-param=-DENABLE_MODULE_ANTSTREAM=ON \
     --external-modules=${MODULE_PATH}
 cd -
 

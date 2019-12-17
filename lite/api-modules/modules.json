@@ -2,11 +2,6 @@
   "modules": {
     "ant": {
       "js_file": "ant/js/ant.js",
-      "native_files": [
-        "ant/native/ant_native.c"
-      ],
-      "init": "InitANTNative",
-      "cmakefile": "ant/native/ant_native.cmake",
       "require": [
         "buffer",
         "console",
@@ -35,8 +30,19 @@
       "cmakefile": "antml/native/ant_ml_native.cmake",
       "require": [
         "buffer",
-        "console",
-        "http"
+        "console"
+      ]
+    },
+    "antstream": {
+      "js_file": "antstream/js/antstream.js",
+      "native_files": [
+        "antstream/native/ant_stream_native.c"
+      ],
+      "init": "InitANTStreamNative",
+      "cmakefile": "antstream/native/ant_stream_native.cmake",
+      "require": [
+        "buffer",
+        "console"
       ]
     }
   }

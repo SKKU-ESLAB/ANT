@@ -1,8 +1,13 @@
 var console = require('console');
 
+var StreamAPI = require('antstream');
+
+var RESULT_SUCCESS = 'Success';
+var RESULT_FAILED = 'Failed';
+
 function ANTML() { }
 
-ANTML.createMLElement = function (model_name, input_shape, input_type, output_shape, output_type) {
+ANTML.prototype.createMLElement = function (model_name, input_shape, input_type, output_shape, output_type) {
   if (model_name.indexOf(" ") >= 0) {
     console.error("Invalid model_name! " + model_name);
     return undefined;
@@ -56,11 +61,11 @@ ANTML.createMLElement = function (model_name, input_shape, input_type, output_sh
   return tensor_filter;
 };
 
-ANTML.getMaxOfBuffer = function (buffer, type) {
+ANTML.prototype.getMaxOfBuffer = function (buffer, type) {
   return native.ml_getMaxOfBuffer(buffer, type);
 }
 
-ANTML.connectCompressionServer = function (ipAddress) {
+ANTML.prototype.connectCompressionServer = function (ipAddress) {
   return new CompressionServer(ipAddress);
 };
 

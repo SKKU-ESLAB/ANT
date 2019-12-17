@@ -1,5 +1,5 @@
-#ifndef __ANT_NATIVE_STREAM_H__
-#define __ANT_NATIVE_STREAM_H__
+#ifndef __ANT_STREAM_NATIVE_INTERNAL_H__
+#define __ANT_STREAM_NATIVE_INTERNAL_H__
 
 #include <stdbool.h>
 
@@ -15,4 +15,4 @@ bool ant_stream_elementConnectSignal_internal(int element_index,
 
 void initANTStream(void);
 
-#endif /* !defined(__ANT_NATIVE_STREAM_H__) */
+#endif /* !defined(__ANT_STREAM_NATIVE_INTERNAL_H__) */

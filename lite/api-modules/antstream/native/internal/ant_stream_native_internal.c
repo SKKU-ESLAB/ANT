@@ -1,4 +1,4 @@
-#include "ant_native_stream.h"
+#include "ant_stream_native_internal.h"
 #include "../../../common/native/ant_common.h"
 
 #include <gio/gio.h>
@@ -368,7 +368,7 @@ void handle_method_call_internal(int argc, char argv[][MAX_ARG_LENGTH],
   } else if (strncmp(argv[0], "element_link", MAX_ARG_LENGTH) == 0) {
     rpc_element_link(argc, argv, responseMessage);
   } else {
-    g_printerr("Invalid method call!\n");
+    g_printerr("Invalid method call!: %s\n", argv[0]);
   }
 }
 
