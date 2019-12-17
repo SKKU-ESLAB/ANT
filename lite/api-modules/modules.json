@@ -10,6 +10,11 @@
     },
     "antruntime": {
       "js_file": "antruntime/js/antruntime.js",
+      "native_files": [
+        "antruntime/native/ant_runtime_native.c"
+      ],
+      "init": "InitANTRuntimeNative",
+      "cmakefile": "antruntime/native/ant_runtime_native.cmake",
       "require": [
         "buffer",
         "console",

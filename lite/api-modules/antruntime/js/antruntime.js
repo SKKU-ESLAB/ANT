@@ -25,6 +25,10 @@ ANTRuntime.prototype.getCurrentApp = function () {
   return this._mCurrentApp;
 };
 
+ANTRuntime.prototype.getPSSInKB = ANTRuntime.prototype.getPssInKB = function () {
+  return native.runtime_getPssInKB();
+};
+
 /* App start */
 function App(onInitialize, onStart, onStop) {
   this.state = this.STATE.IDLE;
