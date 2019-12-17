@@ -44,6 +44,22 @@
         "buffer",
         "console"
       ]
+    },
+    "antresource": {
+      "js_file": "antresource/js/antresource.js",
+      "require": [
+        "buffer",
+        "console",
+        "http"
+      ]
+    },
+    "antremoteui": {
+      "js_file": "antremoteui/js/antremoteui.js",
+      "require": [
+        "buffer",
+        "console",
+        "http"
+      ]
     }
   }
 }
