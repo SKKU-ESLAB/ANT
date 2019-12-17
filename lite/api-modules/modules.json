@@ -8,6 +8,14 @@
         "http"
       ]
     },
+    "antruntime": {
+      "js_file": "antruntime/js/antruntime.js",
+      "require": [
+        "buffer",
+        "console",
+        "http"
+      ]
+    },
     "antcompanion": {
       "js_file": "antcompanion/js/antcompanion.js",
       "native_files": [
