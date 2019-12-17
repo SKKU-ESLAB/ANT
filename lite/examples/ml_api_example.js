@@ -13,7 +13,7 @@ settings.is_scale_enabled = true;
 settings.is_convert_enabled = true;
 settings.video_width = 224;
 settings.video_height = 224;
-settings.video_format = "RGB";
+settings.video_format = "BGR";
 settings.video_framerate = "30/1";
 settings.video_sink_sync = false;
 settings.my_ip_address = ant.companion.getMyIPAddress("eth0");
@@ -121,16 +121,36 @@ var on_start = function () {
 
     var sink = ant.stream.createElement("appsink");
     sink.setProperty("emit-signals", true);
+    var prevTimestamp = 0;
+    var totalFPS = 0.0;
+    var sampleCount = 0;
     sink.connectSignal("new-sample", function (name, data) {
       var result = ant.ml.getMaxOfBuffer(data, settings.ml.output_type);
       var label_message = "";
+
       var pssInKB = ant.runtime.getPSSInKB();
+      var frameLatency = -1;
+      if (prevTimestamp != 0) {
+        var nowTimestamp = new Date().valueOf();
+        frameLatency = nowTimestamp - prevTimestamp;
+        prevTimestamp = nowTimestamp;
+      } else {
+        prevTimestamp = new Date().valueOf();
+      }
+
+
       if (result === undefined) {
         label_message = "Label error";
       } else {
         label_message = "" + labels[result.max_index]
-          + "(" + Math.round(result.max_value * 10000) / 100 + "%)\n"
-          + pssInKB + " KB";
+          + " (" + Math.round(result.max_value * 10000) / 100 + "%)\n"
+          + (pssInKB / 1024.0).toFixed(1) + " MB";
+        if (frameLatency > 0) {
+          var fps = 1000.0 / frameLatency;
+          totalFPS += fps;
+          sampleCount++;
+          label_message += "\n" + fps.toFixed(2) + " FPS (Average: " + (totalFPS / sampleCount).toFixed(2) + " FPS)";
+        }
       }
       ant.remoteui.setStreamingViewLabelText(label_message);
     });
