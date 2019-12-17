@@ -4,11 +4,6 @@ MODULE_PATH=../../lite/api-modules/
 cd ../../dep/iotjs/
 ./tools/build.py --target-board=rpi3 \
     --cmake-param=-DENABLE_MODULE_ANT=ON \
-    --cmake-param=-DENABLE_MODULE_ANTCOMPANION=ON \
-    --cmake-param=-DENABLE_MODULE_ANTRESOURCE=ON \
-    --cmake-param=-DENABLE_MODULE_ANTREMOTEUI=ON \
-    --cmake-param=-DENABLE_MODULE_ANTSTREAM=ON \
-    --cmake-param=-DENABLE_MODULE_ANTML=ON \
     --external-modules=${MODULE_PATH}
 cd -
 

@@ -76,32 +76,33 @@ App.prototype.getInfo = function () {
 /** ANT main object start **/
 function ANT() { }
 
+console.log("ANT API checking...");
 ANT.prototype.runtime = RuntimeAPI;
 
 try {
   ANT.prototype.resource = require('antresource');
 } catch (e) {
-  console.log("Not found Resource API");
+  console.log("> Not found Resource API");
 }
 try {
   ANT.prototype.remoteui = require('antremoteui');
 } catch (e) {
-  console.log("Not found Remote UI API");
+  console.log("> Not found Remote UI API");
 }
 try {
   ANT.prototype.stream = require('antstream');
 } catch (e) {
-  console.log("Not found Stream API");
+  console.log("> Not found Stream API");
 }
 try {
   ANT.prototype.ml = require('antml');
 } catch (e) {
-  console.log("Not found ML API");
+  console.log("> Not found ML API");
 }
 try {
   ANT.prototype.companion = require('antcompanion');
 } catch (e) {
-  console.log("Not found Companion API");
+  console.log("> Not found Companion API");
 }
 
 /** ANT main object end **/
