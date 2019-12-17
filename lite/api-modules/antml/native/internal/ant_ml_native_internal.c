@@ -1,4 +1,5 @@
-#include "ant_native_ml.h"
+#include "ant_ml_native_internal.h"
+#include "../../../common/native/ant_common.h"
 
 #include <stdio.h>
 #include <string.h>
