@@ -1,0 +1,25 @@
+#include "ant_runtime_native_internal.h"
+#include "../../../common/native/ant_common.h"
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+int ant_runtime_getPssInKB_internal() {
+  FILE *cmd;
+  char result[24] = {0x0};
+  int pssInKB = -1;
+  cmd = popen("cat /proc/$$/smaps | grep -i pss |  awk '{Total+=$2} END "
+              "{print Total}'",
+              "r");
+  while (fgets(result, sizeof(result), cmd) != NULL) {
+    sscanf(result, "%d", &pssInKB);
+  }
+  pclose(cmd);
+
+  return pssInKB;
+}
+
+void initANTRuntime(void) {
+  // Empty function
+}
