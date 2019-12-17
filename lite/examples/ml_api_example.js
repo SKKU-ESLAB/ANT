@@ -121,16 +121,16 @@ var on_start = function () {
 
     var sink = ant.stream.createElement("appsink");
     sink.setProperty("emit-signals", true);
-    var count = 0;
     sink.connectSignal("new-sample", function (name, data) {
       var result = ant.ml.getMaxOfBuffer(data, settings.ml.output_type);
       var label_message = "";
+      var pssInKB = ant.runtime.getPSSInKB();
       if (result === undefined) {
         label_message = "Label error";
       } else {
         label_message = "" + labels[result.max_index]
-          + "(" + Math.round(result.max_value * 10000) / 100 + "%) "
-          + (count++);
+          + "(" + Math.round(result.max_value * 10000) / 100 + "%)\n"
+          + pssInKB + " KB";
       }
       ant.remoteui.setStreamingViewLabelText(label_message);
     });
