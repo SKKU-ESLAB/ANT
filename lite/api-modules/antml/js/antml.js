@@ -1,6 +1,11 @@
 var console = require('console');
 
-var StreamAPI = require('antstream');
+var StreamAPI = undefined;
+try {
+  StreamAPI = require('antstream');
+} catch (e) {
+  throw new Error("ML API Dependency Error: not found Stream API");
+}
 
 var RESULT_SUCCESS = 'Success';
 var RESULT_FAILED = 'Failed';
