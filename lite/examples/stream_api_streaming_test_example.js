@@ -117,6 +117,25 @@ var on_start = function () {
     ant.remoteui.setStreamingViewPipeline(remote_pipeline);
     ant.remoteui.setStreamingViewLabelText("ON");
   }, 5000);
+
+  setTimeout(function () {
+    var totalPss = 0.0;
+    var sampleCount = 0;
+    console.log('Start memory benchmarking...');
+    if (ant.stream !== undefined) {
+      ant.stream.initialize();
+    }
+    var getSample = function () {
+      totalPss += ant.runtime.getPssInKB();
+      sampleCount++;
+      if (sampleCount == 10) {
+        console.log((totalPss / sampleCount).toFixed(2) + " KB");
+      } else {
+        setTimeout(getSample, 1000);
+      }
+    };
+    setTimeout(getSample, 1000);
+  }, 15000);
 };
 
 var on_stop = function () {

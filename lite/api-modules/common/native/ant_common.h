@@ -16,21 +16,28 @@
     return jerry_create_string((const jerry_char_t *)result_string);           \
   }
 
-#define ANT_API_VOID_TO_STRING(api_name, function_name)              \
-  JS_FUNCTION(ant_##api_name##_##function_name) {                    \
-    char result_string[MAX_RESULT_MESSAGE_LENGTH];                   \
-    ant_##api_name##_##function_name##_internal(result_string);      \
-    return jerry_create_string((const jerry_char_t *)result_string); \
+#define ANT_API_VOID_TO_STRING(api_name, function_name)                        \
+  JS_FUNCTION(ant_##api_name##_##function_name) {                              \
+    char result_string[MAX_RESULT_MESSAGE_LENGTH];                             \
+    ant_##api_name##_##function_name##_internal(result_string);                \
+    return jerry_create_string((const jerry_char_t *)result_string);           \
   }
 
-#define ANT_API_VOID_TO_VOID(api_name, function_name) \
-  JS_FUNCTION(ant_##api_name##_##function_name) {     \
-    ant_##api_name##_##function_name##_internal();    \
-    return jerry_create_undefined();                  \
+#define ANT_API_VOID_TO_NUMBER(api_name, function_name)                        \
+  JS_FUNCTION(ant_##api_name##_##function_name) {                              \
+    int result_number;                                                         \
+    result_number = ant_##api_name##_##function_name##_internal();             \
+    return jerry_create_number(result_number);                                 \
   }
 
-#define REGISTER_ANT_API(module, api_name, function_name)     \
-  iotjs_jval_set_method(module, #api_name "_" #function_name, \
+#define ANT_API_VOID_TO_VOID(api_name, function_name)                          \
+  JS_FUNCTION(ant_##api_name##_##function_name) {                              \
+    ant_##api_name##_##function_name##_internal();                             \
+    return jerry_create_undefined();                                           \
+  }
+
+#define REGISTER_ANT_API(module, api_name, function_name)                      \
+  iotjs_jval_set_method(module, #api_name "_" #function_name,                  \
                         ant_##api_name##_##function_name);
 
 #endif /* !defined(__ANT_COMMON_H__) */

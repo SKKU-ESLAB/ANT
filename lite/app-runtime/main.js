@@ -13,6 +13,8 @@ var MAIN_LOOP_DIR_PATH = truncateFile(process.argv[1]);
 var Config = function () {
   this.showHTTPRequestPath = false;
   this.showHTTPRequestData = false;
+  this.defaultInterfaceName = "eth0";
+  this.defaultPort = 8001;
 };
 var gConfig = new Config();
 /* App Main Config END */
@@ -215,17 +217,30 @@ function onGetAppEditorPage(request, data) {
   var path = MAIN_LOOP_DIR_PATH + 'app-editor';
   if (urlTokens.length == 0) {
     path += '/index.html';
+
+    if (fs.existsSync(path)) {
+      var originalIndexHtml = fs.readFileSync(path).toString();
+      var jQueryTagEndIdx = originalIndexHtml.indexOf("</script>") + "</script>".length;
+      var ipAddress = ant.companion.getMyIPAddress(gConfig.defaultInterfaceName);
+      var ipAddressSetting = "\n<script>$(document).ready(function () {\n\
+      $('#targetAddressInput').val('" + ipAddress + ":" + gConfig.defaultPort + "');\n\
+    });</script>\n";
+      var indexHtml = originalIndexHtml.slice(0, jQueryTagEndIdx) + ipAddressSetting + originalIndexHtml.slice(jQueryTagEndIdx + 1);
+      results.message = indexHtml;
+      results.code = 200;
+    }
   } else {
     for (i in urlTokens) {
       path += '/' + urlTokens[i];
     }
+
+    if (fs.existsSync(path)) {
+      var originalIndexHtml = fs.readFileSync(path);
+      results.message = originalIndexHtml;
+      results.code = 200;
+    }
   }
-  // console.log(path);
-  if (fs.existsSync(path)) {
-    var indexHtml = fs.readFileSync(path);
-    results.message = indexHtml;
-    results.code = 200;
-  }
+
   return results;
 }
 
@@ -377,10 +392,9 @@ function mainLoop() {
   var server = http.createServer();
   server.on('request', onHTTPRequest);
 
-  var port = 8001;
-  server.listen(port, function () {
-    var ipAddress = ant.companion.getMyIPAddress("eth0");
-    console.log('ANT core listening: http://' + ipAddress + ":" + port);
+  server.listen(gConfig.defaultPort, function () {
+    var ipAddress = ant.companion.getMyIPAddress(gConfig.defaultInterfaceName);
+    console.log('ANT core listening: http://' + ipAddress + ":" + gConfig.defaultPort);
   });
 }
 
