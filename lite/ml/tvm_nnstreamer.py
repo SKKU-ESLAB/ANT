@@ -1,5 +1,6 @@
 import tvm
 from tvm.contrib import graph_runtime
+import time
 
 import nnstreamer_python as nns
 
@@ -58,14 +59,25 @@ class CustomFilter(object):
         return self.output_dims
 
     def invoke(self, input_array):
+        preprocess_start_ts = time.time()
+
         input_tensor = np.reshape(
             input_array[0], self.input_dims[0].getDims()[::-1])[0]
         image = input_tensor
 
         input_image = transform_image(input_tensor)
+
+        process_start_ts = time.time()
+
         self.module.run(data=input_image)
 
         out = self.module.get_output(0)
+
+        process_end_ts = time.time()
+
+        # print("Preprocessing(reshape+transform): %f ms / Inference(TVM): %f ms"
+        #  % ((process_start_ts - preprocess_start_ts) / 1000,
+        #     (process_end_ts - process_start_ts) / 1000))
 
         return [out.asnumpy().astype(np.float32)]
 

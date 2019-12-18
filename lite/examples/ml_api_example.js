@@ -1,11 +1,15 @@
-// ML Example
-// It requires Companion, Resource, Remote UI, Stream, ML API. (option3)
-//  - Video Source => MobileNet => TCP Network => Smartphone Streaming View (Video + Label)
-
 var ant = require('ant');
 var console = require('console');
 
 var settings = {};
+settings.ml = {};
+settings.ml.model_name = "sample-models/rpi3_mobilenet_full";
+settings.ml.input_shape = [3, 224, 224, 1];
+settings.ml.input_type = "uint8";
+settings.ml.output_shape = [1000, 1, 1, 1];
+settings.ml.output_type = "float32";
+settings.ml.label_file_name = "imagenet-simple-labels.json";
+
 settings.source_type = "/dev/video0"; // "rpi", "test", or others(v4l2src)
 settings.is_h264_enabled = false;
 settings.is_source_filter_enabled = false;
@@ -18,14 +22,6 @@ settings.video_framerate = "30/1";
 settings.video_sink_sync = false;
 settings.my_ip_address = ant.companion.getMyIPAddress("eth0");
 settings.my_port = 5000;
-
-settings.ml = {};
-settings.ml.model_name = "sample-models/rpi3_mobilenet_full";
-settings.ml.input_shape = [3, 224, 224, 1];
-settings.ml.input_type = "uint8";
-settings.ml.output_shape = [1000, 1, 1, 1];
-settings.ml.output_type = "float32";
-settings.ml.label_file_name = "imagenet-simple-labels.json";
 
 var on_initialize = function () {
   console.log('on_initialize');
@@ -48,6 +44,8 @@ var on_start = function () {
   // pipeline setting should be executed by setTimeout.
   ant.stream.initialize();
   console.log('Wait until stream thread is ready...');
+  var baselinePssInKB = ant.runtime.getPSSInKB();
+  console.log("Baseline Memory: " + baselinePssInKB + " KB");
   setTimeout(function () {
     var pipeline = ant.stream.createPipeline("test");
     var mainpipe_elements = [];
@@ -122,13 +120,14 @@ var on_start = function () {
     var sink = ant.stream.createElement("appsink");
     sink.setProperty("emit-signals", true);
     var prevTimestamp = 0;
-    var totalFPS = 0.0;
+    var totalPssInKB = 0;
+    var totalFrameLatency = 0.0;
     var sampleCount = 0;
     sink.connectSignal("new-sample", function (name, data) {
       var result = ant.ml.getMaxOfBuffer(data, settings.ml.output_type);
       var label_message = "";
 
-      var pssInKB = ant.runtime.getPSSInKB();
+      var pssInKB = ant.runtime.getPSSInKB() - baselinePssInKB;
       var frameLatency = -1;
       if (prevTimestamp != 0) {
         var nowTimestamp = new Date().valueOf();
@@ -142,14 +141,17 @@ var on_start = function () {
       if (result === undefined) {
         label_message = "Label error";
       } else {
+        sampleCount++;
+        totalPssInKB += pssInKB;
+        var averagePssInKB = totalPssInKB / sampleCount;
         label_message = "" + labels[result.max_index]
           + " (" + Math.round(result.max_value * 10000) / 100 + "%)\n"
-          + (pssInKB / 1024.0).toFixed(1) + " MB";
+          + (averagePssInKB / 1024.0).toFixed(1) + " MB";
         if (frameLatency > 0) {
-          var fps = 1000.0 / frameLatency;
-          totalFPS += fps;
-          sampleCount++;
-          label_message += "\n" + fps.toFixed(2) + " FPS (Average: " + (totalFPS / sampleCount).toFixed(2) + " FPS)";
+          totalFrameLatency += frameLatency;
+          var averageFrameLatency = totalFrameLatency / sampleCount;
+          var averageFPS = 1000.0 / averageFrameLatency;
+          label_message += "\n" + averageFrameLatency.toFixed(2) + " ms (" + averageFPS.toFixed(2) + " FPS)";
         }
       }
       ant.remoteui.setStreamingViewLabelText(label_message);

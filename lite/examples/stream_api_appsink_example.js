@@ -5,10 +5,10 @@ var ant = require('ant');
 var console = require('console');
 
 var settings = {};
-settings.video_width = 480;
-settings.video_height = 360;
+settings.video_width = 224;
+settings.video_height = 224;
 settings.video_framerate = "30/1";
-settings.video_format = "RGB";
+settings.video_format = "BGR";
 settings.video_sink_sync = false;
 settings.my_ip_address = ant.companion.getMyIPAddress("eth0");
 settings.my_port = 5000;
