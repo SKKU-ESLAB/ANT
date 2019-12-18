@@ -1,5 +1,6 @@
 package skku.eslab.ant.companion;
 
+import android.content.Intent;
 import android.content.SharedPreferences;
 import android.graphics.Color;
 import android.net.wifi.WifiManager;
@@ -49,6 +50,10 @@ public class MainActivity extends AppCompatActivity {
     private final String AS_LAUNCHING = "Launching";
     private final String AS_RUNNING = "Running";
     private final String AS_TERMINATING = "Terminating";
+
+    final String RPI3_ADDRESS = "192.168.0.33:8001";
+    final String OXU4_ADDRESS = "192.168.0.34:8001";
+    final String JTX2_ADDRESS = "192.168.0.35:8001";
 
     @Override
     protected void onStart() {
@@ -127,10 +132,6 @@ public class MainActivity extends AppCompatActivity {
         this.mConnectionStatus.setValue(CS_DISCONNECTED);
         this.mAppStatus.setValue(AS_IDLE);
 
-        // Register button listeners
-        Button appStartStopButton = findViewById(R.id.appStartStopButton);
-        appStartStopButton.setOnClickListener(onClickAppStartStopButton);
-
         // Register edittext listeners
         final EditText targetAddressEditText =
                 findViewById(R.id.targetAddressEditText);
@@ -147,6 +148,44 @@ public class MainActivity extends AppCompatActivity {
                         return false;
                     }
                 });
+
+        // Register button listeners
+        Button appStartStopButton = findViewById(R.id.appStartStopButton);
+        appStartStopButton.setOnClickListener(onClickAppStartStopButton);
+
+        final Button targetButton1 = findViewById(R.id.targetButton1);
+        final Button targetButton2 = findViewById(R.id.targetButton2);
+        final Button targetButton3 = findViewById(R.id.targetButton3);
+        targetButton1.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                targetAddressEditText.setText(RPI3_ADDRESS);
+                onUpdateTargetAddress(RPI3_ADDRESS);
+                targetButton1.setTextColor(Color.parseColor("#0000ff"));
+                targetButton2.setTextColor(Color.parseColor("#000000"));
+                targetButton3.setTextColor(Color.parseColor("#000000"));
+            }
+        });
+        targetButton2.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                targetAddressEditText.setText(OXU4_ADDRESS);
+                onUpdateTargetAddress(OXU4_ADDRESS);
+                targetButton2.setTextColor(Color.parseColor("#0000ff"));
+                targetButton1.setTextColor(Color.parseColor("#000000"));
+                targetButton3.setTextColor(Color.parseColor("#000000"));
+            }
+        });
+        targetButton3.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                targetAddressEditText.setText(JTX2_ADDRESS);
+                onUpdateTargetAddress(JTX2_ADDRESS);
+                targetButton3.setTextColor(Color.parseColor("#0000ff"));
+                targetButton2.setTextColor(Color.parseColor("#000000"));
+                targetButton1.setTextColor(Color.parseColor("#000000"));
+            }
+        });
 
         // Monitoring task
         TimerTask task = new TimerTask() {
@@ -199,7 +238,18 @@ public class MainActivity extends AppCompatActivity {
                 }
             };
 
+    final String CONNECTION_STATUS_BROADCASE = "ant.companion.connectionstatus";
+
+    private void sendConnectionStatusBroadcast(String connectionStatus) {
+        Intent intent = new Intent(CONNECTION_STATUS_BROADCASE);
+        intent.putExtra("value", connectionStatus);
+        sendBroadcast(intent);
+    }
+
     private void onUpdateConnectionStatus(String connectionStatus) {
+
+        sendConnectionStatusBroadcast(connectionStatus);
+
         TextView statusLabel = findViewById(R.id.statusLabel);
         statusLabel.setText(connectionStatus);
         Button appStartStopButton = findViewById(R.id.appStartStopButton);
@@ -243,12 +293,7 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    private String mRecentConnectionStatus = CS_DISCONNECTED;
-
     private void requestSettingCompanionAddress() {
-//        if (!this.mRecentConnectionStatus
-//                .equals(this.mConnectionStatus.getValue())) {
-//            if (this.mRecentConnectionStatus == CS_CONNECTED) {
         WifiManager wm = (WifiManager) getSystemService(WIFI_SERVICE);
         String selfIpAddress = Formatter
                 .formatIpAddress(wm.getConnectionInfo().getIpAddress());
@@ -260,16 +305,9 @@ public class MainActivity extends AppCompatActivity {
                 new HTTPResponseHandler() {
                     @Override
                     public void onHTTPResponse(int code, String message) {
-                        if (code == 200 && message.equals("Success")) {
-                            mConnectionStatus.setValue(CS_CONNECTED);
-                        } else {
-                            mConnectionStatus.setValue(CS_DISCONNECTED);
-                        }
+                        // Not implemented
                     }
                 });
-//    }
-//}
-//        this.mRecentConnectionStatus = this.mConnectionStatus.getValue();
     }
 
     private void onUpdateTargetAddress(String targetAddress) {
@@ -277,17 +315,21 @@ public class MainActivity extends AppCompatActivity {
         httpClient.setTargetAddress(targetAddress);
     }
 
+    private String mRecentConnectionStatus = CS_DISCONNECTED;
     private void checkConnectionStatus() {
         HTTPClient httpClient = HTTPClient.get();
         String url = httpClient.getTargetAddress() + "/";
         httpClient.sendHTTPRequest(url, "GET", null, new HTTPResponseHandler() {
             @Override
             public void onHTTPResponse(int code, String message) {
+                String connectionStatus;
                 if (code == 200 && message.equals("Alive")) {
-                    mConnectionStatus.setValue(CS_CONNECTED);
+                    connectionStatus = CS_CONNECTED;
                 } else {
-                    mConnectionStatus.setValue(CS_DISCONNECTED);
+                    connectionStatus = CS_DISCONNECTED;
                 }
+                mConnectionStatus.setValue(connectionStatus);
+                mRecentConnectionStatus = mConnectionStatus.getValue();
             }
         });
     }
