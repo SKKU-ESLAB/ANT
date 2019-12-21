@@ -52,8 +52,8 @@ public class MainActivity extends AppCompatActivity {
     private final String AS_TERMINATING = "Terminating";
 
     final String RPI3_ADDRESS = "192.168.0.33:8001";
-    final String OXU4_ADDRESS = "192.168.0.34:8001";
-    final String JTX2_ADDRESS = "192.168.0.35:8001";
+    final String OXU4_ADDRESS = "192.168.0.27:8001";
+    final String JTX2_ADDRESS = "115.145.209.162:8001";
 
     @Override
     protected void onStart() {
