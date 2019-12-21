@@ -186,11 +186,14 @@ function onGetAppInfo(request, data) {
   return results;
 }
 
-function onGetAppCode(request, data) {
+function onGetAppCode(request, data, isInHtml) {
   var results = { message: 'No App Code Found', code: 500 };
 
   if (fs.existsSync(gAppFileName.get())) {
-    var appCode = fs.readFileSync(gAppFileName.get());
+    var appCode = fs.readFileSync(gAppFileName.get()).toString();
+    if (isInHtml) {
+      appCode.replace(/\n/gi, "<br />");
+    }
     results.message = appCode.toString();
     results.code = 200;
   }
@@ -317,7 +320,13 @@ function _onHTTPRequest(request, response, data) {
         // "/runtime/currentApp/code"
         if (request.method == 'GET') {
           // GET "/runtime/currentApp/code"
-          results = onGetAppCode(request, data);
+          results = onGetAppCode(request, data, false);
+        }
+      } else if (urlTokens[2] == 'codeInHtml') {
+        // "/runtime/currentApp/code"
+        if (request.method == 'GET') {
+          // GET "/runtime/currentApp/code"
+          results = onGetAppCode(request, data, true);
         }
       } else if (urlTokens[2] == 'state') {
         // "/runtime/currentApp/state"
