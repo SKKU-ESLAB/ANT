@@ -36,11 +36,13 @@ public class HomeFragment extends Fragment {
 
     private void updateAppCode() {
         HTTPClient httpClient = HTTPClient.get();
-        String url = httpClient.getTargetAddress() + "/runtime/currentApp/code";
+        String url = httpClient.getTargetAddress() +
+                "/runtime/currentApp/codeInHtml";
         httpClient.sendHTTPRequest(url, "GET", null, new HTTPResponseHandler() {
             @Override
             public void onHTTPResponse(int code, String message) {
                 if (code == 200) {
+                    message = message.replace("<br />", "\n");
                     onUpdateAppCode(message);
                 }
             }
@@ -50,8 +52,9 @@ public class HomeFragment extends Fragment {
     private void onUpdateAppCode(String appCode) {
         FragmentActivity activity = getActivity();
         do {
-            if(activity != null) {
-                TextView appCodeTextView = activity.findViewById(R.id.appCodeTextView);
+            if (activity != null) {
+                TextView appCodeTextView =
+                        activity.findViewById(R.id.appCodeTextView);
                 appCodeTextView.setText(appCode);
             } else {
                 try {
