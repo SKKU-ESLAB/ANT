@@ -43,3 +43,6 @@
 [submodule "dep/tvm"]
 	path = dep/tvm
 	url = https://github.com/apache/incubator-tvm
+[submodule "subprojects/auto-compression"]
+	path = subprojects/auto-compression
+	url = https://github.com/SKKU-ESLAB/Auto-Compression.git
