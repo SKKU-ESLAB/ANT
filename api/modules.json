@@ -73,6 +73,18 @@
         "console",
         "http"
       ]
+    },
+    "ocf": {
+      "js_file": "ocf/js/ocf.js",
+      "native_files": [
+        "ocf/native/ocf_native.c"
+      ],
+      "init": "InitANTRuntimeNative",
+      "cmakefile": "ocf/native/ocf_native.cmake",
+      "require": [
+        "buffer",
+        "console"
+      ]
     }
   }
 }
