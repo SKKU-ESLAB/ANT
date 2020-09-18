@@ -37,8 +37,8 @@
 [submodule "android-companion/app/src/main/jniLibs"]
 	path = android-companion/app/src/main/jniLibs
 	url = https://github.com/SKKU-ESLAB/ant-android-libs-armeabi
-[submodule "lite/ml/sample-models"]
-	path = lite/ml/sample-models
+[submodule "ml/sample-models"]
+	path = ml/sample-models
 	url = https://github.com/SKKU-ESLAB/ant-sample-ml-models
 [submodule "dep/tvm"]
 	path = dep/tvm
@@ -46,3 +46,6 @@
 [submodule "subprojects/auto-compression"]
 	path = subprojects/auto-compression
 	url = https://github.com/SKKU-ESLAB/Auto-Compression.git
+[submodule "dep/iotivity"]
+	path = dep/iotivity
+	url = https://github.com/iotivity/iotivity-lite
