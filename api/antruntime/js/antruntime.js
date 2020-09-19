@@ -26,7 +26,7 @@ ANTRuntime.prototype.getCurrentApp = function () {
 };
 
 ANTRuntime.prototype.getPSSInKB = ANTRuntime.prototype.getPssInKB = function () {
-  return native.runtime_getPssInKB();
+  return native.ant_runtime_getPssInKB();
 };
 
 /* App start */

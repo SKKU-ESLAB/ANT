@@ -1,5 +1,5 @@
-#include "internal/ant_ml_native_internal.h"
 #include "../../common/native/ant_common.h"
+#include "internal/ant_ml_native_internal.h"
 
 #include "iotjs_def.h"
 #include "iotjs_uv_request.h"
@@ -95,7 +95,7 @@ JS_FUNCTION(ant_ml_getMaxOfBuffer) {
 
 jerry_value_t InitANTMLNative() {
   jerry_value_t antMLNative = jerry_create_object();
-  REGISTER_ANT_API (antMLNative, ml, getMaxOfBuffer);
+  REGISTER_ANT_API(antMLNative, ant_ml, getMaxOfBuffer);
 
   initANTML();
 

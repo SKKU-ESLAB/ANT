@@ -9,8 +9,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-ANT_API_VOID_TO_VOID(stream, initializeStream);
-ANT_API_STRING_TO_STRING(stream, callDbusMethod);
+ANT_API_VOID_TO_VOID(ant_stream, initializeStream);
+ANT_API_STRING_TO_STRING(ant_stream, callDbusMethod);
 
 // TODO: add a function to reset g_uv_async (hardcoded now)
 // Async handler order: gstreamer signal -> ant async -> uv async -> js
@@ -135,9 +135,9 @@ JS_FUNCTION(ant_stream_elementConnectSignal) {
 
 jerry_value_t InitANTStreamNative() {
   jerry_value_t antStreamNative = jerry_create_object();
-  REGISTER_ANT_API(antStreamNative, stream, initializeStream);
-  REGISTER_ANT_API(antStreamNative, stream, callDbusMethod);
-  REGISTER_ANT_API(antStreamNative, stream, elementConnectSignal);
+  REGISTER_ANT_API(antStreamNative, ant_stream, initializeStream);
+  REGISTER_ANT_API(antStreamNative, ant_stream, callDbusMethod);
+  REGISTER_ANT_API(antStreamNative, ant_stream, elementConnectSignal);
 
   initANTStream();
 

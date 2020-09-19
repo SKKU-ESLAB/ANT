@@ -79,7 +79,7 @@
       "native_files": [
         "ocf/native/ocf_native.c"
       ],
-      "init": "InitANTRuntimeNative",
+      "init": "InitOCFNative",
       "cmakefile": "ocf/native/ocf_native.cmake",
       "require": [
         "buffer",

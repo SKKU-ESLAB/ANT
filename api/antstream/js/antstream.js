@@ -12,7 +12,7 @@ ANTStream.prototype.callDbusMethod = function (message) {
     console.error("ERROR: Stream API is not initialized");
     return false;
   }
-  return native.stream_callDbusMethod(message);
+  return native.ant_stream_callDbusMethod(message);
 };
 
 ANTStream.prototype.isInitialized = function () {
@@ -21,7 +21,7 @@ ANTStream.prototype.isInitialized = function () {
 
 ANTStream.prototype.initialize = function () {
   this._mIsInitialized = true;
-  native.stream_initializeStream();
+  native.ant_stream_initializeStream();
 };
 ANTStream.prototype.finalize = function () {
   var ANTStream = this;
@@ -210,7 +210,7 @@ Element.prototype.connectSignal = function (detailedSignal, handler) {
     console.error("ERROR: Handler already exists for " + detailedSignal);
     return false;
   }
-  var result = native.stream_elementConnectSignal(this._element_index, detailedSignal, handler);
+  var result = native.ant_stream_elementConnectSignal(this._element_index, detailedSignal, handler);
   if (result) {
     this.handlers[detailedSignal] = handler;
   }
