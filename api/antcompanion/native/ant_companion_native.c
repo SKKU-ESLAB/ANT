@@ -9,11 +9,11 @@
 #include <stdlib.h>
 #include <string.h>
 
-ANT_API_STRING_TO_STRING(companion, getMyIPAddress);
+ANT_API_STRING_TO_STRING(ant_companion, getMyIPAddress);
 
 jerry_value_t InitANTCompanionNative() {
   jerry_value_t antCompanionNative = jerry_create_object();
-  REGISTER_ANT_API(antCompanionNative, companion, getMyIPAddress);
+  REGISTER_ANT_API(antCompanionNative, ant_companion, getMyIPAddress);
 
   initANTCompanion();
 
