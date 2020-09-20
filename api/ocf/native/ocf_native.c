@@ -9,7 +9,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-ANT_API_VOID_TO_NUMBER(ocf, initialize);
+ANT_API_VOID_TO_VOID(ocf, initialize);
 
 jerry_value_t InitOCFNative() {
   jerry_value_t ocfNative = jerry_create_object();

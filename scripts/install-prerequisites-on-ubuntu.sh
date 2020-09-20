@@ -54,4 +54,4 @@ echo "** Build IoTivity..."
 cd ${ANT_ROOT}/dep/iotivity/port/linux
 git submodule init
 git submodule update
-make -j${BUILD_THREADS}
+make
