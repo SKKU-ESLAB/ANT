@@ -9,11 +9,11 @@
 #include <stdlib.h>
 #include <string.h>
 
-ANT_API_VOID_TO_VOID(ocf, initialize);
+ANT_API_VOID_TO_VOID(ocf, adapter_start);
 
 jerry_value_t InitOCFNative() {
   jerry_value_t ocfNative = jerry_create_object();
-  REGISTER_ANT_API(ocfNative, ocf, initialize);
+  REGISTER_ANT_API(ocfNative, ocf, adapter_start);
 
   initOCF();
 
