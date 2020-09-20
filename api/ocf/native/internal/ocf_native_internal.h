@@ -1,7 +1,7 @@
 #ifndef __OCF_NATIVE_INTERNAL_H__
 #define __OCF_NATIVE_INTERNAL_H__
 
-void ocf_initialize_internal();
+void ocf_adapter_start_internal();
 
 void initOCF(void);
 
