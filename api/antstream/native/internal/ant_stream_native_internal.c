@@ -53,6 +53,8 @@ GDBusNodeInfo *g_gdbus_introspection;
 pthread_t g_stream_thread;
 GMainLoop *g_main_loop;
 
+// TODO: element registry: hard-coded size.
+// It should be changed to a registory of dynamic size.
 #define ELEMENT_REGISTRY_SIZE 100
 int g_element_registry_index = 0;
 GstElement *g_element_registry[ELEMENT_REGISTRY_SIZE] = {
