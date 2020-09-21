@@ -105,7 +105,7 @@ discovery(const char *di, const char *uri, oc_string_array_t types,
   (void)user_data;
   (void)bm;
   int i;
-  int uri_len = strlen(uri);
+  size_t uri_len = strlen(uri);
   uri_len = (uri_len >= MAX_URI_LENGTH) ? MAX_URI_LENGTH - 1 : uri_len;
 
   for (i = 0; i < (int)oc_string_array_get_allocated_size(types); i++) {
@@ -187,7 +187,7 @@ void *ocf_thread_fn(void *arg) {
   oc_storage_config("./server_creds");
 #endif /* OC_STORAGE */
 
-  init = oc_main_init(&handler);
+  int init = oc_main_init(&handler);
   if (init < 0)
     return NULL;
 
