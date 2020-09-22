@@ -4,38 +4,41 @@ var RESULT_SUCCESS = 'Success';
 var RESULT_FAILED = 'Failed';
 
 /** OCF API start **/
-function OCF() {}
+function OCF() { }
 
-OCF.prototype.createAdapter = function() {
-  return new OCFAdapter();
+var sOCFAdapter = undefined;
+OCF.prototype.getAdapter = function () {
+  if (sOCFAdapter === undefined) {
+    sOCFAdapter = new OCFAdapter();
+  }
+  return sOCFAdapter;
 };
 
 // TODO: singleton adapter
-function OCFAdapter() {}
+function OCFAdapter() { }
 
-OCFAdapter.prototype.onPrepareClient = function(handler) {
-
-};
-
-OCFAdapter.prototype.onPrepareServer = function(handler) {
+OCFAdapter.prototype.onPrepareClient = function (handler) {
 
 };
 
-OCFAdapter.prototype.addResource = function(resource) {
+OCFAdapter.prototype.onPrepareServer = function (handler) {
 
 };
 
-OCFAdapter.prototype.start = function() {
+OCFAdapter.prototype.addResource = function (resource) {
+};
+
+OCFAdapter.prototype.start = function () {
   native.ocf_adapter_start();
 };
 
-OCFAdapter.prototype.stop = function() {
+OCFAdapter.prototype.stop = function () {
 
 };
 
-function OCFResource() {}
+function OCFResource() { }
 
-OCFResource.prototype.setHandler = function(type, handler) {
+OCFResource.prototype.setHandler = function (type, handler) {
 
 };
 
