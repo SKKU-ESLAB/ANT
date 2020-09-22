@@ -18,11 +18,11 @@ OCF.prototype.getAdapter = function () {
 function OCFAdapter() { }
 
 OCFAdapter.prototype.onPrepareClient = function (handler) {
-
+  native.ocf_adapter_on_prepare_client(handler);
 };
 
 OCFAdapter.prototype.onPrepareServer = function (handler) {
-
+  native.ocf_adapter_on_prepare_server(handler);
 };
 
 OCFAdapter.prototype.addResource = function (resource) {
