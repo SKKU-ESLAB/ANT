@@ -33,8 +33,8 @@ static char light_1[MAX_URI_LENGTH];
 static oc_endpoint_t *light_server;
 static bool light_state = false;
 
-static void get_light(oc_request_t *request, oc_interface_mask_t iface_mask,
-                      void *user_data) {
+static void on_get_light(oc_request_t *request, oc_interface_mask_t iface_mask,
+                         void *user_data) {
   (void)user_data;
   PRINT("GET_light:\n");
   oc_rep_start_root_object();
@@ -59,6 +59,31 @@ static void post_light(oc_client_response_t *data) {
     PRINT("POST response OK\n");
   else
     PRINT("POST response code %d\n", data->code);
+}
+
+static void on_post_light(oc_request_t *request, oc_interface_mask_t iface_mask,
+                          void *user_data) {
+  (void)user_data;
+  (void)iface_mask;
+  PRINT("POST_light:\n");
+  bool state = false;
+  oc_rep_t *rep = request->request_payload;
+  while (rep != NULL) {
+    PRINT("key: %s ", oc_string(rep->name));
+    switch (rep->type) {
+    case OC_REP_BOOL:
+      state = rep->value.boolean;
+      PRINT("value: %d\n", state);
+      break;
+    default:
+      oc_send_response(request, OC_STATUS_BAD_REQUEST);
+      return;
+      break;
+    }
+    rep = rep->next;
+  }
+  oc_send_response(request, OC_STATUS_CHANGED);
+  light_server_state = state;
 }
 
 static void observe_light(oc_client_response_t *data) {
@@ -87,6 +112,24 @@ static void observe_light(oc_client_response_t *data) {
       PRINT("Could not send POST\n");
   } else
     PRINT("Could not init POST\n");
+}
+
+static oc_event_callback_retval_t test_post(void *data) {
+  (void)data;
+
+  PRINT("test_post called\n");
+
+  if (oc_init_post(light_1, light_server, NULL, &post_light, LOW_QOS, NULL)) {
+    oc_rep_start_root_object();
+    oc_rep_set_boolean(root, state, !light_state);
+    oc_rep_end_root_object();
+    if (oc_do_post())
+      PRINT("Sent POST request\n");
+    else
+      PRINT("Could not send POST\n");
+  } else
+    PRINT("Could not init POST\n");
+  return OC_EVENT_DONE;
 }
 
 static oc_event_callback_retval_t stop_observe(void *data) {
@@ -124,7 +167,8 @@ discovery(const char *di, const char *uri, oc_string_array_t types,
       }
 
       oc_do_observe(light_1, light_server, NULL, &observe_light, LOW_QOS, NULL);
-      oc_set_delayed_callback(NULL, &stop_observe, 10);
+      oc_set_delayed_callback(NULL, &test_post, 5);
+      oc_set_delayed_callback(NULL, &stop_observe, 20);
       return OC_STOP_DISCOVERY;
     }
   }
@@ -158,7 +202,8 @@ static void register_resources(void) {
   oc_resource_set_default_interface(res, OC_IF_RW);
   oc_resource_set_discoverable(res, true);
   oc_resource_set_periodic_observable(res, 1);
-  oc_resource_set_request_handler(res, OC_GET, get_light, NULL);
+  oc_resource_set_request_handler(res, OC_GET, on_get_light, NULL);
+  oc_resource_set_request_handler(res, OC_POST, on_post_light, NULL);
   oc_add_resource(res);
 }
 
