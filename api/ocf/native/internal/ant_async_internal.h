@@ -9,7 +9,7 @@ typedef void (*ant_async_handler)(void *);
 
 // in internal source
 #define DECLARE_ANT_ASYNC_HANDLER_SETTER(x)                                    \
-  void set_##x##_ant_handler(ant_async_handler handler);
+  void set_##x##_ant_handler(ant_async_handler handler)
 
 #define ANT_ASYNC_HANDLER_SETTER(x)                                            \
   void set_##x##_ant_handler(ant_async_handler handler) {                      \
