@@ -142,41 +142,41 @@ static oc_event_callback_retval_t stop_observe(void *data) {
   return OC_EVENT_DONE;
 }
 
-static oc_discovery_flags_t
-discovery(const char *di, const char *uri, oc_string_array_t types,
-          oc_interface_mask_t iface_mask, oc_endpoint_t *endpoint,
-          oc_resource_properties_t bm, void *user_data) {
-  (void)di;
-  (void)iface_mask;
-  (void)user_data;
-  (void)bm;
-  int i;
-  size_t uri_len = strlen(uri);
-  uri_len = (uri_len >= MAX_URI_LENGTH) ? MAX_URI_LENGTH - 1 : uri_len;
+// static oc_discovery_flags_t
+// discovery(const char *di, const char *uri, oc_string_array_t types,
+//           oc_interface_mask_t iface_mask, oc_endpoint_t *endpoint,
+//           oc_resource_properties_t bm, void *user_data) {
+//   (void)di;
+//   (void)iface_mask;
+//   (void)user_data;
+//   (void)bm;
+//   int i;
+//   size_t uri_len = strlen(uri);
+//   uri_len = (uri_len >= MAX_URI_LENGTH) ? MAX_URI_LENGTH - 1 : uri_len;
 
-  for (i = 0; i < (int)oc_string_array_get_allocated_size(types); i++) {
-    char *t = oc_string_array_get_item(types, i);
-    if (strlen(t) == 11 && strncmp(t, "oic.r.light", 11) == 0) {
-      strncpy(light_1, uri, uri_len);
-      light_1[uri_len] = '\0';
-      oc_endpoint_list_copy(&light_server, endpoint);
+//   for (i = 0; i < (int)oc_string_array_get_allocated_size(types); i++) {
+//     char *t = oc_string_array_get_item(types, i);
+//     if (strlen(t) == 11 && strncmp(t, "oic.r.light", 11) == 0) {
+//       strncpy(light_1, uri, uri_len);
+//       light_1[uri_len] = '\0';
+//       oc_endpoint_list_copy(&light_server, endpoint);
 
-      PRINT("Resource %s hosted at endpoints:\n", light_1);
-      oc_endpoint_t *ep = endpoint;
-      while (ep != NULL) {
-        PRINTipaddr(*ep);
-        PRINT("\n");
-        ep = ep->next;
-      }
+//       PRINT("Resource %s hosted at endpoints:\n", light_1);
+//       oc_endpoint_t *ep = endpoint;
+//       while (ep != NULL) {
+//         PRINTipaddr(*ep);
+//         PRINT("\n");
+//         ep = ep->next;
+//       }
 
-      oc_do_observe(light_1, light_server, NULL, &observe_light, LOW_QOS, NULL);
-      oc_set_delayed_callback(NULL, &test_post, 5);
-      oc_set_delayed_callback(NULL, &stop_observe, 20);
-      return OC_STOP_DISCOVERY;
-    }
-  }
-  return OC_CONTINUE_DISCOVERY;
-}
+//       oc_do_observe(light_1, light_server, NULL, &observe_light, LOW_QOS, NULL);
+//       oc_set_delayed_callback(NULL, &test_post, 5);
+//       oc_set_delayed_callback(NULL, &stop_observe, 20);
+//       return OC_STOP_DISCOVERY;
+//     }
+//   }
+//   return OC_CONTINUE_DISCOVERY;
+// }
 
 static int app_init(void) {
   int ret = oc_init_platform("Intel", NULL, NULL);
