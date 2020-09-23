@@ -201,7 +201,7 @@ static void handle_signal(int signal) {
 DECLARE_GLOBAL_ANT_ASYNC_HANDLER(ocf_adapter_onPrepareServer)
 ANT_ASYNC_HANDLER_SETTER(ocf_adapter_onPrepareServer)
 static void register_resources(void) {
-  CALL_ANT_ASYNC_HANDLER(ocf_adapter_onPrepareServer);
+  CALL_ANT_ASYNC_HANDLER(ocf_adapter_onPrepareServer, NULL);
   // // OCF.createResource()
   // oc_resource_t *res = oc_new_resource("lightbulb", "/light/1", 1, 0);
   // oc_resource_bind_resource_type(res, "oic.r.light");

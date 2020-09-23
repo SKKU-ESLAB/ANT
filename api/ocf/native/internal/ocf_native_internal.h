@@ -4,6 +4,7 @@
 #include "ant_async_internal.h"
 
 void ocf_adapter_start_internal();
+
 DECLARE_ANT_ASYNC_HANDLER_SETTER(ocf_adapter_onPrepareServer)
 
 void initOCF(void);
