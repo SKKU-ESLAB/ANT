@@ -26,8 +26,7 @@ static struct timespec ts;
 static int quit = 0;
 
 // OCF Server
-static bool light_server_state = false;
-ant_handler_v_v g_ocf_adapter_onPrepareServer_itc_handler = NULL;
+// static bool light_server_state = false;
 
 // OCF Client
 #define MAX_URI_LENGTH (30)
@@ -35,25 +34,26 @@ static char light_1[MAX_URI_LENGTH];
 static oc_endpoint_t *light_server;
 static bool light_state = false;
 
-static void on_get_light(oc_request_t *request, oc_interface_mask_t iface_mask,
-                         void *user_data) {
-  (void)user_data;
-  PRINT("GET_light:\n");
-  oc_rep_start_root_object();
-  switch (iface_mask) {
-  case OC_IF_BASELINE:
-    oc_process_baseline_interface(request->resource);
-  /* fall through */
-  case OC_IF_RW:
-    oc_rep_set_boolean(root, state, light_server_state);
-    break;
-  default:
-    break;
-  }
-  oc_rep_end_root_object();
-  oc_send_response(request, OC_STATUS_OK);
-  PRINT("Light state %d\n", light_server_state);
-}
+// static void on_get_light(oc_request_t *request, oc_interface_mask_t
+// iface_mask,
+//                          void *user_data) {
+//   (void)user_data;
+//   PRINT("GET_light:\n");
+//   oc_rep_start_root_object();
+//   switch (iface_mask) {
+//   case OC_IF_BASELINE:
+//     oc_process_baseline_interface(request->resource);
+//   /* fall through */
+//   case OC_IF_RW:
+//     oc_rep_set_boolean(root, state, light_server_state);
+//     break;
+//   default:
+//     break;
+//   }
+//   oc_rep_end_root_object();
+//   oc_send_response(request, OC_STATUS_OK);
+//   PRINT("Light state %d\n", light_server_state);
+// }
 
 static void post_light(oc_client_response_t *data) {
   PRINT("POST_light:\n");
@@ -63,30 +63,31 @@ static void post_light(oc_client_response_t *data) {
     PRINT("POST response code %d\n", data->code);
 }
 
-static void on_post_light(oc_request_t *request, oc_interface_mask_t iface_mask,
-                          void *user_data) {
-  (void)user_data;
-  (void)iface_mask;
-  PRINT("POST_light:\n");
-  bool state = false;
-  oc_rep_t *rep = request->request_payload;
-  while (rep != NULL) {
-    PRINT("key: %s ", oc_string(rep->name));
-    switch (rep->type) {
-    case OC_REP_BOOL:
-      state = rep->value.boolean;
-      PRINT("value: %d\n", state);
-      break;
-    default:
-      oc_send_response(request, OC_STATUS_BAD_REQUEST);
-      return;
-      break;
-    }
-    rep = rep->next;
-  }
-  oc_send_response(request, OC_STATUS_CHANGED);
-  light_server_state = state;
-}
+// static void on_post_light(oc_request_t *request, oc_interface_mask_t
+// iface_mask,
+//                           void *user_data) {
+//   (void)user_data;
+//   (void)iface_mask;
+//   PRINT("POST_light:\n");
+//   bool state = false;
+//   oc_rep_t *rep = request->request_payload;
+//   while (rep != NULL) {
+//     PRINT("key: %s ", oc_string(rep->name));
+//     switch (rep->type) {
+//     case OC_REP_BOOL:
+//       state = rep->value.boolean;
+//       PRINT("value: %d\n", state);
+//       break;
+//     default:
+//       oc_send_response(request, OC_STATUS_BAD_REQUEST);
+//       return;
+//       break;
+//     }
+//     rep = rep->next;
+//   }
+//   oc_send_response(request, OC_STATUS_CHANGED);
+//   light_server_state = state;
+// }
 
 static void observe_light(oc_client_response_t *data) {
   PRINT("OBSERVE_light:\n");
@@ -197,27 +198,23 @@ static void handle_signal(int signal) {
 }
 
 // Ready for server
+DECLARE_GLOBAL_ANT_ASYNC_HANDLER(ocf_adapter_onPrepareServer)
+ANT_ASYNC_HANDLER_SETTER(ocf_adapter_onPrepareServer)
 static void register_resources(void) {
-  if (g_ocf_adapter_onPrepareServer_itc_handler != NULL) {
-    g_ocf_adapter_onPrepareServer_itc_handler();
-  }
-
-  // OCF.createResource()
-  oc_resource_t *res = oc_new_resource("lightbulb", "/light/1", 1, 0);
-  oc_resource_bind_resource_type(res, "oic.r.light");
-  oc_resource_bind_resource_interface(res, OC_IF_RW);
-  oc_resource_set_default_interface(res, OC_IF_RW);
-
-  // OCFResource.setDiscoverable()
-  oc_resource_set_discoverable(res, true);
-
-  // OCFResource.setPeriodicObservable()
-  oc_resource_set_periodic_observable(res, 1);
-
-  // OCFResource.setHandler()
-  oc_resource_set_request_handler(res, OC_GET, on_get_light, NULL);
-  oc_resource_set_request_handler(res, OC_POST, on_post_light, NULL);
-  oc_add_resource(res);
+  CALL_ANT_ASYNC_HANDLER(ocf_adapter_onPrepareServer);
+  // // OCF.createResource()
+  // oc_resource_t *res = oc_new_resource("lightbulb", "/light/1", 1, 0);
+  // oc_resource_bind_resource_type(res, "oic.r.light");
+  // oc_resource_bind_resource_interface(res, OC_IF_RW);
+  // oc_resource_set_default_interface(res, OC_IF_RW);
+  // // OCFResource.setDiscoverable()
+  // oc_resource_set_discoverable(res, true);
+  // // OCFResource.setPeriodicObservable()
+  // oc_resource_set_periodic_observable(res, 1);
+  // // OCFResource.setHandler()
+  // oc_resource_set_request_handler(res, OC_GET, on_get_light, NULL);
+  // oc_resource_set_request_handler(res, OC_POST, on_post_light, NULL);
+  // oc_add_resource(res);
 }
 
 // Ready for client
@@ -269,10 +266,6 @@ void *ocf_thread_fn(void *arg) {
 
 void ocf_adapter_start_internal(void) {
   pthread_create(&g_ocf_thread, NULL, &ocf_thread_fn, NULL);
-}
-
-void ocf_adapter_onPrepareServer_internal(ant_handler_v_v handler) {
-  g_ocf_adapter_onPrepareServer_itc_handler = handler;
 }
 
 void initOCF(void) {
