@@ -30,9 +30,9 @@ static int g_thread_quit = 0;
 
 // OCF Client
 #define MAX_URI_LENGTH (30)
-static char light_1[MAX_URI_LENGTH];
-static oc_endpoint_t *light_server;
-static bool light_state = false;
+// static char light_1[MAX_URI_LENGTH];
+// static oc_endpoint_t *light_server;
+// static bool light_state = false;
 
 // static void on_get_light(oc_request_t *request, oc_interface_mask_t
 // iface_mask,
@@ -55,13 +55,13 @@ static bool light_state = false;
 //   PRINT("Light state %d\n", light_server_state);
 // }
 
-static void post_light(oc_client_response_t *data) {
-  PRINT("POST_light:\n");
-  if (data->code == OC_STATUS_CHANGED)
-    PRINT("POST response OK\n");
-  else
-    PRINT("POST response code %d\n", data->code);
-}
+//static void post_light(oc_client_response_t *data) {
+//  PRINT("POST_light:\n");
+//  if (data->code == OC_STATUS_CHANGED)
+//    PRINT("POST response OK\n");
+//  else
+//    PRINT("POST response code %d\n", data->code);
+//}
 
 // static void on_post_light(oc_request_t *request, oc_interface_mask_t
 // iface_mask,
@@ -89,58 +89,58 @@ static void post_light(oc_client_response_t *data) {
 //   light_server_state = state;
 // }
 
-static void observe_light(oc_client_response_t *data) {
-  PRINT("OBSERVE_light:\n");
-  oc_rep_t *rep = data->payload;
-  while (rep != NULL) {
-    PRINT("key %s, value ", oc_string(rep->name));
-    switch (rep->type) {
-    case OC_REP_BOOL:
-      PRINT("%d\n", rep->value.boolean);
-      light_state = rep->value.boolean;
-      break;
-    default:
-      break;
-    }
-    rep = rep->next;
-  }
+// static void observe_light(oc_client_response_t *data) {
+//   PRINT("OBSERVE_light:\n");
+//   oc_rep_t *rep = data->payload;
+//   while (rep != NULL) {
+//     PRINT("key %s, value ", oc_string(rep->name));
+//     switch (rep->type) {
+//     case OC_REP_BOOL:
+//       PRINT("%d\n", rep->value.boolean);
+//       light_state = rep->value.boolean;
+//       break;
+//     default:
+//       break;
+//     }
+//     rep = rep->next;
+//   }
 
-  if (oc_init_post(light_1, light_server, NULL, &post_light, LOW_QOS, NULL)) {
-    oc_rep_start_root_object();
-    oc_rep_set_boolean(root, state, !light_state);
-    oc_rep_end_root_object();
-    if (oc_do_post())
-      PRINT("Sent POST request\n");
-    else
-      PRINT("Could not send POST\n");
-  } else
-    PRINT("Could not init POST\n");
-}
+//   if (oc_init_post(light_1, light_server, NULL, &post_light, LOW_QOS, NULL)) {
+//     oc_rep_start_root_object();
+//     oc_rep_set_boolean(root, state, !light_state);
+//     oc_rep_end_root_object();
+//     if (oc_do_post())
+//       PRINT("Sent POST request\n");
+//     else
+//       PRINT("Could not send POST\n");
+//   } else
+//     PRINT("Could not init POST\n");
+// }
 
-static oc_event_callback_retval_t test_post(void *data) {
-  (void)data;
+// static oc_event_callback_retval_t test_post(void *data) {
+//   (void)data;
 
-  PRINT("test_post called\n");
+//   PRINT("test_post called\n");
 
-  if (oc_init_post(light_1, light_server, NULL, &post_light, LOW_QOS, NULL)) {
-    oc_rep_start_root_object();
-    oc_rep_set_boolean(root, state, !light_state);
-    oc_rep_end_root_object();
-    if (oc_do_post())
-      PRINT("Sent POST request\n");
-    else
-      PRINT("Could not send POST\n");
-  } else
-    PRINT("Could not init POST\n");
-  return OC_EVENT_DONE;
-}
+//   if (oc_init_post(light_1, light_server, NULL, &post_light, LOW_QOS, NULL)) {
+//     oc_rep_start_root_object();
+//     oc_rep_set_boolean(root, state, !light_state);
+//     oc_rep_end_root_object();
+//     if (oc_do_post())
+//       PRINT("Sent POST request\n");
+//     else
+//       PRINT("Could not send POST\n");
+//   } else
+//     PRINT("Could not init POST\n");
+//   return OC_EVENT_DONE;
+// }
 
-static oc_event_callback_retval_t stop_observe(void *data) {
-  (void)data;
-  PRINT("Stopping OBSERVE\n");
-  oc_stop_observe(light_1, light_server);
-  return OC_EVENT_DONE;
-}
+// static oc_event_callback_retval_t stop_observe(void *data) {
+//   (void)data;
+//   PRINT("Stopping OBSERVE\n");
+//   oc_stop_observe(light_1, light_server);
+//   return OC_EVENT_DONE;
+// }
 
 // static oc_discovery_flags_t
 // discovery(const char *di, const char *uri, oc_string_array_t types,
