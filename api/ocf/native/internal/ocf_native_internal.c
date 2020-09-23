@@ -11,6 +11,7 @@
 
 #include <pthread.h>
 #include <signal.h>
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -26,6 +27,7 @@ static int quit = 0;
 
 // OCF Server
 static bool light_server_state = false;
+ant_handler_v_v g_ocf_adapter_onPrepareServer_itc_handler = NULL;
 
 // OCF Client
 #define MAX_URI_LENGTH (30)
@@ -196,12 +198,23 @@ static void handle_signal(int signal) {
 
 // Ready for server
 static void register_resources(void) {
+  if (g_ocf_adapter_onPrepareServer_itc_handler != NULL) {
+    g_ocf_adapter_onPrepareServer_itc_handler();
+  }
+
+  // OCF.createResource()
   oc_resource_t *res = oc_new_resource("lightbulb", "/light/1", 1, 0);
   oc_resource_bind_resource_type(res, "oic.r.light");
   oc_resource_bind_resource_interface(res, OC_IF_RW);
   oc_resource_set_default_interface(res, OC_IF_RW);
+
+  // OCFResource.setDiscoverable()
   oc_resource_set_discoverable(res, true);
+
+  // OCFResource.setPeriodicObservable()
   oc_resource_set_periodic_observable(res, 1);
+
+  // OCFResource.setHandler()
   oc_resource_set_request_handler(res, OC_GET, on_get_light, NULL);
   oc_resource_set_request_handler(res, OC_POST, on_post_light, NULL);
   oc_add_resource(res);
@@ -254,8 +267,12 @@ void *ocf_thread_fn(void *arg) {
   return NULL;
 }
 
-void ocf_adapter_start_internal() {
+void ocf_adapter_start_internal(void) {
   pthread_create(&g_ocf_thread, NULL, &ocf_thread_fn, NULL);
+}
+
+void ocf_adapter_onPrepareServer_internal(ant_handler_v_v handler) {
+  g_ocf_adapter_onPrepareServer_itc_handler = handler;
 }
 
 void initOCF(void) {
