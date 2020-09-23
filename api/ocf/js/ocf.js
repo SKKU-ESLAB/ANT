@@ -14,26 +14,22 @@ OCF.prototype.getAdapter = function () {
   return sOCFAdapter;
 };
 
-// TODO: singleton adapter
 function OCFAdapter() { }
-
 OCFAdapter.prototype.onPrepareClient = function (handler) {
   native.ocf_adapter_onPrepareClient(handler);
 };
-
 OCFAdapter.prototype.onPrepareServer = function (handler) {
   native.ocf_adapter_onPrepareServer(handler);
-};
-
-OCFAdapter.prototype.addResource = function (resource) {
 };
 
 OCFAdapter.prototype.start = function () {
   native.ocf_adapter_start();
 };
-
 OCFAdapter.prototype.stop = function () {
+  native.ocf_adapter_stop();
+};
 
+OCFAdapter.prototype.addResource = function (resource) {
 };
 
 function OCFResource() { }

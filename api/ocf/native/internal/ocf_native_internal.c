@@ -23,7 +23,7 @@ static pthread_t g_ocf_thread;
 static pthread_mutex_t mutex;
 static pthread_cond_t cv;
 static struct timespec ts;
-static int quit = 0;
+static int g_thread_quit = 0;
 
 // OCF Server
 // static bool light_server_state = false;
@@ -194,33 +194,36 @@ static void signal_event_loop(void) {
 static void handle_signal(int signal) {
   (void)signal;
   signal_event_loop();
-  quit = 1;
+  g_thread_quit = 1;
 }
 
-// Ready for server
+// OCFAdapter.onPrepareServer()
 DECLARE_GLOBAL_ANT_ASYNC_HANDLER(ocf_adapter_onPrepareServer)
 ANT_ASYNC_HANDLER_SETTER(ocf_adapter_onPrepareServer)
 static void register_resources(void) {
   CALL_ANT_ASYNC_HANDLER(ocf_adapter_onPrepareServer, NULL);
-  // // OCF.createResource()
-  // oc_resource_t *res = oc_new_resource("lightbulb", "/light/1", 1, 0);
-  // oc_resource_bind_resource_type(res, "oic.r.light");
-  // oc_resource_bind_resource_interface(res, OC_IF_RW);
-  // oc_resource_set_default_interface(res, OC_IF_RW);
-  // // OCFResource.setDiscoverable()
-  // oc_resource_set_discoverable(res, true);
-  // // OCFResource.setPeriodicObservable()
-  // oc_resource_set_periodic_observable(res, 1);
-  // // OCFResource.setHandler()
-  // oc_resource_set_request_handler(res, OC_GET, on_get_light, NULL);
-  // oc_resource_set_request_handler(res, OC_POST, on_post_light, NULL);
-  // oc_add_resource(res);
 }
+// // OCF.createResource()
+// oc_resource_t *res = oc_new_resource("lightbulb", "/light/1", 1, 0);
+// oc_resource_bind_resource_type(res, "oic.r.light");
+// oc_resource_bind_resource_interface(res, OC_IF_RW);
+// oc_resource_set_default_interface(res, OC_IF_RW);
+// // OCFResource.setDiscoverable()
+// oc_resource_set_discoverable(res, true);
+// // OCFResource.setPeriodicObservable()
+// oc_resource_set_periodic_observable(res, 1);
+// // OCFResource.setHandler()
+// oc_resource_set_request_handler(res, OC_GET, on_get_light, NULL);
+// oc_resource_set_request_handler(res, OC_POST, on_post_light, NULL);
+// oc_add_resource(res);
 
-// Ready for client
+// OCFAdapter.onPrepareClient()
+DECLARE_GLOBAL_ANT_ASYNC_HANDLER(ocf_adapter_onPrepareClient)
+ANT_ASYNC_HANDLER_SETTER(ocf_adapter_onPrepareClient)
 static void issue_requests(void) {
-  oc_do_ip_discovery("oic.r.light", &discovery, NULL);
+  CALL_ANT_ASYNC_HANDLER(ocf_adapter_onPrepareClient, NULL);
 }
+// oc_do_ip_discovery("oic.r.light", &discovery, NULL);
 
 void *ocf_thread_fn(void *arg) {
   // On OCF Thread
@@ -246,7 +249,7 @@ void *ocf_thread_fn(void *arg) {
   if (init < 0)
     return NULL;
 
-  while (quit != 1) {
+  while (g_thread_quit != 1) {
     next_event = oc_main_poll();
     pthread_mutex_lock(&mutex);
     if (next_event == 0) {
@@ -267,6 +270,8 @@ void *ocf_thread_fn(void *arg) {
 void ocf_adapter_start_internal(void) {
   pthread_create(&g_ocf_thread, NULL, &ocf_thread_fn, NULL);
 }
+
+void ocf_adapter_stop_internal(void) { g_thread_quit = 1; }
 
 void initOCF(void) {
   // Empty function
