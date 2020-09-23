@@ -1,10 +1,10 @@
 #ifndef __OCF_NATIVE_INTERNAL_H__
 #define __OCF_NATIVE_INTERNAL_H__
 
-void ocf_adapter_start_internal();
+#include "ant_async_internal.h"
 
-typedef void (*ant_handler_v_v)();
-void ocf_adapter_onPrepareServer_internal(ant_handler_v_v handler);
+void ocf_adapter_start_internal();
+DECLARE_ANT_ASYNC_HANDLER_SETTER(ocf_adapter_onPrepareServer)
 
 void initOCF(void);
 
