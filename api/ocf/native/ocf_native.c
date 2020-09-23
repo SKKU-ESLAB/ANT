@@ -10,11 +10,20 @@
 #include <stdlib.h>
 #include <string.h>
 
+// OCFAdapter.start()
 ANT_API_VOID_TO_VOID(ocf, adapter_start);
 
+// OCFAdapter.onPrepareServer()
 DECLARE_GLOBAL_ASYNC(ocf_adapter_onPrepareServer)
-DECLARE_ASYNC_HANDLERS(ocf_adapter_onPrepareServer)
-ASYNC_REGISTER(ocf_adapter_onPrepareServer)
+DECLARE_ANT_ASYNC_HANDLER(ocf_adapter_onPrepareServer)
+UV_ASYNC_HANDLER(ocf_adapter_onPrepareServer) {
+  // void *event = GET_MR_EVENT(ocf_adapter_onPrepareServer);
+  jerry_value_t jsHandler = GET_JS_HANDLER(ocf_adapter_onPrepareServer);
+  iotjs_invoke_callback(jsHandler, jerry_create_undefined(), NULL, 0);
+  // DESTROY_EVENTS(ocf_adapter_onPrepareServer);
+}
+
+ASYNC_REGISTER(ocf_adapter_onPrepareServer, NULL)
 JS_FUNCTION(ocf_adapter_onPrepareServer) {
   bool result;
   jerry_value_t argHandler;
