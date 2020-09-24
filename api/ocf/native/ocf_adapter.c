@@ -11,107 +11,24 @@
 #include <stdlib.h>
 #include <string.h>
 
-// TODO: string length hard-coding
-#define MAX_STRING_LEN 100
-
-// OCFAdapter native object declaration
-struct ocf_adapter_s {
-  char mfg_name[MAX_STRING_LEN];
-  ll_t *devices;
-
-  jerry_value_t jobject;
-};
-typedef struct ocf_adapter_s ocf_adapter_t;
-ANT_DEFINE_NATIVE_HANDLE_INFO(ocf_adapter);
-
-// OCFDevice native object declaration
-struct ocf_device_s {
-  char uri[MAX_STRING_LEN];
-  char resource_type[MAX_STRING_LEN];
-  char name[MAX_STRING_LEN];
-  char spec_version[MAX_STRING_LEN];
-  char data_model_version[MAX_STRING_LEN];
-};
-typedef struct ocf_device_s ocf_device_t;
-void devices_item_destroyer(void *item) {
-  ocf_device_t *device;
-  device = (ocf_device_t *)item;
-  free(device);
+// OCFAdapter.onInitialize()
+DECLARE_GLOBAL_ASYNC(ocf_adapter_onInitialize)
+DECLARE_ANT_ASYNC_HANDLER(ocf_adapter_onInitialize)
+UV_ASYNC_HANDLER(ocf_adapter_onInitialize) {
+  // void *event = GET_MR_EVENT(ocf_adapter_onInitialize);
+  jerry_value_t jsHandler = GET_JS_HANDLER(ocf_adapter_onInitialize);
+  iotjs_invoke_callback(jsHandler, jerry_create_undefined(), NULL, 0);
+  // DESTROY_EVENTS(ocf_adapter_onInitialize);
 }
-
-// OCFAdapter native object operations
-ocf_adapter_t *ocf_adapter_create(const jerry_value_t jobject) {
-  ocf_adapter_t *nobject = (ocf_adapter_t *)malloc(sizeof(ocf_adapter_t));
-  nobject->mfg_name[0] = '\0';
-  nobject->devices = ll_new(devices_item_destroyer);
-  nobject->jobject = jobject;
-
-  jerry_set_object_native_pointer(argSelf, nobject,
-                                  &GET_NATIVE_INFO(ocf_adapter));
-  IOTJS_ASSERT(jerry_get_object_native_pointer(jobject, NULL,
-                                               &GET_NATIVE_INFO(ocf_adapter)));
-  return oa;
-}
-static void ocf_adapter_destroy(ocf_adapter_t *nobject) {
-  ll_delete(nobject->devices);
-  IOTJS_RELEASE(nobject);
-}
-
-// OCFAdapter.constructor()
-JS_FUNCTION(ocf_adapter_constructor) {
+ASYNC_REGISTER(ocf_adapter_onInitialize, NULL)
+JS_FUNCTION(ocf_adapter_onInitialize) {
   bool result;
-  jerry_value_t argSelf, argMfgName;
-  DJS_CHECK_ARGS(2, object, string);
-  argSelf = JS_GET_ARG(0, object);
-  argMfgName = JS_GET_ARG(1, string);
+  jerry_value_t argHandler;
+  DJS_CHECK_ARGS(1, function);
+  argHandler = JS_GET_ARG(0, function);
 
-  ocf_adapter_t *oa = ocf_adapter_create(argSelf);
-  strncpy(oa->mfg_name, iotjs_string_data(argMfgName), MAX_STRING_LEN);
-
-  result = CALL_ASYNC_REGISTER(ocf_adapter_onPrepareClient, argSelf);
-  return jerry_create_undefined();
-}
-
-// OCFAdapter.setPlatform()
-JS_FUNCTION(ocf_adapter_setPlatform) {
-  bool result;
-  jerry_value_t argSelf, argMfgName;
-  DJS_CHECK_ARGS(2, object, string);
-  argSelf = JS_GET_ARG(0, object);
-  argMfgName = JS_GET_ARG(1, string);
-
-  ocf_adapter_t *oa = GET_NOBJECT_P(argSelf, ocf_adapter);
-  strncpy(oa->mfg_name, iotjs_string_data(argMfgName), MAX_STRING_LEN);
-
-  return jerry_create_undefined();
-}
-
-// OCFAdapter.addDevice()
-JS_FUNCTION(ocf_adapter_addDevice) {
-  bool result;
-  jerry_value_t argSelf, argUri, argResourceType, argName, argSpecVersion,
-      argDataModelVersion;
-  DJS_CHECK_ARGS(6, object, string, string, string, string, string);
-  argSelf = JS_GET_ARG(0, object);
-  argUri = JS_GET_ARG(1, string);
-  argResourceType = JS_GET_ARG(2, string);
-  argName = JS_GET_ARG(3, string);
-  argSpecVersion = JS_GET_ARG(4, string);
-  argDataModelVersion = JS_GET_ARG(5, string);
-
-  ocf_adapter_t *oa = GET_NOBJECT_P(argSelf, ocf_adapter);
-  ocf_device_t *device = (ocf_device_t *)malloc(sizeof(ocf_device_t));
-
-  strncpy(device->uri, iotjs_string_data(argUri), MAX_STRING_LEN);
-  strncpy(device->resource_type, iotjs_string_data(argResourceType),
-          MAX_STRING_LEN);
-  strncpy(device->name, iotjs_string_data(argName), MAX_STRING_LEN);
-  strncpy(device->spec_version, iotjs_string_data(argSpecVersion),
-          MAX_STRING_LEN);
-  strncpy(device->data_model_version, iotjs_string_data(argDataModelVersion),
-          MAX_STRING_LEN);
-
-  return jerry_create_undefined();
+  result = CALL_ASYNC_REGISTER(ocf_adapter_onInitialize, argHandler);
+  return jerry_create_boolean(result);
 }
 
 // OCFAdapter.onPrepareServer()
@@ -160,12 +77,48 @@ ANT_API_VOID_TO_VOID(ocf, adapter_start);
 // OCFAdapter.stop()
 ANT_API_VOID_TO_VOID(ocf, adapter_stop);
 
+// OCFAdapter.setPlatform()
+JS_FUNCTION(ocf_adapter_setPlatform) {
+  bool result;
+  iotjs_string_t argMfgName;
+  printf("setPlatform start");
+  DJS_CHECK_ARGS(1, string);
+  argMfgName = JS_GET_ARG(0, string);
+
+  result = ocf_adapter_setPlatform_internal(iotjs_string_data(&argMfgName));
+  return jerry_create_boolean(result);
+}
+
+// OCFAdapter.addDevice()
+JS_FUNCTION(ocf_adapter_addDevice) {
+  bool result;
+  iotjs_string_t argUri, argResourceType, argName, argSpecVersion,
+      argDataModelVersion;
+  DJS_CHECK_ARGS(5, string, string, string, string, string);
+  argUri = JS_GET_ARG(0, string);
+  argResourceType = JS_GET_ARG(1, string);
+  argName = JS_GET_ARG(2, string);
+  argSpecVersion = JS_GET_ARG(3, string);
+  argDataModelVersion = JS_GET_ARG(4, string);
+
+  result = ocf_adapter_addDevice_internal(
+      iotjs_string_data(&argUri), iotjs_string_data(&argResourceType),
+      iotjs_string_data(&argName), iotjs_string_data(&argSpecVersion),
+      iotjs_string_data(&argDataModelVersion));
+  return jerry_create_boolean(result);
+}
+
 void InitOCFAdapterNative(jerry_value_t ocfNative) {
-  REGISTER_ANT_API(ocfNative, ocf, adapter_constructor);
-  REGISTER_ANT_API(ocfNative, ocf, adapter_setPlatform);
-  REGISTER_ANT_API(ocfNative, ocf, adapter_addDevice);
+  REGISTER_ANT_API(ocfNative, ocf, adapter_onInitialize);
   REGISTER_ANT_API(ocfNative, ocf, adapter_onPrepareServer);
   REGISTER_ANT_API(ocfNative, ocf, adapter_onPrepareClient);
+
   REGISTER_ANT_API(ocfNative, ocf, adapter_start);
   REGISTER_ANT_API(ocfNative, ocf, adapter_stop);
+
+  REGISTER_ANT_API(ocfNative, ocf, adapter_setPlatform);
+  REGISTER_ANT_API(ocfNative, ocf, adapter_addDevice);
+
+  // Initialize IoTivity Lite
+  initOCFAdapter();
 }
