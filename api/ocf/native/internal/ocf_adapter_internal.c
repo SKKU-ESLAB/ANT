@@ -245,7 +245,10 @@ void ocf_adapter_start_internal(void) {
   pthread_create(&g_ocf_thread, NULL, &ocf_thread_fn, NULL);
 }
 
-void ocf_adapter_stop_internal(void) { g_thread_quit = 1; }
+void ocf_adapter_stop_internal(void) {
+  g_thread_quit = 1;
+  signal_event_loop();
+}
 
 void initOCFAdapter(void) {
   // Empty function
@@ -259,6 +262,8 @@ void *ocf_thread_fn(void *arg) {
   sa.sa_flags = 0;
   sa.sa_handler = handle_signal;
   sigaction(SIGINT, &sa, NULL);
+
+  printf("OCF thread launched.\n");
 
   static const oc_handler_t handler = {.signal_event_loop = signal_event_loop,
                                        .init = oa_initialize,
@@ -289,6 +294,7 @@ void *ocf_thread_fn(void *arg) {
   }
 
   oc_main_shutdown();
+  printf("OCF thread terminates...\n");
 
   return NULL;
 }
