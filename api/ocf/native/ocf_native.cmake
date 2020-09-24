@@ -4,4 +4,4 @@ set(MODULE_NAME "ocf")
 
 add_subdirectory(${MODULE_DIR}/internal/ ${CMAKE_BINARY_DIR}/out/ocf/)
 
-list(APPEND EXTERNAL_LIBS ocf_native)
+list(APPEND EXTERNAL_LIBS ocf)

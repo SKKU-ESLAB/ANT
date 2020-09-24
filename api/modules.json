@@ -77,10 +77,11 @@
     "ocf": {
       "js_file": "ocf/js/ocf.js",
       "native_files": [
-        "ocf/native/ocf_native.c"
+        "ocf/native/ocf.c",
+        "ocf/native/ocf_adapter.c"
       ],
       "init": "InitOCFNative",
-      "cmakefile": "ocf/native/ocf_native.cmake",
+      "cmakefile": "ocf/native/ocf.cmake",
       "require": [
         "buffer",
         "console"
