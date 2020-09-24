@@ -45,14 +45,12 @@ struct ant_async {
   bool x##_async_register(jerry_value_t jsHandler) {                           \
     iotjs_environment_t *env = iotjs_environment_get();                        \
     uv_loop_t *loop = iotjs_environment_loop(env);                             \
-    if (g_##x##_async.js_handler != '\0') {                                    \
-      fprintf(stderr, "ERROR: JS handler already registered!");                \
-      return false;                                                            \
+    if (g_##x##_async.js_handler == '\0') {                                    \
+      g_##x##_async.events = ll_new(args_destroyer);                           \
+      uv_async_init(loop, &g_##x##_async.uv_async, x##_uv_handler);            \
+      set_##x##_ant_handler(x##_ant_handler);                                  \
     }                                                                          \
-    g_##x##_async.events = ll_new(args_destroyer);                             \
     g_##x##_async.js_handler = jsHandler;                                      \
-    uv_async_init(loop, &g_##x##_async.uv_async, x##_uv_handler);              \
-    set_##x##_ant_handler(x##_ant_handler);                                    \
     return true;                                                               \
   }
 

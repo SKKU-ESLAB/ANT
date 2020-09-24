@@ -25,11 +25,13 @@ static pthread_cond_t cv;
 static struct timespec ts;
 static int g_thread_quit = 0;
 
+void *ocf_thread_fn(void *arg);
+
 // OCF Server
 // static bool light_server_state = false;
 
 // OCF Client
-#define MAX_URI_LENGTH (30)
+// #define MAX_URI_LENGTH (30)
 // static char light_1[MAX_URI_LENGTH];
 // static oc_endpoint_t *light_server;
 // static bool light_state = false;
@@ -55,7 +57,7 @@ static int g_thread_quit = 0;
 //   PRINT("Light state %d\n", light_server_state);
 // }
 
-//static void post_light(oc_client_response_t *data) {
+// static void post_light(oc_client_response_t *data) {
 //  PRINT("POST_light:\n");
 //  if (data->code == OC_STATUS_CHANGED)
 //    PRINT("POST response OK\n");
@@ -105,7 +107,8 @@ static int g_thread_quit = 0;
 //     rep = rep->next;
 //   }
 
-//   if (oc_init_post(light_1, light_server, NULL, &post_light, LOW_QOS, NULL)) {
+//   if (oc_init_post(light_1, light_server, NULL, &post_light, LOW_QOS, NULL))
+//   {
 //     oc_rep_start_root_object();
 //     oc_rep_set_boolean(root, state, !light_state);
 //     oc_rep_end_root_object();
@@ -122,7 +125,8 @@ static int g_thread_quit = 0;
 
 //   PRINT("test_post called\n");
 
-//   if (oc_init_post(light_1, light_server, NULL, &post_light, LOW_QOS, NULL)) {
+//   if (oc_init_post(light_1, light_server, NULL, &post_light, LOW_QOS, NULL))
+//   {
 //     oc_rep_start_root_object();
 //     oc_rep_set_boolean(root, state, !light_state);
 //     oc_rep_end_root_object();
@@ -169,21 +173,14 @@ static int g_thread_quit = 0;
 //         ep = ep->next;
 //       }
 
-//       oc_do_observe(light_1, light_server, NULL, &observe_light, LOW_QOS, NULL);
-//       oc_set_delayed_callback(NULL, &test_post, 5);
+//       oc_do_observe(light_1, light_server, NULL, &observe_light, LOW_QOS,
+//       NULL); oc_set_delayed_callback(NULL, &test_post, 5);
 //       oc_set_delayed_callback(NULL, &stop_observe, 20);
 //       return OC_STOP_DISCOVERY;
 //     }
 //   }
 //   return OC_CONTINUE_DISCOVERY;
 // }
-
-static int app_init(void) {
-  int ret = oc_init_platform("Intel", NULL, NULL);
-  ret |= oc_add_device("/oic/d", "oic.d.light", "Kishen's light", "ocf.1.0.0",
-                       "ocf.res.1.0.0", NULL, NULL);
-  return ret;
-}
 
 static void signal_event_loop(void) {
   pthread_mutex_lock(&mutex);
@@ -197,10 +194,29 @@ static void handle_signal(int signal) {
   g_thread_quit = 1;
 }
 
+// OCFAdapter.onInitialize()
+DECLARE_GLOBAL_ANT_ASYNC_HANDLER(ocf_adapter_onInitialize)
+ANT_ASYNC_HANDLER_SETTER(ocf_adapter_onInitialize)
+static int oa_initialize(void) {
+  CALL_ANT_ASYNC_HANDLER(ocf_adapter_onInitialize, NULL);
+  return true;
+}
+
+bool ocf_adapter_setPlatform_internal(const char *mfg_name) {
+  return oc_init_platform(mfg_name, NULL, NULL);
+}
+
+bool ocf_adapter_addDevice_internal(const char *uri, const char *resource_type,
+                                    const char *name, const char *spec_version,
+                                    const char *data_model_version) {
+  return oc_add_device(uri, resource_type, name, spec_version,
+                       data_model_version, NULL, NULL);
+}
+
 // OCFAdapter.onPrepareServer()
 DECLARE_GLOBAL_ANT_ASYNC_HANDLER(ocf_adapter_onPrepareServer)
 ANT_ASYNC_HANDLER_SETTER(ocf_adapter_onPrepareServer)
-static void register_resources(void) {
+static void oa_prepare_server(void) {
   CALL_ANT_ASYNC_HANDLER(ocf_adapter_onPrepareServer, NULL);
 }
 // // OCF.createResource()
@@ -220,10 +236,20 @@ static void register_resources(void) {
 // OCFAdapter.onPrepareClient()
 DECLARE_GLOBAL_ANT_ASYNC_HANDLER(ocf_adapter_onPrepareClient)
 ANT_ASYNC_HANDLER_SETTER(ocf_adapter_onPrepareClient)
-static void issue_requests(void) {
+static void oa_prepare_client(void) {
   CALL_ANT_ASYNC_HANDLER(ocf_adapter_onPrepareClient, NULL);
 }
 // oc_do_ip_discovery("oic.r.light", &discovery, NULL);
+
+void ocf_adapter_start_internal(void) {
+  pthread_create(&g_ocf_thread, NULL, &ocf_thread_fn, NULL);
+}
+
+void ocf_adapter_stop_internal(void) { g_thread_quit = 1; }
+
+void initOCFAdapter(void) {
+  // Empty function
+}
 
 void *ocf_thread_fn(void *arg) {
   // On OCF Thread
@@ -234,10 +260,10 @@ void *ocf_thread_fn(void *arg) {
   sa.sa_handler = handle_signal;
   sigaction(SIGINT, &sa, NULL);
 
-  static const oc_handler_t handler = {.init = app_init,
-                                       .signal_event_loop = signal_event_loop,
-                                       .register_resources = register_resources,
-                                       .requests_entry = issue_requests};
+  static const oc_handler_t handler = {.signal_event_loop = signal_event_loop,
+                                       .init = oa_initialize,
+                                       .register_resources = oa_prepare_server,
+                                       .requests_entry = oa_prepare_client};
 
   oc_clock_time_t next_event;
 
@@ -265,14 +291,4 @@ void *ocf_thread_fn(void *arg) {
   oc_main_shutdown();
 
   return NULL;
-}
-
-void ocf_adapter_start_internal(void) {
-  pthread_create(&g_ocf_thread, NULL, &ocf_thread_fn, NULL);
-}
-
-void ocf_adapter_stop_internal(void) { g_thread_quit = 1; }
-
-void initOCF(void) {
-  // Empty function
 }

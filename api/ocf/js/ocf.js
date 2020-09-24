@@ -15,37 +15,45 @@ OCF.prototype.getAdapter = function () {
 };
 
 function OCFAdapter() {
-  this.mfg_name = "ANT";
-  this.devices = [];
+  this._mfg_name = "";
+  this._devices = [];
 
-  native.ocf_adapter_constructor(this, "ANT");
+  // Default handler
+  var self = this;
+  this.onInitialize(function () {
+    self.setPlatform("ant");
+    self.addDevice("/oic/d", "oic.d.light", "Light", "ocf.res.1.0.0");
+  });
 }
 OCFAdapter.prototype.setPlatform = function (mfg_name) {
-  native.ocf_adapter_setPlatform(this, mfg_name);
-  this.mfg_name = mfg_name;
+  this._mfg_name = mfg_name;
+  native.ocf_adapter_setPlatform(mfg_name);
 }
 OCFAdapter.prototype.getPlatform = function () {
-  return this.mfg_name;
+  return this._mfg_name;
 }
 OCFAdapter.prototype.addDevice = function (uri, resource_type, name, spec_version, data_model_version) {
-  native.ocf_adapter_addDevice(this, uri, resource_type, name, spec_version, data_model_version);
-  this.devices.push(new OCFDevice(uri, resource_type, name, spec_version, data_model_version));
+  this._devices.push(new OCFDevice(uri, resource_type, name, spec_version, data_model_version));
+  native.ocf_adapter_addDevice(uri, resource_type, name, spec_version, data_model_version);
 }
 OCFAdapter.prototype.getDevices = function () {
-  return this.devices;
+  return this._devices;
 }
+
+OCFAdapter.prototype.onInitialize = function (handler) {
+  native.ocf_adapter_onInitialize(handler);
+};
 OCFAdapter.prototype.onPrepareClient = function (handler) {
-  native.ocf_adapter_onPrepareClient(this, handler);
+  native.ocf_adapter_onPrepareClient(handler);
 };
 OCFAdapter.prototype.onPrepareServer = function (handler) {
-  native.ocf_adapter_onPrepareServer(this, handler);
+  native.ocf_adapter_onPrepareServer(handler);
 };
-
 OCFAdapter.prototype.start = function () {
-  native.ocf_adapter_start();
+  native.ocf_adapter_start(this);
 };
 OCFAdapter.prototype.stop = function () {
-  native.ocf_adapter_stop();
+  native.ocf_adapter_stop(this);
 };
 
 OCFAdapter.prototype.addResource = function (resource) {

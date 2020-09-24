@@ -12,8 +12,5 @@ jerry_value_t InitOCFNative() {
   // Initialize sub-objects of OCF API
   jerry_value_t ocfNative = jerry_create_object();
   InitOCFAdapterNative(ocfNative);
-
-  // Initialize IoTivity Lite
-  initOCF();
   return ocfNative;
 }
