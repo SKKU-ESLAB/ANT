@@ -1,4 +1,4 @@
-#include "ocf_native_internal.h"
+#include "ocf_adapter_internal.h"
 #include "../../../common/native/ant_common.h"
 
 // IoTivity Lite configuration
