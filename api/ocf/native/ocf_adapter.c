@@ -81,7 +81,6 @@ ANT_API_VOID_TO_VOID(ocf, adapter_stop);
 JS_FUNCTION(ocf_adapter_setPlatform) {
   bool result;
   iotjs_string_t argMfgName;
-  printf("setPlatform start");
   DJS_CHECK_ARGS(1, string);
   argMfgName = JS_GET_ARG(0, string);
 
