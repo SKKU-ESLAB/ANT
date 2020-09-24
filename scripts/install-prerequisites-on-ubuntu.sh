@@ -1,4 +1,10 @@
 #!/bin/bash
+BUILD_THREADS=4
+
+# Download submodules
+git submodule init
+git submodule update
+
 # ANT dependenies
 echo "Install ANT dependencies..."
 sudo apt-get update
@@ -13,16 +19,24 @@ sudo apt-get install -y python3 python3-dev python3-pip python3-setuptools gcc \
   python3-opencv
 
 # Build TVM
-cd ../../dep/tvm
-make runtime -j4
+cd ../dep/tvm
+git submodule init
+git submodule update
+make runtime -j${BUILD_THREADS}
 echo "export PYTHONPATH=$PWD/python:$PYTHONPATH" >> ~/.bashrc
 export PYTHONPATH=$PWD/python:$PYTHONPATH
 cd -
 
 # Build IoT.js
-cd ../../dep/iotjs
+cd ../dep/iotjs
 ./tools/build.py --target-board=rpi3
 cd -
+
+# Build IoTivity
+cd ../dep/iotivity/port/linux
+git submodule init
+git submodule update
+make libiotivity-lite-client-server.so -j${BUILD_THREADS}
 
 # Install Gstreamer and its elements
 sudo apt-get install -y libgstreamer1.0-dev gstreamer1.0-doc gstreamer1.0-tools \
