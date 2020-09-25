@@ -15,6 +15,7 @@ bool ocf_adapter_setPlatform_internal(const char *mfg_name);
 bool ocf_adapter_addDevice_internal(const char *uri, const char *resource_type,
                                     const char *name, const char *spec_version,
                                     const char *data_model_version);
+bool ocf_adapter_addResource_internal(void *ocf_resource_nobject);
 
 void initOCFAdapter(void);
 

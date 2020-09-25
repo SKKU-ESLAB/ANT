@@ -107,16 +107,32 @@ JS_FUNCTION(ocf_adapter_addDevice) {
   return jerry_create_boolean(result);
 }
 
+// OCFAdapter.addResource()
+JS_FUNCTION(ocf_adapter_addResource) {
+  bool result;
+  iotjs_value_t argOCFResource;
+  DJS_CHECK_ARGS(1, object);
+  argOCFResource = JS_GET_ARG(0, object);
+
+  JS_DECLARE_PTR(argOCFResource, void, ocf_resource_nobject);
+  result = ocf_adapter_addResource_internal(ocf_resource_nobject);
+  return jerry_create_boolean(result);
+}
+
 void InitOCFAdapterNative(jerry_value_t ocfNative) {
+  // OCF Thread Initialization Handlers
   REGISTER_ANT_API(ocfNative, ocf, adapter_onInitialize);
   REGISTER_ANT_API(ocfNative, ocf, adapter_onPrepareServer);
   REGISTER_ANT_API(ocfNative, ocf, adapter_onPrepareClient);
 
+  // OCF Thread
   REGISTER_ANT_API(ocfNative, ocf, adapter_start);
   REGISTER_ANT_API(ocfNative, ocf, adapter_stop);
 
+  // Server
   REGISTER_ANT_API(ocfNative, ocf, adapter_setPlatform);
   REGISTER_ANT_API(ocfNative, ocf, adapter_addDevice);
+  REGISTER_ANT_API(ocfNative, ocf, adapter_addResource);
 
   // Initialize IoTivity Lite
   initOCFAdapter();
