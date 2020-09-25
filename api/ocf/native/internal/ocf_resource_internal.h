@@ -40,7 +40,7 @@ void ocf_resource_setPeriodicObservable_internal(void *ocf_resource_nobject,
                                                  int period_sec);
 void ocf_resource_setHandler_internal(void *ocf_resource_nobject, int method);
 DECLARE_ANT_ASYNC_HANDLER_SETTER(ocf_resource_setHandler);
-void ocf_resouce_setHandler_handler_internal(void *sep_response_nobject);
+void ocf_resource_setHandler_handler_internal(void *sep_response_nobject);
 
 void initOCFResource(void);
 

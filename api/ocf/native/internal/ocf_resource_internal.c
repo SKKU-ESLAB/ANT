@@ -104,7 +104,7 @@ void ocf_resource_handler(oc_request_t *request,
   int method = *((int *)user_data); // user_data will be freed in ant-async
   CALL_ANT_ASYNC_HANDLER(ocf_resource_setHandler, (void *)event);
 }
-void ocf_resouce_setHandler_handler_internal(void *sep_response_nobject) {
+void ocf_resource_setHandler_handler_internal(void *sep_response_nobject) {
   oc_separate_response_t *sep_response =
       (oc_separate_response_t *)sep_response_nobject;
   oc_set_separate_response_buffer(sep_response);
