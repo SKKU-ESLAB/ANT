@@ -77,6 +77,31 @@ OCFAdapter.prototype.getResources = function() {
   return this._resources;
 };
 
+OCFAdapter.prototype.repStartRootObject = function() {
+  native.ocf_adapter_repStartRootObject();
+};
+OCFAdapter.prototype.repSet = function(key, value) {
+  if (typeof value === 'boolean') {
+    native.ocf_adapter_repSetBoolean(key, value);
+  } else if (typeof value === 'number') {
+    if (value == parseInt(value, 10)) {
+      native.ocf_adapter_repSetInt(key, value);
+    } else {
+      native.ocf_adapter_repSetDouble(key, value);
+    }
+  } else if (typeof value === 'string') {
+    native.ocf_adapter_repSetString(key, value);
+  } else {
+    console.log('repSet(): Not supported type (' + typeof value + ')');
+  }
+};
+OCFAdapter.prototype.repEndRootObject = function() {
+  native.ocf_adapter_repEndRootObject();
+};
+OCFAdapter.prototype.repSendResponse = function(ocf_request, status_code) {
+  native.ocf_adapter_repSendResponse(ocf_request, status_code);
+};
+
 function OCFDevice(
     id, uri, resource_type, name, spec_version, data_model_version) {
   this.id = id;

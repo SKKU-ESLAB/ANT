@@ -236,6 +236,29 @@ bool ocf_adapter_addResource_internal(void *ocf_resource_nobject) {
   return oc_add_resource((oc_resource_t *)ocf_resource_nobject);
 }
 
+void ocf_adapter_repStartRootObject_internal(void) {
+  oc_rep_start_root_object();
+}
+void ocf_adapter_repSetBoolean_internal(const char *key, bool value) {
+  // TODO:
+}
+void ocf_adapter_repSetInt_internal(const char *key, int value) {
+  // TODO:
+}
+void ocf_adapter_repSetDouble_internal(const char *key, double value) {
+  // TODO:
+}
+void ocf_adapter_repSetString_internal(const char *key, const char *value) {
+  // TODO:
+}
+void ocf_adapter_repEndRootObject_internal(void) { oc_rep_end_root_object(); }
+void ocf_adapter_sendResponse_internal(void *ocf_request_nobject,
+                                       int status_code) {
+  oc_separate_response_t *sep_response =
+      (oc_separate_response_t *)ocf_request_nobject;
+  oc_send_separate_response(sep_response, status_code);
+}
+
 void initOCFAdapter(void) {
   // Empty function
 }

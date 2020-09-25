@@ -11,30 +11,30 @@
 #include <string.h>
 
 // OCFResource
-static void ocf_resource_destroy(void *handle);
-static const jerry_object_native_info_t ocf_resource_native_info = {
+void ocf_resource_destroy(void *handle);
+const jerry_object_native_info_t ocf_resource_native_info = {
     .free_cb = (jerry_object_native_free_callback_t)ocf_resource_destroy,
 };
-static void ocf_resource_destroy(void *handle) {
+void ocf_resource_destroy(void *handle) {
   // Do not anything
   // (The lifecycle of OCFResource is controlled by IoTivity Lite.)
 }
 
 // OCFRequest
-static void ocf_request_destroy(void *handle);
-static const jerry_object_native_info_t ocf_request_native_info = {
+void ocf_request_destroy(void *handle);
+const jerry_object_native_info_t ocf_request_native_info = {
     .free_cb = (jerry_object_native_free_callback_t)ocf_request_destroy,
 };
-static void ocf_request_destroy(void *handle) {
+void ocf_request_destroy(void *handle) {
   // Do not anything
   // (The lifecycle of OCFRequest is controlled by IoTivity Lite.)
 }
 
 // OCFAdapter.addResource()
 JS_FUNCTION(ocf_resource_constructor) {
-  iotjs_value_t argSelf;
+  jerry_value_t argSelf;
   iotjs_string_t argName, argUri;
-  iotjs_value_t argTypes, argInterfaceMask, argDefaultInterfaceMask,
+  jerry_value_t argTypes, argInterfaceMask, argDefaultInterfaceMask,
       argDeviceId;
   DJS_CHECK_ARGS(7, object, string, string, array, number, number, number);
   argSelf = JS_GET_ARG(0, object);

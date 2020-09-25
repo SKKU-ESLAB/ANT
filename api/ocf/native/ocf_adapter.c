@@ -2,6 +2,7 @@
 #include "ant_async.h"
 #include "internal/ll.h"
 #include "internal/ocf_adapter_internal.h"
+#include "ocf_resource.h"
 
 #include "iotjs_def.h"
 #include "iotjs_uv_request.h"
@@ -72,10 +73,10 @@ JS_FUNCTION(ocf_adapter_onPrepareClient) {
 }
 
 // OCFAdapter.start()
-ANT_API_VOID_TO_VOID(ocf, adapter_start);
+ANT_API_VOID_TO_VOID(ocf_adapter, start);
 
 // OCFAdapter.stop()
-ANT_API_VOID_TO_VOID(ocf, adapter_stop);
+ANT_API_VOID_TO_VOID(ocf_adapter, stop);
 
 // OCFAdapter.setPlatform()
 JS_FUNCTION(ocf_adapter_setPlatform) {
@@ -110,29 +111,114 @@ JS_FUNCTION(ocf_adapter_addDevice) {
 // OCFAdapter.addResource()
 JS_FUNCTION(ocf_adapter_addResource) {
   bool result;
-  iotjs_value_t argOCFResource;
+  jerry_value_t argOCFResource;
   DJS_CHECK_ARGS(1, object);
   argOCFResource = JS_GET_ARG(0, object);
 
-  JS_DECLARE_PTR(argOCFResource, void, ocf_resource_nobject);
+  JS_DECLARE_PTR2(argOCFResource, void, ocf_resource_nobject, ocf_resource);
   result = ocf_adapter_addResource_internal(ocf_resource_nobject);
   return jerry_create_boolean(result);
 }
 
+// OCFAdapter.repStartRootObject()
+ANT_API_VOID_TO_VOID(ocf_adapter, repStartRootObject);
+
+// OCFAdapter.repSetBoolean()
+JS_FUNCTION(ocf_adapter_repSetBoolean) {
+  iotjs_string_t argKey;
+  jerry_value_t argValue;
+  DJS_CHECK_ARGS(2, string, boolean);
+  argKey = JS_GET_ARG(0, string);
+  argValue = JS_GET_ARG(1, boolean);
+  const char *key = iotjs_string_data(&argKey);
+  bool value = iotjs_jval_as_boolean(argValue);
+
+  ocf_adapter_repSetBoolean_internal(key, value);
+  return jerry_create_undefined();
+}
+
+// OCFAdapter.repSetInt()
+JS_FUNCTION(ocf_adapter_repSetInt) {
+  iotjs_string_t argKey;
+  jerry_value_t argValue;
+  DJS_CHECK_ARGS(2, string, number);
+  argKey = JS_GET_ARG(0, string);
+  argValue = JS_GET_ARG(1, number);
+  const char *key = iotjs_string_data(&argKey);
+  int value = (int)iotjs_jval_as_number(argValue);
+
+  ocf_adapter_repSetInt_internal(key, value);
+  return jerry_create_undefined();
+}
+
+// OCFAdapter.repSetDouble()
+JS_FUNCTION(ocf_adapter_repSetDouble) {
+  iotjs_string_t argKey;
+  jerry_value_t argValue;
+  DJS_CHECK_ARGS(2, string, double);
+  argKey = JS_GET_ARG(0, string);
+  argValue = JS_GET_ARG(1, double);
+  const char *key = iotjs_string_data(&argKey);
+  double value = iotjs_jval_as_number(argValue);
+
+  ocf_adapter_repSetDouble_internal(key, value);
+  return jerry_create_undefined();
+}
+
+// OCFAdapter.repSetString()
+JS_FUNCTION(ocf_adapter_repSetString) {
+  iotjs_string_t argKey;
+  iotjs_string_t argValue;
+  DJS_CHECK_ARGS(2, string, string);
+  argKey = JS_GET_ARG(0, string);
+  argValue = JS_GET_ARG(1, string);
+  const char *key = iotjs_string_data(&argKey);
+  const char *value = iotjs_string_data(&argValue);
+
+  ocf_adapter_repSetString_internal(key, value);
+  return jerry_create_undefined();
+}
+
+// OCFAdapter.repEndRootObject()
+ANT_API_VOID_TO_VOID(ocf_adapter, repEndRootObject);
+
+// OCFAdapter.repSetString()
+JS_FUNCTION(ocf_adapter_sendResponse) {
+  jerry_value_t argRequest;
+  jerry_value_t argStatusCode;
+  DJS_CHECK_ARGS(2, object, number);
+  argRequest = JS_GET_ARG(0, object);
+  argStatusCode = JS_GET_ARG(1, number);
+  JS_DECLARE_PTR2(argRequest, void, ocf_request_nobject, ocf_request);
+  int status_code = (int)iotjs_jval_as_number(&argStatusCode);
+
+  ocf_adapter_sendResponse_internal(ocf_request_nobject, status_code);
+  return jerry_create_undefined();
+}
+
 void InitOCFAdapterNative(jerry_value_t ocfNative) {
   // OCF Thread Initialization Handlers
-  REGISTER_ANT_API(ocfNative, ocf, adapter_onInitialize);
-  REGISTER_ANT_API(ocfNative, ocf, adapter_onPrepareServer);
-  REGISTER_ANT_API(ocfNative, ocf, adapter_onPrepareClient);
+  REGISTER_ANT_API(ocfNative, ocf_adapter, onInitialize);
+  REGISTER_ANT_API(ocfNative, ocf_adapter, onPrepareServer);
+  REGISTER_ANT_API(ocfNative, ocf_adapter, onPrepareClient);
 
   // OCF Thread
-  REGISTER_ANT_API(ocfNative, ocf, adapter_start);
-  REGISTER_ANT_API(ocfNative, ocf, adapter_stop);
+  REGISTER_ANT_API(ocfNative, ocf_adapter, start);
+  REGISTER_ANT_API(ocfNative, ocf_adapter, stop);
 
-  // Server
-  REGISTER_ANT_API(ocfNative, ocf, adapter_setPlatform);
-  REGISTER_ANT_API(ocfNative, ocf, adapter_addDevice);
-  REGISTER_ANT_API(ocfNative, ocf, adapter_addResource);
+  // Server-side Initialization
+  REGISTER_ANT_API(ocfNative, ocf_adapter, setPlatform);
+  REGISTER_ANT_API(ocfNative, ocf_adapter, addDevice);
+  REGISTER_ANT_API(ocfNative, ocf_adapter, addResource);
+
+  // Server-side Request Handler
+  REGISTER_ANT_API(ocfNative, ocf_adapter, repStartRootObject);
+  REGISTER_ANT_API(ocfNative, ocf_adapter, repSetBoolean);
+  REGISTER_ANT_API(ocfNative, ocf_adapter, repSetInt);
+  REGISTER_ANT_API(ocfNative, ocf_adapter, repSetDouble);
+  REGISTER_ANT_API(ocfNative, ocf_adapter, repSetString);
+  REGISTER_ANT_API(ocfNative, ocf_adapter, repEndRootObject);
+  REGISTER_ANT_API(ocfNative, ocf_adapter, repSendResponse); // TODO:
 
   // Initialize IoTivity Lite
   initOCFAdapter();
