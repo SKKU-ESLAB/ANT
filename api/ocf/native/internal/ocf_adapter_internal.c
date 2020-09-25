@@ -26,6 +26,8 @@ static struct timespec ts;
 static int g_thread_quit = 0;
 
 void *ocf_thread_fn(void *arg);
+static void signal_event_loop(void);
+static void handle_signal(int signal);
 
 // OCF Server
 // static bool light_server_state = false;
@@ -182,18 +184,6 @@ void *ocf_thread_fn(void *arg);
 //   return OC_CONTINUE_DISCOVERY;
 // }
 
-static void signal_event_loop(void) {
-  pthread_mutex_lock(&mutex);
-  pthread_cond_signal(&cv);
-  pthread_mutex_unlock(&mutex);
-}
-
-static void handle_signal(int signal) {
-  (void)signal;
-  signal_event_loop();
-  g_thread_quit = 1;
-}
-
 // OCFAdapter.onInitialize()
 DECLARE_GLOBAL_ANT_ASYNC_HANDLER(ocf_adapter_onInitialize)
 ANT_ASYNC_HANDLER_SETTER(ocf_adapter_onInitialize)
@@ -202,36 +192,12 @@ static int oa_initialize(void) {
   return true;
 }
 
-bool ocf_adapter_setPlatform_internal(const char *mfg_name) {
-  return oc_init_platform(mfg_name, NULL, NULL);
-}
-
-bool ocf_adapter_addDevice_internal(const char *uri, const char *resource_type,
-                                    const char *name, const char *spec_version,
-                                    const char *data_model_version) {
-  return oc_add_device(uri, resource_type, name, spec_version,
-                       data_model_version, NULL, NULL);
-}
-
 // OCFAdapter.onPrepareServer()
 DECLARE_GLOBAL_ANT_ASYNC_HANDLER(ocf_adapter_onPrepareServer)
 ANT_ASYNC_HANDLER_SETTER(ocf_adapter_onPrepareServer)
 static void oa_prepare_server(void) {
   CALL_ANT_ASYNC_HANDLER(ocf_adapter_onPrepareServer, NULL);
 }
-// // OCF.createResource()
-// oc_resource_t *res = oc_new_resource("lightbulb", "/light/1", 1, 0);
-// oc_resource_bind_resource_type(res, "oic.r.light");
-// oc_resource_bind_resource_interface(res, OC_IF_RW);
-// oc_resource_set_default_interface(res, OC_IF_RW);
-// // OCFResource.setDiscoverable()
-// oc_resource_set_discoverable(res, true);
-// // OCFResource.setPeriodicObservable()
-// oc_resource_set_periodic_observable(res, 1);
-// // OCFResource.setHandler()
-// oc_resource_set_request_handler(res, OC_GET, on_get_light, NULL);
-// oc_resource_set_request_handler(res, OC_POST, on_post_light, NULL);
-// oc_add_resource(res);
 
 // OCFAdapter.onPrepareClient()
 DECLARE_GLOBAL_ANT_ASYNC_HANDLER(ocf_adapter_onPrepareClient)
@@ -241,13 +207,33 @@ static void oa_prepare_client(void) {
 }
 // oc_do_ip_discovery("oic.r.light", &discovery, NULL);
 
+// OCFAdapter.start()
 void ocf_adapter_start_internal(void) {
   pthread_create(&g_ocf_thread, NULL, &ocf_thread_fn, NULL);
 }
 
+// OCFAdapter.stop()
 void ocf_adapter_stop_internal(void) {
   g_thread_quit = 1;
   signal_event_loop();
+}
+
+// OCFAdapter.setPlatform()
+bool ocf_adapter_setPlatform_internal(const char *mfg_name) {
+  return oc_init_platform(mfg_name, NULL, NULL);
+}
+
+// OCFAdapter.addDevice()
+bool ocf_adapter_addDevice_internal(const char *uri, const char *resource_type,
+                                    const char *name, const char *spec_version,
+                                    const char *data_model_version) {
+  return oc_add_device(uri, resource_type, name, spec_version,
+                       data_model_version, NULL, NULL);
+}
+
+// OCFAdapter.addResource()
+bool ocf_adapter_addResource_internal(void *ocf_resource_nobject) {
+  return oc_add_resource((oc_resource_t *)ocf_resource_nobject);
 }
 
 void initOCFAdapter(void) {
@@ -297,4 +283,16 @@ void *ocf_thread_fn(void *arg) {
   printf("OCF thread terminates...\n");
 
   return NULL;
+}
+
+void signal_event_loop(void) {
+  pthread_mutex_lock(&mutex);
+  pthread_cond_signal(&cv);
+  pthread_mutex_unlock(&mutex);
+}
+
+void handle_signal(int signal) {
+  (void)signal;
+  signal_event_loop();
+  g_thread_quit = 1;
 }
