@@ -1,20 +1,31 @@
 var ocf = require('ocf');
 
 var oa = ocf.getAdapter();
-oa.onInitialize(function () {
-  oa.setPlatform("ant");
-  oa.addDevice("/oic/d", "oic.d.light", "Light", "ocf.res.1.0.0", "");
-  // this.setPlatform("ant");
-  // this.addDevice("/oic/d", "ant.d.gateway", "Gateway", "ant.res.1.0.0", NULL, NULL);
-});
-oa.onPrepareServer(function () {
-  console.log("on prepare server");
+oa.onInitialize(function() {
+  console.log('onInitialize()');
+  oa.setPlatform('ant');
+  oa.addDevice('/oic/d', 'oic.d.light', 'Light', 'ocf.res.1.0.0', '');
 });
 
-console.log("oa.start() start");
+var g_light_state = false;
+oa.onPrepareServer(function() {
+  console.log('onPrepareServer()');
+  var lightRes = ocf.createResource(
+      oa.getDevice(0), 'lightbulb', '/light/1', ['oic.r.light'],
+      [ocf.OC_IF_RW]);
+  lightRes.setDiscoverable(true);
+  lightRes.setPeriodicObservable(1);
+  lightRes.setHandler(ocf.OC_GET, function() {
+    oa.repStartRootObject();
+    oa.repSet('light', g_light_state);
+    g_light_state = !g_light_state;
+    oa.repEndRootObject();
+    oa.repSendResponse()
+  });
+});
+
 oa.start();
-console.log("oa.start() end");
-setTimeout(function () {
-  console.log("10s elapsed");
+setTimeout(function() {
+  console.log('10s elapsed');
   oa.stop();
 }, 10000);

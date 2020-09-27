@@ -240,16 +240,24 @@ void ocf_adapter_repStartRootObject_internal(void) {
   oc_rep_start_root_object();
 }
 void ocf_adapter_repSetBoolean_internal(const char *key, bool value) {
-  // TODO:
+  g_err |= cbor_encode_text_string(&root_map, key, strlen(key));
+  g_err |= cbor_encode_boolean(&root_map, value);
 }
 void ocf_adapter_repSetInt_internal(const char *key, int value) {
-  // TODO:
+  g_err |= cbor_encode_text_string(&root_map, key, strlen(key));
+  g_err |= cbor_encode_int(&root_map, value);
 }
 void ocf_adapter_repSetDouble_internal(const char *key, double value) {
-  // TODO:
+  g_err |= cbor_encode_text_string(&root_map, key, strlen(key));
+  g_err |= cbor_encode_double(&root_map, value);
 }
 void ocf_adapter_repSetString_internal(const char *key, const char *value) {
-  // TODO:
+  g_err |= cbor_encode_text_string(&root_map, key, strlen(key));
+  if ((const char *)value != NULL) {
+    g_err |= cbor_encode_text_string(&root_map, value, strlen(value));
+  } else {
+    g_err |= cbor_encode_text_string(&root_map, "", 0);
+  }
 }
 void ocf_adapter_repEndRootObject_internal(void) { oc_rep_end_root_object(); }
 void ocf_adapter_sendResponse_internal(void *ocf_request_nobject,

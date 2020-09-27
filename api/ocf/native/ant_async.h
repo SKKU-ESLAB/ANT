@@ -51,6 +51,7 @@ struct ant_async {
       set_##x##_ant_handler(x##_ant_handler);                                  \
     }                                                                          \
     g_##x##_async.js_handler = jsHandler;                                      \
+    jerry_acquire_value(jsHandler);                                            \
     return true;                                                               \
   }
 
