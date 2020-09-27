@@ -20,13 +20,13 @@
 
 // OCFResource()
 void *ocf_resource_constructor_internal(const char *name, const char *uri,
-                                        const char **types, int types_len,
+                                        const char **types, size_t types_len,
                                         int interface_mask,
                                         int default_interface_mask,
                                         int device_id) {
   oc_resource_t *ocf_resource_nobject =
       oc_new_resource(name, uri, (uint8_t)types_len, (size_t)device_id);
-  for (int i = 0; i < types_len; i++) {
+  for (size_t i = 0; i < types_len; i++) {
     oc_resource_bind_resource_type(ocf_resource_nobject, types[i]);
   }
   oc_resource_bind_resource_interface(ocf_resource_nobject, interface_mask);
@@ -69,15 +69,14 @@ void ocf_resource_handler(oc_request_t *request,
       (ocf_resource_setHandler_event_t *)malloc(
           sizeof(ocf_resource_setHandler_event_t));
   oc_string_t origin_addr_ocs;
-  char *origin_addr, dest_uri, query;
+  char *origin_addr, *dest_uri;
 
   event->sep_response = (void *)malloc(sizeof(oc_separate_response_t));
   oc_indicate_separate_response(request, event->sep_response);
 
   oc_endpoint_to_string(request->origin, &origin_addr_ocs);
   origin_addr = oc_string(origin_addr_ocs);
-  event->ocf_request = event->origin_addr =
-      (char *)malloc(sizeof(char) * (strlen(origin_addr) + 1));
+  event->origin_addr = (char *)malloc(sizeof(char) * (strlen(origin_addr) + 1));
   strncpy(event->origin_addr, origin_addr, strlen(origin_addr));
 
   event->dest_device_id = (int)request->resource->device;
@@ -86,9 +85,8 @@ void ocf_resource_handler(oc_request_t *request,
   event->dest_uri = (char *)malloc(sizeof(char) * (strlen(dest_uri) + 1));
   strncpy(event->dest_uri, dest_uri, strlen(dest_uri));
 
-  query = oc_string(request->query);
-  event->query = (char *)malloc(sizeof(char) * (strlen(query) + 1));
-  strncpy(event->query, query, strlen(query));
+  event->query = (char *)malloc(sizeof(char) * (strlen(request->query) + 1));
+  strncpy(event->query, request->query, strlen(request->query));
 
   event->query_len = request->query_len;
 
@@ -102,6 +100,8 @@ void ocf_resource_handler(oc_request_t *request,
   event->interface_mask = (int)interface_mask;
 
   int method = *((int *)user_data); // user_data will be freed in ant-async
+  event->method = method;
+
   CALL_ANT_ASYNC_HANDLER(ocf_resource_setHandler, (void *)event);
 }
 void ocf_resource_setHandler_handler_internal(void *sep_response_nobject) {

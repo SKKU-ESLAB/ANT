@@ -11,13 +11,14 @@ struct ocf_resource_setHandler_event_s {
   int dest_device_id;
   char *dest_uri;
   char *query;
-  int query_len;
+  size_t query_len;
   char *request_payload_string;
-  int request_payload_string_len;
+  size_t request_payload_string_len;
   int interface_mask;
+  int method;
 };
 typedef struct ocf_resource_setHandler_event_s ocf_resource_setHandler_event_t;
-void ocf_adapter_setHandler_event_destroyer(void *item) {
+void ocf_resource_setHandler_event_destroyer(void *item) {
   ocf_resource_setHandler_event_t *event;
   event = (ocf_resource_setHandler_event_t *)item;
   free(event->sep_response);
@@ -29,7 +30,7 @@ void ocf_adapter_setHandler_event_destroyer(void *item) {
 }
 
 void *ocf_resource_constructor_internal(const char *name, const char *uri,
-                                        const char **types, int types_num,
+                                        const char **types, size_t types_num,
                                         int interface_mask,
                                         int default_interface_mask,
                                         int device_id);

@@ -16,10 +16,8 @@
 DECLARE_GLOBAL_ASYNC(ocf_adapter_onInitialize)
 DECLARE_ANT_ASYNC_HANDLER(ocf_adapter_onInitialize)
 UV_ASYNC_HANDLER(ocf_adapter_onInitialize) {
-  // void *event = GET_MR_EVENT(ocf_adapter_onInitialize);
   jerry_value_t jsHandler = GET_JS_HANDLER(ocf_adapter_onInitialize);
   iotjs_invoke_callback(jsHandler, jerry_create_undefined(), NULL, 0);
-  // DESTROY_EVENTS(ocf_adapter_onInitialize);
 }
 ASYNC_REGISTER(ocf_adapter_onInitialize, NULL)
 JS_FUNCTION(ocf_adapter_onInitialize) {
@@ -27,6 +25,9 @@ JS_FUNCTION(ocf_adapter_onInitialize) {
   jerry_value_t argHandler;
   DJS_CHECK_ARGS(1, function);
   argHandler = JS_GET_ARG(0, function);
+
+  printf("onInitialize setting: %d\n", (int)argHandler);
+  fflush(stdout);
 
   result = CALL_ASYNC_REGISTER(ocf_adapter_onInitialize, argHandler);
   return jerry_create_boolean(result);
@@ -36,10 +37,8 @@ JS_FUNCTION(ocf_adapter_onInitialize) {
 DECLARE_GLOBAL_ASYNC(ocf_adapter_onPrepareServer)
 DECLARE_ANT_ASYNC_HANDLER(ocf_adapter_onPrepareServer)
 UV_ASYNC_HANDLER(ocf_adapter_onPrepareServer) {
-  // void *event = GET_MR_EVENT(ocf_adapter_onPrepareServer);
   jerry_value_t jsHandler = GET_JS_HANDLER(ocf_adapter_onPrepareServer);
   iotjs_invoke_callback(jsHandler, jerry_create_undefined(), NULL, 0);
-  // DESTROY_EVENTS(ocf_adapter_onPrepareServer);
 }
 ASYNC_REGISTER(ocf_adapter_onPrepareServer, NULL)
 JS_FUNCTION(ocf_adapter_onPrepareServer) {
@@ -56,10 +55,8 @@ JS_FUNCTION(ocf_adapter_onPrepareServer) {
 DECLARE_GLOBAL_ASYNC(ocf_adapter_onPrepareClient)
 DECLARE_ANT_ASYNC_HANDLER(ocf_adapter_onPrepareClient)
 UV_ASYNC_HANDLER(ocf_adapter_onPrepareClient) {
-  // void *event = GET_MR_EVENT(ocf_adapter_onPrepareClient);
   jerry_value_t jsHandler = GET_JS_HANDLER(ocf_adapter_onPrepareClient);
   iotjs_invoke_callback(jsHandler, jerry_create_undefined(), NULL, 0);
-  // DESTROY_EVENTS(ocf_adapter_onPrepareClient);
 }
 ASYNC_REGISTER(ocf_adapter_onPrepareClient, NULL)
 JS_FUNCTION(ocf_adapter_onPrepareClient) {
@@ -155,9 +152,9 @@ JS_FUNCTION(ocf_adapter_repSetInt) {
 JS_FUNCTION(ocf_adapter_repSetDouble) {
   iotjs_string_t argKey;
   jerry_value_t argValue;
-  DJS_CHECK_ARGS(2, string, double);
+  DJS_CHECK_ARGS(2, string, number);
   argKey = JS_GET_ARG(0, string);
-  argValue = JS_GET_ARG(1, double);
+  argValue = JS_GET_ARG(1, number);
   const char *key = iotjs_string_data(&argKey);
   double value = iotjs_jval_as_number(argValue);
 
@@ -183,14 +180,14 @@ JS_FUNCTION(ocf_adapter_repSetString) {
 ANT_API_VOID_TO_VOID(ocf_adapter, repEndRootObject);
 
 // OCFAdapter.repSetString()
-JS_FUNCTION(ocf_adapter_sendResponse) {
+JS_FUNCTION(ocf_adapter_repSendResponse) {
   jerry_value_t argRequest;
   jerry_value_t argStatusCode;
   DJS_CHECK_ARGS(2, object, number);
   argRequest = JS_GET_ARG(0, object);
   argStatusCode = JS_GET_ARG(1, number);
   JS_DECLARE_PTR2(argRequest, void, ocf_request_nobject, ocf_request);
-  int status_code = (int)iotjs_jval_as_number(&argStatusCode);
+  int status_code = (int)iotjs_jval_as_number(argStatusCode);
 
   ocf_adapter_sendResponse_internal(ocf_request_nobject, status_code);
   return jerry_create_undefined();
@@ -218,7 +215,7 @@ void InitOCFAdapterNative(jerry_value_t ocfNative) {
   REGISTER_ANT_API(ocfNative, ocf_adapter, repSetDouble);
   REGISTER_ANT_API(ocfNative, ocf_adapter, repSetString);
   REGISTER_ANT_API(ocfNative, ocf_adapter, repEndRootObject);
-  REGISTER_ANT_API(ocfNative, ocf_adapter, repSendResponse); // TODO:
+  REGISTER_ANT_API(ocfNative, ocf_adapter, repSendResponse);
 
   // Initialize IoTivity Lite
   initOCFAdapter();
