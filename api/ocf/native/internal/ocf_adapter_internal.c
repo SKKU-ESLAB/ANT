@@ -293,14 +293,15 @@ oa_on_discovery(const char *di, const char *uri, oc_string_array_t types,
     size_t type_len = strlen(type) + 1;
     char *new_type = (char *)malloc(sizeof(char) * type_len);
     strncpy(new_type, type, type_len);
-    ll_insert_last(new_type);
+    ll_insert_last(event->types, new_type);
   }
 
   // event->interface_mask, event->endpoint
   event->interface_mask = (int)iface_mask;
-  oc_endpoint_copy(&((oc_endpoint_t *)event->endpoint), endpoint);
+  oc_endpoint_copy((oc_endpoint_t *)event->endpoint, endpoint);
 
   CALL_ANT_ASYNC_HANDLER(ocf_adapter_discovery, event);
+  return OC_CONTINUE_DISCOVERY;
 }
 void ocf_adapter_discovery_internal(const char *resource_type) {
   oc_do_ip_discovery(resource_type, &oa_on_discovery, NULL);

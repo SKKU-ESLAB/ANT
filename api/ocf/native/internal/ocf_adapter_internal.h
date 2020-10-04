@@ -4,6 +4,7 @@
 #include "ant_async_internal.h"
 #include "ll.h"
 #include <stdbool.h>
+#include <stdlib.h>
 
 DECLARE_ANT_ASYNC_HANDLER_SETTER(ocf_adapter_onInitialize);
 DECLARE_ANT_ASYNC_HANDLER_SETTER(ocf_adapter_onPrepareServer);
@@ -29,21 +30,19 @@ void ocf_adapter_sendResponse_internal(void *ocf_request_nobject,
 
 struct ocf_adapter_discovery_event_s {
   char *uri;
-  ll_t types;
+  ll_t *types;
   int interface_mask;
   void *endpoint;
 };
+typedef struct ocf_adapter_discovery_event_s ocf_adapter_discovery_event_t;
 void ocf_adapter_discovery_event_destroyer(void *item) {
   ocf_adapter_discovery_event_t *event;
   event = (ocf_adapter_discovery_event_t *)item;
   free(event->uri);
-  ll_delete(&event->types);
+  ll_delete(event->types);
   free(event);
 }
-typedef struct ocf_adapter_discovery_event_s ocf_adapter_discovery_event_t;
 void ocf_adapter_discovery_event_types_destroyer(void *item) {
-  char *type;
-  type = (char *)item;
   free(item);
 }
 void ocf_endpoint_destroy(void *handle);
