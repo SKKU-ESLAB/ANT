@@ -117,7 +117,7 @@ UV_ASYNC_HANDLER(ocf_resource_setHandler) {
   // separate response
   ocf_resource_setHandler_handler_internal(event->sep_response);
 
-  // Args 1: OCFRequest request
+  // Args 0: OCFRequest request
   js_ocf_request = jerry_create_object();
   iotjs_string_t origin_addr_jsstr = iotjs_string_create();
   iotjs_string_t dest_uri_jsstr = iotjs_string_create();
@@ -146,7 +146,7 @@ UV_ASYNC_HANDLER(ocf_resource_setHandler) {
   IOTJS_ASSERT(jerry_get_object_native_pointer(js_ocf_request, NULL,
                                                &ocf_request_native_info));
 
-  // Args 2: int method
+  // Args 1: int method
   js_method = jerry_create_number((double)event->method);
   jerry_value_t js_args[] = {js_ocf_request, js_method};
 

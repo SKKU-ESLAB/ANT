@@ -205,7 +205,6 @@ ANT_ASYNC_HANDLER_SETTER(ocf_adapter_onPrepareClient)
 static void oa_prepare_client(void) {
   CALL_ANT_ASYNC_HANDLER(ocf_adapter_onPrepareClient, NULL);
 }
-// oc_do_ip_discovery("oic.r.light", &discovery, NULL);
 
 // OCFAdapter.start()
 void ocf_adapter_start_internal(void) {
@@ -265,6 +264,46 @@ void ocf_adapter_sendResponse_internal(void *ocf_request_nobject,
   oc_separate_response_t *sep_response =
       (oc_separate_response_t *)ocf_request_nobject;
   oc_send_separate_response(sep_response, status_code);
+}
+
+void ocf_endpoint_destroy(void *handle) {
+  oc_endpoint_t *endpoint = (oc_endpoint_t *)handle;
+  oc_free_endpoint(endpoint);
+}
+DECLARE_GLOBAL_ANT_ASYNC_HANDLER(ocf_adapter_discovery)
+ANT_ASYNC_HANDLER_SETTER(ocf_adapter_discovery)
+static oc_discovery_flags_t
+oa_on_discovery(const char *di, const char *uri, oc_string_array_t types,
+                oc_interface_mask_t iface_mask, oc_endpoint_t *endpoint,
+                oc_resource_properties_t bm, void *user_data) {
+  // Discovery event
+  ocf_adapter_discovery_event_t *event;
+  event = (ocf_adapter_discovery_event_t *)malloc(
+      sizeof(ocf_adapter_discovery_event_t));
+
+  // event->uri
+  event->uri = malloc(sizeof(char) * (strlen(uri) + 1));
+  strncpy(event->uri, uri, strlen(uri) + 1);
+
+  // event->types
+  event->types = ll_new(ocf_adapter_discovery_event_types_destroyer);
+  int i;
+  for (i = 0; i < (int)oc_string_array_get_allocated_size(types); i++) {
+    char *type = oc_string_array_get_item(types, i);
+    size_t type_len = strlen(type) + 1;
+    char *new_type = (char *)malloc(sizeof(char) * type_len);
+    strncpy(new_type, type, type_len);
+    ll_insert_last(new_type);
+  }
+
+  // event->interface_mask, event->endpoint
+  event->interface_mask = (int)iface_mask;
+  oc_endpoint_copy(&((oc_endpoint_t *)event->endpoint), endpoint);
+
+  CALL_ANT_ASYNC_HANDLER(ocf_adapter_discovery, event);
+}
+void ocf_adapter_discovery_internal(const char *resource_type) {
+  oc_do_ip_discovery(resource_type, &oa_on_discovery, NULL);
 }
 
 void initOCFAdapter(void) {
