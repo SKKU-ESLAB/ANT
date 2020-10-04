@@ -124,6 +124,14 @@ OCFAdapter.prototype.repSendResponse = function(ocf_request, status_code) {
   native.ocf_adapter_repSendResponse(ocf_request, status_code);
 };
 
+OCFAdapter.prototype.discovery = function(resource_type, discovery_handler) {
+  native.ocf_adapter_discovery(resource_type, discovery_handler);
+};
+
+OCFAdapter.prototype.observe = function(endpoint, uri, response_handler) {
+  native.ocf_adapter_observe(endpoint, uri, response_handler);
+};
+
 function OCFDevice(
     id, uri, resource_type, name, spec_version, data_model_version) {
   this.id = id;
