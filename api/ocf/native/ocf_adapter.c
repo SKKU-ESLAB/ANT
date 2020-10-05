@@ -206,11 +206,19 @@ UV_ASYNC_HANDLER(ocf_adapter_discovery) {
       (ocf_adapter_discovery_event_t *)GET_MR_EVENT(ocf_adapter_discovery);
   jerry_value_t js_handler = GET_JS_HANDLER(ocf_adapter_discovery);
 
-  // Args 0: string uri
+  // Args 0: object endpoint
+  // set native pointer of OCFEndPoint with oc_endpoint_t
+  jerry_value_t js_endpoint = jerry_create_object();
+  jerry_set_object_native_pointer(js_endpoint, event->endpoint,
+                                  &ocf_endpoint_native_info);
+  IOTJS_ASSERT(jerry_get_object_native_pointer(js_endpoint, NULL,
+                                               &ocf_endpoint_native_info));
+
+  // Args 1: string uri
   jerry_value_t js_uri =
       jerry_create_string_from_utf8((const jerry_char_t *)event->uri);
 
-  // Args 1: array<string> types
+  // Args 2: array<string> types
   jerry_value_t js_types = jerry_create_object();
   for (int i = 0; i < event->types->len; i++) {
     char *type_item = (char *)ll_get_n(event->types, i);
@@ -219,19 +227,11 @@ UV_ASYNC_HANDLER(ocf_adapter_discovery) {
     iotjs_jval_set_property_by_index(js_types, (uint32_t)i, js_type_item);
   }
 
-  // Args 2: int interface_mask
+  // Args 3: int interface_mask
   jerry_value_t js_interface_mask =
       jerry_create_number((double)event->interface_mask);
 
-  // Args 3: object endpoint
-  // set native pointer of OCFEndPoint with oc_endpoint_t
-  jerry_value_t js_endpoint = jerry_create_object();
-  jerry_set_object_native_pointer(js_endpoint, event->endpoint,
-                                  &ocf_endpoint_native_info);
-  IOTJS_ASSERT(jerry_get_object_native_pointer(js_endpoint, NULL,
-                                               &ocf_endpoint_native_info));
-
-  jerry_value_t js_args[] = {js_uri, js_types, js_interface_mask, js_endpoint};
+  jerry_value_t js_args[] = {js_endpoint, js_uri, js_types, js_interface_mask};
 
   iotjs_invoke_callback(js_handler, jerry_create_undefined(), js_args, 4);
   DESTROY_EVENTS(ocf_adapter_discovery);

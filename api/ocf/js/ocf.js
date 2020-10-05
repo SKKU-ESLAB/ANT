@@ -21,6 +21,10 @@ function OCF() {
   this.OC_POST = 2;
   this.OC_PUT = 3;
   this.OC_DELETE = 4;
+
+  // QoS constants
+  this.OC_HIGH_QOS = 0;
+  this.OC_LOW_QOS = 1;
 }
 
 var sOCFAdapter = undefined;
