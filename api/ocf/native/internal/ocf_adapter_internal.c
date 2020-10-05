@@ -296,8 +296,10 @@ oa_on_discovery(const char *di, const char *uri, oc_string_array_t types,
     ll_insert_last(event->types, new_type);
   }
 
-  // event->interface_mask, event->endpoint
+  // event->interface_mask
   event->interface_mask = (int)iface_mask;
+
+  // event->endpoint
   oc_endpoint_copy((oc_endpoint_t *)event->endpoint, endpoint);
 
   CALL_ANT_ASYNC_HANDLER(ocf_adapter_discovery, event);
@@ -305,6 +307,36 @@ oa_on_discovery(const char *di, const char *uri, oc_string_array_t types,
 }
 void ocf_adapter_discovery_internal(const char *resource_type) {
   oc_do_ip_discovery(resource_type, &oa_on_discovery, NULL);
+}
+
+DECLARE_GLOBAL_ANT_ASYNC_HANDLER(ocf_adapter_observe)
+ANT_ASYNC_HANDLER_SETTER(ocf_adapter_observe)
+static void oa_on_observe(oc_client_response_t *data) {
+  // Client response event
+  ocf_client_response_event_t *event;
+  event = (ocf_client_response_event_t *)malloc(
+      sizeof(ocf_client_response_event_t));
+
+  // event->endpoint
+  oc_endpoint_copy((oc_endpoint_t *)event->endpoint, endpoint);
+
+  // event->payload, event->payloadLength
+  // TODO:
+  event->payload = (char *)malloc(data->_payload_len);
+  event->payloadLength = data->_payload_len;
+  memcpy(event->payload, data->_payload, event->payloadLength);
+
+  // event->statusCode
+  event->statusCode = data->code;
+
+  CALL_ANT_ASYNC_HANDLER(ocf_adapter_observe, event);
+  return;
+}
+void ocf_adapter_observe_internal(void *ocf_endpoint_nobject, const char *uri,
+                                  const char *query, int qos) {
+  oc_endpoint_t *endpoint = (oc_endpoint_t *)ocf_endpoint_nobject;
+  oc_qos_t oc_qos = (qos == HIGH_QOS) ? HIGH_QOS : LOW_QOS;
+  oc_do_observe(uri, endpoint, query, &oa_on_observe, oc_qos, NULL);
 }
 
 void initOCFAdapter(void) {

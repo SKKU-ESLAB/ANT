@@ -42,13 +42,31 @@ void ocf_adapter_discovery_event_destroyer(void *item) {
   ll_delete(event->types);
   free(event);
 }
-void ocf_adapter_discovery_event_types_destroyer(void *item) {
-  free(item);
-}
+void ocf_adapter_discovery_event_types_destroyer(void *item) { free(item); }
 void ocf_endpoint_destroy(void *handle);
 
 DECLARE_ANT_ASYNC_HANDLER_SETTER(ocf_adapter_discovery);
 void ocf_adapter_discovery_internal(const char *resource_type);
+
+struct ocf_client_response_event_s {
+  void *endpoint;
+  char *payload;
+  size_t payloadLength;
+  int statusCode;
+};
+typedef struct ocf_client_response_event_s ocf_client_response_event_t;
+void ocf_adapter_discovery_event_destroyer(void *item) {
+  ocf_adapter_discovery_event_t *event;
+  event = (ocf_adapter_discovery_event_t *)item;
+  free(event->uri);
+  ll_delete(event->types);
+  free(event);
+}
+void ocf_adapter_discovery_event_types_destroyer(void *item) { free(item); }
+
+DECLARE_ANT_ASYNC_HANDLER_SETTER(ocf_adapter_observe);
+void ocf_adapter_observe_internal(void *ocf_endpoint_nobject, const char *uri,
+                                  const char *query, int qos);
 
 void initOCFAdapter(void);
 
