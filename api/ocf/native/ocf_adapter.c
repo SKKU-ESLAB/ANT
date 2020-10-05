@@ -253,33 +253,38 @@ JS_FUNCTION(ocf_adapter_discovery) {
 
 // OCFAdapter.observe()
 JS_FUNCTION(ocf_adapter_observe) {
-  jerry_value_t argEndpoint;
+  bool result;
+  jerry_value_t argOCFEndpoint;
   iotjs_string_t argUri;
+  iotjs_string_t argQuery;
+  jerry_value_t argQos;
   jerry_value_t argResponseHandler;
-  DJS_CHECK_ARGS(3, object, string, function);
-  argEndpoint = JS_GET_ARG(0, object);
+  DJS_CHECK_ARGS(5, object, string, string, number, function);
+  argOCFEndpoint = JS_GET_ARG(0, object);
   argUri = JS_GET_ARG(1, string);
-  argResponseHandler = JS_GET_ARG(2, function);
-  // TODO: parsing endpoint
+  argQuery = JS_GET_ARG(2, string);
+  argQos = JS_GET_ARG(3, number);
+  argResponseHandler = JS_GET_ARG(4, function);
+  JS_DECLARE_PTR2(argOCFEndpoint, void, ocf_endpoint_nobject, ocf_endpoint);
   const char *uri = iotjs_string_data(&argUri);
-  IOTJS_UNUSED(uri);
-  IOTJS_UNUSED(argEndpoint);
-  IOTJS_UNUSED(argResponseHandler);
+  const char *query = iotjs_string_data(&argQuery);
+  int qos = (int)iotjs_jval_as_number(argQos);
 
-  // TODO: ocf_adapter_observe_internal(..., uri, argResponseHandler);
-  return jerry_create_undefined();
+  result = CALL_ASYNC_REGISTER(ocf_adapter_observe, argResponseHandler);
+  ocf_adapter_observe_internal(ocf_endpoint_nobject, uri, query, qos);
+  return jerry_create_boolean(result);
 }
 
 // OCFAdapter.stopObserve()
 JS_FUNCTION(ocf_adapter_stopObserve) {
-  jerry_value_t argEndpoint;
+  jerry_value_t argOCFEndpoint;
   iotjs_string_t argUri;
   DJS_CHECK_ARGS(2, object, string);
-  argEndpoint = JS_GET_ARG(0, object);
+  argOCFEndpoint = JS_GET_ARG(0, object);
   argUri = JS_GET_ARG(1, string);
   // TODO: parsing endpoint
   const char *uri = iotjs_string_data(&argUri);
-  IOTJS_UNUSED(argEndpoint);
+  IOTJS_UNUSED(argOCFEndpoint);
   IOTJS_UNUSED(uri);
 
   // TODO: ocf_adapter_stopObserve_internal(..., uri);
@@ -288,13 +293,13 @@ JS_FUNCTION(ocf_adapter_stopObserve) {
 
 // OCFAdapter.get()
 JS_FUNCTION(ocf_adapter_get) {
-  jerry_value_t argEndpoint;
+  jerry_value_t argOCFEndpoint;
   iotjs_string_t argUri;
   iotjs_string_t argQuery;
   jerry_value_t argQos;
   jerry_value_t argResponseHandler;
   DJS_CHECK_ARGS(5, object, string, string, number, function);
-  argEndpoint = JS_GET_ARG(0, object);
+  argOCFEndpoint = JS_GET_ARG(0, object);
   argUri = JS_GET_ARG(1, string);
   argQuery = JS_GET_ARG(2, string);
   argQos = JS_GET_ARG(3, number);
@@ -303,7 +308,7 @@ JS_FUNCTION(ocf_adapter_get) {
   const char *uri = iotjs_string_data(&argUri);
   const char *query = iotjs_string_data(&argQuery);
   int qos = (int)iotjs_jval_as_number(argQos);
-  IOTJS_UNUSED(argEndpoint);
+  IOTJS_UNUSED(argOCFEndpoint);
   IOTJS_UNUSED(argResponseHandler);
   IOTJS_UNUSED(uri);
   IOTJS_UNUSED(query);
@@ -315,13 +320,13 @@ JS_FUNCTION(ocf_adapter_get) {
 
 // OCFAdapter.delete()
 JS_FUNCTION(ocf_adapter_delete) {
-  jerry_value_t argEndpoint;
+  jerry_value_t argOCFEndpoint;
   iotjs_string_t argUri;
   iotjs_string_t argQuery;
   jerry_value_t argQos;
   jerry_value_t argResponseHandler;
   DJS_CHECK_ARGS(5, object, string, string, number, function);
-  argEndpoint = JS_GET_ARG(0, object);
+  argOCFEndpoint = JS_GET_ARG(0, object);
   argUri = JS_GET_ARG(1, string);
   argQuery = JS_GET_ARG(2, string);
   argQos = JS_GET_ARG(3, number);
@@ -330,7 +335,7 @@ JS_FUNCTION(ocf_adapter_delete) {
   const char *uri = iotjs_string_data(&argUri);
   const char *query = iotjs_string_data(&argQuery);
   int qos = (int)iotjs_jval_as_number(argQos);
-  IOTJS_UNUSED(argEndpoint);
+  IOTJS_UNUSED(argOCFEndpoint);
   IOTJS_UNUSED(argResponseHandler);
   IOTJS_UNUSED(uri);
   IOTJS_UNUSED(query);
@@ -343,13 +348,13 @@ JS_FUNCTION(ocf_adapter_delete) {
 
 // OCFAdapter.initPost()
 JS_FUNCTION(ocf_adapter_initPost) {
-  jerry_value_t argEndpoint;
+  jerry_value_t argOCFEndpoint;
   iotjs_string_t argUri;
   iotjs_string_t argQuery;
   jerry_value_t argQos;
   jerry_value_t argResponseHandler;
   DJS_CHECK_ARGS(5, object, string, string, number, function);
-  argEndpoint = JS_GET_ARG(0, object);
+  argOCFEndpoint = JS_GET_ARG(0, object);
   argUri = JS_GET_ARG(1, string);
   argQuery = JS_GET_ARG(2, string);
   argQos = JS_GET_ARG(3, number);
@@ -358,7 +363,7 @@ JS_FUNCTION(ocf_adapter_initPost) {
   const char *uri = iotjs_string_data(&argUri);
   const char *query = iotjs_string_data(&argQuery);
   int qos = (int)iotjs_jval_as_number(argQos);
-  IOTJS_UNUSED(argEndpoint);
+  IOTJS_UNUSED(argOCFEndpoint);
   IOTJS_UNUSED(argResponseHandler);
   IOTJS_UNUSED(uri);
   IOTJS_UNUSED(query);
@@ -371,13 +376,13 @@ JS_FUNCTION(ocf_adapter_initPost) {
 
 // OCFAdapter.initPut()
 JS_FUNCTION(ocf_adapter_initPut) {
-  jerry_value_t argEndpoint;
+  jerry_value_t argOCFEndpoint;
   iotjs_string_t argUri;
   iotjs_string_t argQuery;
   jerry_value_t argQos;
   jerry_value_t argResponseHandler;
   DJS_CHECK_ARGS(5, object, string, string, number, function);
-  argEndpoint = JS_GET_ARG(0, object);
+  argOCFEndpoint = JS_GET_ARG(0, object);
   argUri = JS_GET_ARG(1, string);
   argQuery = JS_GET_ARG(2, string);
   argQos = JS_GET_ARG(3, number);
@@ -386,7 +391,7 @@ JS_FUNCTION(ocf_adapter_initPut) {
   const char *uri = iotjs_string_data(&argUri);
   const char *query = iotjs_string_data(&argQuery);
   int qos = (int)iotjs_jval_as_number(argQos);
-  IOTJS_UNUSED(argEndpoint);
+  IOTJS_UNUSED(argOCFEndpoint);
   IOTJS_UNUSED(argResponseHandler);
   IOTJS_UNUSED(uri);
   IOTJS_UNUSED(query);
