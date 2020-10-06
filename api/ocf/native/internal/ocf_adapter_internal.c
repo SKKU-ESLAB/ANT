@@ -291,8 +291,8 @@ oa_on_discovery(const char *di, const char *uri, oc_string_array_t types,
   for (i = 0; i < (int)oc_string_array_get_allocated_size(types); i++) {
     char *type = oc_string_array_get_item(types, i);
     size_t type_len = strlen(type) + 1;
-    char *new_type = (char *)malloc(sizeof(char) * type_len);
-    strncpy(new_type, type, type_len);
+    char *new_type = (char *)malloc(sizeof(char) * (type_len + 1));
+    strncpy(new_type, type, type_len + 1);
     ll_insert_last(event->types, new_type);
   }
 

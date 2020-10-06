@@ -85,10 +85,15 @@ void ocf_resource_handler(oc_request_t *request,
   event->dest_uri = (char *)malloc(sizeof(char) * (strlen(dest_uri) + 1));
   strncpy(event->dest_uri, dest_uri, strlen(dest_uri));
 
-  event->query = (char *)malloc(sizeof(char) * (strlen(request->query) + 1));
-  strncpy(event->query, request->query, strlen(request->query));
-
-  event->query_len = request->query_len;
+  if (request->query != NULL) {
+    event->query = (char *)malloc(sizeof(char) * (strlen(request->query) + 1));
+    strncpy(event->query, request->query, strlen(request->query));
+    event->query_len = request->query_len;
+  } else {
+    event->query = (char *)malloc(sizeof(char));
+    event->query[0] = '\0';
+    event->query_len = 0;
+  }
 
   event->request_payload_string_len =
       oc_rep_to_json(request->request_payload, NULL, 0, true);

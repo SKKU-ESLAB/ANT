@@ -11,12 +11,13 @@ oa.onInitialize(function() {
 var g_light_state = false;
 oa.onPrepareServer(function() {
   console.log('onPrepareServer()');
+  device = oa.getDevice(0);
   var lightRes = ocf.createResource(
-      oa.getDevice(0), 'lightbulb', '/light/1', ['oic.r.light'],
-      [ocf.OC_IF_RW]);
+      device, 'lightbulb', '/light/1', ['oic.r.light'], [ocf.OC_IF_RW]);
   lightRes.setDiscoverable(true);
   lightRes.setPeriodicObservable(1);
   lightRes.setHandler(ocf.OC_GET, getLightHandler);
+  oa.addResource(lightRes);
 });
 
 function getLightHandler() {
