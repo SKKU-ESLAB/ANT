@@ -80,27 +80,27 @@ JS_FUNCTION(ocf_resource_constructor) {
 
 // OCFResource.setDiscoverable()
 JS_FUNCTION(ocf_resource_setDiscoverable) {
-  jerry_value_t argSelf, argIsDiscoverable;
+  jerry_value_t argSelf;
+  bool argIsDiscoverable;
   DJS_CHECK_ARGS(2, object, boolean);
   argSelf = JS_GET_ARG(0, object);
-  argIsDiscoverable = JS_GET_ARG(0, boolean);
-  bool is_discoverable = iotjs_jval_as_boolean(argIsDiscoverable);
+  argIsDiscoverable = JS_GET_ARG(1, boolean);
   JS_DECLARE_PTR2(argSelf, void, self, ocf_resource);
 
-  ocf_resource_setDiscoverable_internal(self, is_discoverable);
+  ocf_resource_setDiscoverable_internal(self, argIsDiscoverable);
   return jerry_create_undefined();
 }
 
 // OCFResource.setPeriodicObservable()
 JS_FUNCTION(ocf_resource_setPeriodicObservable) {
-  jerry_value_t argSelf, argPeriodSec;
+  jerry_value_t argSelf;
+  int argPeriodSec;
   DJS_CHECK_ARGS(2, object, number);
   argSelf = JS_GET_ARG(0, object);
-  argPeriodSec = JS_GET_ARG(0, number);
-  int period_sec = (int)iotjs_jval_as_number(argPeriodSec);
+  argPeriodSec = (int)JS_GET_ARG(1, number);
   JS_DECLARE_PTR2(argSelf, void, self, ocf_resource);
 
-  ocf_resource_setPeriodicObservable_internal(self, period_sec);
+  ocf_resource_setPeriodicObservable_internal(self, argPeriodSec);
   return jerry_create_undefined();
 }
 
@@ -156,19 +156,20 @@ UV_ASYNC_HANDLER(ocf_resource_setHandler) {
 ASYNC_REGISTER(ocf_resource_setHandler, ocf_resource_setHandler_event_destroyer)
 JS_FUNCTION(ocf_resource_setHandler) {
   bool result;
-  jerry_value_t argSelf, argMethod, argHandler;
+  jerry_value_t argSelf;
+  int argMethod;
+  jerry_value_t argHandler;
   DJS_CHECK_ARGS(3, object, number, function);
   argSelf = JS_GET_ARG(0, object);
   argMethod = JS_GET_ARG(1, number);
   argHandler = JS_GET_ARG(2, function);
   JS_DECLARE_PTR2(argSelf, void, self, ocf_resource);
-  int method = (int)iotjs_jval_as_number(argMethod);
 
   // register ant async handler
   result = CALL_ASYNC_REGISTER(ocf_resource_setHandler, argHandler);
 
   // register a handler to IoTivity Lite
-  ocf_resource_setHandler_internal(self, method);
+  ocf_resource_setHandler_internal(self, argMethod);
   return jerry_create_boolean(result);
 }
 
