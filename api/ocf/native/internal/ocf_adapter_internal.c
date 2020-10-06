@@ -318,25 +318,31 @@ static void oa_on_observe(oc_client_response_t *data) {
       sizeof(ocf_client_response_event_t));
 
   // event->endpoint
-  oc_endpoint_copy((oc_endpoint_t *)event->endpoint, endpoint);
+  oc_endpoint_copy((oc_endpoint_t *)event->endpoint, data->endpoint);
 
   // event->payload, event->payloadLength
-  // TODO:
-  event->payload = (char *)malloc(data->_payload_len);
-  event->payloadLength = data->_payload_len;
-  memcpy(event->payload, data->_payload, event->payloadLength);
+  event->payload_string_length = oc_rep_to_json(data->payload, NULL, 0, true);
+  event->payload_string = (char *)malloc(event->payload_string_length + 1);
+  oc_rep_to_json(data->payload, event->payload_string,
+                 event->payload_string_length + 1, true);
 
   // event->statusCode
-  event->statusCode = data->code;
+  event->status_code = data->code;
 
   CALL_ANT_ASYNC_HANDLER(ocf_adapter_observe, event);
   return;
 }
-void ocf_adapter_observe_internal(void *ocf_endpoint_nobject, const char *uri,
+bool ocf_adapter_observe_internal(void *ocf_endpoint_nobject, const char *uri,
                                   const char *query, int qos) {
   oc_endpoint_t *endpoint = (oc_endpoint_t *)ocf_endpoint_nobject;
   oc_qos_t oc_qos = (qos == HIGH_QOS) ? HIGH_QOS : LOW_QOS;
-  oc_do_observe(uri, endpoint, query, &oa_on_observe, oc_qos, NULL);
+  return oc_do_observe(uri, endpoint, query, &oa_on_observe, oc_qos, NULL);
+}
+
+bool ocf_adapter_stopObserve_internal(void *ocf_endpoint_nobject,
+                                      const char *uri) {
+  oc_endpoint_t *endpoint = (oc_endpoint_t *)ocf_endpoint_nobject;
+  return oc_stop_observe(uri, endpoint);
 }
 
 void initOCFAdapter(void) {

@@ -136,6 +136,10 @@ OCFAdapter.prototype.observe = function(endpoint, uri, response_handler) {
   native.ocf_adapter_observe(endpoint, uri, response_handler);
 };
 
+OCFAdapter.prototype.stopObserve = function(endpoint, uri) {
+  native.ocf_adapter_stopObserve(endpoint, uri);
+}
+
 function OCFDevice(
     id, uri, resource_type, name, spec_version, data_model_version) {
   this.id = id;

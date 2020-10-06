@@ -252,6 +252,38 @@ JS_FUNCTION(ocf_adapter_discovery) {
 }
 
 // OCFAdapter.observe()
+DECLARE_GLOBAL_ASYNC(ocf_adapter_observe)
+DECLARE_ANT_ASYNC_HANDLER(ocf_adapter_observe)
+UV_ASYNC_HANDLER(ocf_adapter_observe) {
+  ocf_client_response_event_t *event =
+      (ocf_client_response_event_t *)GET_MR_EVENT(ocf_adapter_observe);
+  jerry_value_t js_handler = GET_JS_HANDLER(ocf_adapter_observe);
+
+  // Get response.payload
+  iotjs_string_t payload_jsstr = iotjs_string_create();
+  iotjs_string_append(&payload_jsstr, event->payload_string,
+                      strlen(event->payload_string));
+
+  // Get response.endpoint
+  jerry_value_t js_endpoint = jerry_create_object();
+  jerry_set_object_native_pointer(js_endpoint, event->endpoint,
+                                  &ocf_endpoint_native_info);
+  IOTJS_ASSERT(jerry_get_object_native_pointer(js_endpoint, NULL,
+                                               &ocf_endpoint_native_info));
+
+  // Args 0: object response
+  jerry_value_t js_response = jerry_create_object();
+  iotjs_jval_set_property_string(js_response, "payload", &payload_jsstr);
+  iotjs_jval_set_property_number(js_response, "status_code",
+                                 (double)event->status_code);
+  iotjs_jval_set_property_jval(js_response, "endpoint", js_endpoint);
+
+  jerry_value_t js_args[] = {js_response};
+
+  iotjs_invoke_callback(js_handler, jerry_create_undefined(), js_args, 1);
+  DESTROY_EVENTS(ocf_adapter_observe);
+}
+ASYNC_REGISTER(ocf_adapter_observe, ocf_adapter_response_event_destroyer)
 JS_FUNCTION(ocf_adapter_observe) {
   bool result;
   jerry_value_t argOCFEndpoint;
@@ -271,24 +303,24 @@ JS_FUNCTION(ocf_adapter_observe) {
   int qos = (int)iotjs_jval_as_number(argQos);
 
   result = CALL_ASYNC_REGISTER(ocf_adapter_observe, argResponseHandler);
-  ocf_adapter_observe_internal(ocf_endpoint_nobject, uri, query, qos);
+  result = result &&
+           ocf_adapter_observe_internal(ocf_endpoint_nobject, uri, query, qos);
   return jerry_create_boolean(result);
 }
 
 // OCFAdapter.stopObserve()
 JS_FUNCTION(ocf_adapter_stopObserve) {
+  bool result;
   jerry_value_t argOCFEndpoint;
   iotjs_string_t argUri;
   DJS_CHECK_ARGS(2, object, string);
   argOCFEndpoint = JS_GET_ARG(0, object);
   argUri = JS_GET_ARG(1, string);
-  // TODO: parsing endpoint
+  JS_DECLARE_PTR2(argOCFEndpoint, void, ocf_endpoint_nobject, ocf_endpoint);
   const char *uri = iotjs_string_data(&argUri);
-  IOTJS_UNUSED(argOCFEndpoint);
-  IOTJS_UNUSED(uri);
 
-  // TODO: ocf_adapter_stopObserve_internal(..., uri);
-  return jerry_create_undefined();
+  result = ocf_adapter_stopObserve_internal(ocf_endpoint_nobject, uri);
+  return jerry_create_boolean(result);
 }
 
 // OCFAdapter.get()
