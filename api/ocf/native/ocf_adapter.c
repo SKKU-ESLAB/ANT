@@ -87,6 +87,9 @@ JS_FUNCTION(ocf_adapter_setPlatform) {
   argMfgName = JS_GET_ARG(0, string);
 
   result = ocf_adapter_setPlatform_internal(iotjs_string_data(&argMfgName));
+
+  iotjs_string_destroy(&argMfgName);
+
   return jerry_create_boolean(result);
 }
 
@@ -106,6 +109,13 @@ JS_FUNCTION(ocf_adapter_addDevice) {
       iotjs_string_data(&argUri), iotjs_string_data(&argResourceType),
       iotjs_string_data(&argName), iotjs_string_data(&argSpecVersion),
       iotjs_string_data(&argDataModelVersion));
+
+  iotjs_string_destroy(&argUri);
+  iotjs_string_destroy(&argResourceType);
+  iotjs_string_destroy(&argName);
+  iotjs_string_destroy(&argSpecVersion);
+  iotjs_string_destroy(&argDataModelVersion);
+
   return jerry_create_boolean(result);
 }
 
@@ -134,6 +144,9 @@ JS_FUNCTION(ocf_adapter_repSetBoolean) {
   const char *key = iotjs_string_data(&argKey);
 
   ocf_adapter_repSetBoolean_internal(key, argValue);
+
+  iotjs_string_destroy(&argKey);
+
   return jerry_create_undefined();
 }
 
@@ -147,6 +160,9 @@ JS_FUNCTION(ocf_adapter_repSetInt) {
   const char *key = iotjs_string_data(&argKey);
 
   ocf_adapter_repSetInt_internal(key, argValue);
+
+  iotjs_string_destroy(&argKey);
+
   return jerry_create_undefined();
 }
 
@@ -160,6 +176,9 @@ JS_FUNCTION(ocf_adapter_repSetDouble) {
   const char *key = iotjs_string_data(&argKey);
 
   ocf_adapter_repSetDouble_internal(key, argValue);
+
+  iotjs_string_destroy(&argKey);
+
   return jerry_create_undefined();
 }
 
@@ -174,6 +193,10 @@ JS_FUNCTION(ocf_adapter_repSetString) {
   const char *value = iotjs_string_data(&argValue);
 
   ocf_adapter_repSetString_internal(key, value);
+
+  iotjs_string_destroy(&argKey);
+  iotjs_string_destroy(&argValue);
+
   return jerry_create_undefined();
 }
 
@@ -204,36 +227,43 @@ DECLARE_ANT_ASYNC_HANDLER(ocf_adapter_discovery)
 UV_ASYNC_HANDLER(ocf_adapter_discovery) {
   ocf_adapter_discovery_event_t *event =
       (ocf_adapter_discovery_event_t *)GET_MR_EVENT(ocf_adapter_discovery);
-  jerry_value_t js_handler = GET_JS_HANDLER(ocf_adapter_discovery);
+  jerry_value_t jsHandler = GET_JS_HANDLER(ocf_adapter_discovery);
 
   // Args 0: object endpoint
   // set native pointer of OCFEndPoint with oc_endpoint_t
-  jerry_value_t js_endpoint = jerry_create_object();
-  jerry_set_object_native_pointer(js_endpoint, event->endpoint,
+  jerry_value_t jsEndpoint = jerry_create_object();
+  jerry_set_object_native_pointer(jsEndpoint, event->endpoint,
                                   &ocf_endpoint_native_info);
-  IOTJS_ASSERT(jerry_get_object_native_pointer(js_endpoint, NULL,
+  IOTJS_ASSERT(jerry_get_object_native_pointer(jsEndpoint, NULL,
                                                &ocf_endpoint_native_info));
 
   // Args 1: string uri
-  jerry_value_t js_uri =
+  jerry_value_t jsUri =
       jerry_create_string_from_utf8((const jerry_char_t *)event->uri);
 
   // Args 2: array<string> types
-  jerry_value_t js_types = jerry_create_object();
+  jerry_value_t jsTypes = jerry_create_object();
   for (int i = 0; i < event->types->len; i++) {
     char *type_item = (char *)ll_get_n(event->types, i);
-    jerry_value_t js_type_item =
+    jerry_value_t jsTypeItem =
         jerry_create_string_from_utf8((const jerry_char_t *)type_item);
-    iotjs_jval_set_property_by_index(js_types, (uint32_t)i, js_type_item);
+    iotjs_jval_set_property_by_index(jsTypes, (uint32_t)i, jsTypeItem);
+    jerry_release_value(jsTypeItem);
   }
 
   // Args 3: int interface_mask
-  jerry_value_t js_interface_mask =
+  jerry_value_t jsInterfaceMask =
       jerry_create_number((double)event->interface_mask);
 
-  jerry_value_t js_args[] = {js_endpoint, js_uri, js_types, js_interface_mask};
+  jerry_value_t js_args[] = {jsEndpoint, jsUri, jsTypes, jsInterfaceMask};
 
-  iotjs_invoke_callback(js_handler, jerry_create_undefined(), js_args, 4);
+  iotjs_invoke_callback(jsHandler, jerry_create_undefined(), js_args, 4);
+
+  jerry_release_value(jsEndpoint);
+  jerry_release_value(jsUri);
+  jerry_release_value(jsTypes);
+  jerry_release_value(jsInterfaceMask);
+
   DESTROY_EVENTS(ocf_adapter_discovery);
 }
 ASYNC_REGISTER_FUNC(ocf_adapter_discovery,
@@ -249,6 +279,9 @@ JS_FUNCTION(ocf_adapter_discovery) {
 
   result = CALL_ASYNC_REGISTER(ocf_adapter_discovery, argDiscoveryHandler);
   ocf_adapter_discovery_internal(resource_type);
+
+  iotjs_string_destroy(&argResourceType);
+
   return jerry_create_boolean(result);
 }
 
@@ -258,30 +291,34 @@ DECLARE_ANT_ASYNC_HANDLER(ocf_adapter_observe)
 UV_ASYNC_HANDLER(ocf_adapter_observe) {
   ocf_client_response_event_t *event =
       (ocf_client_response_event_t *)GET_MR_EVENT(ocf_adapter_observe);
-  jerry_value_t js_handler = GET_JS_HANDLER(ocf_adapter_observe);
+  jerry_value_t jsHandler = GET_JS_HANDLER(ocf_adapter_observe);
 
   // Get response.payload
-  iotjs_string_t payload_jsstr = iotjs_string_create();
-  iotjs_string_append(&payload_jsstr, event->payload_string,
+  iotjs_string_t jsstrPayload = iotjs_string_create();
+  iotjs_string_append(&jsstrPayload, event->payload_string,
                       strlen(event->payload_string));
 
   // Get response.endpoint
-  jerry_value_t js_endpoint = jerry_create_object();
-  jerry_set_object_native_pointer(js_endpoint, event->endpoint,
+  jerry_value_t jsEndpoint = jerry_create_object();
+  jerry_set_object_native_pointer(jsEndpoint, event->endpoint,
                                   &ocf_endpoint_native_info);
-  IOTJS_ASSERT(jerry_get_object_native_pointer(js_endpoint, NULL,
+  IOTJS_ASSERT(jerry_get_object_native_pointer(jsEndpoint, NULL,
                                                &ocf_endpoint_native_info));
 
   // Args 0: object response
-  jerry_value_t js_response = jerry_create_object();
-  iotjs_jval_set_property_string(js_response, "payload", &payload_jsstr);
-  iotjs_jval_set_property_number(js_response, "status_code",
+  jerry_value_t jsResponse = jerry_create_object();
+  iotjs_jval_set_property_string(jsResponse, "payload", &jsstrPayload);
+  iotjs_jval_set_property_number(jsResponse, "status_code",
                                  (double)event->status_code);
-  iotjs_jval_set_property_jval(js_response, "endpoint", js_endpoint);
+  iotjs_jval_set_property_jval(jsResponse, "endpoint", jsEndpoint);
 
-  jerry_value_t js_args[] = {js_response};
+  jerry_value_t js_args[] = {jsResponse};
 
-  iotjs_invoke_callback(js_handler, jerry_create_undefined(), js_args, 1);
+  iotjs_invoke_callback(jsHandler, jerry_create_undefined(), js_args, 1);
+
+  iotjs_string_destroy(&jsstrPayload);
+  jerry_release_value(jsEndpoint);
+  jerry_release_value(jsResponse);
   DESTROY_EVENTS(ocf_adapter_observe);
 }
 ASYNC_REGISTER_FUNC(ocf_adapter_observe, ocf_adapter_response_event_destroyer)
@@ -305,6 +342,10 @@ JS_FUNCTION(ocf_adapter_observe) {
   result = CALL_ASYNC_REGISTER(ocf_adapter_observe, argResponseHandler);
   result = result && ocf_adapter_observe_internal(ocf_endpoint_nobject, uri,
                                                   query, argQos);
+
+  iotjs_string_destroy(&argUri);
+  iotjs_string_destroy(&argQuery);
+
   return jerry_create_boolean(result);
 }
 
@@ -320,6 +361,9 @@ JS_FUNCTION(ocf_adapter_stopObserve) {
   const char *uri = iotjs_string_data(&argUri);
 
   result = ocf_adapter_stopObserve_internal(ocf_endpoint_nobject, uri);
+
+  iotjs_string_destroy(&argUri);
+
   return jerry_create_boolean(result);
 }
 
@@ -346,6 +390,10 @@ JS_FUNCTION(ocf_adapter_get) {
   IOTJS_UNUSED(query);
 
   // TODO: ocf_adapter_get_internal(..., uri, query, qos, argResponseHandler);
+
+  iotjs_string_destroy(&argUri);
+  iotjs_string_destroy(&argQuery);
+
   return jerry_create_undefined();
 }
 
@@ -373,6 +421,10 @@ JS_FUNCTION(ocf_adapter_delete) {
 
   // TODO: ocf_adapter_delete_internal(..., uri, query, qos,
   // argResponseHandler);
+
+  iotjs_string_destroy(&argUri);
+  iotjs_string_destroy(&argQuery);
+
   return jerry_create_undefined();
 }
 
@@ -400,6 +452,10 @@ JS_FUNCTION(ocf_adapter_initPost) {
 
   // TODO: ocf_adapter_initPost_internal(..., uri, query, qos,
   // argResponseHandler);
+
+  iotjs_string_destroy(&argUri);
+  iotjs_string_destroy(&argQuery);
+
   return jerry_create_undefined();
 }
 
@@ -427,6 +483,10 @@ JS_FUNCTION(ocf_adapter_initPut) {
 
   // TODO: ocf_adapter_initPut_internal(..., uri, query, qos,
   // argResponseHandler);
+
+  iotjs_string_destroy(&argUri);
+  iotjs_string_destroy(&argQuery);
+
   return jerry_create_undefined();
 }
 
