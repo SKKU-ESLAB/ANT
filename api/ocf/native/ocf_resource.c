@@ -35,38 +35,59 @@ void ocf_request_destroy(void *handle) {
 // OCFResource.addResource()
 JS_FUNCTION(ocf_resource_constructor) {
   jerry_value_t argSelf;
-  iotjs_string_t argName, argUri;
-  jerry_value_t argTypes, argInterfaceMask, argDefaultInterfaceMask,
-      argDeviceId;
   DJS_CHECK_ARGS(1, object);
-  argSelf = JS_GET_ARG(0, object);
-  argName = iotjs_jval_as_string(iotjs_jval_get_property(argSelf, "name"));
-  argUri = iotjs_jval_as_string(iotjs_jval_get_property(argSelf, "uri"));
-  argTypes = iotjs_jval_as_array(iotjs_jval_get_property(argSelf, "types"));
-  argInterfaceMask = iotjs_jval_get_property(argSelf, "interface_mask");
-  argDefaultInterfaceMask =
-      iotjs_jval_get_property(argSelf, "default_interface_mask");
-  argDeviceId =
-      iotjs_jval_get_property(iotjs_jval_get_property(argSelf, "device"), "id");
 
-  const char *name = iotjs_string_data(&argName);
-  const char *uri = iotjs_string_data(&argUri);
-  size_t types_len =
-      iotjs_jval_as_number(iotjs_jval_get_property(argTypes, "length"));
-  const char **types = (const char **)malloc(sizeof(const char *) * types_len);
-  for (uint32_t i = 0; i < types_len; i++) {
-    iotjs_string_t type_jsstr =
-        iotjs_jval_as_string(iotjs_jval_get_property_by_index(argTypes, i));
-    types[i] = iotjs_string_data(&type_jsstr);
+  // Arg 0: object self
+  argSelf = JS_GET_ARG(0, object);
+
+  // Get properties from self
+  jerry_value_t jsName = iotjs_jval_get_property(argSelf, "name");
+  jerry_value_t jsUri = iotjs_jval_get_property(argSelf, "uri");
+  jerry_value_t jsTypes =
+      iotjs_jval_as_array(iotjs_jval_get_property(argSelf, "types"));
+  jerry_value_t jsInterfaceMask =
+      iotjs_jval_get_property(argSelf, "interface_mask");
+  jerry_value_t jsDefaultInterfaceMask =
+      iotjs_jval_get_property(argSelf, "default_interface_mask");
+  jerry_value_t jsDevice = iotjs_jval_get_property(argSelf, "device");
+  jerry_value_t jsDeviceId = iotjs_jval_get_property(jsDevice, "id");
+
+  // string name
+  iotjs_string_t jsstrName = iotjs_jval_as_string(jsName);
+  const char *name = iotjs_string_data(&jsstrName);
+
+  // uri
+  iotjs_string_t jsstrUri = iotjs_jval_as_string(jsUri);
+  const char *uri = iotjs_string_data(&jsstrUri);
+
+  // types
+  jerry_value_t jsTypesLength = iotjs_jval_get_property(jsTypes, "length");
+  size_t types_length = iotjs_jval_as_number(jsTypesLength);
+  char **types = (char **)malloc(sizeof(const char *) * types_length);
+  for (uint32_t i = 0; i < types_length; i++) {
+    jerry_value_t jsType = iotjs_jval_get_property_by_index(jsTypes, i);
+    iotjs_string_t jsstrType = iotjs_jval_as_string(jsType);
+
+    const char *type = iotjs_string_data(&jsstrType);
+    types[i] = (char *)malloc(strlen(type) + 1);
+    strncpy(types[i], type, strlen(type) + 1);
+
+    iotjs_string_destroy(&jsstrType);
+    jerry_release_value(jsType);
   }
-  int interface_mask = (int)iotjs_jval_as_number(argInterfaceMask);
+
+  // interface_mask, default_interface_mask, device_id
+  int interface_mask = (int)iotjs_jval_as_number(jsInterfaceMask);
   int default_interface_mask =
-      (int)iotjs_jval_as_number(argDefaultInterfaceMask);
-  int device_id = (int)iotjs_jval_as_number(argDeviceId);
+      (int)iotjs_jval_as_number(jsDefaultInterfaceMask);
+  int device_id = (int)iotjs_jval_as_number(jsDeviceId);
 
   void *ocf_resource_nobject = ocf_resource_constructor_internal(
-      name, uri, types, types_len, interface_mask, default_interface_mask,
-      device_id);
+      name, uri, (const char **)types, types_length, interface_mask,
+      default_interface_mask, device_id);
+  for (size_t i = 0; i < types_length; i++) {
+    free(types[i]);
+  }
   free(types);
 
   // set native pointer of OCFResource with oc_resource
@@ -74,6 +95,18 @@ JS_FUNCTION(ocf_resource_constructor) {
                                   &ocf_resource_native_info);
   IOTJS_ASSERT(jerry_get_object_native_pointer(argSelf, NULL,
                                                &ocf_resource_native_info));
+
+  // Release properties
+  iotjs_string_destroy(&jsstrName);
+  iotjs_string_destroy(&jsstrUri);
+  jerry_release_value(jsName);
+  jerry_release_value(jsUri);
+  jerry_release_value(jsTypes);
+  jerry_release_value(jsInterfaceMask);
+  jerry_release_value(jsDefaultInterfaceMask);
+  jerry_release_value(jsDevice);
+  jerry_release_value(jsDeviceId);
+  jerry_release_value(jsTypesLength);
 
   return jerry_create_undefined();
 }
@@ -150,6 +183,14 @@ UV_ASYNC_HANDLER(ocf_resource_setHandler) {
   // call JS handler
   iotjs_invoke_callback(js_handler, jerry_create_undefined(), js_args, 2);
 
+  // Release arguments
+  iotjs_string_destroy(&origin_addr_jsstr);
+  iotjs_string_destroy(&dest_uri_jsstr);
+  iotjs_string_destroy(&query_jsstr);
+  iotjs_string_destroy(&request_payload_string_jsstr);
+  jerry_release_value(js_ocf_request);
+  jerry_release_value(js_method);
+
   // wake up OCF thread
   pthread_mutex_lock(&event->sync_mutex);
   pthread_cond_signal(&event->sync_cond);
@@ -157,7 +198,8 @@ UV_ASYNC_HANDLER(ocf_resource_setHandler) {
 
   DESTROY_EVENTS(ocf_resource_setHandler);
 }
-ASYNC_REGISTER(ocf_resource_setHandler, ocf_resource_setHandler_event_destroyer)
+ASYNC_REGISTER_FUNC(ocf_resource_setHandler,
+                    ocf_resource_setHandler_event_destroyer)
 JS_FUNCTION(ocf_resource_setHandler) {
   bool result;
   jerry_value_t argSelf;
