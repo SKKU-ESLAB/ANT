@@ -71,9 +71,6 @@ void ocf_resource_handler(oc_request_t *request,
   oc_string_t origin_addr_ocs;
   char *origin_addr, *dest_uri;
 
-  event->sep_response = (void *)malloc(sizeof(oc_separate_response_t));
-  oc_indicate_separate_response(request, event->sep_response);
-
   oc_endpoint_to_string(request->origin, &origin_addr_ocs);
   origin_addr = oc_string(origin_addr_ocs);
   event->origin_addr = (char *)malloc(sizeof(char) * (strlen(origin_addr) + 1));
@@ -104,21 +101,24 @@ void ocf_resource_handler(oc_request_t *request,
 
   event->interface_mask = (int)interface_mask;
 
-  // printf(" %s\n %d\n %s\n %s\n %d\n %s\n %d\n %d\n %d\n", event->origin_addr,
-  //        event->dest_device_id, event->dest_uri, event->query,
-  //        event->query_len, event->request_payload_string,
-  //        event->request_payload_string_len, event->interface_mask,
-  //        event->method);
-
   int method = *((int *)user_data); // user_data will be freed in ant-async
   event->method = method;
 
+  event->request = (void *)request;
+  pthread_mutex_init(&event->sync_mutex, NULL);
+  pthread_cond_init(&event->sync_cond, NULL);
+
   CALL_ANT_ASYNC_HANDLER(ocf_resource_setHandler, (void *)event);
-}
-void ocf_resource_setHandler_handler_internal(void *sep_response_nobject) {
-  oc_separate_response_t *sep_response =
-      (oc_separate_response_t *)sep_response_nobject;
-  oc_set_separate_response_buffer(sep_response);
+
+  // TODO: hard-coding for the thread-safety of "oc_request_t request".
+  // Using oc_separate_response() function can resolve the hard-coding.
+  // However, as now, I cannot implement it with oc_separate_response().
+  // oc_separate_response() also seems to make thread-safety problem
+  // in its request list called as "separate_response->requests".
+
+  // wait for JS thread's handler
+  pthread_cond_wait(&event->sync_cond, &event->sync_mutex);
+  pthread_mutex_unlock(&event->sync_mutex);
 }
 
 void initOCFResource(void) {

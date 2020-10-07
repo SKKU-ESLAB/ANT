@@ -114,9 +114,6 @@ UV_ASYNC_HANDLER(ocf_resource_setHandler) {
 
   jerry_value_t js_ocf_request, js_method;
 
-  // separate response
-  ocf_resource_setHandler_handler_internal(event->sep_response);
-
   // Args 0: OCFRequest request
   js_ocf_request = jerry_create_object();
   iotjs_string_t origin_addr_jsstr = iotjs_string_create();
@@ -140,8 +137,8 @@ UV_ASYNC_HANDLER(ocf_resource_setHandler) {
   iotjs_jval_set_property_string(js_ocf_request, "request_payload_string",
                                  &request_payload_string_jsstr);
 
-  // set native pointer of OCFRequest with oc_separate_response
-  jerry_set_object_native_pointer(js_ocf_request, event->sep_response,
+  // set native pointer of OCFRequest with oc_request_t
+  jerry_set_object_native_pointer(js_ocf_request, event->request,
                                   &ocf_request_native_info);
   IOTJS_ASSERT(jerry_get_object_native_pointer(js_ocf_request, NULL,
                                                &ocf_request_native_info));
@@ -150,7 +147,14 @@ UV_ASYNC_HANDLER(ocf_resource_setHandler) {
   js_method = jerry_create_number((double)event->method);
   jerry_value_t js_args[] = {js_ocf_request, js_method};
 
+  // call JS handler
   iotjs_invoke_callback(js_handler, jerry_create_undefined(), js_args, 2);
+
+  // wake up OCF thread
+  pthread_mutex_lock(&event->sync_mutex);
+  pthread_cond_signal(&event->sync_cond);
+  pthread_mutex_unlock(&event->sync_mutex);
+
   DESTROY_EVENTS(ocf_resource_setHandler);
 }
 ASYNC_REGISTER(ocf_resource_setHandler, ocf_resource_setHandler_event_destroyer)

@@ -2,11 +2,15 @@
 #define __OCF_RESOURCE_INTERNAL_H__
 
 #include "ant_async_internal.h"
+#include <pthread.h>
 #include <stdbool.h>
 #include <stdlib.h>
 
 struct ocf_resource_setHandler_event_s {
-  void *sep_response;
+  void *request;
+  pthread_mutex_t sync_mutex;
+  pthread_cond_t sync_cond;
+
   char *origin_addr;
   int dest_device_id;
   char *dest_uri;
@@ -40,7 +44,6 @@ void ocf_resource_setPeriodicObservable_internal(void *ocf_resource_nobject,
                                                  int period_sec);
 void ocf_resource_setHandler_internal(void *ocf_resource_nobject, int method);
 DECLARE_ANT_ASYNC_HANDLER_SETTER(ocf_resource_setHandler);
-void ocf_resource_setHandler_handler_internal(void *sep_response_nobject);
 
 void initOCFResource(void);
 
