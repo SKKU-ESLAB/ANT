@@ -350,7 +350,6 @@ void initOCFAdapter(void) {
 
 void *ocf_thread_fn(void *arg) {
   // On OCF Thread
-  // TODO: implement it
   struct sigaction sa;
   sigfillset(&sa.sa_mask);
   sa.sa_flags = 0;

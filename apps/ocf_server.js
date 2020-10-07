@@ -6,7 +6,7 @@ oa.onInitialize(function() {
   console.log('onInitialize()');
   oa.setPlatform('ant');
   oa.addDevice('/oic/d', 'oic.d.light', 'Light', 'ocf.1.0.0', 'ocf.res.1.0.0');
-}); 
+});
 
 var g_light_state = false;
 oa.onPrepareServer(function() {
@@ -32,4 +32,4 @@ oa.start();
 setTimeout(function() {
   console.log('10s elapsed');
   oa.stop();
-}, 10000);
+}, 1000);
