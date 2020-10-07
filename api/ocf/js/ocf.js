@@ -25,6 +25,28 @@ function OCF() {
   // QoS constants
   this.OC_HIGH_QOS = 0;
   this.OC_LOW_QOS = 1;
+
+  // Status constants
+  this.OC_STATUS_OK = 0;
+  this.OC_STATUS_CREATED = 1;
+  this.OC_STATUS_CHANGED = 2;
+  this.OC_STATUS_DELETED = 3;
+  this.OC_STATUS_NOT_MODIFIED = 4;
+  this.OC_STATUS_BAD_REQUEST = 5;
+  this.OC_STATUS_UNAUTHORIZED = 6;
+  this.OC_STATUS_BAD_OPTION = 7;
+  this.OC_STATUS_FORBIDDEN = 8;
+  this.OC_STATUS_NOT_FOUND = 9;
+  this.OC_STATUS_METHOD_NOT_ALLOWED = 10;
+  this.OC_STATUS_NOT_ACCEPTABLE = 11;
+  this.OC_STATUS_REQUEST_ENTITY_TOO_LARGE = 12;
+  this.OC_STATUS_UNSUPPORTED_MEDIA_TYPE = 13;
+  this.OC_STATUS_INTERNAL_SERVER_ERROR = 14;
+  this.OC_STATUS_NOT_IMPLEMENTED = 15;
+  this.OC_STATUS_BAD_GATEWAY = 16;
+  this.OC_STATUS_SERVICE_UNAVAILABLE = 17;
+  this.OC_STATUS_GATEWAY_TIMEOUT = 18;
+  this.OC_STATUS_PROXYING_NOT_SUPPORTED = 19;
 }
 
 var sOCFAdapter = undefined;
@@ -124,8 +146,8 @@ OCFAdapter.prototype.repSet = function(key, value) {
 OCFAdapter.prototype.repEndRootObject = function() {
   native.ocf_adapter_repEndRootObject();
 };
-OCFAdapter.prototype.repSendResponse = function(ocf_request, status_code) {
-  native.ocf_adapter_repSendResponse(ocf_request, status_code);
+OCFAdapter.prototype.sendResponse = function(ocf_request, status_code) {
+  native.ocf_adapter_sendResponse(ocf_request, status_code);
 };
 
 OCFAdapter.prototype.discovery = function(resource_type, discovery_handler) {
@@ -138,7 +160,7 @@ OCFAdapter.prototype.observe = function(endpoint, uri, response_handler) {
 
 OCFAdapter.prototype.stopObserve = function(endpoint, uri) {
   native.ocf_adapter_stopObserve(endpoint, uri);
-}
+};
 
 function OCFDevice(
     id, uri, resource_type, name, spec_version, data_model_version) {

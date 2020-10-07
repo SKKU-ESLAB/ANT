@@ -21,7 +21,6 @@ typedef struct ocf_resource_setHandler_event_s ocf_resource_setHandler_event_t;
 void ocf_resource_setHandler_event_destroyer(void *item) {
   ocf_resource_setHandler_event_t *event;
   event = (ocf_resource_setHandler_event_t *)item;
-  free(event->sep_response);
   free(event->origin_addr);
   free(event->dest_uri);
   free(event->query);

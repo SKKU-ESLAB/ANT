@@ -77,17 +77,17 @@ void ocf_resource_handler(oc_request_t *request,
   oc_endpoint_to_string(request->origin, &origin_addr_ocs);
   origin_addr = oc_string(origin_addr_ocs);
   event->origin_addr = (char *)malloc(sizeof(char) * (strlen(origin_addr) + 1));
-  strncpy(event->origin_addr, origin_addr, strlen(origin_addr));
+  strncpy(event->origin_addr, origin_addr, strlen(origin_addr) + 1);
 
   event->dest_device_id = (int)request->resource->device;
 
   dest_uri = oc_string(request->resource->uri);
   event->dest_uri = (char *)malloc(sizeof(char) * (strlen(dest_uri) + 1));
-  strncpy(event->dest_uri, dest_uri, strlen(dest_uri));
+  strncpy(event->dest_uri, dest_uri, strlen(dest_uri) + 1);
 
   if (request->query != NULL) {
     event->query = (char *)malloc(sizeof(char) * (strlen(request->query) + 1));
-    strncpy(event->query, request->query, strlen(request->query));
+    strncpy(event->query, request->query, strlen(request->query) + 1);
     event->query_len = request->query_len;
   } else {
     event->query = (char *)malloc(sizeof(char));
@@ -103,6 +103,12 @@ void ocf_resource_handler(oc_request_t *request,
                  event->request_payload_string_len + 1, true);
 
   event->interface_mask = (int)interface_mask;
+
+  // printf(" %s\n %d\n %s\n %s\n %d\n %s\n %d\n %d\n %d\n", event->origin_addr,
+  //        event->dest_device_id, event->dest_uri, event->query,
+  //        event->query_len, event->request_payload_string,
+  //        event->request_payload_string_len, event->interface_mask,
+  //        event->method);
 
   int method = *((int *)user_data); // user_data will be freed in ant-async
   event->method = method;
