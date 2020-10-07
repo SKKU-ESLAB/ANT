@@ -173,8 +173,8 @@ JS_FUNCTION(ocf_adapter_repSetString) {
 // OCFAdapter.repEndRootObject()
 ANT_API_VOID_TO_VOID(ocf_adapter, repEndRootObject);
 
-// OCFAdapter.repSetString()
-JS_FUNCTION(ocf_adapter_repSendResponse) {
+// OCFAdapter.sendResponse()
+JS_FUNCTION(ocf_adapter_sendResponse) {
   jerry_value_t argRequest;
   int argStatusCode;
   DJS_CHECK_ARGS(2, object, number);
@@ -458,7 +458,7 @@ void InitOCFAdapterNative(jerry_value_t ocfNative) {
   REGISTER_ANT_API(ocfNative, ocf_adapter, repEndRootObject);
 
   // Send Response on Server-side
-  REGISTER_ANT_API(ocfNative, ocf_adapter, repSendResponse);
+  REGISTER_ANT_API(ocfNative, ocf_adapter, sendResponse);
 
   // Client-side Initialization
   REGISTER_ANT_API(ocfNative, ocf_adapter, discovery);

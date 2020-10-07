@@ -6,7 +6,7 @@ oa.onInitialize(function() {
   console.log('onInitialize()');
   oa.setPlatform('ant');
   oa.addDevice('/oic/d', 'oic.d.light', 'Light', 'ocf.1.0.0', 'ocf.res.1.0.0');
-});
+}); 
 
 var g_light_state = false;
 oa.onPrepareServer(function() {
@@ -20,12 +20,12 @@ oa.onPrepareServer(function() {
   oa.addResource(lightRes);
 });
 
-function getLightHandler() {
+function getLightHandler(request, method) {
   oa.repStartRootObject();
   oa.repSet('light', g_light_state);
   g_light_state = !g_light_state;
   oa.repEndRootObject();
-  oa.repSendResponse()
+  oa.sendResponse(request, ocf.OC_STATUS_OK);
 }
 
 oa.start();
