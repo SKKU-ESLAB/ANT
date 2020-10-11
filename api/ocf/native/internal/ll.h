@@ -39,6 +39,7 @@
 
 // useful for casting
 typedef void (*gen_fun_t)(void *);
+typedef void (*gen_fun2_t)(void *, void *);
 
 // linked list
 typedef struct ll ll_t;
@@ -60,9 +61,12 @@ struct ll {
     // a function that is called every time a value is deleted
     // with a pointer to that value
     gen_fun_t val_teardown;
+    gen_fun2_t val_teardown2;
 
     // a function that can print the values in a linked list
     gen_fun_t val_printer;
+
+    void *user_data;
 };
 
 /* function prototypes */

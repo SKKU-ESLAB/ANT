@@ -6,9 +6,12 @@
 #include <stdbool.h>
 #include <stdlib.h>
 
-DECLARE_ANT_ASYNC_HANDLER_SETTER(ocf_adapter_onInitialize);
-DECLARE_ANT_ASYNC_HANDLER_SETTER(ocf_adapter_onPrepareServer);
-DECLARE_ANT_ASYNC_HANDLER_SETTER(ocf_adapter_onPrepareClient);
+void ocf_adapter_init_internal(void);
+void ocf_adapter_deinit_internal(void);
+
+EMIT_ANT_ASYNC_EVENT_FUNC_SETTER(ocf_adapter_onInitialize);
+EMIT_ANT_ASYNC_EVENT_FUNC_SETTER(ocf_adapter_onPrepareServer);
+EMIT_ANT_ASYNC_EVENT_FUNC_SETTER(ocf_adapter_onPrepareClient);
 
 void ocf_adapter_start_internal(void);
 void ocf_adapter_stop_internal(void);
@@ -45,7 +48,7 @@ void ocf_adapter_discovery_event_destroyer(void *item) {
 void ocf_adapter_discovery_event_types_destroyer(void *item) { free(item); }
 void ocf_endpoint_destroy(void *handle);
 
-DECLARE_ANT_ASYNC_HANDLER_SETTER(ocf_adapter_discovery);
+EMIT_ANT_ASYNC_EVENT_FUNC_SETTER(ocf_adapter_discovery);
 void ocf_adapter_discovery_internal(const char *resource_type);
 
 struct ocf_client_response_event_s {
@@ -62,7 +65,7 @@ void ocf_adapter_response_event_destroyer(void *item) {
   free(event);
 }
 
-DECLARE_ANT_ASYNC_HANDLER_SETTER(ocf_adapter_observe);
+EMIT_ANT_ASYNC_EVENT_FUNC_SETTER(ocf_adapter_observe);
 bool ocf_adapter_observe_internal(void *ocf_endpoint_nobject, const char *uri,
                                   const char *query, int qos);
 bool ocf_adapter_stopObserve_internal(void *ocf_endpoint_nobject,

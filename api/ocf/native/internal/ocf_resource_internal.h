@@ -19,7 +19,7 @@ struct ocf_resource_setHandler_event_s {
   char *request_payload_string;
   size_t request_payload_string_len;
   int interface_mask;
-  int method;
+  int handler_id;
 };
 typedef struct ocf_resource_setHandler_event_s ocf_resource_setHandler_event_t;
 void ocf_resource_setHandler_event_destroyer(void *item) {
@@ -42,8 +42,9 @@ void ocf_resource_setDiscoverable_internal(void *ocf_resource_nobject,
                                            bool is_discoverable);
 void ocf_resource_setPeriodicObservable_internal(void *ocf_resource_nobject,
                                                  int period_sec);
-void ocf_resource_setHandler_internal(void *ocf_resource_nobject, int method);
-DECLARE_ANT_ASYNC_HANDLER_SETTER(ocf_resource_setHandler);
+void ocf_resource_setHandler_internal(void *ocf_resource_nobject,
+                                      int handler_id, int method);
+EMIT_ANT_ASYNC_EVENT_FUNC_SETTER(ocf_resource_setHandler);
 
 void initOCFResource(void);
 

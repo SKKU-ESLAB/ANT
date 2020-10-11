@@ -53,13 +53,14 @@ void ocf_resource_setPeriodicObservable_internal(void *ocf_resource_nobject,
 static void ocf_resource_handler(oc_request_t *request,
                                  oc_interface_mask_t interface_mask,
                                  void *user_data);
-void ocf_resource_setHandler_internal(void *ocf_resource_nobject, int method) {
-  // handler_method: to pass the request method to the JS handler later
-  int *handler_method = (int *)malloc(sizeof(int));
-  *handler_method = method;
+void ocf_resource_setHandler_internal(void *ocf_resource_nobject,
+                                      int handler_id, int method) {
+  // user_data: to pass the request method to the JS handler later
+  int *user_data = (int *)malloc(sizeof(int));
+  *user_data = handler_id;
 
   oc_resource_set_request_handler(ocf_resource_nobject, method,
-                                  ocf_resource_handler, handler_method);
+                                  ocf_resource_handler, user_data);
 }
 DECLARE_GLOBAL_ANT_ASYNC_HANDLER(ocf_resource_setHandler)
 ANT_ASYNC_HANDLER_SETTER(ocf_resource_setHandler)
@@ -101,14 +102,14 @@ void ocf_resource_handler(oc_request_t *request,
 
   event->interface_mask = (int)interface_mask;
 
-  int method = *((int *)user_data); // user_data will be freed in ant-async
-  event->method = method;
+  int handler_id = *((int *)user_data); // user_data will be freed in ant-async
+  event->handler_id = handler_id;
 
   event->request = (void *)request;
   pthread_mutex_init(&event->sync_mutex, NULL);
   pthread_cond_init(&event->sync_cond, NULL);
 
-  CALL_ANT_ASYNC_HANDLER(ocf_resource_setHandler, (void *)event);
+  EMIT_ANT_ASYNC_EVENT(ocf_resource_setHandler, handler_id, (void *)event);
 
   // TODO: hard-coding for the thread-safety of "oc_request_t request".
   // Using oc_separate_response() function can resolve the hard-coding.

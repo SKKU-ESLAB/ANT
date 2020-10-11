@@ -56,6 +56,12 @@ OCF.prototype.getAdapter = function() {
   }
   return sOCFAdapter;
 };
+OCF.prototype.init = function() {
+  native.ocf_init();
+};
+OCF.prototype.deinit = function() {
+  native.ocf_deinit();
+};
 
 OCF.prototype.createResource = function(
     device, name, uri, types, interface_masks) {
@@ -70,10 +76,10 @@ function OCFAdapter() {
 
   // Default handler
   var self = this;
-  // this.onInitialize(function() {
-  //   self.setPlatform('ant');
-  //   self.addDevice('/oic/d', 'oic.d.light', 'Light', 'ocf.res.1.0.0');
-  // });
+  this.onInitialize(function() {
+    self.setPlatform('ant');
+    self.addDevice('/oic/d', 'oic.d.light', 'Light', 'ocf.res.1.0.0');
+  });
 }
 OCFAdapter.prototype.setPlatform = function(mfg_name) {
   this._mfg_name = mfg_name;
@@ -172,6 +178,7 @@ function OCFDevice(
   this.data_model_version = data_model_version;
 }
 
+var gOCFResourceHandlerId = 0;
 function OCFResource(device, name, uri, types, interface_masks) {
   assert(device !== undefined && device.id !== undefined);
 
@@ -186,6 +193,7 @@ function OCFResource(device, name, uri, types, interface_masks) {
   this.default_interface_mask = interface_masks[0];
   this.is_discoverable = undefined;
   this.period_sec = undefined;
+  this.handler_id_map = {};
 
   native.ocf_resource_constructor(this);
 }
@@ -202,8 +210,13 @@ OCFResource.prototype.setPeriodicObservable = function(period_sec) {
 
 OCFResource.prototype.setHandler = function(method, handler) {
   // Handler: void function(OCFRequest request, int method)
-  native.ocf_resource_setHandler(this, method, handler);
+  var handlerId = gOCFResourceHandlerId;
+  this.handler_id_map[method] = handlerId;
+  native.ocf_resource_setHandler(this, handlerId, method, handler);
+  gOCFResourceHandlerId++;
 };
+
+// TODO: deleteResource -> unsetHandler using handlerIds
 
 module.exports = new OCF();
 module.exports.OCF = OCF;
