@@ -84,6 +84,16 @@ ll_t *ll_new(gen_fun_t val_teardown) {
   return list;
 }
 
+ll_t *ll_new2(gen_fun2_t val_teardown2, void *user_data) {
+  ll_t *list = (ll_t *)malloc(sizeof(ll_t));
+  list->hd = NULL;
+  list->len = 0;
+  list->val_teardown2 = val_teardown2;
+  pthread_rwlock_init(&list->m, NULL);
+  list->user_data = user_data;
+  return list;
+}
+
 /**
  * @function ll_delete
  *
@@ -100,6 +110,32 @@ void ll_delete(ll_t *list) {
     RWLOCK(l_write, node->m);
     if (list->val_teardown != NULL) {
       list->val_teardown(node->val);
+    }
+    RWUNLOCK(node->m);
+    tmp = node;
+    node = node->nxt;
+    pthread_rwlock_destroy(&(tmp->m));
+    free(tmp);
+    (list->len)--;
+  }
+  list->hd = NULL;
+  list->val_teardown = NULL;
+  list->val_printer = NULL;
+  RWUNLOCK(list->m);
+
+  pthread_rwlock_destroy(&(list->m));
+
+  free(list);
+}
+
+void ll_delete2(ll_t *list) {
+  ll_node_t *node = list->hd;
+  ll_node_t *tmp;
+  RWLOCK(l_write, list->m);
+  while (node != NULL) {
+    RWLOCK(l_write, node->m);
+    if (list->val_teardown != NULL) {
+      list->val_teardown2(node->val, list->user_data);
     }
     RWUNLOCK(node->m);
     tmp = node;

@@ -14,6 +14,8 @@
     }                                                                          \
   } while (0)
 
+void ocf_resource_init(void);
+
 // OCFResource, OCFRequest
 extern const jerry_object_native_info_t ocf_resource_native_info;
 extern const jerry_object_native_info_t ocf_request_native_info;

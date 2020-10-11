@@ -1,6 +1,6 @@
 #include "ocf_resource.h"
 #include "../../common/native/ant_common.h"
-#include "ant_async.h"
+#include "internal/ant_async.h"
 #include "internal/ll.h"
 #include "internal/ocf_resource_internal.h"
 
@@ -11,6 +11,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+
+void ocf_resource_init(void) { INIT_ANT_ASYNC(ocf_resource_setHandler); }
 
 // OCFResource
 void ocf_resource_destroy(void *handle);
@@ -138,9 +140,11 @@ JS_FUNCTION(ocf_resource_setPeriodicObservable) {
 }
 
 // OCFResource.setHandler()
-DECLARE_GLOBAL_ASYNC(ocf_resource_setHandler)
-DECLARE_ANT_ASYNC_HANDLER(ocf_resource_setHandler)
-UV_ASYNC_HANDLER(ocf_resource_setHandler) {
+GLOBAL_ANT_ASYNC(ocf_resource_setHandler)
+REGISTER_ANT_ASYNC_HANDLER_FUNC(ocf_resource_setHandler,
+                                ocf_resource_setHandler_event_destroyer)
+EMIT_ANT_ASYNC_EVENT_FUNC(ocf_resource_setHandler)
+ANT_UV_HANDLER_FUNCTION(ocf_resource_setHandler) {
   ocf_resource_setHandler_event_t *event =
       (ocf_resource_setHandler_event_t *)GET_MR_EVENT(ocf_resource_setHandler);
   jerry_value_t js_handler = GET_JS_HANDLER(ocf_resource_setHandler);
@@ -198,24 +202,25 @@ UV_ASYNC_HANDLER(ocf_resource_setHandler) {
 
   DESTROY_EVENTS(ocf_resource_setHandler);
 }
-ASYNC_REGISTER_FUNC(ocf_resource_setHandler,
-                    ocf_resource_setHandler_event_destroyer)
 JS_FUNCTION(ocf_resource_setHandler) {
   bool result;
   jerry_value_t argSelf;
+  int argHandlerId;
   int argMethod;
   jerry_value_t argHandler;
-  DJS_CHECK_ARGS(3, object, number, function);
+  DJS_CHECK_ARGS(4, object, number, number, function);
   argSelf = JS_GET_ARG(0, object);
-  argMethod = JS_GET_ARG(1, number);
-  argHandler = JS_GET_ARG(2, function);
+  argHandlerId = JS_GET_ARG(1, number);
+  argMethod = JS_GET_ARG(2, number);
+  argHandler = JS_GET_ARG(3, function);
   JS_DECLARE_PTR2(argSelf, void, self, ocf_resource);
 
   // register ant async handler
-  result = CALL_ASYNC_REGISTER(ocf_resource_setHandler, argHandler);
+  result =
+      REGISTER_ANT_HANDLER(ocf_resource_setHandler, argHandlerId, argHandler);
 
   // register a handler to IoTivity Lite
-  ocf_resource_setHandler_internal(self, argMethod);
+  ocf_resource_setHandler_internal(self, argHandlerId, argMethod);
   return jerry_create_boolean(result);
 }
 
