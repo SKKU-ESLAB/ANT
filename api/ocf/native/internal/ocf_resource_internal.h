@@ -7,8 +7,6 @@
 
 struct or_setHandler_event_data_s {
   void *request;
-  pthread_mutex_t sync_mutex;
-  pthread_cond_t sync_cond;
 
   char *origin_addr;
   int dest_device_id;
@@ -19,6 +17,9 @@ struct or_setHandler_event_data_s {
   size_t request_payload_string_len;
   int interface_mask;
   int handler_id;
+  
+  pthread_mutex_t sync_mutex;
+  pthread_cond_t sync_cond;
 };
 typedef struct or_setHandler_event_data_s or_setHandler_event_data_t;
 void or_setHandler_event_data_destroyer(void *item) {

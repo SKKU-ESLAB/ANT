@@ -58,6 +58,7 @@ void destroy_ant_async(ant_async_t *ant_async) {
 }
 bool add_js_handler_to_ant_async(ant_async_t *ant_async, int key,
                                  jerry_value_t js_handler) {
+  // TODO: if js_handler has already existed in the hashmap entry?
   jerry_acquire_value(js_handler);
   return (hashmap_put(ant_async->handler_map, key, (any_t)js_handler) ==
           MAP_OK);
@@ -98,12 +99,13 @@ bool emit_ant_async_event(ant_async_t *ant_async, int key, void *event_data) {
 }
 
 // event_queue in ant_handler
-void enqueue_event_to_ant_async(ant_async_t *ant_async, void *event) {
-  if (event != NULL)
-    ll_insert_last(ant_async->event_queue, event);
+void enqueue_event_to_ant_async(ant_async_t *ant_async,
+                                ant_async_event_t *ant_async_event) {
+  if (ant_async_event != NULL)
+    ll_insert_last(ant_async->event_queue, (void *)ant_async_event);
 }
-void *get_first_event_from_ant_async(ant_async_t *ant_async) {
-  return ll_get_first(ant_async->event_queue);
+ant_async_event_t *get_first_event_from_ant_async(ant_async_t *ant_async) {
+  return (ant_async_event_t *)ll_get_first(ant_async->event_queue);
 }
 void remove_first_event_from_ant_async(ant_async_t *ant_async) {
   ll_remove_first(ant_async->event_queue);
@@ -119,6 +121,10 @@ ant_async_event_t *create_ant_async_event(int key, void *data) {
 }
 void destroy_ant_async_event(ant_async_event_t *ant_async_event,
                              gen_fun_t event_queue_item_destroyer) {
-  event_queue_item_destroyer(ant_async_event->data);
-  free(ant_async_event);
+  if (event_queue_item_destroyer != NULL) {
+    event_queue_item_destroyer(ant_async_event->data);
+  }
+  if (ant_async_event != NULL) {
+    free(ant_async_event);
+  }
 }

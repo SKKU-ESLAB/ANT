@@ -113,9 +113,9 @@ void ocf_resource_handler(oc_request_t *request,
   event_data->handler_id = handler_id;
 
   event_data->request = (void *)request;
+
   pthread_mutex_init(&event_data->sync_mutex, NULL);
   pthread_cond_init(&event_data->sync_cond, NULL);
-
   EMIT_ANT_ASYNC_EVENT(ocf_resource_setHandler, handler_id, (void *)event_data);
 
   // TODO: hard-coding for the thread-safety of "oc_request_t request".

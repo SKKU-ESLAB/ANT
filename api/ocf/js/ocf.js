@@ -74,6 +74,8 @@ function OCFAdapter() {
   this._resources = [];
   this._nextDeviceId = 0;
 
+  this._observe_request_list = [];
+
   // Default handler
   var self = this;
   this.onInitialize(function() {
@@ -161,16 +163,51 @@ OCFAdapter.prototype.sendResponse = function(ocf_request, status_code) {
   native.ocf_adapter_sendResponse(ocf_request, status_code);
 };
 
+OCFAdapter.prototype.stopDiscovery = function() {
+  return native.ocf_adapter_stopDiscovery();
+};
+OCFAdapter.prototype.isDiscovering = function() {
+  return native.ocf_adapter.isDiscovering();
+};
 OCFAdapter.prototype.discovery = function(resource_type, discovery_handler) {
-  native.ocf_adapter_discovery(resource_type, discovery_handler);
+  return native.ocf_adapter_discovery(resource_type, discovery_handler);
 };
 
-OCFAdapter.prototype.observe = function(endpoint, uri, response_handler) {
-  native.ocf_adapter_observe(endpoint, uri, response_handler);
+var gOCFAdapterRequestId = 0;
+OCFAdapter.prototype.observe = function(
+    endpoint, uri, query, qos, response_handler) {
+  var requestId = gOCFAdapterRequestId++;
+  var request = {};
+  request.id = requestId;
+  request.query = query;
+  request.qos = qos;
+  request.endpoint = endpoint;
+  request.uri = uri;
+  var result = native.ocf_adapter_observe(request, response_handler);
+  if (result) {
+    this._observe_request_list.push(request);
+  }
+  return result;
 };
 
 OCFAdapter.prototype.stopObserve = function(endpoint, uri) {
-  native.ocf_adapter_stopObserve(endpoint, uri);
+  var requestId = undefined;
+  for (var i in this._observe_request_list) {
+    var request = this._observe_request_list[i];
+    if (request.endpoint == endpoint && request.uri == request.uri) {
+      requestId = request.id;
+      this._observe_request_list.splice(i, 1);
+      break;
+    }
+  }
+
+  if (requstId !== undefined) {
+    var result = native.ocf_adapter_stopObserve(endpoint, uri);
+    return result;
+  } else {
+    console.log('Error: cannot find observe request for ' + uri);
+    return false;
+  }
 };
 
 function OCFDevice(
@@ -183,7 +220,6 @@ function OCFDevice(
   this.data_model_version = data_model_version;
 }
 
-var gOCFResourceHandlerId = 0;
 function OCFResource(device, name, uri, types, interface_masks) {
   assert(device !== undefined && device.id !== undefined);
 
@@ -221,6 +257,7 @@ OCFResource.prototype.setPeriodicObservable = function(period_sec) {
   native.ocf_resource_setPeriodicObservable(this, period_sec);
 };
 
+var gOCFResourceHandlerId = 0;
 OCFResource.prototype.setHandler = function(method, handler) {
   // Handler: void function(OCFRequest request, int method)
   var handlerId = gOCFResourceHandlerId;
