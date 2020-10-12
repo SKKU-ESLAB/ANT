@@ -1,8 +1,9 @@
 #ifndef __OCF_ADAPTER_INTERNAL_H__
 #define __OCF_ADAPTER_INTERNAL_H__
 
-#include "ant_async_internal.h"
 #include "ll.h"
+
+#include <pthread.h>
 #include <stdbool.h>
 #include <stdlib.h>
 
@@ -31,43 +32,49 @@ void ocf_adapter_repEndRootObject_internal(void);
 void ocf_adapter_sendResponse_internal(void *ocf_request_nobject,
                                        int status_code);
 
-struct ocf_adapter_discovery_event_s {
+struct oa_discovery_event_data_s {
   char *uri;
   ll_t *types;
   int interface_mask;
   void *endpoint;
+
+  pthread_mutex_t sync_mutex;
+  pthread_cond_t sync_cond;
 };
-typedef struct ocf_adapter_discovery_event_s ocf_adapter_discovery_event_t;
-void ocf_adapter_discovery_event_destroyer(void *item) {
-  ocf_adapter_discovery_event_t *event;
-  event = (ocf_adapter_discovery_event_t *)item;
+typedef struct oa_discovery_event_data_s oa_discovery_event_data_t;
+void oa_discovery_event_data_destroyer(void *item) {
+  oa_discovery_event_data_t *event;
+  event = (oa_discovery_event_data_t *)item;
   free(event->uri);
   ll_delete(event->types);
   free(event);
 }
-void ocf_adapter_discovery_event_types_destroyer(void *item) { free(item); }
+void oa_discovery_event_types_destroyer(void *item) { free(item); }
 void ocf_endpoint_destroy(void *handle);
 
+bool ocf_adapter_isDiscovering_internal(void);
+void ocf_adapter_stopDiscovery_internal(void);
 EMIT_ANT_ASYNC_EVENT_FUNC_SETTER(ocf_adapter_discovery);
-void ocf_adapter_discovery_internal(const char *resource_type);
+bool ocf_adapter_discovery_internal(const char *resource_type);
 
-struct ocf_client_response_event_s {
+struct oa_client_response_event_data_s {
   void *endpoint;
   char *payload_string;
   size_t payload_string_length;
   int status_code;
+  int request_id;
 };
-typedef struct ocf_client_response_event_s ocf_client_response_event_t;
-void ocf_adapter_response_event_destroyer(void *item) {
-  ocf_client_response_event_t *event;
-  event = (ocf_client_response_event_t *)item;
+typedef struct oa_client_response_event_data_s oa_client_response_event_data_t;
+void oa_response_event_data_destroyer(void *item) {
+  oa_client_response_event_data_t *event;
+  event = (oa_client_response_event_data_t *)item;
   free(event->payload_string);
   free(event);
 }
 
 EMIT_ANT_ASYNC_EVENT_FUNC_SETTER(ocf_adapter_observe);
-bool ocf_adapter_observe_internal(void *ocf_endpoint_nobject, const char *uri,
-                                  const char *query, int qos);
+bool ocf_adapter_observe_internal(int requestId, void *ocf_endpoint_nobject,
+                                  const char *uri, const char *query, int qos);
 bool ocf_adapter_stopObserve_internal(void *ocf_endpoint_nobject,
                                       const char *uri);
 

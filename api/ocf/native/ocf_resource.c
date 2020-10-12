@@ -1,4 +1,5 @@
 #include "ocf_resource.h"
+
 #include "../../common/native/ant_common.h"
 #include "internal/ant_async.h"
 #include "internal/ll.h"
@@ -32,7 +33,7 @@ void ocf_request_destroy(void *handle) {
   // (The lifecycle of OCFRequest is controlled by IoTivity Lite.)
 }
 
-// OCFResource.addResource()
+// OCFResource.constructor()
 JS_FUNCTION(ocf_resource_constructor) {
   jerry_value_t argSelf;
   DJS_CHECK_ARGS(1, object);
@@ -56,11 +57,11 @@ JS_FUNCTION(ocf_resource_constructor) {
   iotjs_string_t jsstrName = iotjs_jval_as_string(jsName);
   const char *name = iotjs_string_data(&jsstrName);
 
-  // uri
+  // string uri
   iotjs_string_t jsstrUri = iotjs_jval_as_string(jsUri);
   const char *uri = iotjs_string_data(&jsstrUri);
 
-  // types
+  // array types
   jerry_value_t jsTypesLength = iotjs_jval_get_property(jsTypes, "length");
   size_t types_length = iotjs_jval_as_number(jsTypesLength);
   char **types = (char **)malloc(sizeof(const char *) * types_length);
@@ -76,7 +77,7 @@ JS_FUNCTION(ocf_resource_constructor) {
     jerry_release_value(jsType);
   }
 
-  // interface_mask, default_interface_mask, device_id
+  // int interface_mask, int default_interface_mask, int device_id
   int interface_mask = (int)iotjs_jval_as_number(jsInterfaceMask);
   int default_interface_mask =
       (int)iotjs_jval_as_number(jsDefaultInterfaceMask);
@@ -111,6 +112,7 @@ JS_FUNCTION(ocf_resource_constructor) {
   return jerry_create_undefined();
 }
 
+// OCFResource.destroyer()
 JS_FUNCTION(ocf_resource_destroyer) {
   jerry_value_t argSelf, argHandlerIds;
   DJS_CHECK_ARGS(2, object, array);
@@ -173,10 +175,7 @@ JS_FUNCTION(ocf_resource_setPeriodicObservable) {
 }
 
 // OCFResource.setHandler()
-GLOBAL_ANT_ASYNC(ocf_resource_setHandler)
-REGISTER_ANT_ASYNC_HANDLER_FUNC(ocf_resource_setHandler,
-                                or_setHandler_event_data_destroyer)
-EMIT_ANT_ASYNC_EVENT_FUNC(ocf_resource_setHandler)
+ANT_ASYNC_DECLARE(ocf_resource_setHandler, or_setHandler_event_data_destroyer)
 JS_FUNCTION(ocf_resource_setHandler) {
   bool result;
   jerry_value_t argSelf;
@@ -200,9 +199,12 @@ JS_FUNCTION(ocf_resource_setHandler) {
 }
 ANT_UV_HANDLER_FUNCTION(ocf_resource_setHandler) {
   // Get the first event
-  void *ed = GET_FIRST_EVENT_FROM_ANT_ASYNC(ocf_resource_setHandler);
-  or_setHandler_event_data_t *event_data = (or_setHandler_event_data_t *)ed;
-  while (jerry_value_is_undefined(event_data) == false) {
+  void *e;
+  while ((e = GET_FIRST_EVENT_FROM_ANT_ASYNC(ocf_resource_setHandler)) !=
+         NULL) {
+    ant_async_event_t *event = (ant_async_event_t *)e;
+    or_setHandler_event_data_t *event_data =
+        (or_setHandler_event_data_t *)event->data;
     jerry_value_t js_ocf_request, js_handler_id;
 
     // Args 0: OCFRequest request
@@ -266,10 +268,6 @@ ANT_UV_HANDLER_FUNCTION(ocf_resource_setHandler) {
     // Remove the first event
     // - It also calls the destroyer of the event and event data.
     REMOVE_FIRST_EVENT_FROM_ANT_ASYNC(ocf_resource_setHandler);
-
-    // Get the next first event
-    ed = GET_FIRST_EVENT_FROM_ANT_ASYNC(ocf_resource_setHandler);
-    event_data = (or_setHandler_event_data_t *)ed;
   }
 }
 

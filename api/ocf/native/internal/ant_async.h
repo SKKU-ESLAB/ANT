@@ -47,8 +47,9 @@ jerry_value_t get_js_handler_from_ant_async(ant_async_t *ant_async, int key);
 bool emit_ant_async_event(ant_async_t *ant_async, int key, void *event_data);
 
 // event_queue in ant_async
-void enqueue_event_to_ant_async(ant_async_t *ant_async, void *event);
-void *get_first_event_from_ant_async(ant_async_t *ant_async);
+void enqueue_event_to_ant_async(ant_async_t *ant_async,
+                                ant_async_event_t *ant_async_event);
+ant_async_event_t *get_first_event_from_ant_async(ant_async_t *ant_async);
 void remove_first_event_from_ant_async(ant_async_t *ant_async);
 
 // ant_event
@@ -70,6 +71,10 @@ void destroy_ant_async_event(ant_async_event_t *ant_async_event,
   static bool emit_ant_async_event_for_##type(int key, void *event_data) {     \
     return emit_ant_async_event(g_##type##_async, key, event_data);            \
   }
+#define ANT_ASYNC_DECLARE(type, event_queue_item_destroyer)                    \
+  GLOBAL_ANT_ASYNC(type)                                                       \
+  REGISTER_ANT_ASYNC_HANDLER_FUNC(type, event_queue_item_destroyer)            \
+  EMIT_ANT_ASYNC_EVENT_FUNC(type)
 #define ANT_UV_HANDLER_FUNCTION(type)                                          \
   static void uv_handler_for_##type(uv_async_t *handle)
 

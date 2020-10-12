@@ -158,24 +158,28 @@ void ocf_adapter_deinit_internal(void) { destroy_ant_async_list(); }
 
 // OCFAdapter.onInitialize()
 DECLARE_GLOBAL_ANT_ASYNC_HANDLER(ocf_adapter_onInitialize)
-ANT_ASYNC_HANDLER_SETTER(ocf_adapter_onInitialize)
 static int oa_initialize(void) {
-  CALL_ANT_ASYNC_HANDLER(ocf_adapter_onInitialize, NULL);
-  return true;
+  int zero = 0;
+  bool res = EMIT_ANT_ASYNC_EVENT(ocf_adapter_onInitialize, zero, (void *)NULL);
+  return (res) ? 0 : -1;
 }
 
 // OCFAdapter.onPrepareServer()
 DECLARE_GLOBAL_ANT_ASYNC_HANDLER(ocf_adapter_onPrepareServer)
-ANT_ASYNC_HANDLER_SETTER(ocf_adapter_onPrepareServer)
 static void oa_prepare_server(void) {
-  CALL_ANT_ASYNC_HANDLER(ocf_adapter_onPrepareServer, NULL);
+  int zero = 0;
+  bool res =
+      EMIT_ANT_ASYNC_EVENT(ocf_adapter_onPrepareServer, zero, (void *)NULL);
+  return (res) ? 0 : -1;
 }
 
 // OCFAdapter.onPrepareClient()
 DECLARE_GLOBAL_ANT_ASYNC_HANDLER(ocf_adapter_onPrepareClient)
-ANT_ASYNC_HANDLER_SETTER(ocf_adapter_onPrepareClient)
 static void oa_prepare_client(void) {
-  CALL_ANT_ASYNC_HANDLER(ocf_adapter_onPrepareClient, NULL);
+  int zero = 0;
+  bool res =
+      EMIT_ANT_ASYNC_EVENT(ocf_adapter_onPrepareClient, zero, (void *)NULL);
+  return (res) ? 0 : -1;
 }
 
 // OCFAdapter.start()
@@ -241,23 +245,26 @@ void ocf_endpoint_destroy(void *handle) {
   oc_endpoint_t *endpoint = (oc_endpoint_t *)handle;
   oc_free_endpoint(endpoint);
 }
+
+bool g_is_discovering = false;
+bool ocf_adapter_isDiscovering_internal(void) { return g_is_discovering; }
+void ocf_adapter_stopDiscovery_internal(void) { g_is_discovering = false; }
 DECLARE_GLOBAL_ANT_ASYNC_HANDLER(ocf_adapter_discovery)
-ANT_ASYNC_HANDLER_SETTER(ocf_adapter_discovery)
 static oc_discovery_flags_t
 oa_on_discovery(const char *di, const char *uri, oc_string_array_t types,
                 oc_interface_mask_t iface_mask, oc_endpoint_t *endpoint,
                 oc_resource_properties_t bm, void *user_data) {
   // Discovery event
-  ocf_adapter_discovery_event_t *event;
-  event = (ocf_adapter_discovery_event_t *)malloc(
-      sizeof(ocf_adapter_discovery_event_t));
+  oa_discovery_event_data_t *event;
+  event =
+      (oa_discovery_event_data_t *)malloc(sizeof(oa_discovery_event_data_t));
 
   // event->uri
   event->uri = malloc(sizeof(char) * (strlen(uri) + 1));
   strncpy(event->uri, uri, strlen(uri) + 1);
 
   // event->types
-  event->types = ll_new(ocf_adapter_discovery_event_types_destroyer);
+  event->types = ll_new(oa_discovery_event_types_destroyer);
   int i;
   for (i = 0; i < (int)oc_string_array_get_allocated_size(types); i++) {
     char *type = oc_string_array_get_item(types, i);
@@ -273,41 +280,60 @@ oa_on_discovery(const char *di, const char *uri, oc_string_array_t types,
   // event->endpoint
   oc_endpoint_copy((oc_endpoint_t *)event->endpoint, endpoint);
 
-  CALL_ANT_ASYNC_HANDLER(ocf_adapter_discovery, event);
-  return OC_CONTINUE_DISCOVERY;
+  pthread_mutex_init(&event_data->sync_mutex, NULL);
+  pthread_cond_init(&event_data->sync_cond, NULL);
+  int zero = 0;
+  EMIT_ANT_ASYNC_EVENT(ocf_adapter_discovery, zero, (void *)event_data);
+
+  // wait for JS thread's handler
+  pthread_cond_wait(&event_data->sync_cond, &event_data->sync_mutex);
+  pthread_mutex_unlock(&event_data->sync_mutex);
+
+  return (g_is_discovering) ? OC_CONTINUE_DISCOVERY : OC_STOP_DISCOVERY;
 }
-void ocf_adapter_discovery_internal(const char *resource_type) {
+bool ocf_adapter_discovery_internal(const char *resource_type) {
+  if (g_is_discovering)
+    return false;
+  g_is_discovering = true;
   oc_do_ip_discovery(resource_type, &oa_on_discovery, NULL);
+  return true;
 }
 
 DECLARE_GLOBAL_ANT_ASYNC_HANDLER(ocf_adapter_observe)
 ANT_ASYNC_HANDLER_SETTER(ocf_adapter_observe)
 static void oa_on_observe(oc_client_response_t *data) {
   // Client response event
-  ocf_client_response_event_t *event;
-  event = (ocf_client_response_event_t *)malloc(
-      sizeof(ocf_client_response_event_t));
+  oa_client_response_event_data_t *event_data;
+  event_data = (oa_client_response_event_data_t *)malloc(
+      sizeof(oa_client_response_event_data_t));
 
   // event->endpoint
-  oc_endpoint_copy((oc_endpoint_t *)event->endpoint, data->endpoint);
+  oc_endpoint_copy((oc_endpoint_t *)event_data->endpoint, data->endpoint);
 
   // event->payload, event->payloadLength
-  event->payload_string_length = oc_rep_to_json(data->payload, NULL, 0, true);
-  event->payload_string = (char *)malloc(event->payload_string_length + 1);
-  oc_rep_to_json(data->payload, event->payload_string,
-                 event->payload_string_length + 1, true);
+  event_data->payload_string_length =
+      oc_rep_to_json(data->payload, NULL, 0, true);
+  event_data->payload_string =
+      (char *)malloc(event_data->payload_string_length + 1);
+  oc_rep_to_json(data->payload, event_data->payload_string,
+                 event_data->payload_string_length + 1, true);
 
   // event->statusCode
-  event->status_code = data->code;
+  event_data->status_code = data->code;
 
-  CALL_ANT_ASYNC_HANDLER(ocf_adapter_observe, event);
+  // event->request_id
+  event_data->request_id = (int)data->user_data;
+
+  EMIT_ANT_ASYNC_EVENT(ocf_adapter_observe, event_data->request_id,
+                       (void *)event_data);
   return;
 }
-bool ocf_adapter_observe_internal(void *ocf_endpoint_nobject, const char *uri,
-                                  const char *query, int qos) {
+bool ocf_adapter_observe_internal(int requestId, void *ocf_endpoint_nobject,
+                                  const char *uri, const char *query, int qos) {
   oc_endpoint_t *endpoint = (oc_endpoint_t *)ocf_endpoint_nobject;
   oc_qos_t oc_qos = (qos == HIGH_QOS) ? HIGH_QOS : LOW_QOS;
-  return oc_do_observe(uri, endpoint, query, &oa_on_observe, oc_qos, NULL);
+  return oc_do_observe(uri, endpoint, query, &oa_on_observe, oc_qos,
+                       (void *)requestId);
 }
 
 bool ocf_adapter_stopObserve_internal(void *ocf_endpoint_nobject,
