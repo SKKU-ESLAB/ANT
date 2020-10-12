@@ -17,7 +17,7 @@ struct or_setHandler_event_data_s {
   size_t request_payload_string_len;
   int interface_mask;
   int handler_id;
-  
+
   pthread_mutex_t sync_mutex;
   pthread_cond_t sync_cond;
 };
