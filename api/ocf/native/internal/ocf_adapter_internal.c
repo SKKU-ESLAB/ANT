@@ -1,5 +1,7 @@
 #include "ocf_adapter_internal.h"
+
 #include "../../../common/native/ant_common.h"
+#include "ant_async.h"
 
 // IoTivity Lite configuration
 #define OC_SERVER

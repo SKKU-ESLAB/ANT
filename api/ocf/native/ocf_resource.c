@@ -12,8 +12,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-void ocf_resource_init(void) { INIT_ANT_ASYNC(ocf_resource_setHandler); }
-
 // OCFResource
 void ocf_resource_destroy(void *handle);
 const jerry_object_native_info_t ocf_resource_native_info = {
@@ -113,6 +111,41 @@ JS_FUNCTION(ocf_resource_constructor) {
   return jerry_create_undefined();
 }
 
+JS_FUNCTION(ocf_resource_destroyer) {
+  jerry_value_t argSelf, argHandlerIds;
+  DJS_CHECK_ARGS(2, object, array);
+
+  // Arg 0: object self
+  argSelf = JS_GET_ARG(0, object);
+
+  // Arg 1: array handlerIds
+  argHandlerIds = JS_GET_ARG(1, array);
+
+  // Set native pointer of OCFResource with oc_resource
+  JS_DECLARE_PTR2(argSelf, void, ocf_resource_nobject, ocf_resource);
+
+  // For all the handler ids:
+  jerry_value_t jsHandlerIdsLength =
+      iotjs_jval_get_property(argHandlerIds, "length");
+  int handler_ids_length = (int)iotjs_jval_as_number(jsHandlerIdsLength);
+  for (uint32_t i = 0; i < handler_ids_length; i++) {
+    jerry_value_t jsHandlerId =
+        iotjs_jval_get_property_by_index(argHandlerIds, i);
+    int handler_id = (int)iotjs_jval_as_number(jsHandlerId);
+
+    // unregister js handler
+    UNREGISTER_JS_HANDLER(ocf_resource_setHandler, handler_id);
+
+    jerry_release_value(jsHandlerId);
+  }
+
+  // Delete resource
+  ocf_resource_destroyer_internal(ocf_resource_nobject);
+
+  // Release properties
+  jerry_release_value(jsHandlerIdsLength);
+}
+
 // OCFResource.setDiscoverable()
 JS_FUNCTION(ocf_resource_setDiscoverable) {
   jerry_value_t argSelf;
@@ -142,66 +175,8 @@ JS_FUNCTION(ocf_resource_setPeriodicObservable) {
 // OCFResource.setHandler()
 GLOBAL_ANT_ASYNC(ocf_resource_setHandler)
 REGISTER_ANT_ASYNC_HANDLER_FUNC(ocf_resource_setHandler,
-                                ocf_resource_setHandler_event_destroyer)
+                                or_setHandler_event_data_destroyer)
 EMIT_ANT_ASYNC_EVENT_FUNC(ocf_resource_setHandler)
-ANT_UV_HANDLER_FUNCTION(ocf_resource_setHandler) {
-  ocf_resource_setHandler_event_t *event =
-      (ocf_resource_setHandler_event_t *)GET_MR_EVENT(ocf_resource_setHandler);
-  jerry_value_t js_handler = GET_JS_HANDLER(ocf_resource_setHandler);
-
-  jerry_value_t js_ocf_request, js_method;
-
-  // Args 0: OCFRequest request
-  js_ocf_request = jerry_create_object();
-  iotjs_string_t origin_addr_jsstr = iotjs_string_create();
-  iotjs_string_t dest_uri_jsstr = iotjs_string_create();
-  iotjs_string_t query_jsstr = iotjs_string_create();
-  iotjs_string_t request_payload_string_jsstr = iotjs_string_create();
-  iotjs_string_append(&origin_addr_jsstr, event->origin_addr,
-                      strlen(event->origin_addr));
-  iotjs_string_append(&dest_uri_jsstr, event->dest_uri,
-                      strlen(event->dest_uri));
-  iotjs_string_append(&query_jsstr, event->query, strlen(event->query));
-  iotjs_string_append(&request_payload_string_jsstr,
-                      event->request_payload_string,
-                      strlen(event->request_payload_string));
-  iotjs_jval_set_property_string(js_ocf_request, "origin_addr",
-                                 &origin_addr_jsstr);
-  iotjs_jval_set_property_number(js_ocf_request, "dest_device_id",
-                                 (int)event->dest_device_id);
-  iotjs_jval_set_property_string(js_ocf_request, "dest_uri", &dest_uri_jsstr);
-  iotjs_jval_set_property_string(js_ocf_request, "query", &query_jsstr);
-  iotjs_jval_set_property_string(js_ocf_request, "request_payload_string",
-                                 &request_payload_string_jsstr);
-
-  // set native pointer of OCFRequest with oc_request_t
-  jerry_set_object_native_pointer(js_ocf_request, event->request,
-                                  &ocf_request_native_info);
-  IOTJS_ASSERT(jerry_get_object_native_pointer(js_ocf_request, NULL,
-                                               &ocf_request_native_info));
-
-  // Args 1: int method
-  js_method = jerry_create_number((double)event->method);
-  jerry_value_t js_args[] = {js_ocf_request, js_method};
-
-  // call JS handler
-  iotjs_invoke_callback(js_handler, jerry_create_undefined(), js_args, 2);
-
-  // Release arguments
-  iotjs_string_destroy(&origin_addr_jsstr);
-  iotjs_string_destroy(&dest_uri_jsstr);
-  iotjs_string_destroy(&query_jsstr);
-  iotjs_string_destroy(&request_payload_string_jsstr);
-  jerry_release_value(js_ocf_request);
-  jerry_release_value(js_method);
-
-  // wake up OCF thread
-  pthread_mutex_lock(&event->sync_mutex);
-  pthread_cond_signal(&event->sync_cond);
-  pthread_mutex_unlock(&event->sync_mutex);
-
-  DESTROY_EVENTS(ocf_resource_setHandler);
-}
 JS_FUNCTION(ocf_resource_setHandler) {
   bool result;
   jerry_value_t argSelf;
@@ -217,15 +192,94 @@ JS_FUNCTION(ocf_resource_setHandler) {
 
   // register ant async handler
   result =
-      REGISTER_ANT_HANDLER(ocf_resource_setHandler, argHandlerId, argHandler);
+      REGISTER_JS_HANDLER(ocf_resource_setHandler, argHandlerId, argHandler);
 
   // register a handler to IoTivity Lite
   ocf_resource_setHandler_internal(self, argHandlerId, argMethod);
   return jerry_create_boolean(result);
 }
+ANT_UV_HANDLER_FUNCTION(ocf_resource_setHandler) {
+  // Get the first event
+  void *ed = GET_FIRST_EVENT_FROM_ANT_ASYNC(ocf_resource_setHandler);
+  or_setHandler_event_data_t *event_data = (or_setHandler_event_data_t *)ed;
+  while (jerry_value_is_undefined(event_data) == false) {
+    jerry_value_t js_ocf_request, js_handler_id;
+
+    // Args 0: OCFRequest request
+    js_ocf_request = jerry_create_object();
+    iotjs_string_t origin_addr_jsstr = iotjs_string_create();
+    iotjs_string_t dest_uri_jsstr = iotjs_string_create();
+    iotjs_string_t query_jsstr = iotjs_string_create();
+    iotjs_string_t request_payload_string_jsstr = iotjs_string_create();
+    iotjs_string_append(&origin_addr_jsstr, event_data->origin_addr,
+                        strlen(event_data->origin_addr));
+    iotjs_string_append(&dest_uri_jsstr, event_data->dest_uri,
+                        strlen(event_data->dest_uri));
+    iotjs_string_append(&query_jsstr, event_data->query,
+                        strlen(event_data->query));
+    iotjs_string_append(&request_payload_string_jsstr,
+                        event_data->request_payload_string,
+                        strlen(event_data->request_payload_string));
+    iotjs_jval_set_property_string(js_ocf_request, "origin_addr",
+                                   &origin_addr_jsstr);
+    iotjs_jval_set_property_number(js_ocf_request, "dest_device_id",
+                                   (int)event_data->dest_device_id);
+    iotjs_jval_set_property_string(js_ocf_request, "dest_uri", &dest_uri_jsstr);
+    iotjs_jval_set_property_string(js_ocf_request, "query", &query_jsstr);
+    iotjs_jval_set_property_string(js_ocf_request, "request_payload_string",
+                                   &request_payload_string_jsstr);
+
+    // set native pointer of OCFRequest with oc_request_t
+    jerry_set_object_native_pointer(js_ocf_request, event_data->request,
+                                    &ocf_request_native_info);
+    IOTJS_ASSERT(jerry_get_object_native_pointer(js_ocf_request, NULL,
+                                                 &ocf_request_native_info));
+
+    // Args 1: int method
+    js_handler_id = jerry_create_number((double)event_data->handler_id);
+
+    // call JS handler
+    jerry_value_t js_handler = GET_JS_HANDLER_FROM_ANT_ASYNC(
+        ocf_resource_setHandler, event_data->handler_id);
+    if (!jerry_value_is_undefined(js_handler)) {
+      jerry_value_t js_args[] = {js_ocf_request, js_handler_id};
+      iotjs_invoke_callback(js_handler, jerry_create_undefined(), js_args, 2);
+    } else {
+      // cannot reach here
+      printf("Warning: js_handler is undefined on ant async handler "
+             "(ocf_resource_setHandler)\n");
+    }
+
+    // Release arguments
+    iotjs_string_destroy(&origin_addr_jsstr);
+    iotjs_string_destroy(&dest_uri_jsstr);
+    iotjs_string_destroy(&query_jsstr);
+    iotjs_string_destroy(&request_payload_string_jsstr);
+    jerry_release_value(js_ocf_request);
+    jerry_release_value(js_handler_id);
+
+    // wake up OCF thread
+    pthread_mutex_lock(&event_data->sync_mutex);
+    pthread_cond_signal(&event_data->sync_cond);
+    pthread_mutex_unlock(&event_data->sync_mutex);
+
+    // Remove the first event
+    // - It also calls the destroyer of the event and event data.
+    REMOVE_FIRST_EVENT_FROM_ANT_ASYNC(ocf_resource_setHandler);
+
+    // Get the next first event
+    ed = GET_FIRST_EVENT_FROM_ANT_ASYNC(ocf_resource_setHandler);
+    event_data = (or_setHandler_event_data_t *)ed;
+  }
+}
+
+void ocf_resource_init(void) {
+  INIT_ANT_ASYNC(ocf_resource_setHandler, or_setHandler_event_data_destroyer);
+}
 
 void InitOCFResourceNative(jerry_value_t ocfNative) {
   REGISTER_ANT_API(ocfNative, ocf_resource, constructor);
+  REGISTER_ANT_API(ocfNative, ocf_resource, destroyer);
   REGISTER_ANT_API(ocfNative, ocf_resource, setDiscoverable);
   REGISTER_ANT_API(ocfNative, ocf_resource, setPeriodicObservable);
   REGISTER_ANT_API(ocfNative, ocf_resource, setHandler);

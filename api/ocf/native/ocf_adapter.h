@@ -3,6 +3,7 @@
 
 #include "iotjs_def.h"
 #include "iotjs_uv_request.h"
+#include "ocf_common.h"
 
 void ocf_adapter_init(void);
 

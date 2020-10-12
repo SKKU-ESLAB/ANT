@@ -51,7 +51,7 @@ void destroy_ant_async(ant_async_t *ant_async) {
   hashmap_free(ant_async->handler_map);
 
   // ant_async->event_queue
-  ll_delete2(ant_async->event_queue);
+  ll_delete(ant_async->event_queue);
 
   // ant_async
   free(ant_async);
@@ -70,14 +70,14 @@ bool remove_js_handler_from_ant_async(ant_async_t *ant_async, int key) {
   jerry_release_value(js_handler);
   return (hashmap_remove(ant_async->handler_map, key) == MAP_OK);
 }
-jerry_value_t get_handler_from_ant_async(ant_async_t *ant_async, int key) {
+jerry_value_t get_js_handler_from_ant_async(ant_async_t *ant_async, int key) {
   jerry_value_t js_handler;
   int res = hashmap_get(ant_async->handler_map, key, (any_t *)&js_handler);
   if (res != MAP_OK)
     return jerry_create_undefined();
   return js_handler;
 }
-bool emit_ant_async_event(ant_async_t *ant_async, int key, void *event) {
+bool emit_ant_async_event(ant_async_t *ant_async, int key, void *event_data) {
   // find js_handler
   jerry_value_t js_handler;
   int result;
@@ -85,8 +85,11 @@ bool emit_ant_async_event(ant_async_t *ant_async, int key, void *event) {
   if (result != MAP_OK)
     return false;
 
+  // create ant_async_event
+  ant_async_event_t *ant_async_event = create_ant_async_event(key, event_data);
+
   // enqueue event to the handler
-  enqueue_event_to_ant_async(js_handler, event);
+  enqueue_event_to_ant_async(js_handler, ant_async_event);
 
   // emit uv_async event
   uv_async_send(&ant_async->uv_async);
