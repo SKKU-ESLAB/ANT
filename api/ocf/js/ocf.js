@@ -127,6 +127,11 @@ OCFAdapter.prototype.addResource = function(resource) {
   this._resources.push(resource);
   native.ocf_adapter_addResource(resource);
 };
+OCFAdapter.prototype.deleteResource = function(resource) {
+  resource.destroyer();
+  var index = this._resources.indexOf(resource);
+  this._resources.splice(index, 1);
+};
 OCFAdapter.prototype.getResources = function() {
   return this._resources;
 };
@@ -198,6 +203,14 @@ function OCFResource(device, name, uri, types, interface_masks) {
   native.ocf_resource_constructor(this);
 }
 
+OCFResource.prototype.destroyer = function() {
+  var handler_ids = [];
+  for (var i in this.handler_id_map) {
+    handler_ids.push(this.handler_id_map[i]);
+  }
+  native.ocf_resource_destroyer(this, handler_ids);
+};
+
 OCFResource.prototype.setDiscoverable = function(is_discoverable) {
   this.is_discoverable = is_discoverable;
   native.ocf_resource_setDiscoverable(this, is_discoverable);
@@ -215,8 +228,6 @@ OCFResource.prototype.setHandler = function(method, handler) {
   native.ocf_resource_setHandler(this, handlerId, method, handler);
   gOCFResourceHandlerId++;
 };
-
-// TODO: deleteResource -> unsetHandler using handlerIds
 
 module.exports = new OCF();
 module.exports.OCF = OCF;

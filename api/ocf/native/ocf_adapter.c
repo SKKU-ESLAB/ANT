@@ -17,7 +17,7 @@ GLOBAL_ANT_ASYNC(ocf_adapter_onInitialize)
 REGISTER_ANT_ASYNC_HANDLER_FUNC(ocf_adapter_onInitialize, NULL)
 EMIT_ANT_ASYNC_EVENT_FUNC(ocf_adapter_onInitialize)
 ANT_UV_HANDLER_FUNCTION(ocf_adapter_onInitialize) {
-  jerry_value_t jsHandler = GET_JS_HANDLER(ocf_adapter_onInitialize);
+  jerry_value_t jsHandler = GET_JS_HANDLER_FROM_ANT_ASYNC(ocf_adapter_onInitialize);
   iotjs_invoke_callback(jsHandler, jerry_create_undefined(), NULL, 0);
 }
 JS_FUNCTION(ocf_adapter_onInitialize) {
@@ -27,7 +27,7 @@ JS_FUNCTION(ocf_adapter_onInitialize) {
   argHandler = JS_GET_ARG(0, function);
 
   init_ant_async_list();
-  result = REGISTER_ANT_HANDLER(ocf_adapter_onInitialize, argHandler);
+  result = REGISTER_JS_HANDLER(ocf_adapter_onInitialize, argHandler);
   return jerry_create_boolean(result);
 }
 
@@ -36,7 +36,7 @@ GLOBAL_ANT_ASYNC(ocf_adapter_onPrepareServer)
 REGISTER_ANT_ASYNC_HANDLER_FUNC(ocf_adapter_onPrepareServer, NULL)
 EMIT_ANT_ASYNC_EVENT_FUNC(ocf_adapter_onPrepareServer)
 ANT_UV_HANDLER_FUNCTION(ocf_adapter_onPrepareServer) {
-  jerry_value_t jsHandler = GET_JS_HANDLER(ocf_adapter_onPrepareServer);
+  jerry_value_t jsHandler = GET_JS_HANDLER_FROM_ANT_ASYNC(ocf_adapter_onPrepareServer);
   iotjs_invoke_callback(jsHandler, jerry_create_undefined(), NULL, 0);
 }
 JS_FUNCTION(ocf_adapter_onPrepareServer) {
@@ -45,7 +45,7 @@ JS_FUNCTION(ocf_adapter_onPrepareServer) {
   DJS_CHECK_ARGS(1, function);
   argHandler = JS_GET_ARG(0, function);
 
-  result = REGISTER_ANT_HANDLER(ocf_adapter_onPrepareServer, argHandler);
+  result = REGISTER_JS_HANDLER(ocf_adapter_onPrepareServer, argHandler);
   return jerry_create_boolean(result);
 }
 
@@ -54,7 +54,7 @@ GLOBAL_ANT_ASYNC(ocf_adapter_onPrepareClient)
 REGISTER_ANT_ASYNC_HANDLER_FUNC(ocf_adapter_onPrepareClient, NULL)
 EMIT_ANT_ASYNC_EVENT_FUNC(ocf_adapter_onPrepareClient)
 ANT_UV_HANDLER_FUNCTION(ocf_adapter_onPrepareClient) {
-  jerry_value_t jsHandler = GET_JS_HANDLER(ocf_adapter_onPrepareClient);
+  jerry_value_t jsHandler = GET_JS_HANDLER_FROM_ANT_ASYNC(ocf_adapter_onPrepareClient);
   iotjs_invoke_callback(jsHandler, jerry_create_undefined(), NULL, 0);
 }
 JS_FUNCTION(ocf_adapter_onPrepareClient) {
@@ -63,7 +63,7 @@ JS_FUNCTION(ocf_adapter_onPrepareClient) {
   DJS_CHECK_ARGS(1, function);
   argHandler = JS_GET_ARG(0, function);
 
-  result = REGISTER_ANT_HANDLER(ocf_adapter_onPrepareClient, argHandler);
+  result = REGISTER_JS_HANDLER(ocf_adapter_onPrepareClient, argHandler);
   return jerry_create_boolean(result);
 }
 
@@ -227,7 +227,7 @@ EMIT_ANT_ASYNC_EVENT_FUNC(ocf_adapter_discovery)
 ANT_UV_HANDLER_FUNCTION(ocf_adapter_discovery) {
   ocf_adapter_discovery_event_t *event =
       (ocf_adapter_discovery_event_t *)GET_MR_EVENT(ocf_adapter_discovery);
-  jerry_value_t jsHandler = GET_JS_HANDLER(ocf_adapter_discovery);
+  jerry_value_t jsHandler = GET_JS_HANDLER_FROM_ANT_ASYNC(ocf_adapter_discovery);
 
   // Args 0: object endpoint
   // set native pointer of OCFEndPoint with oc_endpoint_t
@@ -275,7 +275,7 @@ JS_FUNCTION(ocf_adapter_discovery) {
   argDiscoveryHandler = JS_GET_ARG(1, function);
   const char *resource_type = iotjs_string_data(&argResourceType);
 
-  result = REGISTER_ANT_HANDLER(ocf_adapter_discovery, argDiscoveryHandler);
+  result = REGISTER_JS_HANDLER(ocf_adapter_discovery, argDiscoveryHandler);
   ocf_adapter_discovery_internal(resource_type);
 
   iotjs_string_destroy(&argResourceType);
@@ -291,7 +291,7 @@ EMIT_ANT_ASYNC_EVENT_FUNC(ocf_adapter_observe)
 ANT_UV_HANDLER_FUNCTION(ocf_adapter_observe) {
   ocf_client_response_event_t *event =
       (ocf_client_response_event_t *)GET_MR_EVENT(ocf_adapter_observe);
-  jerry_value_t jsHandler = GET_JS_HANDLER(ocf_adapter_observe);
+  jerry_value_t jsHandler = GET_JS_HANDLER_FROM_ANT_ASYNC(ocf_adapter_observe);
 
   // Get response.payload
   iotjs_string_t jsstrPayload = iotjs_string_create();
@@ -338,7 +338,7 @@ JS_FUNCTION(ocf_adapter_observe) {
   const char *uri = iotjs_string_data(&argUri);
   const char *query = iotjs_string_data(&argQuery);
 
-  result = REGISTER_ANT_HANDLER(ocf_adapter_observe, argResponseHandler);
+  result = REGISTER_JS_HANDLER(ocf_adapter_observe, argResponseHandler);
   result = result && ocf_adapter_observe_internal(ocf_endpoint_nobject, uri,
                                                   query, argQos);
 

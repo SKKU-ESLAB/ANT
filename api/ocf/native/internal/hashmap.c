@@ -2,6 +2,7 @@
  * Generic map implementation. This class is thread-safe.
  * free() must be invoked when only one thread has access to the hashmap.
  */
+// TODO: revive thread-safety code
 #include "hashmap.h"
 #include <stdio.h>
 #include <stdlib.h>

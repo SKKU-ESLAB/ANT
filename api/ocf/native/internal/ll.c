@@ -111,30 +111,7 @@ void ll_delete(ll_t *list) {
     if (list->val_teardown != NULL) {
       list->val_teardown(node->val);
     }
-    RWUNLOCK(node->m);
-    tmp = node;
-    node = node->nxt;
-    pthread_rwlock_destroy(&(tmp->m));
-    free(tmp);
-    (list->len)--;
-  }
-  list->hd = NULL;
-  list->val_teardown = NULL;
-  list->val_printer = NULL;
-  RWUNLOCK(list->m);
-
-  pthread_rwlock_destroy(&(list->m));
-
-  free(list);
-}
-
-void ll_delete2(ll_t *list) {
-  ll_node_t *node = list->hd;
-  ll_node_t *tmp;
-  RWLOCK(l_write, list->m);
-  while (node != NULL) {
-    RWLOCK(l_write, node->m);
-    if (list->val_teardown != NULL) {
+    if (list->val_teardown2 != NULL) {
       list->val_teardown2(node->val, list->user_data);
     }
     RWUNLOCK(node->m);
@@ -146,6 +123,8 @@ void ll_delete2(ll_t *list) {
   }
   list->hd = NULL;
   list->val_teardown = NULL;
+  list->val_teardown2 = NULL;
+  list->user_data = NULL;
   list->val_printer = NULL;
   RWUNLOCK(list->m);
 
@@ -314,6 +293,9 @@ int ll_remove_n(ll_t *list, int n) {
   if (list->val_teardown != NULL) {
     list->val_teardown(tmp->val);
   }
+  if (list->val_teardown2 != NULL) {
+    list->val_teardown2(tmp->val, list->user_data);
+  }
   free(tmp);
 
   return list->len;
@@ -364,6 +346,9 @@ int ll_remove_search(ll_t *list, int cond(void *)) {
 
   if (list->val_teardown != NULL) {
     list->val_teardown(node->val);
+  }
+  if (list->val_teardown2 != NULL) {
+    list->val_teardown2(node->val, list->user_data);
   }
   free(node);
 

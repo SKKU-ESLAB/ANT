@@ -76,6 +76,8 @@ struct ll {
 // a pointer to the value when it is being deleted.
 ll_t *ll_new(gen_fun_t val_teardown);
 
+ll_t *ll_new2(gen_fun2_t val_teardown2, void *user_data);
+
 // traverses the linked list, deallocated everything (including `list`)
 void ll_delete(ll_t *list);
 
