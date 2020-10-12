@@ -1,11 +1,5 @@
 #include "ocf_adapter.h"
 
-#include "../../common/native/ant_common.h"
-#include "internal/ant_async.h"
-#include "internal/ll.h"
-#include "internal/ocf_adapter_internal.h"
-#include "ocf_resource.h"
-
 #include "iotjs_def.h"
 #include "iotjs_uv_request.h"
 #include "modules/iotjs_module_buffer.h"
@@ -348,139 +342,49 @@ ANT_UV_HANDLER_FUNCTION(ocf_adapter_discovery) {
 
 // OCFAdapter.observe()
 ANT_ASYNC_DECLARE(ocf_adapter_observe, oa_response_event_data_destroyer)
-JS_FUNCTION(ocf_adapter_observe) {
-  bool result;
-  jerry_value_t argRequest;
-  jerry_value_t argResponseHandler;
-  DJS_CHECK_ARGS(2, object, function);
-  argRequest = JS_GET_ARG(0, object);
-  argResponseHandler = JS_GET_ARG(1, function);
-
-  // Get attributes of argRequest
-  jerry_value_t jsRequestId = iotjs_jval_get_property(argRequest, "id");
-  jerry_value_t jsOCFEndpoint = iotjs_jval_get_property(argRequest, "endpoint");
-  jerry_value_t jsUri = iotjs_jval_get_property(argRequest, "uri");
-  jerry_value_t jsQuery = iotjs_jval_get_property(argRequest, "query");
-  jerry_value_t jsQos = iotjs_jval_get_property(argRequest, "qos");
-
-  // int requestId
-  int requestId = (int)iotjs_jval_as_number(jsRequestId);
-
-  // object endpoint
-  jsOCFEndpoint = iotjs_jval_as_object(jsOCFEndpoint);
-  JS_DECLARE_PTR2(jsOCFEndpoint, void, ocf_endpoint_nobject, ocf_endpoint);
-
-  // string uri
-  iotjs_string_t jsstrUri = iotjs_jval_as_string(jsUri);
-  const char *uri = iotjs_string_data(&jsstrUri);
-
-  // string query
-  iotjs_string_t jsstrQuery = iotjs_jval_as_string(jsQuery);
-  const char *query = iotjs_string_data(&jsstrQuery);
-
-  // int qos
-  int qos = (int)iotjs_jval_as_number(jsQos);
-
-  // register js handler and call internal function
-  result =
-      REGISTER_JS_HANDLER(ocf_adapter_observe, requestId, argResponseHandler);
-  result = result && ocf_adapter_observe_internal(
-                         requestId, ocf_endpoint_nobject, uri, query, qos);
-
-  // Release properties
-  jerry_release_value(jsRequestId);
-  jerry_release_value(jsOCFEndpoint);
-  jerry_release_value(jsUri);
-  jerry_release_value(jsQuery);
-  jerry_release_value(jsQos);
-  iotjs_string_destroy(&jsstrUri);
-  iotjs_string_destroy(&jsstrQuery);
-
-  return jerry_create_boolean(result);
-}
-ANT_UV_HANDLER_FUNCTION(ocf_adapter_observe) {
-  // Get the first event
-  void *e;
-  while ((e = GET_FIRST_EVENT_FROM_ANT_ASYNC(ocf_adapter_observe)) != NULL) {
-    ant_async_event_t *event = (ant_async_event_t *)e;
-    oa_client_response_event_data_t *event_data =
-        (oa_client_response_event_data_t *)event->data;
-
-    // Get response.payload
-    iotjs_string_t jsstrPayload = iotjs_string_create();
-    iotjs_string_append(&jsstrPayload, event_data->payload_string,
-                        strlen(event_data->payload_string));
-
-    // Get response.endpoint
-    jerry_value_t jsEndpoint = jerry_create_object();
-    jerry_set_object_native_pointer(jsEndpoint, event_data->endpoint,
-                                    &ocf_endpoint_native_info);
-    IOTJS_ASSERT(jerry_get_object_native_pointer(jsEndpoint, NULL,
-                                                 &ocf_endpoint_native_info));
-
-    // Args 0: object response
-    jerry_value_t jsResponse = jerry_create_object();
-    iotjs_jval_set_property_string(jsResponse, "payload", &jsstrPayload);
-    iotjs_jval_set_property_number(jsResponse, "status_code",
-                                   (double)event_data->status_code);
-    iotjs_jval_set_property_jval(jsResponse, "endpoint", jsEndpoint);
-
-    jerry_value_t js_handler = GET_JS_HANDLER_FROM_ANT_ASYNC(
-        ocf_adapter_observe, event_data->request_id);
-    jerry_value_t js_args[] = {jsResponse};
-    iotjs_invoke_callback(js_handler, jerry_create_undefined(), js_args, 1);
-
-    iotjs_string_destroy(&jsstrPayload);
-    jerry_release_value(jsEndpoint);
-    jerry_release_value(jsResponse);
-
-    // Remove the first event
-    // - It also calls the destroyer of the event and event data.
-    REMOVE_FIRST_EVENT_FROM_ANT_ASYNC(ocf_adapter_observe);
-  }
-}
+OCF_REQUEST_JS_FUNCTION(ocf_adapter_observe)
+OCF_REQUEST_UV_HANDLER_FUNCTION(ocf_adapter_observe, false)
 
 // OCFAdapter.stopObserve()
 JS_FUNCTION(ocf_adapter_stopObserve) {
   bool result;
+  int argRequestId;
   jerry_value_t argOCFEndpoint;
   iotjs_string_t argUri;
-  DJS_CHECK_ARGS(2, object, string);
-  argOCFEndpoint = JS_GET_ARG(0, object);
-  argUri = JS_GET_ARG(1, string);
+  DJS_CHECK_ARGS(3, number, object, string);
+  argRequestId = (int)JS_GET_ARG(0, number);
+  argOCFEndpoint = JS_GET_ARG(1, object);
+  argUri = JS_GET_ARG(2, string);
   JS_DECLARE_PTR2(argOCFEndpoint, void, ocf_endpoint_nobject, ocf_endpoint);
   const char *uri = iotjs_string_data(&argUri);
 
   result = ocf_adapter_stopObserve_internal(ocf_endpoint_nobject, uri);
+  result = result && UNREGISTER_JS_HANDLER(ocf_adapter_observe, argRequestId);
 
   iotjs_string_destroy(&argUri);
 
   return jerry_create_boolean(result);
 }
 
-// OCFAdapter.get()
-JS_FUNCTION(ocf_adapter_get) {
-  // TODO:
-  return jerry_create_undefined();
-}
+// OCFAdapter.get() TODO:
+ANT_ASYNC_DECLARE(ocf_adapter_get, oa_response_event_data_destroyer)
+OCF_REQUEST_JS_FUNCTION(ocf_adapter_get)
+OCF_REQUEST_UV_HANDLER_FUNCTION(ocf_adapter_get, false)
 
-// OCFAdapter.delete()
-JS_FUNCTION(ocf_adapter_delete) {
-  // TODO:
-  return jerry_create_undefined();
-}
+// OCFAdapter.delete() TODO:
+ANT_ASYNC_DECLARE(ocf_adapter_delete, oa_response_event_data_destroyer)
+OCF_REQUEST_JS_FUNCTION(ocf_adapter_delete)
+OCF_REQUEST_UV_HANDLER_FUNCTION(ocf_adapter_delete, false)
 
-// OCFAdapter.initPost()
-JS_FUNCTION(ocf_adapter_initPost) {
-  // TODO:
-  return jerry_create_undefined();
-}
+// OCFAdapter.initPost() TODO:
+ANT_ASYNC_DECLARE(ocf_adapter_initPost, oa_response_event_data_destroyer)
+OCF_REQUEST_JS_FUNCTION(ocf_adapter_initPost)
+OCF_REQUEST_UV_HANDLER_FUNCTION(ocf_adapter_initPost, false)
 
-// OCFAdapter.initPut()
-JS_FUNCTION(ocf_adapter_initPut) {
-  // TODO:
-  return jerry_create_undefined();
-}
+// OCFAdapter.initPut() TODO:
+ANT_ASYNC_DECLARE(ocf_adapter_initPut, oa_response_event_data_destroyer)
+OCF_REQUEST_JS_FUNCTION(ocf_adapter_initPut)
+OCF_REQUEST_UV_HANDLER_FUNCTION(ocf_adapter_initPut, false)
 
 // OCFAdapter.post()
 JS_FUNCTION(ocf_adapter_post) {

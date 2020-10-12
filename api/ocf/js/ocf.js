@@ -75,6 +75,10 @@ function OCFAdapter() {
   this._nextDeviceId = 0;
 
   this._observe_request_list = [];
+  this._get_request_list = [];
+  this._delete_request_list = [];
+  this._post_request_list = [];
+  this._put_request_list = [];
 
   // Default handler
   var self = this;
@@ -173,16 +177,22 @@ OCFAdapter.prototype.discovery = function(resource_type, discovery_handler) {
   return native.ocf_adapter_discovery(resource_type, discovery_handler);
 };
 
-var gOCFAdapterRequestId = 0;
-OCFAdapter.prototype.observe = function(
-    endpoint, uri, query, qos, response_handler) {
-  var requestId = gOCFAdapterRequestId++;
+function make_request(requestId, query, qos, endpoint, uri) {
   var request = {};
   request.id = requestId;
   request.query = query;
   request.qos = qos;
   request.endpoint = endpoint;
   request.uri = uri;
+  return request;
+}
+
+var gOCFAdapterRequestId = 0;
+OCFAdapter.prototype.observe = function(
+    endpoint, uri, query, qos, response_handler) {
+  var requestId = gOCFAdapterRequestId++;
+  var request = make_request(requestId, query, qos, endpoint, uri);
+
   var result = native.ocf_adapter_observe(request, response_handler);
   if (result) {
     this._observe_request_list.push(request);
@@ -201,14 +211,69 @@ OCFAdapter.prototype.stopObserve = function(endpoint, uri) {
     }
   }
 
-  if (requstId !== undefined) {
-    var result = native.ocf_adapter_stopObserve(endpoint, uri);
+  if (requestId !== undefined) {
+    var result = native.ocf_adapter_stopObserve(requestId, endpoint, uri);
     return result;
   } else {
     console.log('Error: cannot find observe request for ' + uri);
     return false;
   }
 };
+
+OCFAdapter.prototype.get = function(
+    endpoint, uri, query, qos, response_handler) {
+  var requestId = gOCFAdapterRequestId++;
+  var request = make_request(requestId, query, qos, endpoint, uri);
+  var result = native.ocf_adapter_get(request, response_handler);
+  if (result) {
+    this._get_request_list.push(request);
+  }
+  return result;
+};
+
+OCFAdapter.prototype.delete = function(
+    endpoint, uri, query, qos, response_handler) {
+  var requestId = gOCFAdapterRequestId++;
+  var request = make_request(requestId, query, qos, endpoint, uri);
+  var result = native.ocf_adapter_delete(request, response_handler);
+  if (result) {
+    this._delete_request_list.push(request);
+  }
+  return result;
+};
+
+OCFAdapter.prototype.initPost = function(
+    endpoint, uri, query, qos, response_handler) {
+  var requestId = gOCFAdapterRequestId++;
+  var request = make_request(requestId, query, qos, endpoint, uri);
+  var result = native.ocf_adapter_initPost(request, response_handler);
+  if (result) {
+    this._post_request_list.initPost(request);
+  }
+  return result;
+};
+
+OCFAdapter.prototype.initPut = function(
+    endpoint, uri, query, qos, response_handler) {
+  var requestId = gOCFAdapterRequestId++;
+  var request = make_request(requestId, query, qos, endpoint, uri);
+  var result = native.ocf_adapter_initPut(request, response_handler);
+  if (result) {
+    this._put_request_list.initPut(request);
+  }
+  return result;
+};
+
+OCFAdapter.prototype.post = function() {
+  var result = native.ocf_adapter_post(request, response_handler);
+  return result;
+};
+
+OCFAdapter.prototype.put = function() {
+  var result = native.ocf_adapter_put(request, response_handler);
+  return result;
+};
+
 
 function OCFDevice(
     id, uri, resource_type, name, spec_version, data_model_version) {
