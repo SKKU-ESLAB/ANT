@@ -460,136 +460,37 @@ JS_FUNCTION(ocf_adapter_stopObserve) {
 
 // OCFAdapter.get()
 JS_FUNCTION(ocf_adapter_get) {
-  jerry_value_t argOCFEndpoint;
-  iotjs_string_t argUri;
-  iotjs_string_t argQuery;
-  int argQos;
-  jerry_value_t argResponseHandler;
-  DJS_CHECK_ARGS(5, object, string, string, number, function);
-  argOCFEndpoint = JS_GET_ARG(0, object);
-  argUri = JS_GET_ARG(1, string);
-  argQuery = JS_GET_ARG(2, string);
-  argQos = (int)JS_GET_ARG(3, number);
-  argResponseHandler = JS_GET_ARG(4, function);
-  // TODO: parsing endpoint
-  const char *uri = iotjs_string_data(&argUri);
-  const char *query = iotjs_string_data(&argQuery);
-  IOTJS_UNUSED(argOCFEndpoint);
-  IOTJS_UNUSED(argQos);
-  IOTJS_UNUSED(argResponseHandler);
-  IOTJS_UNUSED(uri);
-  IOTJS_UNUSED(query);
-
-  // TODO: ocf_adapter_get_internal(..., uri, query, qos, argResponseHandler);
-
-  iotjs_string_destroy(&argUri);
-  iotjs_string_destroy(&argQuery);
-
+  // TODO:
   return jerry_create_undefined();
 }
 
 // OCFAdapter.delete()
 JS_FUNCTION(ocf_adapter_delete) {
-  jerry_value_t argOCFEndpoint;
-  iotjs_string_t argUri;
-  iotjs_string_t argQuery;
-  int argQos;
-  jerry_value_t argResponseHandler;
-  DJS_CHECK_ARGS(5, object, string, string, number, function);
-  argOCFEndpoint = JS_GET_ARG(0, object);
-  argUri = JS_GET_ARG(1, string);
-  argQuery = JS_GET_ARG(2, string);
-  argQos = (int)JS_GET_ARG(3, number);
-  argResponseHandler = JS_GET_ARG(4, function);
-  // TODO: parsing endpoint
-  const char *uri = iotjs_string_data(&argUri);
-  const char *query = iotjs_string_data(&argQuery);
-  IOTJS_UNUSED(argOCFEndpoint);
-  IOTJS_UNUSED(argQos);
-  IOTJS_UNUSED(argResponseHandler);
-  IOTJS_UNUSED(uri);
-  IOTJS_UNUSED(query);
-
-  // TODO: ocf_adapter_delete_internal(..., uri, query, qos,
-  // argResponseHandler);
-
-  iotjs_string_destroy(&argUri);
-  iotjs_string_destroy(&argQuery);
-
+  // TODO:
   return jerry_create_undefined();
 }
 
 // OCFAdapter.initPost()
 JS_FUNCTION(ocf_adapter_initPost) {
-  jerry_value_t argOCFEndpoint;
-  iotjs_string_t argUri;
-  iotjs_string_t argQuery;
-  int argQos;
-  jerry_value_t argResponseHandler;
-  DJS_CHECK_ARGS(5, object, string, string, number, function);
-  argOCFEndpoint = JS_GET_ARG(0, object);
-  argUri = JS_GET_ARG(1, string);
-  argQuery = JS_GET_ARG(2, string);
-  argQos = (int)JS_GET_ARG(3, number);
-  argResponseHandler = JS_GET_ARG(4, function);
-  // TODO: parsing endpoint
-  const char *uri = iotjs_string_data(&argUri);
-  const char *query = iotjs_string_data(&argQuery);
-  IOTJS_UNUSED(argOCFEndpoint);
-  IOTJS_UNUSED(argQos);
-  IOTJS_UNUSED(argResponseHandler);
-  IOTJS_UNUSED(uri);
-  IOTJS_UNUSED(query);
-
-  // TODO: ocf_adapter_initPost_internal(..., uri, query, qos,
-  // argResponseHandler);
-
-  iotjs_string_destroy(&argUri);
-  iotjs_string_destroy(&argQuery);
-
+  // TODO:
   return jerry_create_undefined();
 }
 
 // OCFAdapter.initPut()
 JS_FUNCTION(ocf_adapter_initPut) {
-  jerry_value_t argOCFEndpoint;
-  iotjs_string_t argUri;
-  iotjs_string_t argQuery;
-  int argQos;
-  jerry_value_t argResponseHandler;
-  DJS_CHECK_ARGS(5, object, string, string, number, function);
-  argOCFEndpoint = JS_GET_ARG(0, object);
-  argUri = JS_GET_ARG(1, string);
-  argQuery = JS_GET_ARG(2, string);
-  argQos = (int)JS_GET_ARG(3, number);
-  argResponseHandler = JS_GET_ARG(4, function);
-  // TODO: parsing endpoint
-  const char *uri = iotjs_string_data(&argUri);
-  const char *query = iotjs_string_data(&argQuery);
-  IOTJS_UNUSED(argOCFEndpoint);
-  IOTJS_UNUSED(argQos);
-  IOTJS_UNUSED(argResponseHandler);
-  IOTJS_UNUSED(uri);
-  IOTJS_UNUSED(query);
-
-  // TODO: ocf_adapter_initPut_internal(..., uri, query, qos,
-  // argResponseHandler);
-
-  iotjs_string_destroy(&argUri);
-  iotjs_string_destroy(&argQuery);
-
+  // TODO:
   return jerry_create_undefined();
 }
 
 // OCFAdapter.post()
 JS_FUNCTION(ocf_adapter_post) {
-  // TODO: ocf_adapter_post_internal();
+  // TODO:
   return jerry_create_undefined();
 }
 
 // OCFAdapter.put()
 JS_FUNCTION(ocf_adapter_put) {
-  // TODO: ocf_adapter_put_internal();
+  // TODO:
   return jerry_create_undefined();
 }
 
