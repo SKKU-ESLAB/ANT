@@ -58,7 +58,12 @@ void destroy_ant_async(ant_async_t *ant_async) {
 }
 bool add_js_handler_to_ant_async(ant_async_t *ant_async, int key,
                                  jerry_value_t js_handler) {
-  // TODO: if js_handler has already existed in the hashmap entry?
+  // Remove if js_handler has already existed in the hashmap entry
+  jerry_value_t old_handler = get_js_handler_from_ant_async(ant_async, key);
+  if (!jerry_value_is_undefined(old_handler)) {
+    remove_js_handler_from_ant_async(ant_async, key);
+  }
+
   jerry_acquire_value(js_handler);
   return (hashmap_put(ant_async->handler_map, key, (any_t)js_handler) ==
           MAP_OK);
