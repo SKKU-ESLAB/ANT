@@ -1,6 +1,7 @@
 /*
  * Generic hashmap manipulation functions
  * SEE: http://elliottback.com/wp/hashmap-implementation-in-c/
+ * https://gist.github.com/warmwaffles/6fb6786be7c86ed51fce
  */
 
 #ifndef __HASHMAP_H__

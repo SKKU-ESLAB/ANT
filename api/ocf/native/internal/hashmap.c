@@ -2,8 +2,9 @@
  * Generic map implementation. This class is thread-safe.
  * free() must be invoked when only one thread has access to the hashmap.
  */
-// TODO: revive thread-safety code
 #include "hashmap.h"
+
+#include <semaphore.h>
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -22,6 +23,7 @@ typedef struct _hashmap_map {
   int table_size;
   int size;
   hashmap_element *data;
+  sem_t lock;
 } hashmap_map;
 
 /*
@@ -35,6 +37,8 @@ map_t hashmap_new() {
   m->data = (hashmap_element *)calloc(INITIAL_SIZE, sizeof(hashmap_element));
   if (!m->data)
     goto err;
+
+  sem_init(&m->lock, 0, 1);
 
   m->table_size = INITIAL_SIZE;
   m->size = 0;
@@ -144,10 +148,14 @@ int hashmap_put(map_t in, int key, any_t value) {
   /* Cast the hashmap */
   m = (hashmap_map *)in;
 
+  /* Lock for concurrency */
+  sem_wait(&m->lock);
+
   /* Find a place to put our value */
   index = hashmap_hash(in, key);
   while (index == MAP_FULL) {
     if (hashmap_rehash(in) == MAP_OMEM) {
+      sem_post(&m->lock);
       return MAP_OMEM;
     }
     index = hashmap_hash(in, key);
@@ -158,6 +166,9 @@ int hashmap_put(map_t in, int key, any_t value) {
   m->data[index].key = key;
   m->data[index].in_use = 1;
   m->size++;
+
+  /* Unlock */
+  sem_post(&m->lock);
 
   return MAP_OK;
 }
@@ -173,6 +184,9 @@ int hashmap_get(map_t in, int key, any_t *arg) {
   /* Cast the hashmap */
   m = (hashmap_map *)in;
 
+  /* Lock for concurrency */
+  sem_wait(&m->lock);
+
   /* Find data location */
   curr = hashmap_hash_int(m, key);
 
@@ -181,6 +195,7 @@ int hashmap_get(map_t in, int key, any_t *arg) {
 
     if (m->data[curr].key == key && m->data[curr].in_use == 1) {
       *arg = (int *)(m->data[curr].data);
+      sem_post(&m->lock);
       return MAP_OK;
     }
 
@@ -188,6 +203,9 @@ int hashmap_get(map_t in, int key, any_t *arg) {
   }
 
   *arg = NULL;
+
+  /* Unlock */
+  sem_post(&m->lock);
 
   /* Not found */
   return MAP_MISSING;
@@ -207,6 +225,9 @@ int hashmap_get_one(map_t in, any_t *arg, int remove) {
   if (hashmap_length(m) <= 0)
     return MAP_MISSING;
 
+  /* Lock for concurrency */
+  sem_wait(&m->lock);
+
   /* Linear probing */
   for (i = 0; i < m->table_size; i++)
     if (m->data[i].in_use != 0) {
@@ -215,8 +236,12 @@ int hashmap_get_one(map_t in, any_t *arg, int remove) {
         m->data[i].in_use = 0;
         m->size--;
       }
+      sem_post(&m->lock);
       return MAP_OK;
     }
+
+  /* Unlock */
+  sem_post(&m->lock);
 
   return MAP_OK;
 }
@@ -236,15 +261,22 @@ int hashmap_iterate(map_t in, PFany f, any_t item) {
   if (hashmap_length(m) <= 0)
     return MAP_MISSING;
 
+  /* Lock for concurrency */
+  sem_wait(&m->lock);
+
   /* Linear probing */
   for (i = 0; i < m->table_size; i++)
     if (m->data[i].in_use != 0) {
       any_t data = (any_t)(m->data[i].data);
       int status = f(item, data);
       if (status != MAP_OK) {
+        sem_post(&m->lock);
         return status;
       }
     }
+
+  /* Unlock */
+  sem_post(&m->lock);
 
   return MAP_OK;
 }
@@ -260,6 +292,9 @@ int hashmap_remove(map_t in, int key) {
   /* Cast the hashmap */
   m = (hashmap_map *)in;
 
+  /* Lock for concurrency */
+  sem_wait(&m->lock);
+
   /* Find key */
   curr = hashmap_hash_int(m, key);
 
@@ -273,10 +308,14 @@ int hashmap_remove(map_t in, int key) {
 
       /* Reduce the size */
       m->size--;
+      sem_post(&m->lock);
       return MAP_OK;
     }
     curr = (curr + 1) % m->table_size;
   }
+
+  /* Unlock */
+  sem_post(&m->lock);
 
   /* Data not found */
   return MAP_MISSING;
@@ -286,6 +325,7 @@ int hashmap_remove(map_t in, int key) {
 void hashmap_free(map_t in) {
   hashmap_map *m = (hashmap_map *)in;
   free(m->data);
+  sem_destroy(&m->lock);
   free(m);
 }
 
