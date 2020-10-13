@@ -10,10 +10,6 @@
 void ocf_adapter_init_internal(void);
 void ocf_adapter_deinit_internal(void);
 
-EMIT_ANT_ASYNC_EVENT_FUNC_SETTER(ocf_adapter_onInitialize);
-EMIT_ANT_ASYNC_EVENT_FUNC_SETTER(ocf_adapter_onPrepareServer);
-EMIT_ANT_ASYNC_EVENT_FUNC_SETTER(ocf_adapter_onPrepareClient);
-
 void ocf_adapter_start_internal(void);
 void ocf_adapter_stop_internal(void);
 
@@ -54,7 +50,6 @@ void ocf_endpoint_destroy(void *handle);
 
 bool ocf_adapter_isDiscovering_internal(void);
 void ocf_adapter_stopDiscovery_internal(void);
-EMIT_ANT_ASYNC_EVENT_FUNC_SETTER(ocf_adapter_discovery);
 bool ocf_adapter_discovery_internal(const char *resource_type);
 
 struct oa_client_response_event_data_s {
@@ -72,12 +67,51 @@ void oa_response_event_data_destroyer(void *item) {
   free(event);
 }
 
-EMIT_ANT_ASYNC_EVENT_FUNC_SETTER(ocf_adapter_observe);
-bool ocf_adapter_observe_internal(int requestId, void *ocf_endpoint_nobject,
-                                  const char *uri, const char *query, int qos);
+#define DECLARE_OCF_REQUEST_INTERNAL(type)                                     \
+  bool type##_internal(int requestId, void *ocf_endpoint_nobject,              \
+                       const char *uri, const char *query, int qos)
+
+DECLARE_OCF_REQUEST_INTERNAL(ocf_adapter_observe);
 bool ocf_adapter_stopObserve_internal(void *ocf_endpoint_nobject,
                                       const char *uri);
+DECLARE_OCF_REQUEST_INTERNAL(ocf_adapter_get);
+DECLARE_OCF_REQUEST_INTERNAL(ocf_adapter_delete);
+DECLARE_OCF_REQUEST_INTERNAL(ocf_adapter_initPost);
+DECLARE_OCF_REQUEST_INTERNAL(ocf_adapter_initPut);
+bool ocf_adapter_post_internal(void);
+bool ocf_adapter_put_internal(void);
 
 void initOCFAdapter(void);
+
+#define OCF_REQUEST_INTERNAL_HANDLER(type)                                     \
+  static void type##_handler(oc_client_response_t *data) {                     \
+    oa_client_response_event_data_t *event_data;                               \
+    event_data = (oa_client_response_event_data_t *)malloc(                    \
+        sizeof(oa_client_response_event_data_t));                              \
+                                                                               \
+    oc_endpoint_copy((oc_endpoint_t *)event_data->endpoint, data->endpoint);   \
+                                                                               \
+    event_data->payload_string_length =                                        \
+        oc_rep_to_json(data->payload, NULL, 0, true);                          \
+    event_data->payload_string =                                               \
+        (char *)malloc(event_data->payload_string_length + 1);                 \
+    oc_rep_to_json(data->payload, event_data->payload_string,                  \
+                   event_data->payload_string_length + 1, true);               \
+                                                                               \
+    event_data->status_code = data->code;                                      \
+                                                                               \
+    event_data->request_id = (int)data->user_data;                             \
+                                                                               \
+    EMIT_ANT_ASYNC_EVENT(type, event_data->request_id, (void *)event_data);    \
+    return;                                                                    \
+  }
+#define OCF_REQUEST_INTERNAL(type, ocf_request_function)                       \
+  bool type##_internal(int requestId, void *ocf_endpoint_nobject,              \
+                       const char *uri, const char *query, int qos) {          \
+    oc_endpoint_t *endpoint = (oc_endpoint_t *)ocf_endpoint_nobject;           \
+    oc_qos_t oc_qos = (qos == HIGH_QOS) ? HIGH_QOS : LOW_QOS;                  \
+    return ocf_request_function(uri, endpoint, query, &type##_handler, oc_qos, \
+                                (void *)requestId);                            \
+  }
 
 #endif /* !defined(__OCF_ADAPTER_INTERNAL_H__) */

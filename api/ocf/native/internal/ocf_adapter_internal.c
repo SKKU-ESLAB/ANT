@@ -299,42 +299,9 @@ bool ocf_adapter_discovery_internal(const char *resource_type) {
   return true;
 }
 
-DECLARE_GLOBAL_ANT_ASYNC_HANDLER(ocf_adapter_observe)
-ANT_ASYNC_HANDLER_SETTER(ocf_adapter_observe)
-static void oa_on_observe(oc_client_response_t *data) {
-  // Client response event
-  oa_client_response_event_data_t *event_data;
-  event_data = (oa_client_response_event_data_t *)malloc(
-      sizeof(oa_client_response_event_data_t));
-
-  // event->endpoint
-  oc_endpoint_copy((oc_endpoint_t *)event_data->endpoint, data->endpoint);
-
-  // event->payload, event->payloadLength
-  event_data->payload_string_length =
-      oc_rep_to_json(data->payload, NULL, 0, true);
-  event_data->payload_string =
-      (char *)malloc(event_data->payload_string_length + 1);
-  oc_rep_to_json(data->payload, event_data->payload_string,
-                 event_data->payload_string_length + 1, true);
-
-  // event->statusCode
-  event_data->status_code = data->code;
-
-  // event->request_id
-  event_data->request_id = (int)data->user_data;
-
-  EMIT_ANT_ASYNC_EVENT(ocf_adapter_observe, event_data->request_id,
-                       (void *)event_data);
-  return;
-}
-bool ocf_adapter_observe_internal(int requestId, void *ocf_endpoint_nobject,
-                                  const char *uri, const char *query, int qos) {
-  oc_endpoint_t *endpoint = (oc_endpoint_t *)ocf_endpoint_nobject;
-  oc_qos_t oc_qos = (qos == HIGH_QOS) ? HIGH_QOS : LOW_QOS;
-  return oc_do_observe(uri, endpoint, query, &oa_on_observe, oc_qos,
-                       (void *)requestId);
-}
+DECLARE_GLOBAL_ANT_ASYNC_HANDLER(ocf_adapter_observes)
+OCF_REQUEST_INTERNAL_HANDLER(ocf_adapter_observe)
+OCF_REQUEST_INTERNAL(ocf_adapter_observe, oc_do_observe)
 
 bool ocf_adapter_stopObserve_internal(void *ocf_endpoint_nobject,
                                       const char *uri) {
@@ -342,11 +309,30 @@ bool ocf_adapter_stopObserve_internal(void *ocf_endpoint_nobject,
   return oc_stop_observe(uri, endpoint);
 }
 
+DECLARE_GLOBAL_ANT_ASYNC_HANDLER(ocf_adapter_get)
+OCF_REQUEST_INTERNAL_HANDLER(ocf_adapter_get)
+OCF_REQUEST_INTERNAL(ocf_adapter_get, oc_do_get)
+
+DECLARE_GLOBAL_ANT_ASYNC_HANDLER(ocf_adapter_delete)
+OCF_REQUEST_INTERNAL_HANDLER(ocf_adapter_delete)
+OCF_REQUEST_INTERNAL(ocf_adapter_delete, oc_do_delete)
+
+DECLARE_GLOBAL_ANT_ASYNC_HANDLER(ocf_adapter_initPost)
+OCF_REQUEST_INTERNAL_HANDLER(ocf_adapter_initPost)
+OCF_REQUEST_INTERNAL(ocf_adapter_initPost, oc_init_post)
+
+DECLARE_GLOBAL_ANT_ASYNC_HANDLER(ocf_adapter_initPut)
+OCF_REQUEST_INTERNAL_HANDLER(ocf_adapter_initPut)
+OCF_REQUEST_INTERNAL(ocf_adapter_initPut, oc_init_put)
+
+bool ocf_adapter_post_internal(void) { return oc_do_post(); }
+bool ocf_adapter_put_internal(void) { return oc_do_put(); }
+
 void initOCFAdapter(void) {
   // Empty function
 }
 
-void *ocf_thread_fn(void *arg) {
+static void *ocf_thread_fn(void *arg) {
   // On OCF Thread
   struct sigaction sa;
   sigfillset(&sa.sa_mask);
