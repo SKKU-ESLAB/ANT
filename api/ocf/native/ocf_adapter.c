@@ -366,36 +366,36 @@ JS_FUNCTION(ocf_adapter_stopObserve) {
   return jerry_create_boolean(result);
 }
 
-// OCFAdapter.get() TODO:
+// OCFAdapter.get()
 ANT_ASYNC_DECLARE(ocf_adapter_get, oa_response_event_data_destroyer)
 OCF_REQUEST_JS_FUNCTION(ocf_adapter_get)
 OCF_REQUEST_UV_HANDLER_FUNCTION(ocf_adapter_get, false)
 
-// OCFAdapter.delete() TODO:
+// OCFAdapter.delete()
 ANT_ASYNC_DECLARE(ocf_adapter_delete, oa_response_event_data_destroyer)
 OCF_REQUEST_JS_FUNCTION(ocf_adapter_delete)
 OCF_REQUEST_UV_HANDLER_FUNCTION(ocf_adapter_delete, false)
 
-// OCFAdapter.initPost() TODO:
+// OCFAdapter.initPost()
 ANT_ASYNC_DECLARE(ocf_adapter_initPost, oa_response_event_data_destroyer)
 OCF_REQUEST_JS_FUNCTION(ocf_adapter_initPost)
 OCF_REQUEST_UV_HANDLER_FUNCTION(ocf_adapter_initPost, false)
 
-// OCFAdapter.initPut() TODO:
+// OCFAdapter.initPut()
 ANT_ASYNC_DECLARE(ocf_adapter_initPut, oa_response_event_data_destroyer)
 OCF_REQUEST_JS_FUNCTION(ocf_adapter_initPut)
 OCF_REQUEST_UV_HANDLER_FUNCTION(ocf_adapter_initPut, false)
 
 // OCFAdapter.post()
 JS_FUNCTION(ocf_adapter_post) {
-  // TODO:
-  return jerry_create_undefined();
+  bool result = ocf_adapter_post_internal();
+  return jerry_create_boolean(result);
 }
 
 // OCFAdapter.put()
 JS_FUNCTION(ocf_adapter_put) {
-  // TODO:
-  return jerry_create_undefined();
+  bool result = ocf_adapter_put_internal();
+  return jerry_create_boolean(result);
 }
 
 void ocf_adapter_init(void) {
