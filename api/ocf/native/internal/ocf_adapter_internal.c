@@ -27,159 +27,30 @@ static pthread_cond_t cv;
 static struct timespec ts;
 static int g_thread_quit = 0;
 
-void *ocf_thread_fn(void *arg);
+static void *ocf_thread_fn(void *arg);
 static void signal_event_loop(void);
 static void handle_signal(int signal);
 
-// OCF Server
-// static bool light_server_state = false;
-
-// OCF Client
-// #define MAX_URI_LENGTH (30)
-// static char light_1[MAX_URI_LENGTH];
-// static oc_endpoint_t *light_server;
-// static bool light_state = false;
-
-// static void on_get_light(oc_request_t *request, oc_interface_mask_t
-// iface_mask,
-//                          void *user_data) {
-//   (void)user_data;
-//   PRINT("GET_light:\n");
-//   oc_rep_start_root_object();
-//   switch (iface_mask) {
-//   case OC_IF_BASELINE:
-//     oc_process_baseline_interface(request->resource);
-//   /* fall through */
-//   case OC_IF_RW:
-//     oc_rep_set_boolean(root, state, light_server_state);
-//     break;
-//   default:
-//     break;
-//   }
-//   oc_rep_end_root_object();
-//   oc_send_response(request, OC_STATUS_OK);
-//   PRINT("Light state %d\n", light_server_state);
-// }
-
-// static void post_light(oc_client_response_t *data) {
-//  PRINT("POST_light:\n");
-//  if (data->code == OC_STATUS_CHANGED)
-//    PRINT("POST response OK\n");
-//  else
-//    PRINT("POST response code %d\n", data->code);
-//}
-
-// static void on_post_light(oc_request_t *request, oc_interface_mask_t
-// iface_mask,
-//                           void *user_data) {
-//   (void)user_data;
-//   (void)iface_mask;
-//   PRINT("POST_light:\n");
-//   bool state = false;
-//   oc_rep_t *rep = request->request_payload;
-//   while (rep != NULL) {
-//     PRINT("key: %s ", oc_string(rep->name));
-//     switch (rep->type) {
-//     case OC_REP_BOOL:
-//       state = rep->value.boolean;
-//       PRINT("value: %d\n", state);
-//       break;
-//     default:
-//       oc_send_response(request, OC_STATUS_BAD_REQUEST);
-//       return;
-//       break;
-//     }
-//     rep = rep->next;
-//   }
-//   oc_send_response(request, OC_STATUS_CHANGED);
-//   light_server_state = state;
-// }
-
-// static void observe_light(oc_client_response_t *data) {
-//   PRINT("OBSERVE_light:\n");
-//   oc_rep_t *rep = data->payload;
-//   while (rep != NULL) {
-//     PRINT("key %s, value ", oc_string(rep->name));
-//     switch (rep->type) {
-//     case OC_REP_BOOL:
-//       PRINT("%d\n", rep->value.boolean);
-//       light_state = rep->value.boolean;
-//       break;
-//     default:
-//       break;
-//     }
-//     rep = rep->next;
-//   }
-
-//   if (oc_init_post(light_1, light_server, NULL, &post_light, LOW_QOS, NULL))
-//   {
-//     oc_rep_start_root_object();
-//     oc_rep_set_boolean(root, state, !light_state);
-//     oc_rep_end_root_object();
-//     if (oc_do_post())
-//       PRINT("Sent POST request\n");
-//     else
-//       PRINT("Could not send POST\n");
-//   } else
-//     PRINT("Could not init POST\n");
-// }
-
-// static oc_event_callback_retval_t test_post(void *data) {
-//   (void)data;
-
-//   PRINT("test_post called\n");
-
-//   if (oc_init_post(light_1, light_server, NULL, &post_light, LOW_QOS, NULL))
-//   {
-//     oc_rep_start_root_object();
-//     oc_rep_set_boolean(root, state, !light_state);
-//     oc_rep_end_root_object();
-//     if (oc_do_post())
-//       PRINT("Sent POST request\n");
-//     else
-//       PRINT("Could not send POST\n");
-//   } else
-//     PRINT("Could not init POST\n");
-//   return OC_EVENT_DONE;
-// }
-
-// static oc_event_callback_retval_t stop_observe(void *data) {
-//   (void)data;
-//   PRINT("Stopping OBSERVE\n");
-//   oc_stop_observe(light_1, light_server);
-//   return OC_EVENT_DONE;
-// }
-
-// OCFAdapter.init()
-void ocf_adapter_init_internal(void) { init_ant_async_list(); }
-
-// OCFAdapter.deinit()
-void ocf_adapter_deinit_internal(void) { destroy_ant_async_list(); }
-
-// OCFAdapter.onInitialize()
-DECLARE_GLOBAL_ANT_ASYNC_HANDLER(ocf_adapter_onInitialize)
-static int oa_initialize(void) {
+// OCFAdapter.onPrepareEventLoop()
+static int oa_prepare_event_loop(void) {
   int zero = 0;
-  bool res = EMIT_ANT_ASYNC_EVENT(ocf_adapter_onInitialize, zero, (void *)NULL);
+  bool res =
+      EMIT_ANT_ASYNC_EVENT(ocf_adapter_onPrepareEventLoop, zero, (void *)NULL);
   return (res) ? 0 : -1;
 }
 
 // OCFAdapter.onPrepareServer()
-DECLARE_GLOBAL_ANT_ASYNC_HANDLER(ocf_adapter_onPrepareServer)
 static void oa_prepare_server(void) {
   int zero = 0;
-  bool res =
-      EMIT_ANT_ASYNC_EVENT(ocf_adapter_onPrepareServer, zero, (void *)NULL);
-  return (res) ? 0 : -1;
+  EMIT_ANT_ASYNC_EVENT(ocf_adapter_onPrepareServer, zero, (void *)NULL);
+  return;
 }
 
 // OCFAdapter.onPrepareClient()
-DECLARE_GLOBAL_ANT_ASYNC_HANDLER(ocf_adapter_onPrepareClient)
 static void oa_prepare_client(void) {
   int zero = 0;
-  bool res =
-      EMIT_ANT_ASYNC_EVENT(ocf_adapter_onPrepareClient, zero, (void *)NULL);
-  return (res) ? 0 : -1;
+  EMIT_ANT_ASYNC_EVENT(ocf_adapter_onPrepareClient, zero, (void *)NULL);
+  return;
 }
 
 // OCFAdapter.start()
@@ -249,36 +120,35 @@ void ocf_endpoint_destroy(void *handle) {
 bool g_is_discovering = false;
 bool ocf_adapter_isDiscovering_internal(void) { return g_is_discovering; }
 void ocf_adapter_stopDiscovery_internal(void) { g_is_discovering = false; }
-DECLARE_GLOBAL_ANT_ASYNC_HANDLER(ocf_adapter_discovery)
 static oc_discovery_flags_t
 oa_on_discovery(const char *di, const char *uri, oc_string_array_t types,
                 oc_interface_mask_t iface_mask, oc_endpoint_t *endpoint,
                 oc_resource_properties_t bm, void *user_data) {
   // Discovery event
-  oa_discovery_event_data_t *event;
-  event =
+  oa_discovery_event_data_t *event_data;
+  event_data =
       (oa_discovery_event_data_t *)malloc(sizeof(oa_discovery_event_data_t));
 
-  // event->uri
-  event->uri = malloc(sizeof(char) * (strlen(uri) + 1));
-  strncpy(event->uri, uri, strlen(uri) + 1);
+  // event_data->uri
+  event_data->uri = malloc(sizeof(char) * (strlen(uri) + 1));
+  strncpy(event_data->uri, uri, strlen(uri) + 1);
 
-  // event->types
-  event->types = ll_new(oa_discovery_event_types_destroyer);
+  // event_data->types
+  event_data->types = ll_new(oa_discovery_event_types_destroyer);
   int i;
   for (i = 0; i < (int)oc_string_array_get_allocated_size(types); i++) {
     char *type = oc_string_array_get_item(types, i);
     size_t type_len = strlen(type) + 1;
     char *new_type = (char *)malloc(sizeof(char) * (type_len + 1));
     strncpy(new_type, type, type_len + 1);
-    ll_insert_last(event->types, new_type);
+    ll_insert_last(event_data->types, new_type);
   }
 
-  // event->interface_mask
-  event->interface_mask = (int)iface_mask;
+  // event_data->interface_mask
+  event_data->interface_mask = (int)iface_mask;
 
-  // event->endpoint
-  oc_endpoint_copy((oc_endpoint_t *)event->endpoint, endpoint);
+  // event_data->endpoint
+  oc_endpoint_copy((oc_endpoint_t *)event_data->endpoint, endpoint);
 
   pthread_mutex_init(&event_data->sync_mutex, NULL);
   pthread_cond_init(&event_data->sync_cond, NULL);
@@ -299,7 +169,6 @@ bool ocf_adapter_discovery_internal(const char *resource_type) {
   return true;
 }
 
-DECLARE_GLOBAL_ANT_ASYNC_HANDLER(ocf_adapter_observes)
 OCF_REQUEST_INTERNAL_HANDLER(ocf_adapter_observe)
 OCF_REQUEST_INTERNAL(ocf_adapter_observe, oc_do_observe)
 
@@ -309,19 +178,15 @@ bool ocf_adapter_stopObserve_internal(void *ocf_endpoint_nobject,
   return oc_stop_observe(uri, endpoint);
 }
 
-DECLARE_GLOBAL_ANT_ASYNC_HANDLER(ocf_adapter_get)
 OCF_REQUEST_INTERNAL_HANDLER(ocf_adapter_get)
 OCF_REQUEST_INTERNAL(ocf_adapter_get, oc_do_get)
 
-DECLARE_GLOBAL_ANT_ASYNC_HANDLER(ocf_adapter_delete)
 OCF_REQUEST_INTERNAL_HANDLER(ocf_adapter_delete)
 OCF_REQUEST_INTERNAL(ocf_adapter_delete, oc_do_delete)
 
-DECLARE_GLOBAL_ANT_ASYNC_HANDLER(ocf_adapter_initPost)
 OCF_REQUEST_INTERNAL_HANDLER(ocf_adapter_initPost)
 OCF_REQUEST_INTERNAL(ocf_adapter_initPost, oc_init_post)
 
-DECLARE_GLOBAL_ANT_ASYNC_HANDLER(ocf_adapter_initPut)
 OCF_REQUEST_INTERNAL_HANDLER(ocf_adapter_initPut)
 OCF_REQUEST_INTERNAL(ocf_adapter_initPut, oc_init_put)
 
@@ -332,7 +197,7 @@ void initOCFAdapter(void) {
   // Empty function
 }
 
-static void *ocf_thread_fn(void *arg) {
+void *ocf_thread_fn(void *arg) {
   // On OCF Thread
   struct sigaction sa;
   sigfillset(&sa.sa_mask);
@@ -343,7 +208,7 @@ static void *ocf_thread_fn(void *arg) {
   printf("OCF thread launched.\n");
 
   static const oc_handler_t handler = {.signal_event_loop = signal_event_loop,
-                                       .init = oa_initialize,
+                                       .init = oa_prepare_event_loop,
                                        .register_resources = oa_prepare_server,
                                        .requests_entry = oa_prepare_client};
 

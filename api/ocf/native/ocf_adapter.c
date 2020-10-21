@@ -1,5 +1,7 @@
 #include "ocf_adapter.h"
 
+#include "ocf_resource.h"
+
 #include "iotjs_def.h"
 #include "iotjs_uv_request.h"
 #include "modules/iotjs_module_buffer.h"
@@ -8,41 +10,72 @@
 #include <stdlib.h>
 #include <string.h>
 
-// OCFAdapter.onInitialize()
-ANT_ASYNC_DECLARE(ocf_adapter_onInitialize, NULL)
-JS_FUNCTION(ocf_adapter_onInitialize) {
+// Linked list destroyers
+void oa_discovery_event_data_destroyer(void *item) {
+  oa_discovery_event_data_t *event;
+  event = (oa_discovery_event_data_t *)item;
+  free(event->uri);
+  ll_delete(event->types);
+  free(event);
+}
+void oa_response_event_data_destroyer(void *item) {
+  oa_client_response_event_data_t *event;
+  event = (oa_client_response_event_data_t *)item;
+  free(event->payload_string);
+  free(event);
+}
+void oa_discovery_event_types_destroyer(void *item) { free(item); }
+
+// OCFAdapter.initialize()
+JS_FUNCTION(ocf_adapter_initialize) {
+  init_ant_async_list();
+  ocf_adapter_init();
+  ocf_resource_init();
+  return jerry_create_undefined();
+}
+
+// OCFAdapter.deinitialize()
+JS_FUNCTION(ocf_adapter_deinitialize) {
+  destroy_ant_async_list();
+  return jerry_create_undefined();
+}
+
+// OCFAdapter.onPrepareEventLoop()
+ANT_ASYNC_DECL_FUNCS(ocf_adapter_onPrepareEventLoop, NULL)
+JS_FUNCTION(ocf_adapter_onPrepareEventLoop) {
   bool result;
   jerry_value_t argHandler;
   DJS_CHECK_ARGS(1, function);
   argHandler = JS_GET_ARG(0, function);
 
   int zero = 0; // singleton handler
-  result = REGISTER_JS_HANDLER(ocf_adapter_onInitialize, zero, argHandler);
+  result =
+      REGISTER_JS_HANDLER(ocf_adapter_onPrepareEventLoop, zero, argHandler);
   return jerry_create_boolean(result);
 }
-ANT_UV_HANDLER_FUNCTION(ocf_adapter_onInitialize) {
+ANT_UV_HANDLER_FUNCTION(ocf_adapter_onPrepareEventLoop) {
   void *e;
-  while ((e = GET_FIRST_EVENT_FROM_ANT_ASYNC(ocf_adapter_onInitialize)) !=
+  while ((e = GET_FIRST_EVENT_FROM_ANT_ASYNC(ocf_adapter_onPrepareEventLoop)) !=
          NULL) {
     int zero = 0; // singleton handler
     jerry_value_t js_handler =
-        GET_JS_HANDLER_FROM_ANT_ASYNC(ocf_adapter_onInitialize, zero);
+        GET_JS_HANDLER_FROM_ANT_ASYNC(ocf_adapter_onPrepareEventLoop, zero);
     if (!jerry_value_is_undefined(js_handler)) {
       iotjs_invoke_callback(js_handler, jerry_create_undefined(), NULL, 0);
     } else {
       // cannot reach here
       printf("Warning: js_handler is undefined on ant async handler "
-             "(ocf_adapter_onInitialize)\n");
+             "(ocf_adapter_onPrepareEventLoop)\n");
     }
 
     // Remove the first event
     // - It also calls the destroyer of the event and event data.
-    REMOVE_FIRST_EVENT_FROM_ANT_ASYNC(ocf_adapter_onInitialize);
+    REMOVE_FIRST_EVENT_FROM_ANT_ASYNC(ocf_adapter_onPrepareEventLoop);
   }
 }
 
 // OCFAdapter.onPrepareServer()
-ANT_ASYNC_DECLARE(ocf_adapter_onPrepareServer, NULL)
+ANT_ASYNC_DECL_FUNCS(ocf_adapter_onPrepareServer, NULL)
 JS_FUNCTION(ocf_adapter_onPrepareServer) {
   bool result;
   jerry_value_t argHandler;
@@ -63,9 +96,7 @@ ANT_UV_HANDLER_FUNCTION(ocf_adapter_onPrepareServer) {
     if (!jerry_value_is_undefined(js_handler)) {
       iotjs_invoke_callback(js_handler, jerry_create_undefined(), NULL, 0);
     } else {
-      // cannot reach here
-      printf("Warning: js_handler is undefined on ant async handler "
-             "(ocf_adapter_onPrepareServer)\n");
+      // empty handler
     }
 
     // Remove the first event
@@ -75,7 +106,7 @@ ANT_UV_HANDLER_FUNCTION(ocf_adapter_onPrepareServer) {
 }
 
 // OCFAdapter.onPrepareClient()
-ANT_ASYNC_DECLARE(ocf_adapter_onPrepareClient, NULL)
+ANT_ASYNC_DECL_FUNCS(ocf_adapter_onPrepareClient, NULL)
 JS_FUNCTION(ocf_adapter_onPrepareClient) {
   bool result;
   jerry_value_t argHandler;
@@ -96,9 +127,7 @@ ANT_UV_HANDLER_FUNCTION(ocf_adapter_onPrepareClient) {
     if (!jerry_value_is_undefined(js_handler)) {
       iotjs_invoke_callback(js_handler, jerry_create_undefined(), NULL, 0);
     } else {
-      // cannot reach here
-      printf("Warning: js_handler is undefined on ant async handler "
-             "(ocf_adapter_onPrepareClient)\n");
+      // empty handler
     }
 
     // Remove the first event
@@ -265,10 +294,13 @@ JS_FUNCTION(ocf_adapter_isDiscovering) {
 }
 
 // OCFAdapter.stopDiscovery()
-JS_FUNCTION(ocf_adapter_stopDiscovery) { ocf_adapter_stopDiscovery_internal(); }
+JS_FUNCTION(ocf_adapter_stopDiscovery) {
+  ocf_adapter_stopDiscovery_internal();
+  return jerry_create_undefined();
+}
 
 // OCFAdapter.discovery()
-ANT_ASYNC_DECLARE(ocf_adapter_discovery, oa_discovery_event_data_destroyer)
+ANT_ASYNC_DECL_FUNCS(ocf_adapter_discovery, oa_discovery_event_data_destroyer)
 JS_FUNCTION(ocf_adapter_discovery) {
   bool result;
   iotjs_string_t argResourceType;
@@ -341,7 +373,7 @@ ANT_UV_HANDLER_FUNCTION(ocf_adapter_discovery) {
 }
 
 // OCFAdapter.observe()
-ANT_ASYNC_DECLARE(ocf_adapter_observe, oa_response_event_data_destroyer)
+ANT_ASYNC_DECL_FUNCS(ocf_adapter_observe, oa_response_event_data_destroyer)
 OCF_REQUEST_JS_FUNCTION(ocf_adapter_observe)
 OCF_REQUEST_UV_HANDLER_FUNCTION(ocf_adapter_observe, false)
 
@@ -367,22 +399,22 @@ JS_FUNCTION(ocf_adapter_stopObserve) {
 }
 
 // OCFAdapter.get()
-ANT_ASYNC_DECLARE(ocf_adapter_get, oa_response_event_data_destroyer)
+ANT_ASYNC_DECL_FUNCS(ocf_adapter_get, oa_response_event_data_destroyer)
 OCF_REQUEST_JS_FUNCTION(ocf_adapter_get)
 OCF_REQUEST_UV_HANDLER_FUNCTION(ocf_adapter_get, false)
 
 // OCFAdapter.delete()
-ANT_ASYNC_DECLARE(ocf_adapter_delete, oa_response_event_data_destroyer)
+ANT_ASYNC_DECL_FUNCS(ocf_adapter_delete, oa_response_event_data_destroyer)
 OCF_REQUEST_JS_FUNCTION(ocf_adapter_delete)
 OCF_REQUEST_UV_HANDLER_FUNCTION(ocf_adapter_delete, false)
 
 // OCFAdapter.initPost()
-ANT_ASYNC_DECLARE(ocf_adapter_initPost, oa_response_event_data_destroyer)
+ANT_ASYNC_DECL_FUNCS(ocf_adapter_initPost, oa_response_event_data_destroyer)
 OCF_REQUEST_JS_FUNCTION(ocf_adapter_initPost)
 OCF_REQUEST_UV_HANDLER_FUNCTION(ocf_adapter_initPost, false)
 
 // OCFAdapter.initPut()
-ANT_ASYNC_DECLARE(ocf_adapter_initPut, oa_response_event_data_destroyer)
+ANT_ASYNC_DECL_FUNCS(ocf_adapter_initPut, oa_response_event_data_destroyer)
 OCF_REQUEST_JS_FUNCTION(ocf_adapter_initPut)
 OCF_REQUEST_UV_HANDLER_FUNCTION(ocf_adapter_initPut, false)
 
@@ -399,16 +431,24 @@ JS_FUNCTION(ocf_adapter_put) {
 }
 
 void ocf_adapter_init(void) {
-  INIT_ANT_ASYNC(ocf_adapter_onInitialize, NULL);
+  INIT_ANT_ASYNC(ocf_adapter_onPrepareEventLoop, NULL);
   INIT_ANT_ASYNC(ocf_adapter_onPrepareServer, NULL);
   INIT_ANT_ASYNC(ocf_adapter_onPrepareClient, NULL);
   INIT_ANT_ASYNC(ocf_adapter_discovery, oa_discovery_event_data_destroyer);
   INIT_ANT_ASYNC(ocf_adapter_observe, oa_response_event_data_destroyer);
+  INIT_ANT_ASYNC(ocf_adapter_get, oa_response_event_data_destroyer);
+  INIT_ANT_ASYNC(ocf_adapter_delete, oa_response_event_data_destroyer);
+  INIT_ANT_ASYNC(ocf_adapter_initPost, oa_response_event_data_destroyer);
+  INIT_ANT_ASYNC(ocf_adapter_initPut, oa_response_event_data_destroyer);
 }
 
 void InitOCFAdapterNative(jerry_value_t ocfNative) {
+  // Initialize, Deinitialize
+  REGISTER_ANT_API(ocfNative, ocf_adapter, initialize);
+  REGISTER_ANT_API(ocfNative, ocf_adapter, deinitialize);
+
   // OCF Thread Initialization Handlers
-  REGISTER_ANT_API(ocfNative, ocf_adapter, onInitialize);
+  REGISTER_ANT_API(ocfNative, ocf_adapter, onPrepareEventLoop);
   REGISTER_ANT_API(ocfNative, ocf_adapter, onPrepareServer);
   REGISTER_ANT_API(ocfNative, ocf_adapter, onPrepareClient);
 
@@ -434,6 +474,7 @@ void InitOCFAdapterNative(jerry_value_t ocfNative) {
 
   // Client-side Initialization
   REGISTER_ANT_API(ocfNative, ocf_adapter, isDiscovering);
+  REGISTER_ANT_API(ocfNative, ocf_adapter, stopDiscovery);
   REGISTER_ANT_API(ocfNative, ocf_adapter, discovery);
   REGISTER_ANT_API(ocfNative, ocf_adapter, observe);
   REGISTER_ANT_API(ocfNative, ocf_adapter, stopObserve);

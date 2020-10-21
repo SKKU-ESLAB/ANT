@@ -5,6 +5,8 @@
 #include <stdbool.h>
 #include <stdlib.h>
 
+#include "ant_async.h"
+
 struct or_setHandler_event_data_s {
   void *request;
 
@@ -43,6 +45,8 @@ void ocf_resource_setDiscoverable_internal(void *ocf_resource_nobject,
                                            bool is_discoverable);
 void ocf_resource_setPeriodicObservable_internal(void *ocf_resource_nobject,
                                                  int period_sec);
+                                                 
+ANT_ASYNC_DECL_IN_HEADER(ocf_resource_setHandler);
 void ocf_resource_setHandler_internal(void *ocf_resource_nobject,
                                       int handler_id, int method);
 

@@ -68,7 +68,6 @@ void ocf_resource_setHandler_internal(void *ocf_resource_nobject,
   oc_resource_set_request_handler(ocf_resource_nobject, method,
                                   ocf_resource_handler, user_data);
 }
-DECLARE_GLOBAL_ANT_ASYNC_HANDLER(ocf_resource_setHandler)
 void ocf_resource_handler(oc_request_t *request,
                           oc_interface_mask_t interface_mask, void *user_data) {
   or_setHandler_event_data_t *event_data =

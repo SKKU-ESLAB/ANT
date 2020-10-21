@@ -9,14 +9,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-JS_FUNCTION(ocf_init) {
-  init_ant_async_list();
-  ocf_adapter_init();
-  ocf_resource_init();
-}
-
-JS_FUNCTION(ocf_deinit) { destroy_ant_async_list(); }
-
 jerry_value_t InitOCFNative() {
   // Initialize sub-objects of OCF API
   jerry_value_t ocfNative = jerry_create_object();
