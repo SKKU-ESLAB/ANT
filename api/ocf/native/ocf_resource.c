@@ -130,9 +130,9 @@ JS_FUNCTION(ocf_resource_destroyer) {
   jerry_value_t jsHandlerIdsLength =
       iotjs_jval_get_property(argHandlerIds, "length");
   int handler_ids_length = (int)iotjs_jval_as_number(jsHandlerIdsLength);
-  for (uint32_t i = 0; i < handler_ids_length; i++) {
+  for (int i = 0; i < handler_ids_length; i++) {
     jerry_value_t jsHandlerId =
-        iotjs_jval_get_property_by_index(argHandlerIds, i);
+        iotjs_jval_get_property_by_index(argHandlerIds, (uint32_t)i);
     int handler_id = (int)iotjs_jval_as_number(jsHandlerId);
 
     // unregister js handler
@@ -146,6 +146,7 @@ JS_FUNCTION(ocf_resource_destroyer) {
 
   // Release properties
   jerry_release_value(jsHandlerIdsLength);
+  return jerry_create_undefined();
 }
 
 // OCFResource.setDiscoverable()
@@ -175,7 +176,8 @@ JS_FUNCTION(ocf_resource_setPeriodicObservable) {
 }
 
 // OCFResource.setHandler()
-ANT_ASYNC_DECLARE(ocf_resource_setHandler, or_setHandler_event_data_destroyer)
+ANT_ASYNC_DECL_FUNCS(ocf_resource_setHandler,
+                     or_setHandler_event_data_destroyer)
 JS_FUNCTION(ocf_resource_setHandler) {
   bool result;
   jerry_value_t argSelf;
@@ -205,7 +207,7 @@ ANT_UV_HANDLER_FUNCTION(ocf_resource_setHandler) {
     ant_async_event_t *event = (ant_async_event_t *)e;
     or_setHandler_event_data_t *event_data =
         (or_setHandler_event_data_t *)event->data;
-    jerry_value_t js_ocf_request, js_handler_id;
+    jerry_value_t js_ocf_request;
 
     // Args 0: OCFRequest request
     js_ocf_request = jerry_create_object();
@@ -237,14 +239,11 @@ ANT_UV_HANDLER_FUNCTION(ocf_resource_setHandler) {
     IOTJS_ASSERT(jerry_get_object_native_pointer(js_ocf_request, NULL,
                                                  &ocf_request_native_info));
 
-    // Args 1: int method
-    js_handler_id = jerry_create_number((double)event_data->handler_id);
-
     // call JS handler
     jerry_value_t js_handler = GET_JS_HANDLER_FROM_ANT_ASYNC(
         ocf_resource_setHandler, event_data->handler_id);
     if (!jerry_value_is_undefined(js_handler)) {
-      jerry_value_t js_args[] = {js_ocf_request, js_handler_id};
+      jerry_value_t js_args[] = {js_ocf_request};
       iotjs_invoke_callback(js_handler, jerry_create_undefined(), js_args, 2);
     } else {
       // cannot reach here
@@ -258,7 +257,6 @@ ANT_UV_HANDLER_FUNCTION(ocf_resource_setHandler) {
     iotjs_string_destroy(&query_jsstr);
     iotjs_string_destroy(&request_payload_string_jsstr);
     jerry_release_value(js_ocf_request);
-    jerry_release_value(js_handler_id);
 
     // wake up OCF thread
     pthread_mutex_lock(&event_data->sync_mutex);

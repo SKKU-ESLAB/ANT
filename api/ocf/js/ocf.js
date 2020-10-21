@@ -56,13 +56,6 @@ OCF.prototype.getAdapter = function() {
   }
   return sOCFAdapter;
 };
-OCF.prototype.init = function() {
-  native.ocf_init();
-};
-OCF.prototype.deinit = function() {
-  native.ocf_deinit();
-};
-
 OCF.prototype.createResource = function(
     device, name, uri, types, interface_masks) {
   return new OCFResource(device, name, uri, types, interface_masks);
@@ -82,11 +75,18 @@ function OCFAdapter() {
 
   // Default handler
   var self = this;
-  this.onInitialize(function() {
+  this.initialize();
+  this.onPrepareEventLoop(function() {
     self.setPlatform('ant');
     self.addDevice('/oic/d', 'oic.d.light', 'Light', 'ocf.res.1.0.0');
   });
 }
+OCFAdapter.prototype.initialize = function() {
+  native.ocf_adapter_initialize();
+};
+OCFAdapter.prototype.deinitialize = function() {
+  native.ocf_adapter_deinitialize();
+};
 OCFAdapter.prototype.setPlatform = function(mfg_name) {
   this._mfg_name = mfg_name;
   native.ocf_adapter_setPlatform(mfg_name);
@@ -110,9 +110,9 @@ OCFAdapter.prototype.getDevice = function(i) {
   return this._devices[i];
 };
 
-OCFAdapter.prototype.onInitialize = function(handler) {
+OCFAdapter.prototype.onPrepareEventLoop = function(handler) {
   // Handler: void function(void)
-  native.ocf_adapter_onInitialize(handler);
+  native.ocf_adapter_onPrepareEventLoop(handler);
 };
 OCFAdapter.prototype.onPrepareClient = function(handler) {
   // Handler: void function(void)

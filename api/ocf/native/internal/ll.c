@@ -79,6 +79,7 @@ ll_t *ll_new(gen_fun_t val_teardown) {
   list->hd = NULL;
   list->len = 0;
   list->val_teardown = val_teardown;
+  list->val_teardown2 = NULL;
   pthread_rwlock_init(&list->m, NULL);
 
   return list;
@@ -88,6 +89,7 @@ ll_t *ll_new2(gen_fun2_t val_teardown2, void *user_data) {
   ll_t *list = (ll_t *)malloc(sizeof(ll_t));
   list->hd = NULL;
   list->len = 0;
+  list->val_teardown = NULL;
   list->val_teardown2 = val_teardown2;
   pthread_rwlock_init(&list->m, NULL);
   list->user_data = user_data;
@@ -271,6 +273,7 @@ int ll_insert_last(ll_t *list, void *val) {
  */
 int ll_remove_n(ll_t *list, int n) {
   ll_node_t *tmp;
+  fflush(stdout);
   if (n == 0) {
     RWLOCK(l_write, list->m);
     tmp = list->hd;
@@ -286,16 +289,20 @@ int ll_remove_n(ll_t *list, int n) {
     RWUNLOCK(nth_node->m);
     RWLOCK(l_write, list->m);
   }
+  fflush(stdout);
 
   (list->len)--;
   RWUNLOCK(list->m);
+  fflush(stdout);
 
   if (list->val_teardown != NULL) {
     list->val_teardown(tmp->val);
   }
+  fflush(stdout);
   if (list->val_teardown2 != NULL) {
     list->val_teardown2(tmp->val, list->user_data);
   }
+  fflush(stdout);
   free(tmp);
 
   return list->len;

@@ -2,8 +2,7 @@ var ocf = require('ocf');
 console.log('OCF client example app');
 
 var oa = ocf.getAdapter();
-oa.onInitialize(function() {
-  console.log('onInitialize()');
+oa.onPrepareEventLoop(function() {
   oa.setPlatform('ant');
   oa.addDevice('/oic/d', 'oic.wk.d', 'Client', 'ocf.1.0.0', 'ocf.res.1.0.0');
 });
@@ -51,4 +50,5 @@ oa.start();
 setTimeout(function() {
   console.log('10s elapsed');
   oa.stop();
+  oa.deinitialize();
 }, 10000);

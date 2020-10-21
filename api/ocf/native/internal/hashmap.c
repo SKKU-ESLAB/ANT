@@ -12,7 +12,7 @@
 
 // We need to keep keys and values
 typedef struct _hashmap_element {
-  int key;
+  unsigned int key;
   int in_use;
   any_t data;
 } hashmap_element;
@@ -67,14 +67,14 @@ unsigned int hashmap_hash_int(hashmap_map *m, unsigned int key) {
   /* Knuth's Multiplicative Method */
   key = (key >> 3) * 2654435761;
 
-  return key % m->table_size;
+  return key % (unsigned int)m->table_size;
 }
 
 /*
  * Return the integer of the location in data
  * to store the point to the item, or MAP_FULL.
  */
-int hashmap_hash(map_t in, int key) {
+int hashmap_hash(map_t in, unsigned int key) {
   int curr;
   int i;
 
@@ -86,7 +86,7 @@ int hashmap_hash(map_t in, int key) {
     return MAP_FULL;
 
   /* Find the best index */
-  curr = hashmap_hash_int(m, key);
+  curr = (int)hashmap_hash_int(m, key);
 
   /* Linear probling */
   for (i = 0; i < m->table_size; i++) {
@@ -112,8 +112,8 @@ int hashmap_rehash(map_t in) {
 
   /* Setup the new elements */
   hashmap_map *m = (hashmap_map *)in;
-  hashmap_element *temp =
-      (hashmap_element *)calloc(2 * m->table_size, sizeof(hashmap_element));
+  hashmap_element *temp = (hashmap_element *)calloc((size_t)(2 * m->table_size),
+                                                    sizeof(hashmap_element));
   if (!temp)
     return MAP_OMEM;
 
@@ -141,7 +141,7 @@ int hashmap_rehash(map_t in) {
 /*
  * Add a pointer to the hashmap with some key
  */
-int hashmap_put(map_t in, int key, any_t value) {
+int hashmap_put(map_t in, unsigned int key, any_t value) {
   int index;
   hashmap_map *m;
 
@@ -176,7 +176,7 @@ int hashmap_put(map_t in, int key, any_t value) {
 /*
  * Get your pointer out of the hashmap with a key
  */
-int hashmap_get(map_t in, int key, any_t *arg) {
+int hashmap_get(map_t in, unsigned int key, any_t *arg) {
   int curr;
   int i;
   hashmap_map *m;
@@ -188,7 +188,7 @@ int hashmap_get(map_t in, int key, any_t *arg) {
   sem_wait(&m->lock);
 
   /* Find data location */
-  curr = hashmap_hash_int(m, key);
+  curr = (int)hashmap_hash_int(m, key);
 
   /* Linear probing, if necessary */
   for (i = 0; i < m->table_size; i++) {
@@ -284,7 +284,7 @@ int hashmap_iterate(map_t in, PFany f, any_t item) {
 /*
  * Remove an element with that key from the map
  */
-int hashmap_remove(map_t in, int key) {
+int hashmap_remove(map_t in, unsigned int key) {
   int i;
   int curr;
   hashmap_map *m;
@@ -296,7 +296,7 @@ int hashmap_remove(map_t in, int key) {
   sem_wait(&m->lock);
 
   /* Find key */
-  curr = hashmap_hash_int(m, key);
+  curr = (int)hashmap_hash_int(m, key);
 
   /* Linear probing, if necessary */
   for (i = 0; i < m->table_size; i++) {

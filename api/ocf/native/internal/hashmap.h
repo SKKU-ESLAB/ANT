@@ -48,17 +48,17 @@ extern int hashmap_iterate(map_t in, PFany f, any_t item);
 /*
  * Add an element to the hashmap. Return MAP_OK or MAP_OMEM.
  */
-extern int hashmap_put(map_t in, int key, any_t value);
+extern int hashmap_put(map_t in, unsigned int key, any_t value);
 
 /*
  * Get an element from the hashmap. Return MAP_OK or MAP_MISSING.
  */
-extern int hashmap_get(map_t in, int key, any_t *arg);
+extern int hashmap_get(map_t in, unsigned int key, any_t *arg);
 
 /*
  * Remove an element from the hashmap. Return MAP_OK or MAP_MISSING.
  */
-extern int hashmap_remove(map_t in, int key);
+extern int hashmap_remove(map_t in, unsigned int key);
 
 /*
  * Get any element. Return MAP_OK or MAP_MISSING.
@@ -76,4 +76,4 @@ extern void hashmap_free(map_t in);
  */
 extern int hashmap_length(map_t in);
 
-#endif __HASHMAP_H__
+#endif /* __HASHMAP_H__ */
