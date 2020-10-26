@@ -103,8 +103,9 @@ void initOCFAdapter(void);
                        const char *uri, const char *query, int qos) {          \
     oc_endpoint_t *endpoint = (oc_endpoint_t *)ocf_endpoint_nobject;           \
     oc_qos_t oc_qos = (qos == HIGH_QOS) ? HIGH_QOS : LOW_QOS;                  \
-    return ocf_request_function(uri, endpoint, query, &type##_handler, oc_qos, \
-                                (void *)requestId);                            \
+    bool res = ocf_request_function(uri, endpoint, query, &type##_handler,     \
+                                    oc_qos, (void *)requestId);                \
+    return res;                                                                \
   }
 
 #endif /* !defined(__OCF_ADAPTER_INTERNAL_H__) */
