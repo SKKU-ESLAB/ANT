@@ -117,6 +117,16 @@ void ocf_endpoint_destroy(void *handle) {
   oc_free_endpoint(endpoint);
 }
 
+static bool check_valid_resource_type(const char* resource_type) {
+  size_t resource_type_len = strlen(resource_type);
+  for(size_t i=0; i<resource_type_len; i++) {
+    if(resource_type[i] == '.') {
+      return true;
+    }
+  }
+  return false;
+}
+
 bool g_is_discovering = false;
 bool ocf_adapter_isDiscovering_internal(void) { return g_is_discovering; }
 void ocf_adapter_stopDiscovery_internal(void) { g_is_discovering = false; }
@@ -139,6 +149,7 @@ oa_on_discovery(const char *di, const char *uri, oc_string_array_t types,
   for (i = 0; i < (int)oc_string_array_get_allocated_size(types); i++) {
     char *type = oc_string_array_get_item(types, i);
     size_t type_len = strlen(type) + 1;
+    if(!check_valid_resource_type(type)) continue;
     char *new_type = (char *)malloc(sizeof(char) * (type_len + 1));
     strncpy(new_type, type, type_len + 1);
     ll_insert_last(event_data->types, new_type);
@@ -148,7 +159,7 @@ oa_on_discovery(const char *di, const char *uri, oc_string_array_t types,
   event_data->interface_mask = (int)iface_mask;
 
   // event_data->endpoint
-  oc_endpoint_copy((oc_endpoint_t *)event_data->endpoint, endpoint);
+  oc_endpoint_list_copy((oc_endpoint_t **)&event_data->endpoint, endpoint);
 
   pthread_mutex_init(&event_data->sync_mutex, NULL);
   pthread_cond_init(&event_data->sync_cond, NULL);

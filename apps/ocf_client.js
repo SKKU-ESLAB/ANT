@@ -34,12 +34,12 @@ function onObserveLight(response) {
 
   console.log('From ' + uri + ': ' + payload);
 
-  // oa.initPost(endpoint, uri, '', ocf.OC_HIGH_QOS, onPost);
-  // oa.repStartRootObject();
-  // oa.repSet('light', g_light_state);
-  // g_light_state = !g_light_state;
-  // oa.repEndRootObject();
-  // oa.post();
+  oa.initPost(endpoint, uri, onPost, '', ocf.OC_HIGH_QOS);
+  oa.repStartRootObject();
+  oa.repSet('state', g_light_state);
+  g_light_state = !g_light_state;
+  oa.repEndRootObject();
+  oa.post();
 }
 
 function onPost(response) {
@@ -48,7 +48,7 @@ function onPost(response) {
 
 oa.start();
 setTimeout(function() {
-  console.log('10s elapsed');
+  console.log('15s elapsed');
   oa.stop();
   oa.deinitialize();
-}, 10000);
+}, 15000);

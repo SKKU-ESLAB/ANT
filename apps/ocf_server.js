@@ -22,7 +22,7 @@ oa.onPrepareServer(function() {
 
 function getLightHandler(request) {
   oa.repStartRootObject();
-  oa.repSet('light', g_light_state);
+  oa.repSet('state', g_light_state);
   oa.repEndRootObject();
   oa.sendResponse(request, ocf.OC_STATUS_OK);
 }

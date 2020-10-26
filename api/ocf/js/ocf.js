@@ -189,7 +189,14 @@ function make_request(requestId, query, qos, endpoint, uri) {
 
 var gOCFAdapterRequestId = 0;
 OCFAdapter.prototype.observe = function(
-    endpoint, uri, query, qos, response_handler) {
+    endpoint, uri, response_handler, query, qos) {
+  if (query === undefined) {
+    query = '';
+  }
+  if (qos == undefined) {
+    qos = 0;  // HIGH_QOS
+  }
+
   var requestId = gOCFAdapterRequestId++;
   var request = make_request(requestId, query, qos, endpoint, uri);
 
@@ -221,7 +228,14 @@ OCFAdapter.prototype.stopObserve = function(endpoint, uri) {
 };
 
 OCFAdapter.prototype.get = function(
-    endpoint, uri, query, qos, response_handler) {
+    endpoint, uri, response_handler, query, qos) {
+  if (query === undefined) {
+    query = '';
+  }
+  if (qos == undefined) {
+    qos = 0;  // HIGH_QOS
+  }
+
   var requestId = gOCFAdapterRequestId++;
   var request = make_request(requestId, query, qos, endpoint, uri);
   var result = native.ocf_adapter_get(request, response_handler);
@@ -232,7 +246,14 @@ OCFAdapter.prototype.get = function(
 };
 
 OCFAdapter.prototype.delete = function(
-    endpoint, uri, query, qos, response_handler) {
+    endpoint, uri, response_handler, query, qos) {
+  if (query === undefined) {
+    query = '';
+  }
+  if (qos == undefined) {
+    qos = 0;  // HIGH_QOS
+  }
+
   var requestId = gOCFAdapterRequestId++;
   var request = make_request(requestId, query, qos, endpoint, uri);
   var result = native.ocf_adapter_delete(request, response_handler);
@@ -243,7 +264,14 @@ OCFAdapter.prototype.delete = function(
 };
 
 OCFAdapter.prototype.initPost = function(
-    endpoint, uri, query, qos, response_handler) {
+    endpoint, uri, response_handler, query, qos) {
+  if (query === undefined) {
+    query = '';
+  }
+  if (qos == undefined) {
+    qos = 0;  // HIGH_QOS
+  }
+
   var requestId = gOCFAdapterRequestId++;
   var request = make_request(requestId, query, qos, endpoint, uri);
   var result = native.ocf_adapter_initPost(request, response_handler);
@@ -254,7 +282,14 @@ OCFAdapter.prototype.initPost = function(
 };
 
 OCFAdapter.prototype.initPut = function(
-    endpoint, uri, query, qos, response_handler) {
+    endpoint, uri, response_handler, query, qos) {
+  if (query === undefined) {
+    query = '';
+  }
+  if (qos == undefined) {
+    qos = 0;  // HIGH_QOS
+  }
+
   var requestId = gOCFAdapterRequestId++;
   var request = make_request(requestId, query, qos, endpoint, uri);
   var result = native.ocf_adapter_initPut(request, response_handler);
