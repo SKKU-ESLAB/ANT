@@ -32,7 +32,7 @@ function onObserveLight(response) {
   var endpoint = response.endpoint;
   var uri = foundLightUri;
 
-  console.log('From ' + uri + ': ' + payload);
+  console.log('GET from ' + uri + ': ' + payload);
 
   oa.initPost(endpoint, uri, onPost, '', ocf.OC_HIGH_QOS);
   oa.repStartRootObject();
@@ -42,8 +42,9 @@ function onObserveLight(response) {
   oa.post();
 }
 
+var i = 0;
 function onPost(response) {
-  console.log('Sent post request!');
+  console.log('(' + i++ + ') POST request sent!');
 }
 
 oa.start();
