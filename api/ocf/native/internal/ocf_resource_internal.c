@@ -78,9 +78,16 @@ void ocf_resource_handler(oc_request_t *request,
   // Setting the attributes of event data
   oc_endpoint_to_string(request->origin, &origin_addr_ocs);
   origin_addr = oc_string(origin_addr_ocs);
+  if(origin_addr == NULL) {
+    free(event_data);
+    return;
+  }
+
   event_data->origin_addr =
       (char *)malloc(sizeof(char) * (strlen(origin_addr) + 1));
   strncpy(event_data->origin_addr, origin_addr, strlen(origin_addr) + 1);
+
+  // printf("origin_addr: %x/%s\n", origin_addr, origin_addr);
 
   event_data->dest_device_id = (int)request->resource->device;
 
