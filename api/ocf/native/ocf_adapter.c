@@ -362,9 +362,7 @@ ANT_UV_HANDLER_FUNCTION(ocf_adapter_discovery) {
     jerry_release_value(jsInterfaceMask);
 
     // wake up OCF thread
-    pthread_mutex_lock(&event_data->sync_mutex);
-    pthread_cond_signal(&event_data->sync_cond);
-    pthread_mutex_unlock(&event_data->sync_mutex);
+    wakeup_ant_async_sender(event);
 
     // Remove the first event
     // - It also calls the destroyer of the event and event data.

@@ -113,19 +113,8 @@ void ocf_resource_handler(oc_request_t *request,
 
   event_data->request = (void *)request;
 
-  pthread_mutex_init(&event_data->sync_mutex, NULL);
-  pthread_cond_init(&event_data->sync_cond, NULL);
-  EMIT_ANT_ASYNC_EVENT(ocf_resource_setHandler, handler_id, (void *)event_data);
-
-  // TODO: hard-coding for the thread-safety of "oc_request_t request".
-  // Using oc_separate_response() function can resolve the hard-coding.
-  // However, as now, I cannot implement it with oc_separate_response().
-  // oc_separate_response() also seems to make thread-safety problem
-  // in its request list called as "separate_response->requests".
-
-  // wait for JS thread's handler
-  pthread_cond_wait(&event_data->sync_cond, &event_data->sync_mutex);
-  pthread_mutex_unlock(&event_data->sync_mutex);
+  EMIT_ANT_ASYNC_EVENT(ocf_resource_setHandler, handler_id, (void *)event_data,
+                       true);
 }
 
 void initOCFResource(void) {

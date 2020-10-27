@@ -99,7 +99,8 @@ jerry_value_t get_js_handler_from_ant_async(ant_async_t *ant_async, int key) {
     return jerry_create_undefined();
   return js_handler;
 }
-bool emit_ant_async_event(ant_async_t *ant_async, int key, void *event_data) {
+bool emit_ant_async_event(ant_async_t *ant_async, int key, void *event_data,
+                          bool sync_mode) {
   // create ant_async_event
   ant_async_event_t *ant_async_event = create_ant_async_event(key, event_data);
 
@@ -107,9 +108,36 @@ bool emit_ant_async_event(ant_async_t *ant_async, int key, void *event_data) {
   enqueue_event_to_ant_async(ant_async, ant_async_event);
 
   // emit uv_async event
-  uv_async_send(&ant_async->uv_async);
+  if (sync_mode) {
+    // sync mode: emit event repeatedly until JS thread processes the event.
+    struct timespec waiting_timeout;
+    waiting_timeout.tv_sec = 1;
+    waiting_timeout.tv_nsec = 0;
+
+    pthread_mutex_init(&ant_async_event->sync_mutex, NULL);
+    pthread_cond_init(&ant_async_event->sync_cond, NULL);
+
+    pthread_mutex_lock(&ant_async_event->sync_mutex);
+    do {
+      // emit uv_async event
+      uv_async_send(&ant_async->uv_async);
+      pthread_cond_timedwait(&ant_async_event->sync_cond,
+                             &ant_async_event->sync_mutex, &waiting_timeout);
+    } while (get_first_event_from_ant_async(ant_async) != NULL);
+    pthread_mutex_unlock(&ant_async_event->sync_mutex);
+  } else {
+    // async mode: do not wait JS thread's processing
+    uv_async_send(&ant_async->uv_async);
+  }
 
   return true;
+}
+
+void wakeup_ant_async_sender(ant_async_event_t *ant_async_event) {
+  // wake up ant_async sender thread
+  pthread_mutex_lock(&ant_async_event->sync_mutex);
+  pthread_cond_signal(&ant_async_event->sync_cond);
+  pthread_mutex_unlock(&ant_async_event->sync_mutex);
 }
 
 // event_queue in ant_handler

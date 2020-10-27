@@ -36,9 +36,6 @@ struct oa_discovery_event_data_s {
   ll_t *types;
   int interface_mask;
   void *endpoint;
-
-  pthread_mutex_t sync_mutex;
-  pthread_cond_t sync_cond;
 };
 typedef struct oa_discovery_event_data_s oa_discovery_event_data_t;
 void oa_discovery_event_data_destroyer(void *item);
@@ -97,7 +94,8 @@ void initOCFAdapter(void);
                                                                                \
     event_data->request_id = (int)data->user_data;                             \
                                                                                \
-    EMIT_ANT_ASYNC_EVENT(type, event_data->request_id, (void *)event_data);    \
+    EMIT_ANT_ASYNC_EVENT(type, event_data->request_id, (void *)event_data,     \
+                         false);                                               \
     return;                                                                    \
   }
 #define OCF_REQUEST_INTERNAL(type, ocf_request_function)                       \
