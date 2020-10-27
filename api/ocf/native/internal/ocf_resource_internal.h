@@ -1,7 +1,6 @@
 #ifndef __OCF_RESOURCE_INTERNAL_H__
 #define __OCF_RESOURCE_INTERNAL_H__
 
-#include <pthread.h>
 #include <stdbool.h>
 #include <stdlib.h>
 
@@ -19,9 +18,6 @@ struct or_setHandler_event_data_s {
   size_t request_payload_string_len;
   int interface_mask;
   int handler_id;
-
-  pthread_mutex_t sync_mutex;
-  pthread_cond_t sync_cond;
 };
 typedef struct or_setHandler_event_data_s or_setHandler_event_data_t;
 void or_setHandler_event_data_destroyer(void *item) {
@@ -45,7 +41,7 @@ void ocf_resource_setDiscoverable_internal(void *ocf_resource_nobject,
                                            bool is_discoverable);
 void ocf_resource_setPeriodicObservable_internal(void *ocf_resource_nobject,
                                                  int period_sec);
-                                                 
+
 ANT_ASYNC_DECL_IN_HEADER(ocf_resource_setHandler);
 void ocf_resource_setHandler_internal(void *ocf_resource_nobject,
                                       int handler_id, int method);

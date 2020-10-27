@@ -34,22 +34,22 @@ static void handle_signal(int signal);
 // OCFAdapter.onPrepareEventLoop()
 static int oa_prepare_event_loop(void) {
   int zero = 0;
-  bool res =
-      EMIT_ANT_ASYNC_EVENT(ocf_adapter_onPrepareEventLoop, zero, (void *)NULL);
+  bool res = EMIT_ANT_ASYNC_EVENT(ocf_adapter_onPrepareEventLoop, zero,
+                                  (void *)NULL, false);
   return (res) ? 0 : -1;
 }
 
 // OCFAdapter.onPrepareServer()
 static void oa_prepare_server(void) {
   int zero = 0;
-  EMIT_ANT_ASYNC_EVENT(ocf_adapter_onPrepareServer, zero, (void *)NULL);
+  EMIT_ANT_ASYNC_EVENT(ocf_adapter_onPrepareServer, zero, (void *)NULL, false);
   return;
 }
 
 // OCFAdapter.onPrepareClient()
 static void oa_prepare_client(void) {
   int zero = 0;
-  EMIT_ANT_ASYNC_EVENT(ocf_adapter_onPrepareClient, zero, (void *)NULL);
+  EMIT_ANT_ASYNC_EVENT(ocf_adapter_onPrepareClient, zero, (void *)NULL, false);
   return;
 }
 
@@ -162,14 +162,8 @@ oa_on_discovery(const char *di, const char *uri, oc_string_array_t types,
   // event_data->endpoint
   oc_endpoint_list_copy((oc_endpoint_t **)&event_data->endpoint, endpoint);
 
-  pthread_mutex_init(&event_data->sync_mutex, NULL);
-  pthread_cond_init(&event_data->sync_cond, NULL);
   int zero = 0;
-  EMIT_ANT_ASYNC_EVENT(ocf_adapter_discovery, zero, (void *)event_data);
-
-  // wait for JS thread's handler
-  pthread_cond_wait(&event_data->sync_cond, &event_data->sync_mutex);
-  pthread_mutex_unlock(&event_data->sync_mutex);
+  EMIT_ANT_ASYNC_EVENT(ocf_adapter_discovery, zero, (void *)event_data, true);
 
   return (g_is_discovering) ? OC_CONTINUE_DISCOVERY : OC_STOP_DISCOVERY;
 }

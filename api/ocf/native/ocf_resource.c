@@ -259,9 +259,7 @@ ANT_UV_HANDLER_FUNCTION(ocf_resource_setHandler) {
     jerry_release_value(js_ocf_request);
 
     // wake up OCF thread
-    pthread_mutex_lock(&event_data->sync_mutex);
-    pthread_cond_signal(&event_data->sync_cond);
-    pthread_mutex_unlock(&event_data->sync_mutex);
+    wakeup_ant_async_sender(event);
 
     // Remove the first event
     // - It also calls the destroyer of the event and event data.
