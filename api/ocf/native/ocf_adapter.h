@@ -20,7 +20,6 @@ void InitOCFAdapterNative(jerry_value_t ocfNative);
     bool result;                                                               \
     jerry_value_t argRequest;                                                  \
     jerry_value_t argResponseHandler;                                          \
-    DJS_CHECK_ARGS(2, object, function);                                       \
     argRequest = JS_GET_ARG(0, object);                                        \
     argResponseHandler = JS_GET_ARG(1, function);                              \
                                                                                \

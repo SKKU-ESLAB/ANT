@@ -114,13 +114,13 @@ void ocf_adapter_sendResponse_internal(void *ocf_request_nobject,
 
 void ocf_endpoint_destroy(void *handle) {
   oc_endpoint_t *endpoint = (oc_endpoint_t *)handle;
-  oc_free_endpoint(endpoint);
+  free(endpoint);
 }
 
-static bool check_valid_resource_type(const char* resource_type) {
+static bool check_valid_resource_type(const char *resource_type) {
   size_t resource_type_len = strlen(resource_type);
-  for(size_t i=0; i<resource_type_len; i++) {
-    if(resource_type[i] == '.') {
+  for (size_t i = 0; i < resource_type_len; i++) {
+    if (resource_type[i] == '.') {
       return true;
     }
   }
@@ -149,7 +149,8 @@ oa_on_discovery(const char *di, const char *uri, oc_string_array_t types,
   for (i = 0; i < (int)oc_string_array_get_allocated_size(types); i++) {
     char *type = oc_string_array_get_item(types, i);
     size_t type_len = strlen(type) + 1;
-    if(!check_valid_resource_type(type)) continue;
+    if (!check_valid_resource_type(type))
+      continue;
     char *new_type = (char *)malloc(sizeof(char) * (type_len + 1));
     strncpy(new_type, type, type_len + 1);
     ll_insert_last(event_data->types, new_type);

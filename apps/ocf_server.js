@@ -27,11 +27,12 @@ function getLightHandler(request) {
   oa.sendResponse(request, ocf.OC_STATUS_OK);
 }
 
+var i = 0;
 function postLightHandler(request) {
   var request_payload_string = request.request_payload_string;
   request_payload = JSON.parse(request_payload_string);
   console.log(
-      'POST Request: state=' + request_payload.state +
+      '(' + i++ + ') POST Request: state=' + request_payload.state +
       ' (present:' + g_light_state + ')');
 
   g_light_state = request_payload.state;

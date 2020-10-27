@@ -82,7 +82,9 @@ void initOCFAdapter(void);
     event_data = (oa_client_response_event_data_t *)malloc(                    \
         sizeof(oa_client_response_event_data_t));                              \
                                                                                \
-    oc_endpoint_copy((oc_endpoint_t *)event_data->endpoint, data->endpoint);   \
+    oc_endpoint_t *endpoint = (oc_endpoint_t *)malloc(sizeof(oc_endpoint_t));  \
+    memcpy(endpoint, data->endpoint, sizeof(oc_endpoint_t));                   \
+    event_data->endpoint = (void *)endpoint;                                   \
                                                                                \
     event_data->payload_string_length =                                        \
         oc_rep_to_json(data->payload, NULL, 0, true);                          \

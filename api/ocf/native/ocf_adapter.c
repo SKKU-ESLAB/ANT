@@ -374,49 +374,7 @@ ANT_UV_HANDLER_FUNCTION(ocf_adapter_discovery) {
 
 // OCFAdapter.observe()
 ANT_ASYNC_DECL_FUNCS(ocf_adapter_observe, oa_response_event_data_destroyer)
-// OCF_REQUEST_JS_FUNCTION(ocf_adapter_observe)
-JS_FUNCTION(ocf_adapter_observe) {
-  bool result;
-  jerry_value_t argRequest;
-  jerry_value_t argResponseHandler;
-  // DJS_CHECK_ARGS(2, object, function); // TODO: remove all the DJS_CHECK_ARGS
-  argRequest = JS_GET_ARG(0, object);
-  argResponseHandler = JS_GET_ARG(1, function);
-
-  jerry_value_t jsRequestId = iotjs_jval_get_property(argRequest, "id");
-  jerry_value_t jsOCFEndpoint = iotjs_jval_get_property(argRequest, "endpoint");
-  jerry_value_t jsUri = iotjs_jval_get_property(argRequest, "uri");
-  jerry_value_t jsQuery = iotjs_jval_get_property(argRequest, "query");
-  jerry_value_t jsQos = iotjs_jval_get_property(argRequest, "qos");
-
-  int requestId = (int)iotjs_jval_as_number(jsRequestId);
-
-  jsOCFEndpoint = iotjs_jval_as_object(jsOCFEndpoint);
-  JS_DECLARE_PTR2(jsOCFEndpoint, void, ocf_endpoint_nobject, ocf_endpoint);
-
-  iotjs_string_t jsstrUri = iotjs_jval_as_string(jsUri);
-  const char *uri = iotjs_string_data(&jsstrUri);
-
-  iotjs_string_t jsstrQuery = iotjs_jval_as_string(jsQuery);
-  const char *query = iotjs_string_data(&jsstrQuery);
-
-  int qos = (int)iotjs_jval_as_number(jsQos);
-
-  result =
-      REGISTER_JS_HANDLER(ocf_adapter_observe, requestId, argResponseHandler);
-  result = result && ocf_adapter_observe_internal(
-                         requestId, ocf_endpoint_nobject, uri, query, qos);
-
-  jerry_release_value(jsRequestId);
-  jerry_release_value(jsOCFEndpoint);
-  jerry_release_value(jsUri);
-  jerry_release_value(jsQuery);
-  jerry_release_value(jsQos);
-  iotjs_string_destroy(&jsstrUri);
-  iotjs_string_destroy(&jsstrQuery);
-
-  return jerry_create_boolean(result);
-}
+OCF_REQUEST_JS_FUNCTION(ocf_adapter_observe)
 OCF_REQUEST_UV_HANDLER_FUNCTION(ocf_adapter_observe, false)
 
 // OCFAdapter.stopObserve()

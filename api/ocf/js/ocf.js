@@ -276,7 +276,7 @@ OCFAdapter.prototype.initPost = function(
   var request = make_request(requestId, query, qos, endpoint, uri);
   var result = native.ocf_adapter_initPost(request, response_handler);
   if (result) {
-    this._post_request_list.initPost(request);
+    this._post_request_list.push(request);
   }
   return result;
 };
@@ -294,18 +294,18 @@ OCFAdapter.prototype.initPut = function(
   var request = make_request(requestId, query, qos, endpoint, uri);
   var result = native.ocf_adapter_initPut(request, response_handler);
   if (result) {
-    this._put_request_list.initPut(request);
+    this._put_request_list.push(request);
   }
   return result;
 };
 
 OCFAdapter.prototype.post = function() {
-  var result = native.ocf_adapter_post(request, response_handler);
+  var result = native.ocf_adapter_post();
   return result;
 };
 
 OCFAdapter.prototype.put = function() {
-  var result = native.ocf_adapter_put(request, response_handler);
+  var result = native.ocf_adapter_put();
   return result;
 };
 
