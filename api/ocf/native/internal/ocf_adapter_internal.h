@@ -73,6 +73,9 @@ bool ocf_adapter_put_internal(void);
 
 void initOCFAdapter(void);
 
+void lock_ocf_thread(void);
+void unlock_ocf_thread(void);
+
 #define OCF_REQUEST_INTERNAL_HANDLER(type)                                     \
   static void type##_handler(oc_client_response_t *data) {                     \
     oa_client_response_event_data_t *event_data;                               \

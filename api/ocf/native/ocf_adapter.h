@@ -15,7 +15,7 @@ void ocf_adapter_init(void);
 
 void InitOCFAdapterNative(jerry_value_t ocfNative);
 
-#define OCF_REQUEST_JS_FUNCTION(type)                                          \
+#define OCF_REQUEST_JS_FUNCTION(type, is_lock_required)                        \
   JS_FUNCTION(type) {                                                          \
     bool result;                                                               \
     jerry_value_t argRequest;                                                  \
@@ -43,6 +43,9 @@ void InitOCFAdapterNative(jerry_value_t ocfNative);
                                                                                \
     int qos = (int)iotjs_jval_as_number(jsQos);                                \
                                                                                \
+    if (is_lock_required) {                                                    \
+      lock_ocf_thread();                                                       \
+    }                                                                          \
     result = REGISTER_JS_HANDLER(type, requestId, argResponseHandler);         \
     result = result && type##_internal(requestId, ocf_endpoint_nobject, uri,   \
                                        query, qos);                            \
