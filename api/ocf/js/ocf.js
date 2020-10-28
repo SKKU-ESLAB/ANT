@@ -208,7 +208,6 @@ function oa_request_handler(requestId, response, requestList, isOneway) {
   var request = requestList[requestId];
   if (request !== undefined) {
     var user_handler = request.user_handler;
-
     if (user_handler !== undefined) {
       user_handler(response);
       if (isOneway) {
@@ -232,7 +231,7 @@ OCFAdapter.prototype.observe = function (
 
   var result = native.ocf_adapter_observe(request, oa_observe_request_handler);
   if (result) {
-    gObserveRequestList.push(request);
+    gObserveRequestList[requestId] = request;
   }
   return result;
 };
@@ -270,7 +269,7 @@ OCFAdapter.prototype.get = function (
   var request = make_request(requestId, query, qos, endpoint, uri, user_handler);
   var result = native.ocf_adapter_get(request, oa_get_request_handler);
   if (result) {
-    gGetRequestList.push(request);
+    gGetRequestList[requestId] = request;
   }
   return result;
 };
@@ -288,7 +287,7 @@ OCFAdapter.prototype.delete = function (
   var request = make_request(requestId, query, qos, endpoint, uri, user_handler);
   var result = native.ocf_adapter_delete(request, oa_delete_request_handler);
   if (result) {
-    gDeleteRequestList.push(request);
+    gDeleteRequestList[requestId] = request;
   }
   return result;
 };
@@ -306,7 +305,7 @@ OCFAdapter.prototype.initPost = function (
   var request = make_request(requestId, query, qos, endpoint, uri, user_handler);
   var result = native.ocf_adapter_initPost(request, oa_post_request_handler);
   if (result) {
-    gPostRequestList.push(request);
+    gPostRequestList[requestId] = request;
   }
   return result;
 };
@@ -324,7 +323,7 @@ OCFAdapter.prototype.initPut = function (
   var request = make_request(requestId, query, qos, endpoint, uri, user_handler);
   var result = native.ocf_adapter_initPut(request, oa_put_request_handler);
   if (result) {
-    gPutRequestList.push(request);
+    gPutRequestList[requestId] = request;
   }
   return result;
 };
