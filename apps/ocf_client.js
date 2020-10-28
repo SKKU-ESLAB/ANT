@@ -2,13 +2,13 @@ var ocf = require('ocf');
 console.log('OCF client example app');
 
 var oa = ocf.getAdapter();
-oa.onPrepareEventLoop(function() {
+oa.onPrepareEventLoop(function () {
   oa.setPlatform('ant');
   oa.addDevice('/oic/d', 'oic.wk.d', 'Client', 'ocf.1.0.0', 'ocf.res.1.0.0');
 });
 
 var g_light_state = false;
-oa.onPrepareClient(function() {
+oa.onPrepareClient(function () {
   oa.discovery('oic.r.light', onDiscovery);
 });
 
@@ -23,6 +23,7 @@ function onDiscovery(endpoint, uri, types, interface_mask) {
   }
   if (isFound) {
     foundLightUri = uri;
+
     oa.observe(endpoint, uri, onObserveLight);
   }
 }
@@ -34,12 +35,14 @@ function onObserveLight(response) {
 
   console.log('GET from ' + uri + ': ' + payload);
 
-  oa.initPost(endpoint, uri, onPost, '', ocf.OC_HIGH_QOS);
-  oa.repStartRootObject();
-  oa.repSet('state', g_light_state);
-  g_light_state = !g_light_state;
-  oa.repEndRootObject();
-  oa.post();
+  var res = oa.initPost(endpoint, uri, onPost, '', ocf.OC_LOW_QOS);
+  if (res) {
+    oa.repStartRootObject();
+    oa.repSet('state', g_light_state);
+    g_light_state = !g_light_state;
+    oa.repEndRootObject();
+    oa.post();
+  }
 }
 
 var i = 0;
@@ -48,8 +51,8 @@ function onPost(response) {
 }
 
 oa.start();
-setTimeout(function() {
-  console.log('15s elapsed');
+setTimeout(function () {
+  console.log('150s elapsed');
   oa.stop();
   oa.deinitialize();
-}, 15000);
+}, 150000);

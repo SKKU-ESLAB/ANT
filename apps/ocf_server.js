@@ -41,7 +41,7 @@ function postLightHandler(request) {
 
 oa.start();
 setTimeout(function() {
-  console.log('15s elapsed');
+  console.log('150s elapsed');
   oa.stop();
   oa.deinitialize();
-}, 15000);
+}, 150000);

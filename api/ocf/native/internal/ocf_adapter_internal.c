@@ -203,6 +203,21 @@ void initOCFAdapter(void) {
   // Empty function
 }
 
+bool g_is_ocf_thread_locked = false;
+pthread_mutex_t g_ocf_thread_lock_mutex;
+pthread_cond_t g_ocf_thread_lock_cond;
+void lock_ocf_thread(void) {
+  pthread_mutex_lock(&g_ocf_thread_lock_mutex);
+  g_is_ocf_thread_locked = true;
+  pthread_mutex_unlock(&g_ocf_thread_lock_mutex);
+}
+void unlock_ocf_thread(void) {
+  pthread_mutex_lock(&g_ocf_thread_lock_mutex);
+  g_is_ocf_thread_locked = false;
+  pthread_cond_signal(&g_ocf_thread_lock_cond);
+  pthread_mutex_unlock(&g_ocf_thread_lock_mutex);
+}
+
 void *ocf_thread_fn(void *arg) {
   // On OCF Thread
   struct sigaction sa;
@@ -228,7 +243,16 @@ void *ocf_thread_fn(void *arg) {
   if (init < 0)
     return NULL;
 
+  pthread_mutex_init(&g_ocf_thread_lock_mutex, NULL);
+  pthread_cond_init(&g_ocf_thread_lock_cond, NULL);
+
   while (g_thread_quit != 1) {
+    pthread_mutex_lock(&g_ocf_thread_lock_mutex);
+    if (g_is_ocf_thread_locked) {
+      pthread_cond_wait(&g_ocf_thread_lock_cond, &g_ocf_thread_lock_mutex);
+    }
+    pthread_mutex_unlock(&g_ocf_thread_lock_mutex);
+
     next_event = oc_main_poll();
     pthread_mutex_lock(&mutex);
     if (next_event == 0) {
