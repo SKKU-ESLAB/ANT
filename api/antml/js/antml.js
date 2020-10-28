@@ -67,7 +67,7 @@ ANTML.prototype.createMLElement = function (model_name, input_shape, input_type,
 };
 
 ANTML.prototype.getMaxOfBuffer = function (buffer, type) {
-  return native.ml_getMaxOfBuffer(buffer, type);
+  return native.ant_ml_getMaxOfBuffer(buffer, type);
 }
 
 ANTML.prototype.connectCompressionServer = function (ipAddress) {

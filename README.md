@@ -14,8 +14,8 @@ $ git clone https://github.com/SKKU-ESLAB/ANT ant
 
 ### Prerequisites
 ```
-$ cd ant/scripts
-$ ./install-prerequisites-on-ubuntu.sh
+$ cd ant
+$ ./scripts/install-prerequisites-on-ubuntu.sh
 ```
 <!--
 ```
@@ -35,7 +35,7 @@ $ ./menuconfig.py
 
 ### How to Build
 ```
-$ ./build-ant.sh
+$ ./scripts/build-ant.sh
 ```
 <!--
 ```
@@ -53,7 +53,7 @@ $ sudo make install
 -->
 ### How to Run
 ```
-$ ./ant.sh
+$ ./out/ant.sh
 ```
 <!--
 ```

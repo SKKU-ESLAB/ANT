@@ -5,39 +5,47 @@
 #define MAX_RESULT_MESSAGE_LENGTH 100
 
 #define ANT_API_STRING_TO_STRING(api_name, function_name)                      \
-  JS_FUNCTION(ant_##api_name##_##function_name) {                              \
+  JS_FUNCTION(api_name##_##function_name) {                                    \
     iotjs_string_t argString;                                                  \
     char result_string[MAX_RESULT_MESSAGE_LENGTH];                             \
     DJS_CHECK_ARGS(1, string);                                                 \
     argString = JS_GET_ARG(0, string);                                         \
-    ant_##api_name##_##function_name##_internal(iotjs_string_data(&argString), \
-                                                result_string);                \
+    api_name##_##function_name##_internal(iotjs_string_data(&argString),       \
+                                          result_string);                      \
     iotjs_string_destroy(&argString);                                          \
     return jerry_create_string((const jerry_char_t *)result_string);           \
   }
 
 #define ANT_API_VOID_TO_STRING(api_name, function_name)                        \
-  JS_FUNCTION(ant_##api_name##_##function_name) {                              \
+  JS_FUNCTION(api_name##_##function_name) {                                    \
     char result_string[MAX_RESULT_MESSAGE_LENGTH];                             \
-    ant_##api_name##_##function_name##_internal(result_string);                \
+    api_name##_##function_name##_internal(result_string);                      \
     return jerry_create_string((const jerry_char_t *)result_string);           \
   }
 
 #define ANT_API_VOID_TO_NUMBER(api_name, function_name)                        \
-  JS_FUNCTION(ant_##api_name##_##function_name) {                              \
+  JS_FUNCTION(api_name##_##function_name) {                                    \
     int result_number;                                                         \
-    result_number = ant_##api_name##_##function_name##_internal();             \
+    result_number = api_name##_##function_name##_internal();                   \
     return jerry_create_number(result_number);                                 \
   }
 
 #define ANT_API_VOID_TO_VOID(api_name, function_name)                          \
-  JS_FUNCTION(ant_##api_name##_##function_name) {                              \
-    ant_##api_name##_##function_name##_internal();                             \
+  JS_FUNCTION(api_name##_##function_name) {                                    \
+    api_name##_##function_name##_internal();                                   \
     return jerry_create_undefined();                                           \
   }
 
 #define REGISTER_ANT_API(module, api_name, function_name)                      \
   iotjs_jval_set_method(module, #api_name "_" #function_name,                  \
-                        ant_##api_name##_##function_name);
+                        api_name##_##function_name);
+
+#define GET_NATIVE_INFO(name) name##_native_info
+#define ANT_DEFINE_NATIVE_HANDLE_INFO(name)                                    \
+  static void name##_destroy(##name##_t *native_object);                       \
+  static const jerry_object_native_info_t GET_NATIVE_INFO(name) = {            \
+      .free_cb = (jerry_object_native_free_callback_t)name##_destroy}
+#define GET_NOBJECT_P(jobject, name)                                           \
+(name##_t *) jerry_get_object_native_pointer(jobject, NULL, &GET_NATIVE_INFO(name)
 
 #endif /* !defined(__ANT_COMMON_H__) */
