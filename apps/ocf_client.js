@@ -25,26 +25,26 @@ function onDiscovery(endpoint, uri, types, interface_mask) {
     foundLightUri = uri;
 
     oa.observe(endpoint, uri, onObserveLight);
+    interval = setInterval(function () {
+      var res = oa.initPost(endpoint, uri, onPost, '', ocf.OC_LOW_QOS);
+      if (res) {
+        oa.repStartRootObject();
+        oa.repSet('state', g_light_state);
+        g_light_state = !g_light_state;
+        oa.repEndRootObject();
+        oa.post();
+      }
+    }, 1000);
   }
 }
+var interval;
 
 function onObserveLight(response) {
   var payload = response.payload;
   var endpoint = response.endpoint;
   var uri = foundLightUri;
 
-  console.log('GET from ' + uri);
-
-  setTimeout(function () {
-    var res = oa.initPost(endpoint, uri, onPost, '', ocf.OC_LOW_QOS);
-    if (res) {
-      oa.repStartRootObject();
-      oa.repSet('state', g_light_state);
-      g_light_state = !g_light_state;
-      oa.repEndRootObject();
-      oa.post();
-    }
-  }, 1000);
+  console.log('GET from ' + uri + ": " + payload);
 }
 
 var i = 0;
@@ -57,4 +57,5 @@ setTimeout(function () {
   console.log('150s elapsed');
   oa.stop();
   oa.deinitialize();
+  clearInterval(interval);
 }, 150000);

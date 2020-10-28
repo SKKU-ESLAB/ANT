@@ -67,6 +67,7 @@ gGetRequestList = [];
 gDeleteRequestList = [];
 gPostRequestList = [];
 gPutRequestList = [];
+gOnewayRequestLists = [gGetRequestList, gDeleteRequestList, gPostRequestList, gPutRequestList];
 
 function OCFAdapter() {
   this._mfg_name = '';
@@ -124,10 +125,12 @@ OCFAdapter.prototype.onPrepareServer = function (handler) {
   native.ocf_adapter_onPrepareServer(handler);
 };
 OCFAdapter.prototype.start = function () {
+  oa_start_request_list_cleaner();
   native.ocf_adapter_start();
 };
 OCFAdapter.prototype.stop = function () {
   native.ocf_adapter_stop();
+  oa_stop_request_list_cleaner();
 };
 
 OCFAdapter.prototype.addResource = function (resource) {
@@ -186,6 +189,7 @@ function make_request(requestId, query, qos, endpoint, uri, user_handler) {
   request.endpoint = endpoint;
   request.uri = uri;
   request.user_handler = user_handler;
+  request.timestamp = new Date();
   return request;
 }
 
@@ -205,7 +209,14 @@ function oa_put_response_handler(requestId, response) {
   return oa_response_handler(requestId, response, gPutRequestList, true);
 }
 function oa_response_handler(requestId, response, requestList, isOneway) {
-  var request = requestList[requestId];
+  var request = undefined;
+  for (var i in requestList) {
+    var item = requestList[i];
+    if (item !== undefined && item.id == requestId) {
+      request = item;
+      break;
+    }
+  }
   if (request !== undefined) {
     var user_handler = request.user_handler;
     if (user_handler !== undefined) {
@@ -216,13 +227,27 @@ function oa_response_handler(requestId, response, requestList, isOneway) {
     }
   }
 }
-function oa_response_timeout(requestList, requestId) {
-  var response_timeout_ms = 2000;
-  setTimeout(function () {
-    if (requestList[requestId] !== undefined) {
-      requestList.splice(requestId, 1);
+var response_timeout_ms = 2000;
+var request_list_cleaner_frequency_ms = 2000;
+var request_list_cleaner = undefined;
+function request_list_cleaner_fn() {
+  var now = new Date();
+  for (var i in gOnewayRequestLists) {
+    var requestList = gOnewayRequestLists[i];
+    for (var j in requestList) {
+      var request = requestList[j];
+      if (request === undefined) continue;
+      if (now - request.timestamp > response_timeout_ms) {
+        requestList.splice(j, 1);
+      }
     }
-  }, response_timeout_ms);
+  }
+}
+function oa_start_request_list_cleaner() {
+  request_list_cleaner = setInterval(request_list_cleaner_fn, request_list_cleaner_frequency_ms);
+}
+function oa_stop_request_list_cleaner() {
+  clearInterval(request_list_cleaner);
 }
 
 OCFAdapter.prototype.observe = function (
@@ -239,7 +264,7 @@ OCFAdapter.prototype.observe = function (
 
   var result = native.ocf_adapter_observe(request, oa_observe_response_handler);
   if (result) {
-    gObserveRequestList[requestId] = request;
+    gObserveRequestList.push(request);
   }
   return result;
 };
@@ -277,8 +302,7 @@ OCFAdapter.prototype.get = function (
   var request = make_request(requestId, query, qos, endpoint, uri, user_handler);
   var result = native.ocf_adapter_get(request, oa_get_response_handler);
   if (result) {
-    gGetRequestList[requestId] = request;
-    oa_response_timeout(gGetRequestList, requestId);
+    gGetRequestList.push(request);
   }
   return result;
 };
@@ -296,8 +320,7 @@ OCFAdapter.prototype.delete = function (
   var request = make_request(requestId, query, qos, endpoint, uri, user_handler);
   var result = native.ocf_adapter_delete(request, oa_delete_response_handler);
   if (result) {
-    gDeleteRequestList[requestId] = request;
-    oa_response_timeout(gDeleteRequestList, requestId);
+    gDeleteRequestList.push(request);
   }
   return result;
 };
@@ -315,8 +338,7 @@ OCFAdapter.prototype.initPost = function (
   var request = make_request(requestId, query, qos, endpoint, uri, user_handler);
   var result = native.ocf_adapter_initPost(request, oa_post_response_handler);
   if (result) {
-    gPostRequestList[requestId] = request;
-    oa_response_timeout(gPostRequestList, requestId);
+    gPostRequestList.push(request);
   }
   return result;
 };
@@ -334,8 +356,7 @@ OCFAdapter.prototype.initPut = function (
   var request = make_request(requestId, query, qos, endpoint, uri, user_handler);
   var result = native.ocf_adapter_initPut(request, oa_put_response_handler);
   if (result) {
-    gPutRequestList[requestId] = request;
-    oa_response_timeout(gPutRequestList, requestId);
+    gPutRequestList.push(request);
   }
   return result;
 };
