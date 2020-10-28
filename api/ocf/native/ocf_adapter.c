@@ -399,22 +399,22 @@ JS_FUNCTION(ocf_adapter_stopObserve) {
 // OCFAdapter.get()
 ANT_ASYNC_DECL_FUNCS(ocf_adapter_get, oa_response_event_data_destroyer)
 OCF_REQUEST_JS_FUNCTION(ocf_adapter_get)
-OCF_REQUEST_UV_HANDLER_FUNCTION(ocf_adapter_get, false)
+OCF_REQUEST_UV_HANDLER_FUNCTION(ocf_adapter_get, true)
 
 // OCFAdapter.delete()
 ANT_ASYNC_DECL_FUNCS(ocf_adapter_delete, oa_response_event_data_destroyer)
 OCF_REQUEST_JS_FUNCTION(ocf_adapter_delete)
-OCF_REQUEST_UV_HANDLER_FUNCTION(ocf_adapter_delete, false)
+OCF_REQUEST_UV_HANDLER_FUNCTION(ocf_adapter_delete, true)
 
 // OCFAdapter.initPost()
 ANT_ASYNC_DECL_FUNCS(ocf_adapter_initPost, oa_response_event_data_destroyer)
 OCF_REQUEST_JS_FUNCTION(ocf_adapter_initPost)
-OCF_REQUEST_UV_HANDLER_FUNCTION(ocf_adapter_initPost, false)
+OCF_REQUEST_UV_HANDLER_FUNCTION(ocf_adapter_initPost, true)
 
 // OCFAdapter.initPut()
 ANT_ASYNC_DECL_FUNCS(ocf_adapter_initPut, oa_response_event_data_destroyer)
 OCF_REQUEST_JS_FUNCTION(ocf_adapter_initPut)
-OCF_REQUEST_UV_HANDLER_FUNCTION(ocf_adapter_initPut, false)
+OCF_REQUEST_UV_HANDLER_FUNCTION(ocf_adapter_initPut, true)
 
 // OCFAdapter.post()
 JS_FUNCTION(ocf_adapter_post) {

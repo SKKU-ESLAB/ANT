@@ -76,6 +76,7 @@ void InitOCFAdapterNative(jerry_value_t ocfNative);
       IOTJS_ASSERT(jerry_get_object_native_pointer(                            \
           jsEndpoint, NULL, &ocf_endpoint_native_info));                       \
                                                                                \
+      jerry_value_t jsRequestId = jerry_create_number(event_data->request_id); \
       jerry_value_t jsResponse = jerry_create_object();                        \
       iotjs_jval_set_property_string(jsResponse, "payload", &jsstrPayload);    \
       iotjs_jval_set_property_number(jsResponse, "status_code",                \
@@ -84,10 +85,11 @@ void InitOCFAdapterNative(jerry_value_t ocfNative);
                                                                                \
       jerry_value_t js_handler =                                               \
           GET_JS_HANDLER_FROM_ANT_ASYNC(type, event_data->request_id);         \
-      jerry_value_t js_args[] = {jsResponse};                                  \
-      iotjs_invoke_callback(js_handler, jerry_create_undefined(), js_args, 1); \
+      jerry_value_t js_args[] = {jsRequestId, jsResponse};                     \
+      iotjs_invoke_callback(js_handler, jerry_create_undefined(), js_args, 2); \
                                                                                \
       iotjs_string_destroy(&jsstrPayload);                                     \
+      jerry_release_value(jsRequestId);                                        \
       jerry_release_value(jsEndpoint);                                         \
       jerry_release_value(jsResponse);                                         \
                                                                                \
