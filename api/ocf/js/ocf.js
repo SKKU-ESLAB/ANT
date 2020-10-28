@@ -189,22 +189,22 @@ function make_request(requestId, query, qos, endpoint, uri, user_handler) {
   return request;
 }
 
-function oa_observe_request_handler(requestId, response) {
-  return oa_request_handler(requestId, response, gObserveRequestList, false);
+function oa_observe_response_handler(requestId, response) {
+  return oa_response_handler(requestId, response, gObserveRequestList, false);
 }
-function oa_get_request_handler(requestId, response) {
-  return oa_request_handler(requestId, response, gGetRequestList, true);
+function oa_get_response_handler(requestId, response) {
+  return oa_response_handler(requestId, response, gGetRequestList, true);
 }
-function oa_delete_request_handler(requestId, response) {
-  return oa_request_handler(requestId, response, gDeleteRequestList, true);
+function oa_delete_response_handler(requestId, response) {
+  return oa_response_handler(requestId, response, gDeleteRequestList, true);
 }
-function oa_post_request_handler(requestId, response) {
-  return oa_request_handler(requestId, response, gPostRequestList, true);
+function oa_post_response_handler(requestId, response) {
+  return oa_response_handler(requestId, response, gPostRequestList, true);
 }
-function oa_put_request_handler(requestId, response) {
-  return oa_request_handler(requestId, response, gPutRequestList, true);
+function oa_put_response_handler(requestId, response) {
+  return oa_response_handler(requestId, response, gPutRequestList, true);
 }
-function oa_request_handler(requestId, response, requestList, isOneway) {
+function oa_response_handler(requestId, response, requestList, isOneway) {
   var request = requestList[requestId];
   if (request !== undefined) {
     var user_handler = request.user_handler;
@@ -215,6 +215,14 @@ function oa_request_handler(requestId, response, requestList, isOneway) {
       }
     }
   }
+}
+function oa_response_timeout(requestList, requestId) {
+  var response_timeout_ms = 2000;
+  setTimeout(function () {
+    if (requestList[requestId] !== undefined) {
+      requestList.splice(requestId, 1);
+    }
+  }, response_timeout_ms);
 }
 
 OCFAdapter.prototype.observe = function (
@@ -229,7 +237,7 @@ OCFAdapter.prototype.observe = function (
   var requestId = gOCFAdapterRequestId++;
   var request = make_request(requestId, query, qos, endpoint, uri, user_handler);
 
-  var result = native.ocf_adapter_observe(request, oa_observe_request_handler);
+  var result = native.ocf_adapter_observe(request, oa_observe_response_handler);
   if (result) {
     gObserveRequestList[requestId] = request;
   }
@@ -267,9 +275,10 @@ OCFAdapter.prototype.get = function (
 
   var requestId = gOCFAdapterRequestId++;
   var request = make_request(requestId, query, qos, endpoint, uri, user_handler);
-  var result = native.ocf_adapter_get(request, oa_get_request_handler);
+  var result = native.ocf_adapter_get(request, oa_get_response_handler);
   if (result) {
     gGetRequestList[requestId] = request;
+    oa_response_timeout(gGetRequestList, requestId);
   }
   return result;
 };
@@ -285,9 +294,10 @@ OCFAdapter.prototype.delete = function (
 
   var requestId = gOCFAdapterRequestId++;
   var request = make_request(requestId, query, qos, endpoint, uri, user_handler);
-  var result = native.ocf_adapter_delete(request, oa_delete_request_handler);
+  var result = native.ocf_adapter_delete(request, oa_delete_response_handler);
   if (result) {
     gDeleteRequestList[requestId] = request;
+    oa_response_timeout(gDeleteRequestList, requestId);
   }
   return result;
 };
@@ -303,9 +313,10 @@ OCFAdapter.prototype.initPost = function (
 
   var requestId = gOCFAdapterRequestId++;
   var request = make_request(requestId, query, qos, endpoint, uri, user_handler);
-  var result = native.ocf_adapter_initPost(request, oa_post_request_handler);
+  var result = native.ocf_adapter_initPost(request, oa_post_response_handler);
   if (result) {
     gPostRequestList[requestId] = request;
+    oa_response_timeout(gPostRequestList, requestId);
   }
   return result;
 };
@@ -321,9 +332,10 @@ OCFAdapter.prototype.initPut = function (
 
   var requestId = gOCFAdapterRequestId++;
   var request = make_request(requestId, query, qos, endpoint, uri, user_handler);
-  var result = native.ocf_adapter_initPut(request, oa_put_request_handler);
+  var result = native.ocf_adapter_initPut(request, oa_put_response_handler);
   if (result) {
     gPutRequestList[requestId] = request;
+    oa_response_timeout(gPutRequestList, requestId);
   }
   return result;
 };
