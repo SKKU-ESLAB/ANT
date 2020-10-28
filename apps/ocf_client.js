@@ -33,16 +33,18 @@ function onObserveLight(response) {
   var endpoint = response.endpoint;
   var uri = foundLightUri;
 
-  console.log('GET from ' + uri + ': ' + payload);
+  console.log('GET from ' + uri);
 
-  var res = oa.initPost(endpoint, uri, onPost, '', ocf.OC_LOW_QOS);
-  if (res) {
-    oa.repStartRootObject();
-    oa.repSet('state', g_light_state);
-    g_light_state = !g_light_state;
-    oa.repEndRootObject();
-    oa.post();
-  }
+  setTimeout(function () {
+    var res = oa.initPost(endpoint, uri, onPost, '', ocf.OC_LOW_QOS);
+    if (res) {
+      oa.repStartRootObject();
+      oa.repSet('state', g_light_state);
+      g_light_state = !g_light_state;
+      oa.repEndRootObject();
+      oa.post();
+    }
+  }, 500);
 }
 
 var i = 0;
