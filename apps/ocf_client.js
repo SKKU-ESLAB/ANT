@@ -44,7 +44,7 @@ function onObserveLight(response) {
       oa.repEndRootObject();
       oa.post();
     }
-  }, 500);
+  }, 1000);
 }
 
 var i = 0;
