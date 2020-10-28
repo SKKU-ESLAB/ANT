@@ -9,11 +9,11 @@
 #include <stdlib.h>
 #include <string.h>
 
-ANT_API_VOID_TO_NUMBER(runtime, getPssInKB);
+ANT_API_VOID_TO_NUMBER(ant_runtime, getPssInKB);
 
 jerry_value_t InitANTRuntimeNative() {
   jerry_value_t antRuntimeNative = jerry_create_object();
-  REGISTER_ANT_API(antRuntimeNative, runtime, getPssInKB);
+  REGISTER_ANT_API(antRuntimeNative, ant_runtime, getPssInKB);
 
   initANTRuntime();
 

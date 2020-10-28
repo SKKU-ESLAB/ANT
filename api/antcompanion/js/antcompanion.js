@@ -73,7 +73,7 @@ ANTCompanion.prototype.getMyIPAddress = function (interfaceName) {
 };
 
 ANTCompanion.prototype.getMyIPAddress = function (interfaceName) {
-  return native.companion_getMyIPAddress(interfaceName);
+  return native.ant_companion_getMyIPAddress(interfaceName);
 };
 
 module.exports = new ANTCompanion();
