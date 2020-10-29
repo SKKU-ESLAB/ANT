@@ -17,9 +17,11 @@ var foundLightUri = undefined;
 var foundTempUri = undefined;
 
 function onDiscovery(endpoint, uri, types, interface_mask) {
+  console.log('Discovered ' + uri);
   for (var i in types) {
-    console.log('Discovered: ' + types[i]);
+    console.log('* type ' + i + ': ' + types[i]);
     if (types[i] == 'oic.r.light') {
+      console.log('* Light resource => OBSERVE start');
       foundLightUri = uri;
       oa.observe(endpoint, uri, onObserveLight);
       interval = setInterval(function () {
@@ -33,6 +35,7 @@ function onDiscovery(endpoint, uri, types, interface_mask) {
         }
       }, 1000);
     } else if (types[i] == 'oic.r.temperature') {
+      console.log('* Temperature resource => OBSERVE start');
       foundTempUri = uri;
       oa.observe(endpoint, uri, onObserveTemp);
       interval2 = setInterval(function () {
