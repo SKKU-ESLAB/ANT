@@ -180,6 +180,9 @@ OCFAdapter.prototype.isDiscovering = function () {
 OCFAdapter.prototype.discovery = function (resource_type, discovery_handler) {
   return native.ocf_adapter_discovery(resource_type, discovery_handler);
 };
+OCFAdapter.prototype.discoveryAll = function (discovery_handler) {
+  return native.ocf_adapter_discovery(' ', discovery_handler);
+};
 
 function make_request(requestId, query, qos, endpoint, uri, user_handler) {
   var request = {};
