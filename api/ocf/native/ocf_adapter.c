@@ -309,6 +309,10 @@ JS_FUNCTION(ocf_adapter_discovery) {
   argResourceType = JS_GET_ARG(0, string);
   argDiscoveryHandler = JS_GET_ARG(1, function);
   const char *resource_type = iotjs_string_data(&argResourceType);
+  if (strlen(resource_type) == 1 && resource_type[0] == ' ') {
+    // If zero-length resource type is given, discover all the resources
+    resource_type = NULL;
+  }
 
   int zero = 0;
   result =
