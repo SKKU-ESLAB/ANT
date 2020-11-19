@@ -63,7 +63,7 @@ $ sudo run_ant
 
 ## Demo Video
 
-* [ANT Framework 1.0 (Youtube)](https://www.youtube.com/watch?v=QHFb4IKi8wM&t=34s)
+* [ANT Framework 1.0 (Youtube)](https://youtu.be/AhO3crw8jro)
 
 ## [License](https://github.com/SKKU-ESLAB/ANT/wiki/License)
 ANT is open source software under the [Apache 2.0 license](http://www.apache.org/licenses/LICENSE-2.0). Complete license and copyright information can be found within the code.
