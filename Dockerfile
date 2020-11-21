@@ -1,11 +1,11 @@
 # From resin/rpi-raspbian:wheezy
 # COPY qemu-arm-static /usr/bin/qemu-arm-static
 
-FROM sedden/rpi-raspbian-qemu:wheezy
+FROM docker:20.04
 
-RUN apt-get update && apt-get install python vim git
-RUN mkdir -p /home/pi/ANT
-WORKDIR /home/pi/ANT
-ADD . /home/pi/ANT
-RUN cd /home/pi/ANT
-RUN pwd
+RUN timedatectl set-timezone 'Asia/Seoul'
+RUN mkdir -p /home/ant
+WORKDIR /home/ant
+ADD . /home/ant
+RUN cd /home/ant
+RUN ./scripts/prepare-ubuntu.sh --no-sudo --except-iotjs
