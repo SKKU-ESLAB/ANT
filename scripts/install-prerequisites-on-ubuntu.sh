@@ -2,6 +2,7 @@
 BUILD_THREADS=4
 SCRIPTS_DIR="$( cd "$( dirname "$0" )" && pwd -P )"
 ANT_ROOT=$(realpath $SCRIPTS_DIR/..)
+ARCH=$(uname -m)
 
 # ANT dependenies
 echo "** Install git, dbus, gtk..."
@@ -46,8 +47,17 @@ sudo apt-get install -y nnstreamer-python3 nnstreamer-dev
 
 # IoT.js
 echo "** Build IoT.js..."
+if [ $ARCH = "x86_64" ]
+then
+  IOTJS_BOARD_NAME="x86_64"
+elif [ $ARCH = "x86" ]
+then
+  IOTJS_BOARD_NAME="x86"
+else
+  IOTJS_BOARD_NAME="rpi3"
+fi
 cd ${ANT_ROOT}/dep/iotjs
-./tools/build.py --target-board=rpi3
+./tools/build.py --target-board=${IOTJS_BOARD_NAME}
 
 # IoTivity
 echo "** Build IoTivity..."

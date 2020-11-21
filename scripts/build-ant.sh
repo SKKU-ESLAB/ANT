@@ -6,7 +6,16 @@ OUT_PATH=${ANT_ROOT}/out/
 
 # Build ANT API and App Runtime for IoT.js
 cd ${ANT_ROOT}/dep/iotjs/
-./tools/build.py --target-board=rpi3 \
+if [ $ARCH = "x86_64" ]
+then
+  IOTJS_BOARD_NAME="x86_64"
+elif [ $ARCH = "x86" ]
+then
+  IOTJS_BOARD_NAME="x86"
+else
+  IOTJS_BOARD_NAME="rpi3"
+fi
+./tools/build.py --target-board=${IOTJS_BOARD_NAME} \
     --cmake-param=-DENABLE_MODULE_ANT=ON \
     --cmake-param=-DENABLE_MODULE_ANTRUNTIME=ON \
     --cmake-param=-DENABLE_MODULE_ANTCOMPANION=ON \
