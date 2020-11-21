@@ -1,0 +1,7 @@
+orbs:
+  pylint: qventus/python-lint@volatile
+version: 2.1
+workflows:
+  build:
+    jobs:
+      - pylint/lint
