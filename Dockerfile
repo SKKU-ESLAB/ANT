@@ -1,11 +1,13 @@
-# From resin/rpi-raspbian:wheezy
-# COPY qemu-arm-static /usr/bin/qemu-arm-static
+FROM ubuntu:20.04
 
-FROM docker:20.04
-
-RUN timedatectl set-timezone 'Asia/Seoul'
+RUN ln -sf /usr/share/zoneinfo/Asia/Seoul /etc/localtime
 RUN mkdir -p /home/ant
 WORKDIR /home/ant
-ADD . /home/ant
+
+RUN mkdir -p /home/ant/scripts/
+RUN mkdir -p /home/ant/dep/
+
+ADD . /home/ant/
 RUN cd /home/ant
-RUN ./scripts/prepare-ubuntu.sh --no-sudo --except-iotjs
+RUN /bin/bash ./scripts/prepare-ubuntu.sh --no-sudo
+RUN cd /
