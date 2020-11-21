@@ -2,6 +2,7 @@ version: 2.1
 
 orbs:
   python: circleci/python@0.2.1
+  node: circleci/node@3.0.0
 
 jobs:
   python-style-checker:
@@ -20,9 +21,21 @@ jobs:
       - run:
           command: find . \( -not -path "./subprojects/*" -and -not -path "./dep/*" \) -and \( -name "*.h" -or -name "*.cpp" -or -name "*.cc" -or -name "*.c" \) | xargs cpplint
           name: C/C++ Code Style Checker
+  js-style-checker:
+    executor: node/default
+    steps:
+      - checkout
+        #      - node/install-packages:
+        #          app-dir: .
+      - run:
+          command: npm install
+      - run:
+          command: find . \( -name "*.js" \) -and \( -not -path "./subprojects/*" -and -not -path "./dep/*" -and -not -path "./.eslintrc.js" -and -not -path "./node_modules/*" \) | xargs npx eslint
+          name: JavaScript Code Style Checker
 
 workflows:
-  main:
+  style-checkers:
     jobs:
       - python-style-checker
       - cpp-style-checker
+      - js-style-checker
