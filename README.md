@@ -15,7 +15,7 @@ $ git clone https://github.com/SKKU-ESLAB/ANT ant
 ### Prerequisites
 ```
 $ cd ant
-$ ./scripts/install-prerequisites-on-ubuntu.sh
+$ ./scripts/prepare-ubuntu.sh
 ```
 <!--
 ```

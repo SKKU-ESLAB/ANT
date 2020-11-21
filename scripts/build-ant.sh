@@ -3,19 +3,17 @@ SCRIPTS_DIR="$( cd "$( dirname "$0" )" && pwd -P )"
 ANT_ROOT=$(realpath $SCRIPTS_DIR/..)
 MODULE_PATH=${ANT_ROOT}/api/
 OUT_PATH=${ANT_ROOT}/out/
+ARCH=$(uname -m)
 
 # Build ANT API and App Runtime for IoT.js
 cd ${ANT_ROOT}/dep/iotjs/
-if [ $ARCH = "x86_64" ]
+if [[ $ARCH = "x86_64" || $ARCH = "x86" ]];
 then
-  IOTJS_BOARD_NAME="x86_64"
-elif [ $ARCH = "x86" ]
-then
-  IOTJS_BOARD_NAME="x86"
+  IOTJS_BOARD_NAME=""
 else
-  IOTJS_BOARD_NAME="rpi3"
+  IOTJS_BOARD_NAME="--taraget-board=rpi3"
 fi
-./tools/build.py --target-board=${IOTJS_BOARD_NAME} \
+./tools/build.py ${IOTJS_BOARD_NAME} \
     --cmake-param=-DENABLE_MODULE_ANT=ON \
     --cmake-param=-DENABLE_MODULE_ANTRUNTIME=ON \
     --cmake-param=-DENABLE_MODULE_ANTCOMPANION=ON \
