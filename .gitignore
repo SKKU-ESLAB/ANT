@@ -36,3 +36,7 @@ Makefile
 
 # ARM Compute Library
 dep/ComputeLibrary/build
+
+# node
+package-lock.json
+node-modules
