@@ -4,16 +4,25 @@ orbs:
   python: circleci/python@0.2.1
 
 jobs:
-  style-checkers:
+  python-style-checker:
     executor: python/default
     steps:
       - checkout
       - python/install-deps
       - run:
           command: find . -name "*.py" -not -path "./subprojects/*" -not -path "./dep/*" -not -path "./menuconfig.py" | xargs pylint --disable=fixme,import-error,useless-object-inheritance,C0114,C0115,C0116
-          name: Code Style Checker (Python)
+          name: Python Code Style Checker
+  cpp-style-checker:
+    executor: python/default
+    steps:
+      - checkout
+      - python/install-deps
+      - run:
+          command: find . \( -not -path "./subprojects/*" -and -not -path "./dep/*" \) -and \( -name "*.h" -or -name "*.cpp" -or -name "*.cc" -or -name "*.c" \) | xargs cpplint
+          name: C/C++ Code Style Checker
 
 workflows:
   main:
     jobs:
-      - style-checkers
+      - python-style-checker
+      - cpp-style-checker
