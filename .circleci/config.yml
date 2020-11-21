@@ -10,7 +10,7 @@ jobs:
       - checkout
       - python/install-deps
       - run:
-          command: find . -name "*.py" -not -path "./subprojects/*" -not -path "./dep/*" -not -path "./menuconfig.py" | xargs pylint --disable=fixme,import-error,missing-module-docstring
+          command: find . -name "*.py" -not -path "./subprojects/*" -not -path "./dep/*" -not -path "./menuconfig.py" | xargs pylint --disable=fixme,import-error,useless-object-inheritance,C0114,C0115,C0116
           name: Code Style Checker (Python)
 
 workflows:
