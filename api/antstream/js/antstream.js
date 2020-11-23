@@ -1,15 +1,15 @@
 var console = require('console');
 
-var RESULT_SUCCESS = 'Success';
-var RESULT_FAILED = 'Failed';
-
-function ANTStream() { }
+/**
+ * ANT Stream API
+ */
+function ANTStream() {}
 ANTStream.prototype._mIsInitialized = false;
 ANTStream.prototype.pipelines = [];
 
 ANTStream.prototype.callDbusMethod = function (message) {
   if (!this._mIsInitialized) {
-    console.error("ERROR: Stream API is not initialized");
+    console.error('ERROR: Stream API is not initialized');
     return false;
   }
   return native.ant_stream_callDbusMethod(message);
@@ -26,46 +26,54 @@ ANTStream.prototype.initialize = function () {
 ANTStream.prototype.finalize = function () {
   var ANTStream = this;
   var quitMainLoop = function () {
-    var result = Boolean(ANTStream.callDbusMethod("streamapi_quitMainLoop"));
+    var result = Boolean(ANTStream.callDbusMethod('streamapi_quitMainLoop'));
     if (result) {
       this._mIsInitialized = false;
     }
     return result;
   };
-  for (var i in this.pipelines) {
+  for (var i = 0; i < this.pipelines.length; i++) {
     this.pipelines[i].setState(this.pipelines[i].STATE_NULL);
     this.pipelines[i].unref();
     this.pipelines.splice(i, 1);
   }
-  console.log("quitMainLoop()");
+  console.log('quitMainLoop()');
   quitMainLoop();
-  console.log("end");
+  console.log('end');
 };
-ANTStream.prototype.createPipeline = function (pipeline_name) {
+ANTStream.prototype.createPipeline = function (pipelineName) {
   if (!this._mIsInitialized) {
-    console.error("ERROR: Stream API is not initialized");
+    console.error('ERROR: Stream API is not initialized');
     return undefined;
   }
-  var element_index = Number(this.callDbusMethod(
-    "streamapi_createPipeline\n" + pipeline_name));
-  var pipeline = new Pipeline(pipeline_name, element_index);
+  var elementIndex = Number(
+    this.callDbusMethod('streamapi_createPipeline\n' + pipelineName)
+  );
+  var pipeline = new Pipeline(pipelineName, elementIndex);
   this.pipelines.push(pipeline);
   return pipeline;
 };
-ANTStream.prototype.createElement = function (element_name) {
+ANTStream.prototype.createElement = function (elementName) {
   if (!this._mIsInitialized) {
-    console.error("ERROR: Stream API is not initialized");
+    console.error('ERROR: Stream API is not initialized');
     return undefined;
   }
-  var element_index = Number(this.callDbusMethod(
-    "streamapi_createElement\n" + element_name));
+  var elementIndex = Number(
+    this.callDbusMethod('streamapi_createElement\n' + elementName)
+  );
   // TODO: embedding Pipeline.bin_add()
-  // console.log("Element: " + element_name + " / " + element_index);
-  return new Element(element_name, element_index);
+  // console.log("Element: " + elementName + " / " + elementIndex);
+  return new Element(elementName, elementIndex);
 };
 
-function Pipeline(name, element_index) {
-  this._element_index = element_index;
+/**
+ * Pipeline
+ * @param {string} name the name of the pipeline
+ * @param {int} elementIndex the element index of the pipeline that is
+ * internally managed.
+ */
+function Pipeline(name, elementIndex) {
+  this._elementIndex = elementIndex;
 
   this.name = name;
   this.elements = [];
@@ -76,59 +84,67 @@ function Pipeline(name, element_index) {
   this.STATE_PAUSED = 3;
   this.STATE_PLAYING = 4;
 }
-Pipeline.prototype.binAdd = function (element_or_elements) {
+Pipeline.prototype.binAdd = function (elementOrElements) {
   var ANTStream = require('antstream');
   if (!ANTStream.isInitialized()) {
-    console.error("ERROR: Stream API is not initialized");
+    console.error('ERROR: Stream API is not initialized');
     return false;
   }
-  if (Array.isArray(element_or_elements)) {
-    var elements = element_or_elements;
-    for (var i in elements) {
+  if (Array.isArray(elementOrElements)) {
+    var elements = elementOrElements;
+    for (var i = 0; i < elements.length; i++) {
       var result = this.binAdd(elements[i]);
       if (!result) {
-        console.error("ERROR: Failed to add to bin at " + i);
+        console.error('ERROR: Failed to add to bin at ' + i);
         return false;
       }
     }
     return true;
-  } else if (element_or_elements instanceof Element) {
-    var element = element_or_elements;
+  } else if (elementOrElements instanceof Element) {
+    var element = elementOrElements;
     this.elements.push(element);
-    var result = Boolean(ANTStream.callDbusMethod(
-      "pipeline_binAdd\n" + this._element_index + "\n" + element._element_index));
+    var result = Boolean(
+      ANTStream.callDbusMethod(
+        'pipeline_binAdd\n' + this._elementIndex + '\n' + element._elementIndex
+      )
+    );
     return result;
   } else {
-    console.error("ERROR: Invalid element");
+    console.error('ERROR: Invalid element');
     return false;
   }
 };
 Pipeline.prototype.setState = function (state) {
   var ANTStream = require('antstream');
   if (!ANTStream.isInitialized()) {
-    console.error("ERROR: Stream API is not initialized");
+    console.error('ERROR: Stream API is not initialized');
     return false;
   }
-  if (typeof state !== "number") {
-    console.error("ERROR: Invalid state! " + state);
+  if (typeof state !== 'number') {
+    console.error('ERROR: Invalid state! ' + state);
     return false;
   }
-  var result = Number(ANTStream.callDbusMethod(
-    "pipeline_setState\n" + this._element_index + "\n" + state));
+  var result = Number(
+    ANTStream.callDbusMethod(
+      'pipeline_setState\n' + this._elementIndex + '\n' + state
+    )
+  );
   return result;
 };
 Pipeline.prototype.linkMany = function (elements) {
   var ANTStream = require('antstream');
   if (!ANTStream.isInitialized()) {
-    console.error("ERROR: Stream API is not initialized");
+    console.error('ERROR: Stream API is not initialized');
     return false;
   }
   var prevElement = undefined;
-  for (var i in elements) {
+  for (var i = 0; i < elements.length; i++) {
     if (prevElement !== undefined) {
       var result = prevElement.link(elements[i]);
       if (!result) {
-        console.error("ERROR: Failed to link element at " + (i - 1) + " with one at " + (i));
+        console.error(
+          'ERROR: Failed to link element at ' + (i - 1) + ' with one at ' + i
+        );
         return false;
       }
     }
@@ -138,14 +154,21 @@ Pipeline.prototype.linkMany = function (elements) {
 };
 Pipeline.prototype.unref = function () {
   var ANTStream = require('antstream');
-  var result = Boolean(ANTStream.callDbusMethod(
-    "pipeline_unref\n" + this._element_index));
+  var result = Boolean(
+    ANTStream.callDbusMethod('pipeline_unref\n' + this._elementIndex)
+  );
   return result;
 };
 
-function Element(name, element_index) {
-  this._element_index = element_index;
-  this.name = name;  // copy of native
+/**
+ * Element
+ * @param {string} name the name of the element
+ * @param {int} elementIndex the index of the element that is
+ * internally managed.
+ */
+function Element(name, elementIndex) {
+  this._elementIndex = elementIndex;
+  this.name = name; // copy of native
   this.properties = {}; // copy of native
   this.handlers = {};
   this.srcElement = undefined;
@@ -154,63 +177,89 @@ function Element(name, element_index) {
 Element.prototype.setProperty = function (key, value) {
   var ANTStream = require('antstream');
   if (!ANTStream.isInitialized()) {
-    console.error("ERROR: Stream API is not initialized");
+    console.error('ERROR: Stream API is not initialized');
     return false;
-  } else if (typeof key !== "string") {
-    console.error("ERROR: Invalid key: " + key);
+  } else if (typeof key !== 'string') {
+    console.error('ERROR: Invalid key: ' + key);
     return false;
-  } else if (typeof value !== "string" && typeof value !== "number" && typeof value !== "boolean") {
-    console.error("ERROR: Invalid value: " + value);
+  } else if (
+    typeof value !== 'string' &&
+    typeof value !== 'number' &&
+    typeof value !== 'boolean'
+  ) {
+    console.error('ERROR: Invalid value: ' + value);
     return false;
   }
   var type;
-  if (typeof value === "boolean") {
+  if (typeof value === 'boolean') {
     type = 0;
-  } else if (typeof value === "string") {
+  } else if (typeof value === 'string') {
     type = 1;
   } else if (value === parseInt(value, 10)) {
     type = 2;
   } else {
     type = 3;
   }
-  var result = Boolean(ANTStream.callDbusMethod(
-    "element_setProperty\n" + this._element_index + "\n" + key + "\n" + type + "\n" + value));
+  var result = Boolean(
+    ANTStream.callDbusMethod(
+      'element_setProperty\n' +
+        this._elementIndex +
+        '\n' +
+        key +
+        '\n' +
+        type +
+        '\n' +
+        value
+    )
+  );
   this.properties[key] = value;
   return result;
 };
 Element.prototype.setCapsProperty = function (key, value) {
   var ANTStream = require('antstream');
   if (!ANTStream.isInitialized()) {
-    console.error("ERROR: Stream API is not initialized");
+    console.error('ERROR: Stream API is not initialized');
     return false;
-  } else if (typeof key !== "string") {
-    console.error("ERROR: Invalid key: " + key);
+  } else if (typeof key !== 'string') {
+    console.error('ERROR: Invalid key: ' + key);
     return false;
-  } else if (typeof value !== "string") {
-    console.error("ERROR: Invalid value: " + value);
+  } else if (typeof value !== 'string') {
+    console.error('ERROR: Invalid value: ' + value);
     return false;
   }
-  var result = Boolean(ANTStream.callDbusMethod(
-    "element_setCapsProperty\n" + this._element_index + "\n" + key + "\n" + value));
+  var result = Boolean(
+    ANTStream.callDbusMethod(
+      'element_setCapsProperty\n' +
+        this._elementIndex +
+        '\n' +
+        key +
+        '\n' +
+        value
+    )
+  );
   this.properties[key] = value;
   return result;
 };
 Element.prototype.connectSignal = function (detailedSignal, handler) {
   var ANTStream = require('antstream');
   if (!ANTStream.isInitialized()) {
-    console.error("ERROR: Stream API is not initialized");
+    console.error('ERROR: Stream API is not initialized');
     return;
-  } else if (typeof detailedSignal !== "string") {
-    console.error("ERROR: Invalid detailedSignal: " + detailedSignal);
+  } else if (typeof detailedSignal !== 'string') {
+    console.error('ERROR: Invalid detailedSignal: ' + detailedSignal);
     return false;
-  } else if (typeof handler !== "function") {
-    console.error("ERROR: Invalid handler for " + detailedSignal);
+  } else if (typeof handler !== 'function') {
+    console.error('ERROR: Invalid handler for ' + detailedSignal);
     return false;
   } else if (this.handlers[detailedSignal] !== undefined) {
-    console.error("ERROR: Handler already exists for " + detailedSignal);
+    console.error('ERROR: Handler already exists for ' + detailedSignal);
     return false;
   }
-  var result = native.ant_stream_elementConnectSignal(this._element_index, detailedSignal, handler);
+  var result = native.ant_stream_elementConnectSignal(
+    this._elementIndex,
+    detailedSignal,
+    handler
+  );
   if (result) {
     this.handlers[detailedSignal] = handler;
   }
@@ -219,14 +268,17 @@ Element.prototype.connectSignal = function (detailedSignal, handler) {
 Element.prototype.link = function (destElement) {
   var ANTStream = require('antstream');
   if (destElement === undefined || !(destElement instanceof Element)) {
-    console.error("ERROR: Invalid sink element");
+    console.error('ERROR: Invalid sink element');
     return false;
   }
   this.sinkElement = destElement;
   destElement.srcElement = this;
 
-  var result = Boolean(ANTStream.callDbusMethod(
-    "element_link\n" + this._element_index + "\n" + destElement._element_index));
+  var result = Boolean(
+    ANTStream.callDbusMethod(
+      'element_link\n' + this._elementIndex + '\n' + destElement._elementIndex
+    )
+  );
   return result;
 };
 

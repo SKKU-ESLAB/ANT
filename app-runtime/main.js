@@ -13,29 +13,32 @@ var MAIN_LOOP_DIR_PATH = truncateFile(process.argv[1]);
 var Config = function () {
   this.showHTTPRequestPath = false;
   this.showHTTPRequestData = false;
-  this.defaultInterfaceName = "eth0";
+  this.defaultInterfaceName = 'eth0';
   this.defaultPort = 8001;
 };
 var gConfig = new Config();
 /* App Main Config END */
 
-/* App File Name START */
-function AppFileName() {
+/**
+ * Handler object that indicates application's code file.
+ * The code files are managed by circular queue.
+ */
+function CodeFileHandler() {
   this.filename = undefined;
   this.fileindex = 0;
   var MAX_FILE_INDEX = 2;
-  this.get = function () {
+  this.getName = function () {
     return this.filename;
   };
-  this.set_new = function () {
+  this.setNew = function () {
     this.fileindex = (this.fileindex + 1) % MAX_FILE_INDEX;
     this.filename = './app' + this.fileindex + '.js';
   };
   this.initialize = function () {
     var isFileExists = false;
     for (var i = 0; i < MAX_FILE_INDEX; i++) {
-      this.set_new();
-      if (fs.existsSync(this.get())) {
+      this.setNew();
+      if (fs.existsSync(this.getName())) {
         isFileExists = true;
         break;
       }
@@ -46,10 +49,12 @@ function AppFileName() {
   };
   this.initialize();
 }
-var gAppFileName = new AppFileName();
+var gCodeFileHandler = new CodeFileHandler();
 /* App File Name END */
 
-/* App Code Manager START */
+/**
+ * Application code manager. It installs or removes application's code.
+ */
 function AppCodeManager() {
   this.current_app_object = undefined;
   this.load = function (appFileName) {
@@ -57,19 +62,19 @@ function AppCodeManager() {
   };
   this.install = function (appCodeBuffer) {
     // Write app code
-    gAppFileName.set_new();
-    var fd = fs.openSync(gAppFileName.get(), 'w');
+    gCodeFileHandler.setNew();
+    var fd = fs.openSync(gCodeFileHandler.getName(), 'w');
     fs.writeSync(fd, appCodeBuffer, 0, appCodeBuffer.length);
     fs.closeSync(fd);
 
     // Load app code
-    gAppCodeManager.load(gAppFileName.get());
+    gAppCodeManager.load(gCodeFileHandler.getName());
 
     if (ant.runtime.getCurrentApp() !== undefined) {
       return true;
     } else {
       // IF failed, Remove app code
-      this.remove(gAppFileName.get());
+      this.remove(gCodeFileHandler.getName());
       return false;
     }
   };
@@ -85,35 +90,44 @@ function AppCodeManager() {
 var gAppCodeManager = new AppCodeManager();
 /* App Code Manager END */
 
-
-function truncateFile(path) {
+var truncateFile = function (path) {
   var tokens = path.split('/');
   var truncatedPath = '';
   for (var i = 0; i < tokens.length - 1; i++) {
     truncatedPath += tokens[i] + '/';
   }
   return truncatedPath;
-}
+};
 
-function parseUrl(url) {
+var parseUrl = function (url) {
   var urlTokens = url.split('/');
   var uniqueTokens = [];
-  for (i in urlTokens) {
+  for (var i = 0; i < urlTokens.length; i++) {
     var token = urlTokens[i];
     if (token.length > 0) {
       uniqueTokens.push(token);
     }
   }
   return uniqueTokens;
-}
+};
 
+/**
+ * Event handler invoked when an alive request comes from the companion
+ * @return {object} alive message
+ */
 function onAliveRequest(request, data) {
-  var results = { message: 'Alive', code: 200 };
+  var results = {message: 'Alive', code: 200};
   return results;
 }
 
+/**
+ * Event handler invoked when an application command comes from the companion
+ * @param {object} request request object sent from the companion
+ * @param {string} data data sent from the companion
+ * @return {object} result message
+ */
 function onAppCommand(request, data) {
-  var results = { message: 'Invalid command', code: 500 };
+  var results = {message: 'Invalid command', code: 500};
   var command = data.toString();
   if (command == 'start') {
     results = onStartApp(request, data);
@@ -123,8 +137,14 @@ function onAppCommand(request, data) {
   return results;
 }
 
+/**
+ * Event handler invoked when an install app command comes from the companion
+ * @param {object} request request object sent from the companion
+ * @param {string} data data sent from the companion
+ * @return {object} result message
+ */
 function onInstallApp(request, data) {
-  var results = { message: RESULT_FAILED, code: 500 };
+  var results = {message: RESULT_FAILED, code: 500};
 
   if (ant.runtime.getCurrentApp() === undefined) {
     var appCodeBuffer = data;
@@ -137,11 +157,17 @@ function onInstallApp(request, data) {
   return results;
 }
 
+/**
+ * Event handler invoked when a remove app command comes from the companion
+ * @param {object} request request object sent from the companion
+ * @param {string} data data sent from the companion
+ * @return {object} result message
+ */
 function onRemoveApp(request, data) {
-  var results = { message: RESULT_FAILED, code: 500 };
+  var results = {message: RESULT_FAILED, code: 500};
 
   if (ant.runtime.getCurrentApp() !== undefined) {
-    var isSuccess = gAppCodeManager.remove(gAppFileName.get());
+    var isSuccess = gAppCodeManager.remove(gCodeFileHandler.getName());
     if (isSuccess) {
       results.message = RESULT_SUCCESS;
       results.code = 200;
@@ -150,8 +176,14 @@ function onRemoveApp(request, data) {
   return results;
 }
 
+/**
+ * Event handler invoked when a start app command comes from the companion
+ * @param {object} request request object sent from the companion
+ * @param {string} data data sent from the companion
+ * @return {object} result message
+ */
 function onStartApp(request, data) {
-  var results = { message: RESULT_FAILED, code: 500 };
+  var results = {message: RESULT_FAILED, code: 500};
   var app = ant.runtime.getCurrentApp();
   if (app != undefined) {
     results.message = app.start();
@@ -162,8 +194,14 @@ function onStartApp(request, data) {
   return results;
 }
 
+/**
+ * Event handler invoked when a stop app command comes from the companion
+ * @param {object} request request object sent from the companion
+ * @param {string} data data sent from the companion
+ * @return {object} result message
+ */
 function onStopApp(request, data) {
-  var results = { message: RESULT_FAILED, code: 500 };
+  var results = {message: RESULT_FAILED, code: 500};
   var app = ant.runtime.getCurrentApp();
   if (app != undefined) {
     results.message = app.stop();
@@ -174,9 +212,15 @@ function onStopApp(request, data) {
   return results;
 }
 
+/**
+ * Event handler invoked when a get app info command comes from the companion
+ * @param {object} request request object sent from the companion
+ * @param {string} data data sent from the companion
+ * @return {object} result message
+ */
 function onGetAppInfo(request, data) {
   var currentApp = ant.runtime.getCurrentApp();
-  var results = { message: 'No App Found', code: 500 };
+  var results = {message: 'No App Found', code: 500};
 
   if (currentApp != undefined) {
     var appInfo = currentApp.getInfo();
@@ -186,13 +230,20 @@ function onGetAppInfo(request, data) {
   return results;
 }
 
+/**
+ * Event handler invoked when a get app code request comes from the companion
+ * @param {object} request request object sent from the companion
+ * @param {string} data data sent from the companion
+ * @param {boolean} isInHtml set true if the companion wants html linebreaking
+ * @return {object} result message
+ */
 function onGetAppCode(request, data, isInHtml) {
-  var results = { message: 'No App Code Found', code: 500 };
+  var results = {message: 'No App Code Found', code: 500};
 
-  if (fs.existsSync(gAppFileName.get())) {
-    var appCode = fs.readFileSync(gAppFileName.get()).toString();
+  if (fs.existsSync(gCodeFileHandler.getName())) {
+    var appCode = fs.readFileSync(gCodeFileHandler.getName()).toString();
     if (isInHtml) {
-      appCode.replace(/\n/gi, "<br />");
+      appCode.replace(/\n/gi, '<br />');
     }
     results.message = appCode.toString();
     results.code = 200;
@@ -201,9 +252,15 @@ function onGetAppCode(request, data, isInHtml) {
   return results;
 }
 
+/**
+ * Event handler invoked when a get app state request comes from the companion
+ * @param {object} request request object sent from the companion
+ * @param {string} data data sent from the companion
+ * @return {object} result message
+ */
 function onGetAppState(request, data) {
   var currentApp = ant.runtime.getCurrentApp();
-  var results = { message: 'No App Found', code: 500 };
+  var results = {message: 'No App Found', code: 500};
 
   if (currentApp != undefined) {
     results.message = currentApp.getState();
@@ -212,8 +269,15 @@ function onGetAppState(request, data) {
   return results;
 }
 
+/**
+ * Event handler invoked when a get app editor page request comes from
+ * the companion
+ * @param {object} request request object sent from the companion
+ * @param {string} data data sent from the companion
+ * @return {object} result message
+ */
 function onGetAppEditorPage(request, data) {
-  var results = { message: RESULT_FAILED, code: 500 };
+  var results = {message: RESULT_FAILED, code: 500};
 
   var urlTokens = parseUrl(request.url);
   urlTokens.splice(0, 1);
@@ -223,17 +287,26 @@ function onGetAppEditorPage(request, data) {
 
     if (fs.existsSync(path)) {
       var originalIndexHtml = fs.readFileSync(path).toString();
-      var jQueryTagEndIdx = originalIndexHtml.indexOf("</script>") + "</script>".length;
-      var ipAddress = ant.companion.getMyIPAddress(gConfig.defaultInterfaceName);
-      var ipAddressSetting = "\n<script>$(document).ready(function () {\n\
-      $('#targetAddressInput').val('" + ipAddress + ":" + gConfig.defaultPort + "');\n\
-    });</script>\n";
-      var indexHtml = originalIndexHtml.slice(0, jQueryTagEndIdx) + ipAddressSetting + originalIndexHtml.slice(jQueryTagEndIdx + 1);
+      var jQueryTagEndIdx =
+        originalIndexHtml.indexOf('</script>') + '</script>'.length;
+      var ipAddress = ant.companion.getMyIPAddress(
+        gConfig.defaultInterfaceName
+      );
+      var ipAddressSetting =
+        '\n<script>$(document).ready(function () {\n$("#targetAddressInput").val("' +
+        ipAddress +
+        ':' +
+        gConfig.defaultPort +
+        '");\n});</script>\n';
+      var indexHtml =
+        originalIndexHtml.slice(0, jQueryTagEndIdx) +
+        ipAddressSetting +
+        originalIndexHtml.slice(jQueryTagEndIdx + 1);
       results.message = indexHtml;
       results.code = 200;
     }
   } else {
-    for (i in urlTokens) {
+    for (var i = 0; i < urlTokens.length; i++) {
       path += '/' + urlTokens[i];
     }
 
@@ -247,14 +320,24 @@ function onGetAppEditorPage(request, data) {
   return results;
 }
 
+/**
+ * Event handler invoked when an set companion address command comes from
+ * the companion
+ * @param {object} request request object sent from the companion
+ * @param {string} data data sent from the companion
+ * @return {object} result message
+ */
 function onSetCompanionAddress(request, data) {
-  var results = { message: RESULT_FAILED, code: 500 };
+  var results = {message: RESULT_FAILED, code: 500};
   // TODO: hardcoded port, path
   var companionHost = data.toString();
   var companionPort = 8002;
   var companionPath = '/companion';
   var result = ant.companion._setCompanionAddress(
-    companionHost, companionPort, companionPath);
+    companionHost,
+    companionPort,
+    companionPath
+  );
   if (result == true) {
     results.message = RESULT_SUCCESS;
     results.code = 200;
@@ -262,8 +345,14 @@ function onSetCompanionAddress(request, data) {
   return results;
 }
 
+/**
+ * Event handler invoked when a custom message comes from the companion
+ * @param {object} request request object sent from the companion
+ * @param {string} data data sent from the companion
+ * @return {object} result message
+ */
 function onReceiveMessageFromCompanion(request, data) {
-  var results = { message: RESULT_FAILED, code: 500 };
+  var results = {message: RESULT_FAILED, code: 500};
   if (data !== undefined && data !== null) {
     var message = data.toString();
     ant.companion._onReceiveMessageFromCompanion(message);
@@ -273,10 +362,10 @@ function onReceiveMessageFromCompanion(request, data) {
   return results;
 }
 
-function _onHTTPRequest(request, response, data) {
+var _onHTTPRequest = function (request, response, data) {
   response.setHeader('Content-Type', 'text/html');
   var urlTokens = parseUrl(request.url);
-  var results = { message: 'Not Found Entry', code: 404 };
+  var results = {message: 'Not Found Entry', code: 404};
 
   // console.log(urlTokens.toString());
   // TODO: move them to Resource API except app-editor
@@ -354,8 +443,13 @@ function _onHTTPRequest(request, response, data) {
   response.writeHead(results.code);
   response.write(results.message);
   response.end();
-}
+};
 
+/**
+ * Event handler invoked when an HTTP request comes from companion device
+ * @param {object} request request object sent from the companion
+ * @param {object} response response object that will be sent to the companion
+ */
 function onHTTPRequest(request, response) {
   if (gConfig.showHTTPRequestPath) {
     console.log('Request for path: ' + request.url);
@@ -374,14 +468,19 @@ function onHTTPRequest(request, response) {
   });
 }
 
+/**
+ * Load existing app code
+ * @return {boolean} it returns true if the loading is successful,
+ * otherwise it returns false.
+ */
 function loadExistingAppCode() {
-  if (gAppFileName.get() === undefined) {
+  if (gCodeFileHandler.getName() === undefined) {
     return false;
   }
 
   // Load app code
   console.log('Load existing app code');
-  gAppCodeManager.load(gAppFileName.get());
+  gAppCodeManager.load(gCodeFileHandler.getName());
 
   if (ant.runtime.getCurrentApp() === undefined) {
     return false;
@@ -390,6 +489,9 @@ function loadExistingAppCode() {
   return true;
 }
 
+/**
+ * Application's main loop
+ */
 function mainLoop() {
   console.log('ANT app runtime start');
 
@@ -403,7 +505,9 @@ function mainLoop() {
 
   server.listen(gConfig.defaultPort, function () {
     var ipAddress = ant.companion.getMyIPAddress(gConfig.defaultInterfaceName);
-    console.log('ANT core listening: http://' + ipAddress + ":" + gConfig.defaultPort);
+    console.log(
+      'ANT core listening: http://' + ipAddress + ':' + gConfig.defaultPort
+    );
   });
 }
 

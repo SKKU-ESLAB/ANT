@@ -2,16 +2,21 @@ var ocf = require('ocf');
 console.log('OCF server example app');
 
 var oa = ocf.getAdapter();
-oa.onPrepareEventLoop(function() {
+oa.onPrepareEventLoop(function () {
   oa.setPlatform('ant');
   oa.addDevice('/oic/d', 'oic.d.light', 'Light', 'ocf.1.0.0', 'ocf.res.1.0.0');
 });
 
-oa.onPrepareServer(function() {
+oa.onPrepareServer(function () {
   console.log('onPrepareServer()');
   device = oa.getDevice(0);
   var lightRes = ocf.createResource(
-      device, 'lightbulb', '/light/1', ['oic.r.light'], [ocf.OC_IF_RW]);
+    device,
+    'lightbulb',
+    '/light/1',
+    ['oic.r.light'],
+    [ocf.OC_IF_RW]
+  );
   lightRes.setDiscoverable(true);
   lightRes.setPeriodicObservable(1);
   lightRes.setHandler(ocf.OC_GET, getLightHandler);
@@ -19,7 +24,12 @@ oa.onPrepareServer(function() {
   oa.addResource(lightRes);
 
   var thRes = ocf.createResource(
-      device, 'thermostat', '/temperature/1', ['oic.r.temperature'], [ocf.OC_IF_RW]);
+    device,
+    'thermostat',
+    '/temperature/1',
+    ['oic.r.temperature'],
+    [ocf.OC_IF_RW]
+  );
   thRes.setDiscoverable(true);
   thRes.setPeriodicObservable(1);
   thRes.setHandler(ocf.OC_GET, getTempHandler);
@@ -39,8 +49,14 @@ function postLightHandler(request) {
   var request_payload_string = request.request_payload_string;
   request_payload = JSON.parse(request_payload_string);
   console.log(
-      '(' + i++ + ') POST Light Request: state=' + request_payload.state +
-      ' (present:' + g_light_state + ')');
+    '(' +
+      i++ +
+      ') POST Light Request: state=' +
+      request_payload.state +
+      ' (present:' +
+      g_light_state +
+      ')'
+  );
 
   g_light_state = request_payload.state;
   oa.sendResponse(request, ocf.OC_STATUS_OK);
@@ -58,15 +74,21 @@ function postTempHandler(request) {
   var request_payload_string = request.request_payload_string;
   request_payload = JSON.parse(request_payload_string);
   console.log(
-      '(' + i++ + ') POST Temp Request: state=' + request_payload.state +
-      ' (present:' + g_temp_state + ')');
+    '(' +
+      i++ +
+      ') POST Temp Request: state=' +
+      request_payload.state +
+      ' (present:' +
+      g_temp_state +
+      ')'
+  );
 
   g_temp_state = request_payload.state;
   oa.sendResponse(request, ocf.OC_STATUS_OK);
 }
 
 oa.start();
-setTimeout(function() {
+setTimeout(function () {
   console.log('150s elapsed');
   oa.stop();
   oa.deinitialize();

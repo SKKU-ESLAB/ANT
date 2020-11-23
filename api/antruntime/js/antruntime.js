@@ -1,10 +1,10 @@
-var console = require('console');
-
 var RESULT_SUCCESS = 'Success';
 var RESULT_FAILED = 'Failed';
 
-/** Runtime API start **/
-function ANTRuntime() { }
+/**
+ * ANT Resource API
+ */
+function ANTRuntime() {}
 ANTRuntime.prototype._mCurrentApp = undefined;
 
 ANTRuntime.prototype._removeCurrentApp = function () {
@@ -12,8 +12,11 @@ ANTRuntime.prototype._removeCurrentApp = function () {
 };
 
 ANTRuntime.prototype.setCurrentApp = function (onInitialize, onStart, onStop) {
-  if (!(onInitialize instanceof Function) || !(onStart instanceof Function) ||
-    !(onStop instanceof Function)) {
+  if (
+    !(onInitialize instanceof Function) ||
+    !(onStart instanceof Function) ||
+    !(onStop instanceof Function)
+  ) {
     return RESULT_FAILED;
   }
   this._mCurrentApp = new App(onInitialize, onStart, onStop);
@@ -25,11 +28,18 @@ ANTRuntime.prototype.getCurrentApp = function () {
   return this._mCurrentApp;
 };
 
-ANTRuntime.prototype.getPSSInKB = ANTRuntime.prototype.getPssInKB = function () {
+ANTRuntime.prototype.getPssInKB = function () {
   return native.ant_runtime_getPssInKB();
 };
+ANTRuntime.prototype.getPSSInKB = ANTRuntime.prototype.getPssInKB;
 
-/* App start */
+/**
+ * Application
+ * @param {function} onInitialize callback handler invoked on application's
+ * initialization.
+ * @param {function} onStart callback handler invoked when application starts.
+ * @param {function} onStop callback handler invoked when application stops.
+ */
 function App(onInitialize, onStart, onStop) {
   this.state = this.STATE.IDLE;
   this.onInitialize = onInitialize;
@@ -72,7 +82,7 @@ App.prototype.getState = function () {
 };
 
 App.prototype.getInfo = function () {
-  var appInfo = { 'state': this.getState() };
+  var appInfo = {state: this.getState()};
   return appInfo;
 };
 /* App end */

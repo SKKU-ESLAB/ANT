@@ -3,23 +3,23 @@
 var ant = require('ant');
 var console = require('console');
 
-var on_initialize = function () {
-  console.log('on_initialize');
+var onInitialize = function () {
+  console.log('onInitialize');
 };
 
-var on_start = function () {
-  console.log('on_start');
+var onStart = function () {
+  console.log('onStart');
   var totalPss = 0.0;
   var sampleCount = 0;
   console.log('Start memory benchmarking...');
-  if(ant.stream !== undefined) {
+  if (ant.stream !== undefined) {
     ant.stream.initialize();
   }
   var getSample = function () {
     totalPss += ant.runtime.getPssInKB();
     sampleCount++;
     if (sampleCount == 10) {
-      console.log((totalPss / sampleCount).toFixed(2) + " KB");
+      console.log((totalPss / sampleCount).toFixed(2) + ' KB');
     } else {
       setTimeout(getSample, 1000);
     }
@@ -27,8 +27,8 @@ var on_start = function () {
   setTimeout(getSample, 1000);
 };
 
-var on_stop = function () {
-  console.log('on_stop');
+var onStop = function () {
+  console.log('onStop');
 };
 
-ant.runtime.setCurrentApp(on_initialize, on_start, on_stop);
+ant.runtime.setCurrentApp(onInitialize, onStart, onStop);

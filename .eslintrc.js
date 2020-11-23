@@ -11,6 +11,9 @@ module.exports = {
     'ecmaVersion': 12,
   },
   'rules': {
-    'no-var': 0
+    'no-var': 0,
+    'indent': ['error', 2],
+    'comma-dangle': 0,
+    'space-before-function-paren': 0
   },
 };

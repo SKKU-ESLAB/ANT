@@ -1,10 +1,9 @@
 var console = require('console');
 var assert = require('assert');
 
-var RESULT_SUCCESS = 'Success';
-var RESULT_FAILED = 'Failed';
-
-/** OCF API start **/
+/**
+ * ANT OCF API
+ */
 function OCF() {
   // Interface constants
   this.OC_IF_BASELINE = 1 << 1;
@@ -57,8 +56,13 @@ OCF.prototype.getAdapter = function () {
   return sOCFAdapter;
 };
 OCF.prototype.createResource = function (
-  device, name, uri, types, interface_masks) {
-  return new OCFResource(device, name, uri, types, interface_masks);
+  device,
+  name,
+  uri,
+  types,
+  interfaceMasks
+) {
+  return new OCFResource(device, name, uri, types, interfaceMasks);
 };
 
 var gOCFAdapterRequestId = 0;
@@ -67,10 +71,18 @@ gGetRequestList = [];
 gDeleteRequestList = [];
 gPostRequestList = [];
 gPutRequestList = [];
-gOnewayRequestLists = [gGetRequestList, gDeleteRequestList, gPostRequestList, gPutRequestList];
+gOnewayRequestLists = [
+  gGetRequestList,
+  gDeleteRequestList,
+  gPostRequestList,
+  gPutRequestList
+];
 
+/**
+ * OCF Adapter
+ */
 function OCFAdapter() {
-  this._mfg_name = '';
+  this._mfgName = '';
   this._devices = [];
   this._resources = [];
   this._nextDeviceId = 0;
@@ -89,21 +101,36 @@ OCFAdapter.prototype.initialize = function () {
 OCFAdapter.prototype.deinitialize = function () {
   native.ocf_adapter_deinitialize();
 };
-OCFAdapter.prototype.setPlatform = function (mfg_name) {
-  this._mfg_name = mfg_name;
-  native.ocf_adapter_setPlatform(mfg_name);
+OCFAdapter.prototype.setPlatform = function (mfgName) {
+  this._mfgName = mfgName;
+  native.ocf_adapter_setPlatform(mfgName);
 };
 OCFAdapter.prototype.getPlatform = function () {
-  return this._mfg_name;
+  return this._mfgName;
 };
 OCFAdapter.prototype.addDevice = function (
-  uri, resource_type, name, spec_version, data_model_version) {
+  uri,
+  resourceType,
+  name,
+  specVersion,
+  dataModelVersion
+) {
   var device = new OCFDevice(
-    this._nextDeviceId++, uri, resource_type, name, spec_version,
-    data_model_version);
+    this._nextDeviceId++,
+    uri,
+    resourceType,
+    name,
+    specVersion,
+    dataModelVersion
+  );
   this._devices.push(device);
   native.ocf_adapter_addDevice(
-    uri, resource_type, name, spec_version, data_model_version);
+    uri,
+    resourceType,
+    name,
+    specVersion,
+    dataModelVersion
+  );
 };
 OCFAdapter.prototype.getDevices = function () {
   return this._devices;
@@ -125,12 +152,12 @@ OCFAdapter.prototype.onPrepareServer = function (handler) {
   native.ocf_adapter_onPrepareServer(handler);
 };
 OCFAdapter.prototype.start = function () {
-  oa_start_request_list_cleaner();
+  oaStartRequestListCleaner();
   native.ocf_adapter_start();
 };
 OCFAdapter.prototype.stop = function () {
   native.ocf_adapter_stop();
-  oa_stop_request_list_cleaner();
+  oaStopRequestListCleaner();
 };
 
 OCFAdapter.prototype.addResource = function (resource) {
@@ -167,8 +194,8 @@ OCFAdapter.prototype.repSet = function (key, value) {
 OCFAdapter.prototype.repEndRootObject = function () {
   native.ocf_adapter_repEndRootObject();
 };
-OCFAdapter.prototype.sendResponse = function (ocf_request, status_code) {
-  native.ocf_adapter_sendResponse(ocf_request, status_code);
+OCFAdapter.prototype.sendResponse = function (ocfRequest, statusCode) {
+  native.ocf_adapter_sendResponse(ocfRequest, statusCode);
 };
 
 OCFAdapter.prototype.stopDiscovery = function () {
@@ -177,43 +204,43 @@ OCFAdapter.prototype.stopDiscovery = function () {
 OCFAdapter.prototype.isDiscovering = function () {
   return native.ocf_adapter.isDiscovering();
 };
-OCFAdapter.prototype.discovery = function (resource_type, discovery_handler) {
-  return native.ocf_adapter_discovery(resource_type, discovery_handler);
+OCFAdapter.prototype.discovery = function (resourceType, discoveryHandler) {
+  return native.ocf_adapter_discovery(resourceType, discoveryHandler);
 };
-OCFAdapter.prototype.discoveryAll = function (discovery_handler) {
-  return native.ocf_adapter_discovery(' ', discovery_handler);
+OCFAdapter.prototype.discoveryAll = function (discoveryHandler) {
+  return native.ocf_adapter_discovery(' ', discoveryHandler);
 };
 
-function make_request(requestId, query, qos, endpoint, uri, user_handler) {
+var makeRequest = function (requestId, query, qos, endpoint, uri, userHandler) {
   var request = {};
   request.id = requestId;
   request.query = query;
   request.qos = qos;
   request.endpoint = endpoint;
   request.uri = uri;
-  request.user_handler = user_handler;
+  request.userHandler = userHandler;
   request.timestamp = new Date();
   return request;
-}
+};
 
-function oa_observe_response_handler(requestId, response) {
-  return oa_response_handler(requestId, response, gObserveRequestList, false);
-}
-function oa_get_response_handler(requestId, response) {
-  return oa_response_handler(requestId, response, gGetRequestList, true);
-}
-function oa_delete_response_handler(requestId, response) {
-  return oa_response_handler(requestId, response, gDeleteRequestList, true);
-}
-function oa_post_response_handler(requestId, response) {
-  return oa_response_handler(requestId, response, gPostRequestList, true);
-}
-function oa_put_response_handler(requestId, response) {
-  return oa_response_handler(requestId, response, gPutRequestList, true);
-}
-function oa_response_handler(requestId, response, requestList, isOneway) {
+var oaObserveResponseHandler = function (requestId, response) {
+  return oaResponseHandler(requestId, response, gObserveRequestList, false);
+};
+var oaGetResponseHandler = function (requestId, response) {
+  return oaResponseHandler(requestId, response, gGetRequestList, true);
+};
+var oaDeleteResponseHandler = function (requestId, response) {
+  return oaResponseHandler(requestId, response, gDeleteRequestList, true);
+};
+var oaPostResponseHandler = function (requestId, response) {
+  return oaResponseHandler(requestId, response, gPostRequestList, true);
+};
+var oaPutResponseHandler = function (requestId, response) {
+  return oaResponseHandler(requestId, response, gPutRequestList, true);
+};
+var oaResponseHandler = function (requestId, response, requestList, isOneway) {
   var request = undefined;
-  for (var i in requestList) {
+  for (var i = 0; i < requestList.length; i++) {
     var item = requestList[i];
     if (item !== undefined && item.id == requestId) {
       request = item;
@@ -221,51 +248,59 @@ function oa_response_handler(requestId, response, requestList, isOneway) {
     }
   }
   if (request !== undefined) {
-    var user_handler = request.user_handler;
-    if (user_handler !== undefined) {
-      user_handler(response);
+    var userHandler = request.userHandler;
+    if (userHandler !== undefined) {
+      userHandler(response);
       if (isOneway) {
         requestList.splice(requestId, 1);
       }
     }
   }
-}
-var response_timeout_ms = 2000;
-var request_list_cleaner_frequency_ms = 2000;
-var request_list_cleaner = undefined;
-function request_list_cleaner_fn() {
+};
+var responseTimeoutMs = 2000;
+var requestListCleanerFrequencyMS = 2000;
+var requestListCleaner = undefined;
+var requestListCleanerFn = function () {
   var now = new Date();
-  for (var i in gOnewayRequestLists) {
+  for (var i = 0; i < gOnewayRequestLists.length; i++) {
     var requestList = gOnewayRequestLists[i];
-    for (var j in requestList) {
+    for (var j = 0; j < requestList.length; j++) {
       var request = requestList[j];
       if (request === undefined) continue;
-      if (now - request.timestamp > response_timeout_ms) {
+      if (now - request.timestamp > responseTimeoutMs) {
         requestList.splice(j, 1);
       }
     }
   }
-}
-function oa_start_request_list_cleaner() {
-  request_list_cleaner = setInterval(request_list_cleaner_fn, request_list_cleaner_frequency_ms);
-}
-function oa_stop_request_list_cleaner() {
-  clearInterval(request_list_cleaner);
-}
+};
+var oaStartRequestListCleaner = function () {
+  requestListCleaner = setInterval(
+    requestListCleanerFn,
+    requestListCleanerFrequencyMS
+  );
+};
+var oaStopRequestListCleaner = function () {
+  clearInterval(requestListCleaner);
+};
 
 OCFAdapter.prototype.observe = function (
-  endpoint, uri, user_handler, query, qos) {
+  endpoint,
+  uri,
+  userHandler,
+  query,
+  qos
+) {
   if (query === undefined) {
     query = '';
   }
   if (qos == undefined) {
-    qos = 0;  // HIGH_QOS
+    qos = 0; // HIGH_QOS
   }
 
   var requestId = gOCFAdapterRequestId++;
-  var request = make_request(requestId, query, qos, endpoint, uri, user_handler);
+  var request = makeRequest(requestId, query, qos, endpoint, uri, userHandler);
 
-  var result = native.ocf_adapter_observe(request, oa_observe_response_handler);
+  var result = native.ocf_adapter_observe(request, oaObserveResponseHandler);
   if (result) {
     gObserveRequestList.push(request);
   }
@@ -274,7 +309,7 @@ OCFAdapter.prototype.observe = function (
 
 OCFAdapter.prototype.stopObserve = function (endpoint, uri) {
   var requestId = undefined;
-  for (var i in gObserveRequestList) {
+  for (var i = 0; i < gObserveRequestList.length; i++) {
     var request = gObserveRequestList[i];
     if (request.endpoint == endpoint && request.uri == request.uri) {
       requestId = request.id;
@@ -292,18 +327,17 @@ OCFAdapter.prototype.stopObserve = function (endpoint, uri) {
   }
 };
 
-OCFAdapter.prototype.get = function (
-  endpoint, uri, user_handler, query, qos) {
+OCFAdapter.prototype.get = function (endpoint, uri, userHandler, query, qos) {
   if (query === undefined) {
     query = '';
   }
   if (qos == undefined) {
-    qos = 0;  // HIGH_QOS
+    qos = 0; // HIGH_QOS
   }
 
   var requestId = gOCFAdapterRequestId++;
-  var request = make_request(requestId, query, qos, endpoint, uri, user_handler);
-  var result = native.ocf_adapter_get(request, oa_get_response_handler);
+  var request = makeRequest(requestId, query, qos, endpoint, uri, userHandler);
+  var result = native.ocf_adapter_get(request, oaGetResponseHandler);
   if (result) {
     gGetRequestList.push(request);
   }
@@ -311,17 +345,22 @@ OCFAdapter.prototype.get = function (
 };
 
 OCFAdapter.prototype.delete = function (
-  endpoint, uri, user_handler, query, qos) {
+  endpoint,
+  uri,
+  userHandler,
+  query,
+  qos
+) {
   if (query === undefined) {
     query = '';
   }
   if (qos == undefined) {
-    qos = 0;  // HIGH_QOS
+    qos = 0; // HIGH_QOS
   }
 
   var requestId = gOCFAdapterRequestId++;
-  var request = make_request(requestId, query, qos, endpoint, uri, user_handler);
-  var result = native.ocf_adapter_delete(request, oa_delete_response_handler);
+  var request = makeRequest(requestId, query, qos, endpoint, uri, userHandler);
+  var result = native.ocf_adapter_delete(request, oaDeleteResponseHandler);
   if (result) {
     gDeleteRequestList.push(request);
   }
@@ -329,17 +368,22 @@ OCFAdapter.prototype.delete = function (
 };
 
 OCFAdapter.prototype.initPost = function (
-  endpoint, uri, user_handler, query, qos) {
+  endpoint,
+  uri,
+  userHandler,
+  query,
+  qos
+) {
   if (query === undefined) {
     query = '';
   }
   if (qos == undefined) {
-    qos = 0;  // HIGH_QOS
+    qos = 0; // HIGH_QOS
   }
 
   var requestId = gOCFAdapterRequestId++;
-  var request = make_request(requestId, query, qos, endpoint, uri, user_handler);
-  var result = native.ocf_adapter_initPost(request, oa_post_response_handler);
+  var request = makeRequest(requestId, query, qos, endpoint, uri, userHandler);
+  var result = native.ocf_adapter_initPost(request, oaPostResponseHandler);
   if (result) {
     gPostRequestList.push(request);
   }
@@ -347,17 +391,22 @@ OCFAdapter.prototype.initPost = function (
 };
 
 OCFAdapter.prototype.initPut = function (
-  endpoint, uri, user_handler, query, qos) {
+  endpoint,
+  uri,
+  userHandler,
+  query,
+  qos
+) {
   if (query === undefined) {
     query = '';
   }
   if (qos == undefined) {
-    qos = 0;  // HIGH_QOS
+    qos = 0; // HIGH_QOS
   }
 
   var requestId = gOCFAdapterRequestId++;
-  var request = make_request(requestId, query, qos, endpoint, uri, user_handler);
-  var result = native.ocf_adapter_initPut(request, oa_put_response_handler);
+  var request = makeRequest(requestId, query, qos, endpoint, uri, userHandler);
+  var result = native.ocf_adapter_initPut(request, oaPutResponseHandler);
   if (result) {
     gPutRequestList.push(request);
   }
@@ -374,59 +423,76 @@ OCFAdapter.prototype.put = function () {
   return result;
 };
 
-
-function OCFDevice(
-  id, uri, resource_type, name, spec_version, data_model_version) {
+/**
+ * OCF Device
+ * @param {int} id OCF device's ID that is internally managed.
+ * @param {string} uri URI of the OCF device
+ * @param {string} resourceType OCF device's resource type
+ * @param {string} name the OCF device's name
+ * @param {string} specVersion version of the device's spec
+ * @param {string} dataModelVersion version of the device's data model
+ */
+function OCFDevice(id, uri, resourceType, name, specVersion, dataModelVersion) {
   this.id = id;
   this.uri = uri;
-  this.resource_type = resource_type;
+  this.resourceType = resourceType;
   this.name = name;
-  this.spec_version = spec_version;
-  this.data_model_version = data_model_version;
+  this.specVersion = specVersion;
+  this.dataModelVersion = dataModelVersion;
 }
 
-function OCFResource(device, name, uri, types, interface_masks) {
+/**
+ * OCF Resource
+ * @param {object} device OCF device that serves this resource
+ * @param {string} name the resource's name
+ * @param {string} uri URI of the resource
+ * @param {array} types the array of resource's types.
+ * each element's type is string.
+ * @param {interfaceMasks} interfaceMasks the array of interface masks.
+ * each element's type is string.
+ */
+function OCFResource(device, name, uri, types, interfaceMasks) {
   assert(device !== undefined && device.id !== undefined);
 
   this.device = device;
   this.name = name;
   this.uri = uri;
   this.types = types;
-  this.interface_mask = 0;
-  for (var i in interface_masks) {
-    this.interface_mask |= interface_masks[i];
+  this.interfaceMask = 0;
+  for (var i = 0; i < interfaceMasks.length; i++) {
+    this.interfaceMask |= interfaceMasks[i];
   }
-  this.default_interface_mask = interface_masks[0];
-  this.is_discoverable = undefined;
-  this.period_sec = undefined;
-  this.handler_id_map = {};
+  this.defaultInterfaceMask = interfaceMasks[0];
+  this.isDiscoverable = undefined;
+  this.periodSec = undefined;
+  this.handlerIDMap = {};
 
   native.ocf_resource_constructor(this);
 }
 
 OCFResource.prototype.destroyer = function () {
-  var handler_ids = [];
-  for (var i in this.handler_id_map) {
-    handler_ids.push(this.handler_id_map[i]);
+  var handlerIDs = [];
+  for (var i = 0; i < this.handlerIDMap.length; i++) {
+    handlerIDs.push(this.handlerIDMap[i]);
   }
-  native.ocf_resource_destroyer(this, handler_ids);
+  native.ocf_resource_destroyer(this, handlerIDs);
 };
 
-OCFResource.prototype.setDiscoverable = function (is_discoverable) {
-  this.is_discoverable = is_discoverable;
-  native.ocf_resource_setDiscoverable(this, is_discoverable);
+OCFResource.prototype.setDiscoverable = function (isDiscoverable) {
+  this.isDiscoverable = isDiscoverable;
+  native.ocf_resource_setDiscoverable(this, isDiscoverable);
 };
 
-OCFResource.prototype.setPeriodicObservable = function (period_sec) {
-  this.period_sec = period_sec;
-  native.ocf_resource_setPeriodicObservable(this, period_sec);
+OCFResource.prototype.setPeriodicObservable = function (periodSec) {
+  this.periodSec = periodSec;
+  native.ocf_resource_setPeriodicObservable(this, periodSec);
 };
 
 var gOCFResourceHandlerId = 0;
 OCFResource.prototype.setHandler = function (method, handler) {
   // Handler: void function(OCFRequest request, int method)
   var handlerId = gOCFResourceHandlerId;
-  this.handler_id_map[method] = handlerId;
+  this.handlerIDMap[method] = handlerId;
   native.ocf_resource_setHandler(this, handlerId, method, handler);
   gOCFResourceHandlerId++;
 };
