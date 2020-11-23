@@ -44,7 +44,7 @@ function onObserveLight(response) {
   var endpoint = response.endpoint;
   var uri = foundLightUri;
 
-  console.log('GET from ' + uri + ": " + payload);
+  console.log('GET from ' + uri + ': ' + payload);
 }
 
 var i = 0;
