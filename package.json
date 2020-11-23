@@ -1,0 +1,9 @@
+{
+  "name": "ant-js-style-check",
+  "version": "1.0.0",
+  "dependencies": {},
+  "devDependencies": {
+    "eslint": "^7.14.0",
+    "eslint-config-google": "^0.14.0"
+  }
+}
