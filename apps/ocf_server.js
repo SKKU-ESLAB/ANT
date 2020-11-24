@@ -7,7 +7,7 @@ oa.onPrepareEventLoop(function () {
   oa.addDevice('/oic/d', 'oic.d.light', 'Light', 'ocf.1.0.0', 'ocf.res.1.0.0');
 });
 
-var g_light_state = false;
+var gLightState = false;
 oa.onPrepareServer(function () {
   console.log('onPrepareServer()');
   device = oa.getDevice(0);
@@ -27,26 +27,26 @@ oa.onPrepareServer(function () {
 
 function getLightHandler(request) {
   oa.repStartRootObject();
-  oa.repSet('state', g_light_state);
+  oa.repSet('state', gLightState);
   oa.repEndRootObject();
   oa.sendResponse(request, ocf.OC_STATUS_OK);
 }
 
 var i = 0;
 function postLightHandler(request) {
-  var request_payload_string = request.request_payload_string;
-  request_payload = JSON.parse(request_payload_string);
+  var requestPayloadString = request.requestPayloadString;
+  var requestPayload = JSON.parse(requestPayloadString);
   console.log(
     '(' +
       i++ +
       ') POST Request: state=' +
-      request_payload.state +
+      requestPayload.state +
       ' (present:' +
-      g_light_state +
+      gLightState +
       ')'
   );
 
-  g_light_state = request_payload.state;
+  gLightState = requestPayload.state;
   oa.sendResponse(request, ocf.OC_STATUS_OK);
 }
 

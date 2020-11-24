@@ -13,15 +13,15 @@ settings.video_sink_sync = false;
 settings.my_ip_address = ant.companion.getMyIPAddress('eth0');
 settings.my_port = 5000;
 
-var on_initialize = function () {
-  console.log('on_initialize');
+var onInitialize = function () {
+  console.log('onInitialize');
 };
 
-var on_start = function () {
-  console.log('on_start');
+var onStart = function () {
+  console.log('onStart');
 
-  // Because ant.stream.initialize() is an async function without finish callback,
-  // pipeline setting should be executed by setTimeout.
+  // Because ant.stream.initialize() is an async function without
+  // finish callback, pipeline setting should be executed by setTimeout.
   ant.stream.initialize();
   setTimeout(function () {
     var pipeline = ant.stream.createPipeline('test');
@@ -82,9 +82,9 @@ var on_start = function () {
   }, 2000);
 };
 
-var on_stop = function () {
-  console.log('on_stop');
+var onStop = function () {
+  console.log('onStop');
   ant.stream.finalize();
 };
 
-ant.runtime.setCurrentApp(on_initialize, on_start, on_stop);
+ant.runtime.setCurrentApp(onInitialize, onStart, onStop);

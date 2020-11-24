@@ -5,5 +5,10 @@ find . \
   \( -not -path "${ANT_BASE_DIR}/subprojects/*" -and \
   -not -path "${ANT_BASE_DIR}/dep/*" -and \
   -not -path "${ANT_BASE_DIR}/.eslintrc.js" -and \
-  -not -path "${ANT_BASE_DIR}/node_modules/*" \) \
+  -not -path "${ANT_BASE_DIR}/node_modules/*" -and \
+  -not -path "${ANT_BASE_DIR}/apps/*" -and \
+  -not -path "*.eslintrc*.js" \) \
   | xargs npx eslint
+find ./apps \
+  \( -name "*.js" \) \
+  | xargs npx eslint -c ./.eslintrc-apps.js

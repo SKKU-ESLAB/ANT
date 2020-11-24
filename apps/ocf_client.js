@@ -7,14 +7,14 @@ oa.onPrepareEventLoop(function () {
   oa.addDevice('/oic/d', 'oic.wk.d', 'Client', 'ocf.1.0.0', 'ocf.res.1.0.0');
 });
 
-var g_light_state = false;
+var gLightState = false;
 oa.onPrepareClient(function () {
   oa.discovery('oic.r.light', onDiscovery);
 });
 
 var foundLightUri = undefined;
 
-function onDiscovery(endpoint, uri, types, interface_mask) {
+function onDiscovery(endpoint, uri, types, interfaceMask) {
   var isFound = false;
   for (var i in types) {
     if (types[i] == 'oic.r.light') {
@@ -29,8 +29,8 @@ function onDiscovery(endpoint, uri, types, interface_mask) {
       var res = oa.initPost(endpoint, uri, onPost, '', ocf.OC_LOW_QOS);
       if (res) {
         oa.repStartRootObject();
-        oa.repSet('state', g_light_state);
-        g_light_state = !g_light_state;
+        oa.repSet('state', gLightState);
+        gLightState = !gLightState;
         oa.repEndRootObject();
         oa.post();
       }
@@ -41,7 +41,7 @@ var interval;
 
 function onObserveLight(response) {
   var payload = response.payload;
-  var endpoint = response.endpoint;
+  // var endpoint = response.endpoint;
   var uri = foundLightUri;
 
   console.log('GET from ' + uri + ': ' + payload);
