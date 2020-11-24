@@ -14,6 +14,7 @@ module.exports = {
     'no-var': 0,
     'indent': ['error', 2],
     'comma-dangle': 0,
-    'space-before-function-paren': 0
+    'space-before-function-paren': 0,
+    'require-jsdoc': 0
   },
 };
