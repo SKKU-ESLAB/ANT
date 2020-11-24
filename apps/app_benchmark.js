@@ -37,8 +37,8 @@ var onReceiveMessage = function (method, targetUri, message) {
   );
 };
 
-var on_stop = function () {
-  console.log('on_stop');
+var onStop = function () {
+  console.log('onStop');
 };
 
-ant.runtime.setCurrentApp(onInitialize, onStart, on_stop);
+ant.runtime.setCurrentApp(onInitialize, onStart, onStop);

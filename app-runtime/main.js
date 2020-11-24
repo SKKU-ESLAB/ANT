@@ -113,6 +113,8 @@ var parseUrl = function (url) {
 
 /**
  * Event handler invoked when an alive request comes from the companion
+ * @param {object} request request object sent from the companion
+ * @param {string} data data sent from the companion
  * @return {object} alive message
  */
 function onAliveRequest(request, data) {
@@ -293,7 +295,8 @@ function onGetAppEditorPage(request, data) {
         gConfig.defaultInterfaceName
       );
       var ipAddressSetting =
-        '\n<script>$(document).ready(function () {\n$("#targetAddressInput").val("' +
+        '\n<script>$(document).ready(function () {\n' +
+        '$("#targetAddressInput").val("' +
         ipAddress +
         ':' +
         gConfig.defaultPort +

@@ -37,53 +37,53 @@ oa.onPrepareServer(function () {
   oa.addResource(thRes);
 });
 
-var g_light_state = false;
+var gLightState = false;
 function getLightHandler(request) {
   oa.repStartRootObject();
-  oa.repSet('state', g_light_state);
+  oa.repSet('state', gLightState);
   oa.repEndRootObject();
   oa.sendResponse(request, ocf.OC_STATUS_OK);
 }
 var i = 0;
 function postLightHandler(request) {
-  var request_payload_string = request.request_payload_string;
-  request_payload = JSON.parse(request_payload_string);
+  var requestPayloadString = request.requestPayloadString;
+  var requestPayload = JSON.parse(requestPayloadString);
   console.log(
     '(' +
       i++ +
       ') POST Light Request: state=' +
-      request_payload.state +
+      requestPayload.state +
       ' (present:' +
-      g_light_state +
+      gLightState +
       ')'
   );
 
-  g_light_state = request_payload.state;
+  gLightState = requestPayload.state;
   oa.sendResponse(request, ocf.OC_STATUS_OK);
 }
 
-var g_temp_state = 15;
+var gTempState = 15;
 function getTempHandler(request) {
   oa.repStartRootObject();
-  oa.repSet('state', g_temp_state);
+  oa.repSet('state', gTempState);
   oa.repEndRootObject();
   oa.sendResponse(request, ocf.OC_STATUS_OK);
 }
 var i = 0;
 function postTempHandler(request) {
-  var request_payload_string = request.request_payload_string;
-  request_payload = JSON.parse(request_payload_string);
+  var requestPayloadString = request.requestPayloadString;
+  var requestPayload = JSON.parse(requestPayloadString);
   console.log(
     '(' +
       i++ +
       ') POST Temp Request: state=' +
-      request_payload.state +
+      requestPayload.state +
       ' (present:' +
-      g_temp_state +
+      gTempState +
       ')'
   );
 
-  g_temp_state = request_payload.state;
+  gTempState = requestPayload.state;
   oa.sendResponse(request, ocf.OC_STATUS_OK);
 }
 
