@@ -4,88 +4,104 @@ var StreamAPI = undefined;
 try {
   StreamAPI = require('antstream');
 } catch (e) {
-  throw new Error("ML API Dependency Error: not found Stream API");
+  throw new Error('ML API Dependency Error: not found Stream API');
 }
 
-var RESULT_SUCCESS = 'Success';
-var RESULT_FAILED = 'Failed';
+/**
+ * ANT ML API
+ */
+function ANTML() {}
 
-function ANTML() { }
-
-ANTML.prototype.createMLElement = function (model_name, input_shape, input_type, output_shape, output_type) {
-  if (model_name.indexOf(" ") >= 0) {
-    console.error("Invalid model_name! " + model_name);
+ANTML.prototype.createMLElement = function (
+  modelName,
+  inputShape,
+  inputType,
+  outputShape,
+  outputType
+) {
+  if (modelName.indexOf(' ') >= 0) {
+    console.error('Invalid modelName! ' + modelName);
     return undefined;
   }
-  if (input_shape.indexOf(" ") >= 0) {
-    console.error("Invalid input_shape! " + input_shape);
+  if (inputShape.indexOf(' ') >= 0) {
+    console.error('Invalid inputShape! ' + inputShape);
     return undefined;
   }
-  if (input_type.indexOf(" ") >= 0) {
-    console.error("Invalid input_type! " + input_type);
+  if (inputType.indexOf(' ') >= 0) {
+    console.error('Invalid inputType! ' + inputType);
     return undefined;
   }
-  if (output_shape.indexOf(" ") >= 0) {
-    console.error("Invalid output_shape! " + output_shape);
+  if (outputShape.indexOf(' ') >= 0) {
+    console.error('Invalid outputShape! ' + outputShape);
     return undefined;
   }
-  if (output_type.indexOf(" ") >= 0) {
-    console.error("Invalid output_type! " + output_type);
+  if (outputType.indexOf(' ') >= 0) {
+    console.error('Invalid outputType! ' + outputType);
     return undefined;
   }
   if (!StreamAPI.isInitialized()) {
-    console.error("ERROR: Stream API is not initialized");
+    console.error('ERROR: Stream API is not initialized');
     return;
   }
 
-  function shape_array_to_str(shape_array) {
-    var shape_str = "";
-    for (var i in shape_array) {
+  var shapeArrayToStr = function (shapeArray) {
+    var shapeStr = '';
+    for (var i = 0; i < shapeArray.length; i++) {
       if (i == 0) {
-        shape_str = shape_str + shape_array[i];
+        shapeStr = shapeStr + shapeArray[i];
       } else {
-        shape_str = shape_str + ":" + shape_array[i];
+        shapeStr = shapeStr + ':' + shapeArray[i];
       }
     }
-    return shape_str;
-  }
+    return shapeStr;
+  };
 
-  var input_shape_str = shape_array_to_str(input_shape);
-  var output_shape_str = shape_array_to_str(output_shape);
+  var inputShapeStr = shapeArrayToStr(inputShape);
+  var outputShapeStr = shapeArrayToStr(outputShape);
 
-  var tensor_filter = StreamAPI.createElement("tensor_filter");
-  tensor_filter.setProperty("framework", "python3");
-  tensor_filter.setProperty("model", "./ml/tvm_nnstreamer.py");
-  tensor_filter.setProperty("input", input_shape_str);
-  tensor_filter.setProperty("inputtype", input_type);
-  tensor_filter.setProperty("output", output_shape_str);
-  tensor_filter.setProperty("outputtype", output_type);
-  var custom = model_name + " " + input_shape_str + " " + input_type
-    + " " + output_shape_str + " " + output_type;
-  tensor_filter.setProperty("custom", custom);
-  return tensor_filter;
+  var tensorFilter = StreamAPI.createElement('tensorFilter');
+  tensorFilter.setProperty('framework', 'python3');
+  tensorFilter.setProperty('model', './ml/tvm_nnstreamer.py');
+  tensorFilter.setProperty('input', inputShapeStr);
+  tensorFilter.setProperty('inputtype', inputType);
+  tensorFilter.setProperty('output', outputShapeStr);
+  tensorFilter.setProperty('outputtype', outputType);
+  var custom =
+    modelName +
+    ' ' +
+    inputShapeStr +
+    ' ' +
+    inputType +
+    ' ' +
+    outputShapeStr +
+    ' ' +
+    outputType;
+  tensorFilter.setProperty('custom', custom);
+  return tensorFilter;
 };
 
 ANTML.prototype.getMaxOfBuffer = function (buffer, type) {
   return native.ant_ml_getMaxOfBuffer(buffer, type);
-}
+};
 
 ANTML.prototype.connectCompressionServer = function (ipAddress) {
   return new CompressionServer(ipAddress);
 };
 
+/**
+ * Compression server object
+ * @param {string} ipAddress compression server's IP address
+ */
 function CompressionServer(ipAddress) {
   this.ipAddress = ipAddress;
 }
 
 CompressionServer.prototype.downloadModel = function (modelId) {
-  if (this.ipAddress === undefined)
-    return undefined;
+  if (this.ipAddress === undefined) return undefined;
   // TODO: implement details
 };
 CompressionServer.prototype.downloadKernel = function (kernelId) {
-  if (this.ipAddress === undefined)
-    return undefined;
+  if (this.ipAddress === undefined) return undefined;
   // TODO: implement details
 };
 

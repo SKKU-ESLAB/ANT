@@ -7,8 +7,8 @@ oa.onPrepareEventLoop(function () {
   oa.addDevice('/oic/d', 'oic.wk.d', 'Client', 'ocf.1.0.0', 'ocf.res.1.0.0');
 });
 
-var g_light_state = false;
-var g_temp_state = 15;
+var gLightState = false;
+var gTempState = 15;
 oa.onPrepareClient(function () {
   oa.discoveryAll(onDiscovery);
 });
@@ -16,9 +16,9 @@ oa.onPrepareClient(function () {
 var foundLightUri = undefined;
 var foundTempUri = undefined;
 
-function onDiscovery(endpoint, uri, types, interface_mask) {
+function onDiscovery(endpoint, uri, types, interfaceMask) {
   console.log('Discovered ' + uri);
-  for (var i in types) {
+  for (var i = 0; i < types.length; i++) {
     console.log('* type ' + i + ': ' + types[i]);
     if (types[i] == 'oic.r.light') {
       console.log('* Light resource => OBSERVE start');
@@ -28,8 +28,8 @@ function onDiscovery(endpoint, uri, types, interface_mask) {
         var res = oa.initPost(endpoint, uri, onPost, '', ocf.OC_LOW_QOS);
         if (res) {
           oa.repStartRootObject();
-          oa.repSet('state', g_light_state);
-          g_light_state = !g_light_state;
+          oa.repSet('state', gLightState);
+          gLightState = !gLightState;
           oa.repEndRootObject();
           oa.post();
         }
@@ -42,8 +42,8 @@ function onDiscovery(endpoint, uri, types, interface_mask) {
         var res = oa.initPost(endpoint, uri, onPost, '', ocf.OC_LOW_QOS);
         if (res) {
           oa.repStartRootObject();
-          oa.repSet('state', g_temp_state);
-          g_temp_state = (g_temp_state + 1) % 30;
+          oa.repSet('state', gTempState);
+          gTempState = (gTempState + 1) % 30;
           oa.repEndRootObject();
           oa.post();
         }
@@ -56,16 +56,16 @@ var interval;
 var interval2;
 
 function onObserveLight(response) {
-  var payload = response.payload;
-  var endpoint = response.endpoint;
+  // var payload = response.payload;
+  // var endpoint = response.endpoint;
   var uri = foundLightUri;
 
   console.log('GET from ' + uri);
 }
 
 function onObserveTemp(response) {
-  var payload = response.payload;
-  var endpoint = response.endpoint;
+  // var payload = response.payload;
+  // var endpoint = response.endpoint;
   var uri = foundTempUri;
 
   console.log('GET from ' + uri);
