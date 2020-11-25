@@ -1,3 +1,18 @@
+/* Copyright (c) 2017-2020 SKKU ESLAB, and contributors. All rights reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *  http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 #include <android/log.h>
 #include <android/native_window.h>
 #include <android/native_window_jni.h>
@@ -34,26 +49,34 @@ GST_DEBUG_CATEGORY_STATIC(debug_category);
 
 /* Structure to contain all our information, so we can pass it to callbacks */
 typedef struct _CustomData {
-  jobject app; /* Application instance, used to call its methods. A global
-                  reference is kept. */
+  // Application instance, used to call its methods.
+  // A global reference is kept.
+  jobject app;
+
   GstElement *pipeline; /* The running pipeline */
   GstElement
       *video_sink; /* The video sink element which receives XOverlay commands */
   GMainContext *context; /* GLib context used to run the main loop */
   GMainLoop *main_loop;  /* GLib main loop */
-  gboolean initialized;  /* To avoid informing the UI multiple times about the
-                            initialization */
-  ANativeWindow *native_window; /* The Android native window where video will be
-                                   rendered */
-  GstState state;               /* Current pipeline state */
-  GstState target_state; /* Desired pipeline state, to be set once buffering is
-                            complete */
-  gint64 duration;       /* Cached clip duration */
-  gint64
-      desired_position; /* Position to seek to, once the pipeline is running */
-  GstClockTime
-      last_seek_time; /* For seeking overflow prevention (throttling) */
-  gboolean is_live;   /* Live streams do not use buffering */
+
+  // To avoid informing the UI multiple times about the initialization
+  gboolean initialized;
+
+  // The Android native window where video will be rendered
+  ANativeWindow *native_window;
+
+  GstState state; /* Current pipeline state */
+
+  // Desired pipeline state, to be set once buffering is complete
+  GstState target_state;
+  gint64 duration; /* Cached clip duration */
+
+  // Position to seek to, once the pipeline is running
+  gint64 desired_position;
+
+  // For seeking overflow prevention (throttling)
+  GstClockTime last_seek_time;
+  gboolean is_live; /* Live streams do not use buffering */
 } CustomData;
 
 gchar *g_pipeline;
@@ -63,8 +86,7 @@ typedef enum {
   GST_PLAY_FLAG_TEXT = (1 << 2) /* We want subtitle output */
 } GstPlayFlags;
 
-/* These global variables cache values which are not changing during execution
- */
+// These global variables cache values which are not changing during execution
 static pthread_t gst_app_thread;
 static pthread_key_t current_jni_env;
 static JavaVM *java_vm;
