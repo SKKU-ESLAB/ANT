@@ -1,51 +1,24 @@
-[submodule "dep/bluez-4.101"]
-	path = dep/bluez-4.101
-	url = https://github.com/SKKU-ESLAB/ant-bluez
-[submodule "dep/ant-dbus-config"]
-	path = dep/ant-dbus-config
-	url = https://github.com/SKKU-ESLAB/ant-dbus-config
-[submodule "dep/deletesem"]
-	path = dep/deletesem
-	url = https://github.com/SKKU-ESLAB/ant-deletesem
-[submodule "dep/hostap"]
-	path = dep/hostap
-	url = https://github.com/SKKU-ESLAB/ant-hostap
-[submodule "dep/libuv-v1.7.5"]
-	path = dep/libuv-v1.7.5
-	url = https://github.com/libuv/libuv
-[submodule "dep/gst-rpicamsrc"]
-	path = dep/gst-rpicamsrc
-	url = https://github.com/thaytan/gst-rpicamsrc.git
-[submodule "dep/fann"]
-	path = dep/fann
-	url = https://github.com/libfann/fann.git
-[submodule "android/libs/armeabi"]
-  path = android/libs/armeabi
-  url = https://github.com/SKKU-ESLAB/ant-android-libs-armeabi.git
-[submodule "subprojects/selective-connection"]
-	path = subprojects/selective-connection
-	url = https://github.com/SKKU-ESLAB/selective-connection
-[submodule "subprojects/ACL-lowp"]
-	path = subprojects/ACL-lowp
-	url = https://github.com/SKKU-ESLAB/ACL-lowp
-[submodule "subprojects/CNN-on-flash"]
-	path = subprojects/CNN-on-flash
-	url = https://github.com/SKKU-ESLAB/CNN-on-flash
-[submodule "dep/iotjs"]
-	path = dep/iotjs
-	url = https://github.com/SKKU-ESLAB/ANT-iotjs
 [submodule "android-companion/app/src/main/jniLibs"]
 	path = android-companion/app/src/main/jniLibs
 	url = https://github.com/SKKU-ESLAB/ant-android-libs-armeabi
-[submodule "ml/sample-models"]
-	path = ml/sample-models
-	url = https://github.com/SKKU-ESLAB/ant-sample-ml-models
-[submodule "dep/tvm"]
-	path = dep/tvm
-	url = https://github.com/apache/incubator-tvm
+[submodule "subprojects/ACL-lowp"]
+	path = subprojects/ACL-lowp
+	url = https://github.com/SKKU-ESLAB/ACL-lowp
 [submodule "subprojects/auto-compression"]
 	path = subprojects/auto-compression
 	url = https://github.com/SKKU-ESLAB/Auto-Compression.git
+[submodule "subprojects/CNN-on-flash"]
+	path = subprojects/CNN-on-flash
+	url = https://github.com/SKKU-ESLAB/CNN-on-flash
+[submodule "subprojects/selective-connection"]
+	path = subprojects/selective-connection
+	url = https://github.com/SKKU-ESLAB/Virtual-Connection
+[submodule "dep/iotjs"]
+	path = dep/iotjs
+	url = https://github.com/SKKU-ESLAB/IoTJS-Plus
+[submodule "dep/tvm"]
+	path = dep/tvm
+	url = https://github.com/apache/incubator-tvm
 [submodule "dep/iotivity"]
 	path = dep/iotivity
 	url = https://github.com/iotivity/iotivity-lite
