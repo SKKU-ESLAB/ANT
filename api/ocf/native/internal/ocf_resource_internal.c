@@ -13,19 +13,6 @@
  * limitations under the License.
  */
 
-#include "ocf_resource_internal.h"
-
-#include "../../../common/native/ant_common.h"
-#include "ant_async.h"
-
-// IoTivity Lite configuration
-#define OC_SERVER
-#define OC_CLIENT
-
-// IoTivity Lite
-#include "oc_api.h"
-#include "port/oc_clock.h"
-
 #include <pthread.h>
 #include <signal.h>
 #include <stdbool.h>
@@ -34,6 +21,19 @@
 #include <string.h>
 #include <sys/types.h>
 #include <unistd.h>
+
+// IoTivity Lite configuration
+#define OC_SERVER
+#define OC_CLIENT
+
+// IoTivity Lite
+#include <oc_api.h>
+#include <port/oc_clock.h>
+
+#include "../../../common/native/ant_common.h"
+#include "ant_async.h"
+
+#include "ocf_resource_internal.h"
 
 // OCFResource()
 void *ocf_resource_constructor_internal(const char *name, const char *uri,
@@ -93,7 +93,7 @@ void ocf_resource_handler(oc_request_t *request,
   // Setting the attributes of event data
   oc_endpoint_to_string(request->origin, &origin_addr_ocs);
   origin_addr = oc_string(origin_addr_ocs);
-  if(origin_addr == NULL) {
+  if (origin_addr == NULL) {
     free(event_data);
     return;
   }

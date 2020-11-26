@@ -16,7 +16,11 @@
 #ifndef __ANT_COMMON_H__
 #define __ANT_COMMON_H__
 
-// TODO: hardcoded result message length
+#ifdef __cplusplus
+#include <string>
+#endif
+
+// TODO(RedCarrottt): hardcoded result message length
 #define MAX_RESULT_MESSAGE_LENGTH 100
 
 #define ANT_API_STRING_TO_STRING(api_name, function_name)                      \
@@ -61,6 +65,7 @@
   static const jerry_object_native_info_t GET_NATIVE_INFO(name) = {            \
       .free_cb = (jerry_object_native_free_callback_t)name##_destroy}
 #define GET_NOBJECT_P(jobject, name)                                           \
-(name##_t *) jerry_get_object_native_pointer(jobject, NULL, &GET_NATIVE_INFO(name)
+  (name##_t *) jerry_get_object_native_pointer(jobject, NULL,                  \
+    &GET_NATIVE_INFO(name)
 
 #endif /* !defined(__ANT_COMMON_H__) */

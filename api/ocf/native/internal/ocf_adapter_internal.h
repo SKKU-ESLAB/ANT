@@ -16,12 +16,12 @@
 #ifndef __OCF_ADAPTER_INTERNAL_H__
 #define __OCF_ADAPTER_INTERNAL_H__
 
-#include "ant_async.h"
-#include "ll.h"
-
 #include <pthread.h>
 #include <stdbool.h>
 #include <stdlib.h>
+
+#include "ant_async.h"
+#include "ll.h"
 
 ANT_ASYNC_DECL_IN_HEADER(ocf_adapter_onPrepareEventLoop);
 ANT_ASYNC_DECL_IN_HEADER(ocf_adapter_onPrepareServer);

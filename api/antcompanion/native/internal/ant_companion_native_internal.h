@@ -18,7 +18,8 @@
 
 #include <sys/types.h>
 
-void ant_companion_getMyIPAddress_internal(const char *interfaceName, char *resultIPAddress);
+void ant_companion_getMyIPAddress_internal(const char *interfaceName,
+                                           char *resultIPAddress);
 
 void initANTCompanion(void);
 

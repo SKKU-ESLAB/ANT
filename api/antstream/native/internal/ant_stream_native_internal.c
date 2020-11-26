@@ -68,7 +68,7 @@ GDBusNodeInfo *g_gdbus_introspection;
 pthread_t g_stream_thread;
 GMainLoop *g_main_loop;
 
-// TODO: element registry: hard-coded size.
+// TODO(RedCarrottt): element registry: hard-coded size.
 // It should be changed to a registory of dynamic size.
 #define ELEMENT_REGISTRY_SIZE 100
 int g_element_registry_index = 0;
@@ -90,7 +90,7 @@ int registerElement(GstElement *element) {
 GstElement *getElement(int index) { return g_element_registry[index]; }
 
 // RPC functions
-// TODO: hardcoded args, argv length
+// TODO(RedCarrottt): hardcoded args, argv length
 #define RPC_MAX_ARGC 10
 #define MAX_ARG_LENGTH 100
 void rpc_streamapi_quitMainLoop(int argc, char argv[][MAX_ARG_LENGTH],
@@ -268,7 +268,8 @@ void rpc_element_setProperty(int argc, char argv[][MAX_ARG_LENGTH],
 
   // Internal
   switch (type) {
-  case 0: { // boolean
+  case 0: {
+    // boolean
     gboolean value_boolean;
     if (strncmp(argv[4], "true", MAX_ARG_LENGTH) == 0) {
       value_boolean = TRUE;
@@ -278,19 +279,22 @@ void rpc_element_setProperty(int argc, char argv[][MAX_ARG_LENGTH],
     g_object_set(G_OBJECT(element), key, value_boolean, NULL);
     break;
   }
-  case 1: { // string
+  case 1: {
+    // string
     const char *value_string;
     value_string = argv[4];
     g_object_set(G_OBJECT(element), key, value_string, NULL);
     break;
   }
-  case 2: { // integer
+  case 2: {
+    // integer
     int value_integer;
     sscanf(argv[4], "%d", &value_integer);
     g_object_set(G_OBJECT(element), key, value_integer, NULL);
     break;
   }
-  case 3: { // float
+  case 3: {
+    // float
     float value_float;
     sscanf(argv[4], "%f", &value_float);
     g_object_set(G_OBJECT(element), key, value_float, NULL);
@@ -403,14 +407,16 @@ handle_method_call_fn(GDBusConnection *connection, const gchar *sender,
 
     // Parsing arguments
     {
+      static char *save;
       char *token;
-      token = strtok((char *)inputMessage, "\n");
+      token = strtok_r((char *)inputMessage, "\n", &save);
       while (token != NULL) {
         if (argc < RPC_MAX_ARGC) {
           snprintf(argv[argc], MAX_ARG_LENGTH, "%s", token);
         }
         argc++;
-        token = strtok(NULL, "\n");
+        static char *save2;
+        token = strtok_r(NULL, "\n", &save2);
       }
     }
     // g_print("Incoming method call message:%s\n", argv[0]);
@@ -483,7 +489,7 @@ void *stream_thread_fn(void *arg) {
   g_print("Stream thread terminated!\n");
 
   /* Free resources */
-  // TODO: free gstremaer pipeline, elements
+  // TODO(RedCarrottt): free gstremaer pipeline, elements
   g_main_loop_unref(g_main_loop);
   g_dbus_node_info_unref(g_gdbus_introspection);
 
@@ -497,7 +503,8 @@ void *stream_thread_fn(void *arg) {
 
   pthread_exit(NULL);
 
-  // TODO: notify IoT.js to set "ant.stream._mIsInitialized = false"
+  // TODO(RedCarrottt): notify IoT.js to set "ant.stream._mIsInitialized =
+  // false"
 }
 
 void ant_stream_initializeStream_internal() {
@@ -549,7 +556,7 @@ void ant_stream_callDbusMethod_internal(const char *inputMessage,
 }
 
 /* The appsink has received a buffer */
-// TODO: Hardcoding: unique handler
+// TODO(RedCarrottt): Hardcoding: unique handler
 ant_async_handler g_ant_async_handler;
 static GstFlowReturn gst_signal_handler_ant_async(GstElement *element,
                                                   char *element_name) {

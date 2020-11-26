@@ -13,16 +13,16 @@
  * limitations under the License.
  */
 
-#include "../../common/native/ant_common.h"
-#include "internal/ant_ml_native_internal.h"
-
-#include "iotjs_def.h"
-#include "iotjs_uv_request.h"
-#include "modules/iotjs_module_buffer.h"
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+
+#include <iotjs_def.h>
+#include <iotjs_uv_request.h>
+#include <modules/iotjs_module_buffer.h>
+
+#include "../../common/native/ant_common.h"
+#include "internal/ant_ml_native_internal.h"
 
 JS_FUNCTION(ant_ml_getMaxOfBuffer) {
   jerry_value_t argBuffer;
@@ -67,10 +67,10 @@ JS_FUNCTION(ant_ml_getMaxOfBuffer) {
     iotjs_string_destroy(&argType);
     return ret;
   } else if (strncmp(type, "int32", strlen("int32")) == 0) {
-    long *data_array = (long *)buffer_wrap->buffer;
-    size_t data_len = buffer_len / sizeof(long);
+    int32_t *data_array = (int32_t *)buffer_wrap->buffer;
+    size_t data_len = buffer_len / sizeof(int32_t);
     int result_max_index;
-    long result_value;
+    int32_t result_value;
     jerry_value_t ret;
 
     ant_ml_getMaxOfBuffer_internal_int32(data_array, data_len,

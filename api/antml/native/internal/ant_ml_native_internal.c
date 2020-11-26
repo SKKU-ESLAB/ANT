@@ -13,12 +13,12 @@
  * limitations under the License.
  */
 
-#include "ant_ml_native_internal.h"
-#include "../../../common/native/ant_common.h"
-
 #include <stdio.h>
 #include <string.h>
 #include <sys/types.h>
+
+#include "ant_ml_native_internal.h"
+#include "../../../common/native/ant_common.h"
 
 void ant_ml_getMaxOfBuffer_internal_uint8(const unsigned char *data_array,
                                           size_t data_array_len,
@@ -39,16 +39,16 @@ void ant_ml_getMaxOfBuffer_internal_uint8(const unsigned char *data_array,
   *result_value = max_value;
 }
 
-void ant_ml_getMaxOfBuffer_internal_int32(const long *data_array,
+void ant_ml_getMaxOfBuffer_internal_int32(const int32_t *data_array,
                                           size_t data_array_len,
                                           int *result_max_index,
-                                          long *result_value) {
-  long max_value = 0;
+                                          int32_t *result_value) {
+  int32_t max_value = 0;
   int max_index = -1;
 
   int i;
   for (i = 0; i < (int)data_array_len; i++) {
-    long item = data_array[i];
+    int32_t item = data_array[i];
     if (item > max_value) {
       max_value = item;
       max_index = i;
