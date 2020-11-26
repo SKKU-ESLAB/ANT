@@ -1,7 +1,9 @@
-/*
+/* Copyright (c) 2015 Matthew Johnston. All rights reserved.
+ *
+ * See: https://gist.github.com/warmwaffles/6fb6786be7c86ed51fce
+ *
  * Generic hashmap manipulation functions
- * SEE: http://elliottback.com/wp/hashmap-implementation-in-c/
- * https://gist.github.com/warmwaffles/6fb6786be7c86ed51fce
+ *
  */
 
 #ifndef __HASHMAP_H__

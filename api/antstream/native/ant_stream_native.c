@@ -13,21 +13,21 @@
  * limitations under the License.
  */
 
+#include <stdio.h>
+#include <stdlib.h>
+
+#include <iotjs_def.h>
+#include <iotjs_uv_request.h>
+#include <modules/iotjs_module_buffer.h>
+
 #include "../../common/native/ant_common.h"
 #include "internal/ant_stream_native_internal.h"
 #include "internal/ll.h"
 
-#include "iotjs_def.h"
-#include "iotjs_uv_request.h"
-#include "modules/iotjs_module_buffer.h"
-
-#include <stdio.h>
-#include <stdlib.h>
-
 ANT_API_VOID_TO_VOID(ant_stream, initializeStream);
 ANT_API_STRING_TO_STRING(ant_stream, callDbusMethod);
 
-// TODO: add a function to reset g_uv_async (hardcoded now)
+// TODO(RedCarrottt): add a function to reset g_uv_async (hardcoded now)
 // Async handler order: gstreamer signal -> ant async -> uv async -> js
 // uv async handler
 bool g_is_async_handler_set = false;
@@ -36,7 +36,7 @@ typedef struct async_handler_args async_handler_args_t;
 struct async_handler_args {
   char *element_name;
   unsigned char *buffer_data;
-  unsigned long buffer_size;
+  uint32_t buffer_size;
 };
 ll_t *g_async_args_ll;
 void async_handler_args_teardown(void *item) {
@@ -50,7 +50,7 @@ void async_handler_args_teardown(void *item) {
 jerry_value_t g_js_async_handler;
 
 static void stream_elementConnectSignal_ant_async_handler(
-    const char *element_name, unsigned char *data, unsigned long data_size) {
+    const char *element_name, unsigned char *data, uint32_t data_size) {
   // ant async handler -> call uv async handler
   if (g_is_async_handler_set) {
     async_handler_args_t *args =
@@ -131,7 +131,7 @@ JS_FUNCTION(ant_stream_elementConnectSignal) {
   g_js_async_handler = argHandler;
 
   // Register uv async handler
-  // TODO: Hardcoding: unique handler
+  // TODO(RedCarrottt): Hardcoding: unique handler
   {
     iotjs_environment_t *env = iotjs_environment_get();
     uv_loop_t *loop = iotjs_environment_loop(env);
