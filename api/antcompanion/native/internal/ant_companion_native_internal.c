@@ -13,9 +13,6 @@
  * limitations under the License.
  */
 
-#include "ant_companion_native_internal.h"
-#include "../../../common/native/ant_common.h"
-
 #include <arpa/inet.h>
 #include <net/if.h>
 #include <netinet/in.h>
@@ -26,6 +23,9 @@
 #include <sys/socket.h>
 #include <sys/types.h>
 #include <unistd.h>
+
+#include "../../../common/native/ant_common.h"
+#include "ant_companion_native_internal.h"
 
 void ant_companion_getMyIPAddress_internal(const char *interfaceName,
                                            char *resultIPAddress) {

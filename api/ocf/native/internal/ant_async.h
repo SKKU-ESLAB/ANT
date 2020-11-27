@@ -16,16 +16,16 @@
 #ifndef __ANT_ASYNC_H__
 #define __ANT_ASYNC_H__
 
-#include "hashmap.h"
-#include "ll.h"
-
-#include "iotjs_def.h"
-#include "iotjs_uv_request.h"
-#include "modules/iotjs_module_buffer.h"
-
 #include <pthread.h>
 #include <stdbool.h>
 #include <stdlib.h>
+
+#include <iotjs_def.h>
+#include <iotjs_uv_request.h>
+#include <modules/iotjs_module_buffer.h>
+
+#include "hashmap.h"
+#include "ll.h"
 
 // ANT async handler procedure:
 // 1. [External thread]
@@ -34,8 +34,11 @@
 //    uv async event occurs -> type_uv_handler() -> g_type_async.js_handler()
 
 struct ant_async_s {
-  uv_async_t uv_async; // libuv async
-  map_t handler_map;   // js_handler map
+  // libuv async
+  uv_async_t uv_async;
+
+  // js_handler map
+  map_t handler_map;
   ll_t *event_queue;
   char *name;
 };

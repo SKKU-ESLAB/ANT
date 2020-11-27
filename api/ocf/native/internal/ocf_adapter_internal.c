@@ -13,19 +13,6 @@
  * limitations under the License.
  */
 
-#include "ocf_adapter_internal.h"
-
-#include "../../../common/native/ant_common.h"
-#include "ant_async.h"
-
-// IoTivity Lite configuration
-#define OC_SERVER
-#define OC_CLIENT
-
-// IoTivity Lite
-#include "oc_api.h"
-#include "port/oc_clock.h"
-
 #include <pthread.h>
 #include <signal.h>
 #include <stdbool.h>
@@ -34,6 +21,19 @@
 #include <string.h>
 #include <sys/types.h>
 #include <unistd.h>
+
+// IoTivity Lite configuration
+#define OC_SERVER
+#define OC_CLIENT
+
+// IoTivity Lite
+#include <oc_api.h>
+#include <port/oc_clock.h>
+
+#include "../../../common/native/ant_common.h"
+#include "ant_async.h"
+
+#include "ocf_adapter_internal.h"
 
 // OCF thread
 static pthread_t g_ocf_thread;

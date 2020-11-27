@@ -13,17 +13,16 @@
  * limitations under the License.
  */
 
-#include "ocf_adapter.h"
-
-#include "ocf_resource.h"
-
-#include "iotjs_def.h"
-#include "iotjs_uv_request.h"
-#include "modules/iotjs_module_buffer.h"
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+
+#include <iotjs_def.h>
+#include <iotjs_uv_request.h>
+#include <modules/iotjs_module_buffer.h>
+
+#include "ocf_adapter.h"
+#include "ocf_resource.h"
 
 // Linked list destroyers
 void oa_discovery_event_data_destroyer(void *item) {
@@ -63,7 +62,8 @@ JS_FUNCTION(ocf_adapter_onPrepareEventLoop) {
   DJS_CHECK_ARGS(1, function);
   argHandler = JS_GET_ARG(0, function);
 
-  int zero = 0; // singleton handler
+  // singleton handler
+  int zero = 0;
   result =
       REGISTER_JS_HANDLER(ocf_adapter_onPrepareEventLoop, zero, argHandler);
   return jerry_create_boolean(result);
@@ -72,7 +72,8 @@ ANT_UV_HANDLER_FUNCTION(ocf_adapter_onPrepareEventLoop) {
   void *e;
   while ((e = GET_FIRST_EVENT_FROM_ANT_ASYNC(ocf_adapter_onPrepareEventLoop)) !=
          NULL) {
-    int zero = 0; // singleton handler
+    // singleton handler
+    int zero = 0;
     jerry_value_t js_handler =
         GET_JS_HANDLER_FROM_ANT_ASYNC(ocf_adapter_onPrepareEventLoop, zero);
     if (!jerry_value_is_undefined(js_handler)) {
@@ -97,7 +98,8 @@ JS_FUNCTION(ocf_adapter_onPrepareServer) {
   DJS_CHECK_ARGS(1, function);
   argHandler = JS_GET_ARG(0, function);
 
-  int zero = 0; // singleton handler
+  // singleton handler
+  int zero = 0;
   result = REGISTER_JS_HANDLER(ocf_adapter_onPrepareServer, zero, argHandler);
   return jerry_create_boolean(result);
 }
@@ -105,7 +107,8 @@ ANT_UV_HANDLER_FUNCTION(ocf_adapter_onPrepareServer) {
   void *e;
   while ((e = GET_FIRST_EVENT_FROM_ANT_ASYNC(ocf_adapter_onPrepareServer)) !=
          NULL) {
-    int zero = 0; // singleton handler
+    // singleton handler
+    int zero = 0;
     jerry_value_t js_handler =
         GET_JS_HANDLER_FROM_ANT_ASYNC(ocf_adapter_onPrepareServer, zero);
     if (!jerry_value_is_undefined(js_handler)) {
@@ -128,7 +131,8 @@ JS_FUNCTION(ocf_adapter_onPrepareClient) {
   DJS_CHECK_ARGS(1, function);
   argHandler = JS_GET_ARG(0, function);
 
-  int zero = 0; // singleton handler
+  // singleton handler
+  int zero = 0;
   result = REGISTER_JS_HANDLER(ocf_adapter_onPrepareClient, zero, argHandler);
   return jerry_create_boolean(result);
 }
@@ -136,7 +140,8 @@ ANT_UV_HANDLER_FUNCTION(ocf_adapter_onPrepareClient) {
   void *e;
   while ((e = GET_FIRST_EVENT_FROM_ANT_ASYNC(ocf_adapter_onPrepareClient)) !=
          NULL) {
-    int zero = 0; // singleton handler
+    // singleton handler
+    int zero = 0;
     jerry_value_t js_handler =
         GET_JS_HANDLER_FROM_ANT_ASYNC(ocf_adapter_onPrepareClient, zero);
     if (!jerry_value_is_undefined(js_handler)) {

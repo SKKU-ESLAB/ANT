@@ -1,17 +1,6 @@
-/**
- * Thread-safe linked-list data-structure for C.
- *
- * See `../README.md` and `main()` in this file for usage.
- *
- * @file ll.c contains the implementatons of the functions outlined in `ll.h` as
- * well as all the functions necessary to manipulate and handle nodes (which are
- * not exposed to the user).
- *
- * @author r-medina
+/* Copyright (c) 2015 r-medina. All rights reserved.
  *
  * The MIT License (MIT)
- *
- * Copyright (c) 2015 r-medina
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -30,6 +19,16 @@
  * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
+ *
+ * Thread-safe linked-list data-structure for C.
+ *
+ * See `../README.md` and `main()` in this file for usage.
+ *
+ * @file ll.c contains the implementatons of the functions outlined in `ll.h` as
+ * well as all the functions necessary to manipulate and handle nodes (which are
+ * not exposed to the user).
+ *
+ * @author r-medina
  */
 
 #include <stdio.h>
@@ -166,7 +165,9 @@ ll_node_t *ll_new_node(void *val) {
  * @returns 0 if successful, -1 otherwise
  */
 int ll_select_n_min_1(ll_t *list, ll_node_t **node, int n, locktype_t lt) {
-  if (n < 0) // don't check against list->len because threads can add length
+  // don't check against list->len because threads can add length
+
+  if (n < 0)
     return -1;
 
   if (n == 0)
@@ -175,8 +176,10 @@ int ll_select_n_min_1(ll_t *list, ll_node_t **node, int n, locktype_t lt) {
   // n > 0
 
   *node = list->hd;
-  if (*node == NULL) // if head is NULL, but we're trying to go past it,
-    return -1;       // we have a problem
+
+  // if head is NULL, but we're trying to go past it, we have a problem
+  if (*node == NULL)
+    return -1;
 
   RWLOCK(lt, (*node)->m);
 
@@ -184,8 +187,8 @@ int ll_select_n_min_1(ll_t *list, ll_node_t **node, int n, locktype_t lt) {
   for (; n > 1; n--) {
     last = *node;
     *node = last->nxt;
-    if (*node ==
-        NULL) { // happens when another thread deletes the end of a list
+    if (*node == NULL) {
+      // happens when another thread deletes the end of a list
       RWUNLOCK(last->m);
       return -1;
     }
@@ -211,7 +214,8 @@ int ll_select_n_min_1(ll_t *list, ll_node_t **node, int n, locktype_t lt) {
 int ll_insert_n(ll_t *list, void *val, int n) {
   ll_node_t *new_node = ll_new_node(val);
 
-  if (n == 0) { // nth_node is list->hd
+  if (n == 0) {
+    // nth_node is list->hd
     RWLOCK(l_write, list->m);
     new_node->nxt = list->hd;
     list->hd = new_node;
@@ -280,8 +284,8 @@ int ll_remove_n(ll_t *list, int n) {
     list->hd = tmp->nxt;
   } else {
     ll_node_t *nth_node;
-    if (ll_select_n_min_1(list, &nth_node, n,
-                          l_write)) // if that node doesn't exist
+    // if that node doesn't exist
+    if (ll_select_n_min_1(list, &nth_node, n, l_write))
       return -1;
 
     tmp = nth_node->nxt;
@@ -441,14 +445,16 @@ void ll_print(ll_t list) {
  * @param n - a pointer
  */
 void ll_no_teardown(void *n) {
-  n += 0; // compiler won't let me just return
+  // compiler won't let me just return
+  n += 0;
 }
 
 #ifdef LL
 /* this following code is just for testing this library */
 
 void num_teardown(void *n) {
-  *(int *)n *= -1; // just so we can visually inspect removals afterwards
+  // just so we can visually inspect removals afterwards
+  *(int *)n *= -1;
 }
 
 void num_printer(void *n) { printf(" %d", *(int *)n); }
@@ -456,7 +462,8 @@ void num_printer(void *n) { printf(" %d", *(int *)n); }
 int num_equals_3(void *n) { return *(int *)n == 3; }
 
 int main() {
-  int *_n; // for storing returned ones
+  // for storing returned ones
+  int *_n;
   int test_count = 1;
   int fail_count = 0;
   int a = 0;
@@ -472,7 +479,8 @@ int main() {
   ll_t *list = ll_new(num_teardown);
   list->val_printer = num_printer;
 
-  ll_insert_first(list, &c); // 2 in front
+  // 2 in front
+  ll_insert_first(list, &c);
 
   _n = (int *)ll_get_first(list);
   if (!(*_n == c)) {
@@ -491,8 +499,11 @@ int main() {
     fprintf(stderr, "PASS Test %d!\n", test_count);
   test_count++;
 
-  ll_insert_first(list, &b); // 1 in front
-  ll_insert_first(list, &a); // 0 in front -> 0, 1, 2
+  // 1 in front
+  ll_insert_first(list, &b);
+
+  // 0 in front -> 0, 1, 2
+  ll_insert_first(list, &a);
 
   _n = (int *)ll_get_first(list);
   if (!(*_n == a)) {
@@ -511,9 +522,14 @@ int main() {
     fprintf(stderr, "PASS Test %d!\n", test_count);
   test_count++;
 
-  ll_insert_last(list, &d); // 3 in back
-  ll_insert_last(list, &e); // 4 in back
-  ll_insert_last(list, &f); // 5 in back
+  // 3 in back
+  ll_insert_last(list, &d);
+
+  // 4 in back
+  ll_insert_last(list, &e);
+
+  // 5 in back
+  ll_insert_last(list, &f);
 
   _n = (int *)ll_get_n(list, 5);
   if (!(*_n == f)) {
@@ -532,10 +548,12 @@ int main() {
     fprintf(stderr, "PASS Test %d!\n", test_count);
   test_count++;
 
-  ll_insert_n(list, &g, 6); // 6 at index 6 -> 0, 1, 2, 3, 4, 5, 6
+  // 6 at index 6 -> 0, 1, 2, 3, 4, 5, 6
+  ll_insert_n(list, &g, 6);
 
   int _i;
-  for (_i = 0; _i < list->len; _i++) { // O(n^2) test lol
+  for (_i = 0; _i < list->len; _i++) {
+    // O(n^2) test lol
     _n = (int *)ll_get_n(list, _i);
     if (!(*_n == _i)) {
       fail_count++;
@@ -547,15 +565,25 @@ int main() {
 
   // (ll: 0 1 2 3 4 5 6), length: 7
 
-  ll_remove_first(list); // (ll: 1 2 3 4 5 6), length: 6
-  ll_remove_n(list, 1);  // (ll: 1 3 4 5 6),   length: 5
-  ll_remove_n(list, 2);  // (ll: 1 3 5 6),     length: 4
-  ll_remove_n(list, 5);  // (ll: 1 3 5 6),     length: 4; does nothing
-  ll_remove_search(list, num_equals_3); // (ll: 1 5 6),       length: 3
-  ll_insert_first(list, &h);            // (ll: 3 1 5 6),     length: 5
-  ll_insert_last(list, &i);             // (ll: 3 1 5 6 3),   length: 5
-  ll_remove_search(list, num_equals_3); // (ll: 1 5 6 3),     length: 4
-  ll_remove_search(list, num_equals_3); // (ll: 1 5 6),       length: 3
+  // (ll: 1 2 3 4 5 6), length: 6
+  ll_remove_first(list);
+
+  // (ll: 1 3 4 5 6),   length: 5
+  ll_remove_n(list, 1);
+  // (ll: 1 3 5 6),     length: 4
+  ll_remove_n(list, 2);
+  // (ll: 1 3 5 6),     length: 4; does nothing
+  ll_remove_n(list, 5);
+  // (ll: 1 5 6),       length: 3
+  ll_remove_search(list, num_equals_3);
+  // (ll: 3 1 5 6),     length: 5
+  ll_insert_first(list, &h);
+  // (ll: 3 1 5 6 3),   length: 5
+  ll_insert_last(list, &i);
+  // (ll: 1 5 6 3),     length: 4
+  ll_remove_search(list, num_equals_3);
+  // (ll: 1 5 6),       length: 3
+  ll_remove_search(list, num_equals_3);
 
   ll_print(*list);
 
