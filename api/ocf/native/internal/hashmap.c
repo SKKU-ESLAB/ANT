@@ -1,7 +1,11 @@
-/*
+/* Copyright (c) 2015 Matthew Johnston. All rights reserved.
+ *
+ * See: https://gist.github.com/warmwaffles/6fb6786be7c86ed51fce
+ *
  * Generic map implementation. This class is thread-safe.
  * free() must be invoked when only one thread has access to the hashmap.
  */
+
 #include "hashmap.h"
 
 #include <semaphore.h>
@@ -192,13 +196,11 @@ int hashmap_get(map_t in, unsigned int key, any_t *arg) {
 
   /* Linear probing, if necessary */
   for (i = 0; i < m->table_size; i++) {
-
     if (m->data[curr].key == key && m->data[curr].in_use == 1) {
       *arg = (int *)(m->data[curr].data);
       sem_post(&m->lock);
       return MAP_OK;
     }
-
     curr = (curr + 1) % m->table_size;
   }
 
