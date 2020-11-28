@@ -188,39 +188,81 @@ OCFAdapter.prototype.onPrepareEventLoop = function (handler) {
   // Handler: void function(void)
   native.ocf_adapter_onPrepareEventLoop(handler);
 };
+/**
+ * OCFAdapter.onPrepareClient
+ * @param {Function} handler 
+ * called when all preparations for executing client functions in the OCF thread are complete
+ */
 OCFAdapter.prototype.onPrepareClient = function (handler) {
   // Handler: void function(void)
   native.ocf_adapter_onPrepareClient(handler);
 };
+/**
+ * OCFAdapter.onPrepareServer
+ * @param {Function} handler 
+ * called when all preparations for executing server functions in OCF thread are complete
+ */
 OCFAdapter.prototype.onPrepareServer = function (handler) {
   // Handler: void function(void)
   native.ocf_adapter_onPrepareServer(handler);
 };
+/**
+ * OCFAdapter.start
+ * Run the OCF thread. This function must be called after OCFAdapter.initialize() is called. 
+ * You can use the OCF Server API and OCF Client API only while the OCF thread is running.
+ * If you need to know exactly when you can use OCF Server API and OCF Client API, 
+ * you can use the handlers of OCFAdapter.onPrepareServer() and OCFAdapter.onPrepareClient().
+ */
 OCFAdapter.prototype.start = function () {
   oaStartRequestListCleaner();
   native.ocf_adapter_start();
-};
+}
+/**
+ * OCFAdapter.stop
+ * Stop the OCF thread.
+ */
 OCFAdapter.prototype.stop = function () {
   native.ocf_adapter_stop();
   oaStopRequestListCleaner();
 };
-
+/**
+ * OCFAdapter.addResource
+ * @param {OCFResource} resource 
+ */
 OCFAdapter.prototype.addResource = function (resource) {
   this._resources.push(resource);
   native.ocf_adapter_addResource(resource);
 };
+/**
+ * OCFAdapter.deleteResource
+ * @param {OCFResource} resource 
+ */
 OCFAdapter.prototype.deleteResource = function (resource) {
   resource.destroyer();
   var index = this._resources.indexOf(resource);
   this._resources.splice(index, 1);
 };
+/**
+ * OCFAdapter.getResources
+ * @return {OCFResource} resource
+ */
 OCFAdapter.prototype.getResources = function () {
   return this._resources;
 };
-
+/**
+ * OCFAdapter.repStartRootObject
+ * Let the OCF thread start writing the OCRepresentation.
+ */
 OCFAdapter.prototype.repStartRootObject = function () {
   native.ocf_adapter_repStartRootObject();
 };
+/**
+ * OCFAdapter.repSet
+ * @param {String} key 
+ * @param {[Boolean, Number, String]} value 
+ * The value is stored in a specific key among OCRepresentations being created by OCF thread. 
+ * In this function, various types of data including Boolean, Number, and String can be used as value.
+ */
 OCFAdapter.prototype.repSet = function (key, value) {
   if (typeof value === 'boolean') {
     native.ocf_adapter_repSetBoolean(key, value);
@@ -236,9 +278,20 @@ OCFAdapter.prototype.repSet = function (key, value) {
     console.log('repSet(): Not supported type (' + typeof value + ')');
   }
 };
+/**
+ * OCFAdapter.repEndRootObject
+ * Finish writing OCRepresentation of OCF thread.
+ */
 OCFAdapter.prototype.repEndRootObject = function () {
   native.ocf_adapter_repEndRootObject();
 };
+/**
+ * OCFAdapter.sendResponse
+ * @param {OCFRequest} ocfRequest 
+ * @param {Number} statusCode 
+ * Sends a response with a specific status code to a request from another device.
+
+ */
 OCFAdapter.prototype.sendResponse = function (ocfRequest, statusCode) {
   native.ocf_adapter_sendResponse(ocfRequest, statusCode);
 };
