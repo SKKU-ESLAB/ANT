@@ -1,3 +1,6 @@
+// @author RedCarottt
+
+/* @licence
 /* Copyright (c) 2017-2020 SKKU ESLAB, and contributors. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -116,13 +119,29 @@ OCFAdapter.prototype.initialize = function () {
 OCFAdapter.prototype.deinitialize = function () {
   native.ocf_adapter_deinitialize();
 };
+/**
+ * OCFAdapter.setPlatform
+ * @param {String} mfgName Manufacturer name 
+ */
 OCFAdapter.prototype.setPlatform = function (mfgName) {
   this._mfgName = mfgName;
   native.ocf_adapter_setPlatform(mfgName);
 };
+/**
+ * OCFAdapter.getPlatform
+ * @returns {string} platformName
+ */
 OCFAdapter.prototype.getPlatform = function () {
   return this._mfgName;
 };
+/**
+ * OCFAdapter.addDevice
+ * @param {String} uri id of device to be serviced
+ * @param {String} resourceType resource type of device to be serviced
+ * @param {String} name name of device to be serviced
+ * @param {String} specVersion specification of device to be serviced
+ * @param {String} dataModelVersion data model version of device to be serviced
+ */
 OCFAdapter.prototype.addDevice = function (
   uri,
   resourceType,
@@ -147,13 +166,26 @@ OCFAdapter.prototype.addDevice = function (
     dataModelVersion
   );
 };
+/**
+ * OCFAdapter.getDevices
+ * @return {Array<OCFDevice>} devices
+ */
 OCFAdapter.prototype.getDevices = function () {
   return this._devices;
 };
+/**
+ * OCFAdapter.getDevice
+ * @param {Integer} i
+ * @return {OCFDevice} device 
+ */
 OCFAdapter.prototype.getDevice = function (i) {
   return this._devices[i];
 };
 
+/**
+ * OCFAdapter.prototype.onPrepareEventLoop
+ * @param {Function} handler 
+ */
 OCFAdapter.prototype.onPrepareEventLoop = function (handler) {
   // Handler: void function(void)
   native.ocf_adapter_onPrepareEventLoop(handler);
