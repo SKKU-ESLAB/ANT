@@ -1,5 +1,3 @@
-// @author RedCarottt
-
 /* @licence
 /* Copyright (c) 2017-2020 SKKU ESLAB, and contributors. All rights reserved.
  *
@@ -121,7 +119,7 @@ OCFAdapter.prototype.deinitialize = function () {
 };
 /**
  * OCFAdapter.setPlatform
- * @param {String} mfgName Manufacturer name 
+ * @param {String} mfgName Manufacturer's name
  */
 OCFAdapter.prototype.setPlatform = function (mfgName) {
   this._mfgName = mfgName;
@@ -176,7 +174,7 @@ OCFAdapter.prototype.getDevices = function () {
 /**
  * OCFAdapter.getDevice
  * @param {Integer} i
- * @return {OCFDevice} device 
+ * @return {OCFDevice} device
  */
 OCFAdapter.prototype.getDevice = function (i) {
   return this._devices[i];
@@ -184,7 +182,7 @@ OCFAdapter.prototype.getDevice = function (i) {
 
 /**
  * OCFAdapter.prototype.onPrepareEventLoop
- * @param {Function} handler 
+ * @param {Function} handler
  */
 OCFAdapter.prototype.onPrepareEventLoop = function (handler) {
   // Handler: void function(void)
