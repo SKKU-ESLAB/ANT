@@ -1,8 +1,4 @@
-package skku.eslab.ant.companion.httpconnection;
-
-/* Copyright (c) 2019, contributors. All rights reserved.
- *
- * Contributor: Gyeonghwan Hong <redcarrottt@gmail.com>
+/* Copyright (c) 2017-2020 SKKU ESLAB, and contributors. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +12,9 @@ package skku.eslab.ant.companion.httpconnection;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
+package skku.eslab.ant.companion.httpconnection;
+
 public interface HTTPServerListener {
     public void onReceiveHTTPMessage(String uri, String message);
 }
