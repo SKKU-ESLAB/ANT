@@ -139,6 +139,8 @@ OCFAdapter.prototype.getPlatform = function () {
  * @param {String} name name of device to be serviced
  * @param {String} specVersion specification of device to be serviced
  * @param {String} dataModelVersion data model version of device to be serviced
+ * Set the device to be serviced by the OCFAdapter. 
+ * One OCFAdapter can service multiple devices.
  */
 OCFAdapter.prototype.addDevice = function (
   uri,
@@ -166,7 +168,7 @@ OCFAdapter.prototype.addDevice = function (
 };
 /**
  * OCFAdapter.getDevices
- * @return {Array<OCFDevice>} devices
+ * @returns {Array<OCFDevice>} devices
  */
 OCFAdapter.prototype.getDevices = function () {
   return this._devices;
@@ -174,7 +176,7 @@ OCFAdapter.prototype.getDevices = function () {
 /**
  * OCFAdapter.getDevice
  * @param {Integer} i
- * @return {OCFDevice} device
+ * @returns {OCFDevice} device
  */
 OCFAdapter.prototype.getDevice = function (i) {
   return this._devices[i];
@@ -244,7 +246,7 @@ OCFAdapter.prototype.deleteResource = function (resource) {
 };
 /**
  * OCFAdapter.getResources
- * @return {OCFResource} resource
+ * @returns {OCFResource} resource
  */
 OCFAdapter.prototype.getResources = function () {
   return this._resources;
@@ -287,24 +289,43 @@ OCFAdapter.prototype.repEndRootObject = function () {
 };
 /**
  * OCFAdapter.sendResponse
- * @param {OCFRequest} ocfRequest 
- * @param {Number} statusCode 
+ * @param {OCFRequest} ocfRequest target of response
+ * @param {Number} statusCode Response status code value
  * Sends a response with a specific status code to a request from another device.
 
  */
 OCFAdapter.prototype.sendResponse = function (ocfRequest, statusCode) {
   native.ocf_adapter_sendResponse(ocfRequest, statusCode);
 };
-
+/**
+ * OCFAdapter.stopDiscovery
+ * @returns {Boolean} isSuccess 
+ */
 OCFAdapter.prototype.stopDiscovery = function () {
   return native.ocf_adapter_stopDiscovery();
 };
+/**
+ * OCFAdapter.isDiscovering
+ * @returns {Boolean} isDiscovering
+ */
 OCFAdapter.prototype.isDiscovering = function () {
   return native.ocf_adapter.isDiscovering();
 };
+/**
+ * OCFAdapter.discovery
+ * @param {String} resourceType Type of resource to find on the network
+ * @param {Function} discoveryHandler called whenever one OCFResource is discovered
+ * @returns {Boolean} isSuccess
+ */
 OCFAdapter.prototype.discovery = function (resourceType, discoveryHandler) {
   return native.ocf_adapter_discovery(resourceType, discoveryHandler);
 };
+/**
+ * OCFAdapter.discoveryAll
+ * @param {Function handler} discoveryHandler Handler function for discovery response
+ * @returns {Boolean} isSuccess
+ * Search all resources regardless of any type on the network.
+ */
 OCFAdapter.prototype.discoveryAll = function (discoveryHandler) {
   return native.ocf_adapter_discovery(' ', discoveryHandler);
 };
