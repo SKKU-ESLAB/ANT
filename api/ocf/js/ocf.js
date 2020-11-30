@@ -401,7 +401,15 @@ var oaStartRequestListCleaner = function () {
 var oaStopRequestListCleaner = function () {
   clearInterval(requestListCleaner);
 };
-
+/**
+ * OCFAdapter.observe
+ * @param {OCFEndpoint} endpoint 
+ * @param {String} uri 
+ * @param {Function} userHandler 
+ * @param {String} query 
+ * @param {Integer} qos 
+ * @return {Boolean} isSuccess
+ */
 OCFAdapter.prototype.observe = function (
   endpoint,
   uri,
@@ -425,7 +433,12 @@ OCFAdapter.prototype.observe = function (
   }
   return result;
 };
-
+/**
+ * OCFAdapter.stopObserve
+ * @param {OCFEndpoint} endpoint 
+ * @param {String} uri 
+ * @returns {Boolean} isSuccess
+ */
 OCFAdapter.prototype.stopObserve = function (endpoint, uri) {
   var requestId = undefined;
   for (var i = 0; i < gObserveRequestList.length; i++) {
@@ -445,7 +458,15 @@ OCFAdapter.prototype.stopObserve = function (endpoint, uri) {
     return false;
   }
 };
-
+/**
+ * OCFAdapter.get
+ * @param {OCFEndpoint} endpoint 
+ * @param {String} uri 
+ * @param {Function} userHandler 
+ * @param {String} query 
+ * @param {Integer} qos 
+ * @returns {Boolean} isSuccess
+ */
 OCFAdapter.prototype.get = function (endpoint, uri, userHandler, query, qos) {
   if (query === undefined) {
     query = '';
@@ -462,7 +483,15 @@ OCFAdapter.prototype.get = function (endpoint, uri, userHandler, query, qos) {
   }
   return result;
 };
-
+/**
+ * OCFAdapter.delete
+ * @param {OCFEndpoint} endpoint 
+ * @param {String} uri 
+ * @param {Function} userHandler 
+ * @param {String} query 
+ * @param {Integer} qos 
+ * @returns
+ */
 OCFAdapter.prototype.delete = function (
   endpoint,
   uri,
@@ -485,7 +514,15 @@ OCFAdapter.prototype.delete = function (
   }
   return result;
 };
-
+/**
+ * OCFAdapter.initPost
+ * @param {OCFEndpoint} endpoint 
+ * @param {String} uri 
+ * @param {Function} userHandler 
+ * @param {String} query 
+ * @param {Integer} qos 
+ * @returns {Boolean} isSuccess
+ */
 OCFAdapter.prototype.initPost = function (
   endpoint,
   uri,
@@ -508,7 +545,15 @@ OCFAdapter.prototype.initPost = function (
   }
   return result;
 };
-
+/**
+ * OCFAdapter.initPut
+ * @param {OCFEndpoint} endpoint 
+ * @param {String} uri 
+ * @param {Function} userHandler 
+ * @param {String} query 
+ * @param {Integer} qos
+ * @returns {Boolean} isSuccess
+ */
 OCFAdapter.prototype.initPut = function (
   endpoint,
   uri,
@@ -531,12 +576,18 @@ OCFAdapter.prototype.initPut = function (
   }
   return result;
 };
-
+/**
+ * OCFAdapter.post
+ * @returns {Boolean} isSuccess
+ */
 OCFAdapter.prototype.post = function () {
   var result = native.ocf_adapter_post();
   return result;
 };
-
+/**
+ * OCFAdapter.put
+ * @returns {Boolean} isSuccess
+ */
 OCFAdapter.prototype.put = function () {
   var result = native.ocf_adapter_put();
   return result;
@@ -588,7 +639,9 @@ function OCFResource(device, name, uri, types, interfaceMasks) {
 
   native.ocf_resource_constructor(this);
 }
-
+/**
+ * OCFResource.destroyer
+ */
 OCFResource.prototype.destroyer = function () {
   var handlerIDs = [];
   for (var i = 0; i < this.handlerIDMap.length; i++) {
@@ -596,18 +649,29 @@ OCFResource.prototype.destroyer = function () {
   }
   native.ocf_resource_destroyer(this, handlerIDs);
 };
-
+/**
+ * OCFResource.setDiscoverable
+ * @param {Boolean} isDiscoverable 
+ */
 OCFResource.prototype.setDiscoverable = function (isDiscoverable) {
   this.isDiscoverable = isDiscoverable;
   native.ocf_resource_setDiscoverable(this, isDiscoverable);
 };
-
+/**
+ * OCFResource.setPeriodicObservable
+ * @param {Integer} periodSec 
+ */
 OCFResource.prototype.setPeriodicObservable = function (periodSec) {
   this.periodSec = periodSec;
   native.ocf_resource_setPeriodicObservable(this, periodSec);
 };
 
-var gOCFResourceHandlerId = 0;
+var gOCFResourceHandlerId = 0;s
+/**
+ * OCFResource.setHandler
+ * @param {Number} method 
+ * @param {Function} handler 
+ */
 OCFResource.prototype.setHandler = function (method, handler) {
   // Handler: void function(OCFRequest request, int method)
   var handlerId = gOCFResourceHandlerId;
