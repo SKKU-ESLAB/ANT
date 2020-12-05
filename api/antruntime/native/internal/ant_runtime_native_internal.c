@@ -20,7 +20,7 @@
 #include <unistd.h>
 
 #include "../../../common/native/ant_common.h"
-#include "ant_runtime_native_internal.h"
+#include "./ant_runtime_native_internal.h"
 
 int ant_runtime_getPssInKB_internal() {
   FILE *cmd;

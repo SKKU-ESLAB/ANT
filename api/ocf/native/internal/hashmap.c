@@ -6,7 +6,7 @@
  * free() must be invoked when only one thread has access to the hashmap.
  */
 
-#include "hashmap.h"
+#include "./hashmap.h"
 
 #include <semaphore.h>
 #include <stdio.h>

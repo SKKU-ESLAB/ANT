@@ -16,15 +16,15 @@
 #ifndef __OCF_ADAPTER_H__
 #define __OCF_ADAPTER_H__
 
-#include "../../common/native/ant_common.h"
-#include "internal/ant_async.h"
-#include "internal/ll.h"
-#include "internal/ocf_adapter_internal.h"
-#include "ocf_resource.h"
-
 #include "iotjs_def.h"
 #include "iotjs_uv_request.h"
 #include "ocf_common.h"
+
+#include "../../common/native/ant_common.h"
+#include "./internal/ant_async.h"
+#include "./internal/ll.h"
+#include "./internal/ocf_adapter_internal.h"
+#include "./ocf_resource.h"
 
 void ocf_adapter_init(void);
 

@@ -22,7 +22,7 @@
 #include <modules/iotjs_module_buffer.h>
 
 #include "../../common/native/ant_common.h"
-#include "internal/ant_runtime_native_internal.h"
+#include "./internal/ant_runtime_native_internal.h"
 
 ANT_API_VOID_TO_NUMBER(ant_runtime, getPssInKB);
 

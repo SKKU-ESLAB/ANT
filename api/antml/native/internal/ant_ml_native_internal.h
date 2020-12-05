@@ -17,6 +17,7 @@
 #define __ANT_ML_NATIVE_INTERNAL_H__
 
 #include <sys/types.h>
+#include <stdint.h>
 
 void ant_ml_getMaxOfBuffer_internal_uint8(const unsigned char *data_array,
                                           size_t data_array_len,
