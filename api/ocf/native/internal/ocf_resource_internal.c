@@ -31,9 +31,9 @@
 #include <port/oc_clock.h>
 
 #include "../../../common/native/ant_common.h"
-#include "ant_async.h"
+#include "./ant_async.h"
 
-#include "ocf_resource_internal.h"
+#include "./ocf_resource_internal.h"
 
 // OCFResource()
 void *ocf_resource_constructor_internal(const char *name, const char *uri,

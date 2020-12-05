@@ -13,9 +13,6 @@
  * limitations under the License.
  */
 
-#include "ant_stream_native_internal.h"
-#include "../../../common/native/ant_common.h"
-
 #include <gio/gio.h>
 #include <glib.h>
 #include <glib/gstdio.h>
@@ -33,6 +30,10 @@
 #include <string.h>
 #include <sys/stat.h>
 #include <sys/types.h>
+
+#include "../../../common/native/ant_common.h"
+
+#include "./ant_stream_native_internal.h"
 
 #define ANT_STREAMTHREAD_DBUS_BUS "org.ant.streamThread"
 #define ANT_STREAMTHREAD_DBUS_PATH "/org/ant/streamThread"

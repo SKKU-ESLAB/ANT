@@ -13,6 +13,7 @@
  * limitations under the License.
  */
 
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -22,7 +23,7 @@
 #include <modules/iotjs_module_buffer.h>
 
 #include "../../common/native/ant_common.h"
-#include "internal/ant_ml_native_internal.h"
+#include "./internal/ant_ml_native_internal.h"
 
 JS_FUNCTION(ant_ml_getMaxOfBuffer) {
   jerry_value_t argBuffer;

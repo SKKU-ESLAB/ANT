@@ -17,6 +17,7 @@
 #define __ANT_STREAM_NATIVE_INTERNAL_H__
 
 #include <stdbool.h>
+#include <stdint.h>
 
 bool ant_stream_testPipeline_internal(const char *ipAddress);
 
