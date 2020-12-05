@@ -34,8 +34,9 @@ then
   # TVM
   echo "** Install tvm dependencies..."
   ${SUDO} apt-get install -y python3 python3-dev python3-pip python3-setuptools gcc \
-    libtinfo-dev zlib1g-dev build-essential cmake libedit-dev libxml2-dev libtinfo-dev \
-    python3-opencv
+    libtinfo-dev zlib1g-dev build-essential cmake libedit-dev libxml2-dev libtinfo-dev
+  ${SUDO} apt-get install -y python3-opencv
+  pip3 install opencv-python
   
   # nnstreamer
   # TODO: no x86 package for nnstreamer
@@ -79,9 +80,12 @@ then
   if [[ $ARCH = "x86_64" || $ARCH = "x86" ]];
   then
     IOTJS_BOARD_NAME=""
+  elif [[ $ARCH = "aarch64" ]];
+  then
+    IOTJS_BOARD_NAME="--target-board=tx2"
   else
-    IOTJS_BOARD_NAME="--taraget-board=rpi3"
+    IOTJS_BOARD_NAME="--target-board=rpi3"
   fi
   cd ${ANT_ROOT}/dep/iotjs
-  ./tools/build.py ${IOTJS_BOARD_NAME}
+  ./tools/build.py ${IOTJS_BOARD_NAME} --clean
 fi
