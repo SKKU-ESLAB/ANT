@@ -31,9 +31,9 @@
 #include <port/oc_clock.h>
 
 #include "../../../common/native/ant_common.h"
-#include "ant_async.h"
+#include "./ant_async.h"
 
-#include "ocf_adapter_internal.h"
+#include "./ocf_adapter_internal.h"
 
 // OCF thread
 static pthread_t g_ocf_thread;

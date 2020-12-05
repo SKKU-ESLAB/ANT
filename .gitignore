@@ -40,3 +40,6 @@ dep/ComputeLibrary/build
 # node
 package-lock.json
 node-modules
+
+# ML sample
+ml/sample-models

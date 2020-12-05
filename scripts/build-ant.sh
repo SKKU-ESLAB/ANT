@@ -10,8 +10,11 @@ cd ${ANT_ROOT}/dep/iotjs/
 if [[ $ARCH = "x86_64" || $ARCH = "x86" ]];
 then
   IOTJS_BOARD_NAME=""
+elif [[ $ARCH = "aarch64" ]];
+then
+  IOTJS_BOARD_NAME="--target-board=tx2"
 else
-  IOTJS_BOARD_NAME="--taraget-board=rpi3"
+  IOTJS_BOARD_NAME="--target-board=rpi3"
 fi
 ./tools/build.py ${IOTJS_BOARD_NAME} \
     --cmake-param=-DENABLE_MODULE_ANT=ON \

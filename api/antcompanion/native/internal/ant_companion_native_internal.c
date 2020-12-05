@@ -25,7 +25,7 @@
 #include <unistd.h>
 
 #include "../../../common/native/ant_common.h"
-#include "ant_companion_native_internal.h"
+#include "./ant_companion_native_internal.h"
 
 void ant_companion_getMyIPAddress_internal(const char *interfaceName,
                                            char *resultIPAddress) {
