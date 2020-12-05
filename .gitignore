@@ -43,3 +43,6 @@ node-modules
 
 # ML sample
 ml/sample-models
+
+# Companion
+android-companion/gradlew.bat
