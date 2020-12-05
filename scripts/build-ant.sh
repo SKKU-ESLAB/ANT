@@ -12,7 +12,7 @@ then
   IOTJS_BOARD_NAME=""
 elif [[ $ARCH = "aarch64" ]];
 then
-  IOTJS_BOARD_NAME="tx2"
+  IOTJS_BOARD_NAME="--target-board=tx2"
 else
   IOTJS_BOARD_NAME="--target-board=rpi3"
 fi
