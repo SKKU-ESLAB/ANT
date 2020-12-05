@@ -15,14 +15,16 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdint.h>
 #include <string.h>
 
 #include <iotjs_def.h>
 #include <iotjs_uv_request.h>
 #include <modules/iotjs_module_buffer.h>
 
-#include "ocf_adapter.h"
-#include "ocf_resource.h"
+#include "./ocf_resource.h"
+
+#include "./ocf_adapter.h"
 
 // Linked list destroyers
 void oa_discovery_event_data_destroyer(void *item) {

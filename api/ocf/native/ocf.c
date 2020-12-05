@@ -17,13 +17,12 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include <ocf_adapter.h>
-#include <ocf_resource.h>
-
 #include <iotjs_def.h>
 #include <iotjs_uv_request.h>
 
 #include "../../common/native/ant_common.h"
+#include "./ocf_adapter.h"
+#include "./ocf_resource.h"
 
 jerry_value_t InitOCFNative() {
   // Initialize sub-objects of OCF API

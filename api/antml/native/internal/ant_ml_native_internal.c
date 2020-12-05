@@ -13,11 +13,12 @@
  * limitations under the License.
  */
 
+#include <stdint.h>
 #include <stdio.h>
 #include <string.h>
 #include <sys/types.h>
 
-#include "ant_ml_native_internal.h"
+#include "./ant_ml_native_internal.h"
 #include "../../../common/native/ant_common.h"
 
 void ant_ml_getMaxOfBuffer_internal_uint8(const unsigned char *data_array,

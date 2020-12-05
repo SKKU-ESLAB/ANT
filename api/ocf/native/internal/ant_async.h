@@ -24,8 +24,8 @@
 #include <iotjs_uv_request.h>
 #include <modules/iotjs_module_buffer.h>
 
-#include "hashmap.h"
-#include "ll.h"
+#include "./hashmap.h"
+#include "./ll.h"
 
 // ANT async handler procedure:
 // 1. [External thread]

@@ -20,7 +20,7 @@
 #include <iotjs_uv_request.h>
 #include <modules/iotjs_module_buffer.h>
 
-#include "ocf_common.h"
+#include "./ocf_common.h"
 
 void ocf_resource_init(void);
 

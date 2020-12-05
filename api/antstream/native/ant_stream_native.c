@@ -15,14 +15,15 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdint.h>
 
 #include <iotjs_def.h>
 #include <iotjs_uv_request.h>
 #include <modules/iotjs_module_buffer.h>
 
 #include "../../common/native/ant_common.h"
-#include "internal/ant_stream_native_internal.h"
-#include "internal/ll.h"
+#include "./internal/ant_stream_native_internal.h"
+#include "./internal/ll.h"
 
 ANT_API_VOID_TO_VOID(ant_stream, initializeStream);
 ANT_API_STRING_TO_STRING(ant_stream, callDbusMethod);

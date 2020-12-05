@@ -20,8 +20,8 @@
 #include <stdbool.h>
 #include <stdlib.h>
 
-#include "ant_async.h"
-#include "ll.h"
+#include "./ant_async.h"
+#include "./ll.h"
 
 ANT_ASYNC_DECL_IN_HEADER(ocf_adapter_onPrepareEventLoop);
 ANT_ASYNC_DECL_IN_HEADER(ocf_adapter_onPrepareServer);
