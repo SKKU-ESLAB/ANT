@@ -22,6 +22,15 @@ var ant = require('ant');
 var RESULT_SUCCESS = 'Success';
 var RESULT_FAILED = 'Failed';
 
+var truncateFile = function (path) {
+  var tokens = path.split('/');
+  var truncatedPath = '';
+  for (var i = 0; i < tokens.length - 1; i++) {
+    truncatedPath += tokens[i] + '/';
+  }
+  return truncatedPath;
+};
+
 var MAIN_LOOP_DIR_PATH = truncateFile(process.argv[1]);
 
 /* App Main Config START */
@@ -104,15 +113,6 @@ function AppCodeManager() {
 }
 var gAppCodeManager = new AppCodeManager();
 /* App Code Manager END */
-
-var truncateFile = function (path) {
-  var tokens = path.split('/');
-  var truncatedPath = '';
-  for (var i = 0; i < tokens.length - 1; i++) {
-    truncatedPath += tokens[i] + '/';
-  }
-  return truncatedPath;
-};
 
 var parseUrl = function (url) {
   var urlTokens = url.split('/');

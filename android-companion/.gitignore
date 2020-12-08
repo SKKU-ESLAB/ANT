@@ -78,3 +78,4 @@ jni/assets/
 jni/gst-build-armeabi/
 jni/src/
 obj/
+gradlew.bat
