@@ -23,7 +23,7 @@ var onInitialize = function () {
 };
 
 var onStart = function () {
-  ant.resource.registerOnReceiveMessage(onReceiveMessage);
+  ant.companion.registerOnReceiveMessage(onReceiveMessage);
   var func = function () {
     var startTime = '**ResourceBench** ' + new Date().valueOf();
     ant.companion.sendMessage(startTime);
@@ -44,7 +44,7 @@ var onReceiveMessage = function (message) {
     '(' +
       totalCount +
       ')' +
-      'Resource API mode elapsed time: ' +
+      'Legacy mode elapsed time: ' +
       timeMS +
       'ms / average: ' +
       totalTimeMS / totalCount +
