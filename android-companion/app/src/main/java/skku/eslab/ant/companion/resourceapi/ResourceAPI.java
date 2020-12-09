@@ -77,6 +77,8 @@ public class ResourceAPI implements OnReceiveMessageListener {
 
     @Override
     public void onReceiveMessageListener(String rawMessage) {
+        if(rawMessage.startsWith("**")) // Testing purpose
+            return;
         int firstLineEnd = rawMessage.indexOf("\n");
         String firstLine = rawMessage.substring(0, firstLineEnd);
         if (firstLine.compareTo("ResourceRequest") != 0 &&
