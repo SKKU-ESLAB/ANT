@@ -7,6 +7,11 @@ ARCH=$(uname -m)
 
 # Build ANT API and App Runtime for IoT.js
 cd ${ANT_ROOT}/dep/iotjs/
+if [[ $ARCH = "armv7l" ]];
+then
+  ARCH="arm"
+fi
+
 if [[ $ARCH = "x86_64" || $ARCH = "x86" ]];
 then
   IOTJS_BOARD_NAME=""
