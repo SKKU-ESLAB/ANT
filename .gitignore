@@ -46,3 +46,7 @@ ml/sample-models
 
 # Companion
 android-companion/gradlew.bat
+
+# ANT app
+app0.js
+app1.js
