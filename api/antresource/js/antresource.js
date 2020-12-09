@@ -91,7 +91,7 @@ ANTResource.prototype._sendRequest = function (
   }
 };
 
-ANTResource.prototype.reqeustGet = function (
+ANTResource.prototype.requestGet = function (
   targetUri,
   message,
   onResourceResponse

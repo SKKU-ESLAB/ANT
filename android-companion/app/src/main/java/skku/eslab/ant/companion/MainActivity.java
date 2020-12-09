@@ -34,6 +34,7 @@ import skku.eslab.ant.companion.resourceapi.OnResourceRequestListener;
 import skku.eslab.ant.companion.resourceapi.Resource;
 import skku.eslab.ant.companion.resourceapi.ResourceAPI;
 import skku.eslab.ant.companion.resourceapi.ResourceRequest;
+import skku.eslab.ant.companion.resourcebench.ResourceBenchHelper;
 
 public class MainActivity extends AppCompatActivity {
     private final String SP_FILENAME = "ANT";
@@ -52,7 +53,7 @@ public class MainActivity extends AppCompatActivity {
     private final String AS_TERMINATING = "Terminating";
 
     final String RPI3_ADDRESS = "192.168.0.33:8001";
-    final String OXU4_ADDRESS = "192.168.0.27:8001";
+    final String OXU4_ADDRESS = "192.168.0.18:8001";
     final String JTX2_ADDRESS = "115.145.209.162:8001";
 
     @Override
@@ -75,6 +76,9 @@ public class MainActivity extends AppCompatActivity {
         CompanionAPI.get();
         ResourceAPI.get();
         RemoteUIAPI.get();
+
+        // Resource Benchmark Test
+        ResourceBenchHelper.get();
     }
 
     @Override
@@ -316,6 +320,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private String mRecentConnectionStatus = CS_DISCONNECTED;
+
     private void checkConnectionStatus() {
         HTTPClient httpClient = HTTPClient.get();
         String url = httpClient.getTargetAddress() + "/";

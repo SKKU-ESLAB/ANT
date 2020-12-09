@@ -13,8 +13,7 @@
  * limitations under the License.
  */
 
-// App Benchmark
-// It requires Companion, Resource API. (option1)
+// Resource API Benchmark: resource API mode
 
 var ant = require('ant');
 var console = require('console');
@@ -23,31 +22,29 @@ var onInitialize = function () {
   console.log('onInitialize');
 };
 
+var startTimeValue = new Date().valueOf();
 var onStart = function () {
+  ant.companion.registerOnReceiveMessage(onReceiveMessage);
   var func = function () {
-    var startTime = '' + new Date().valueOf();
-    ant.resource.requestPost('/tester', startTime, onReceiveMessage);
-    if (totalCount < 100) setTimeout(func, 2000);
+    var startTime = '**ResourceBench** ' + startTimeValue;
+    ant.companion.sendMessage(startTime);
+    if (totalCount < 49) setTimeout(func, 2000);
   };
   setTimeout(func, 2000);
 };
 
-var totalTimeMS = 0;
 var totalCount = 0;
-var onReceiveMessage = function (method, targetUri, message) {
+var onReceiveMessage = function (message) {
   var startTime = parseInt(message);
   var endTime = new Date().valueOf();
   var timeMS = endTime - startTime;
-  totalTimeMS += timeMS;
   totalCount++;
   console.log(
     '(' +
       totalCount +
       ')' +
-      'Resource API elapsed time: ' +
+      'Legacy mode elapsed time: ' +
       timeMS +
-      'ms / average: ' +
-      totalTimeMS / totalCount +
       'ms'
   );
 };
