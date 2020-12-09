@@ -22,22 +22,21 @@ var onInitialize = function () {
   console.log('onInitialize');
 };
 
+var startTimeValue = new Date().valueOf();
 var onStart = function () {
   var func = function () {
-    var startTime = '**ResourceBench** ' + new Date().valueOf();
+    var startTime = '**ResourceBench** ' + startTimeValue;
     ant.resource.requestGet('/resourcebench', startTime, onReceiveMessage);
-    if (totalCount < 100) setTimeout(func, 2000);
+    if (totalCount < 49) setTimeout(func, 2000);
   };
   setTimeout(func, 2000);
 };
 
-var totalTimeMS = 0;
 var totalCount = 0;
 var onReceiveMessage = function (method, targetUri, message) {
   var startTime = parseInt(message);
   var endTime = new Date().valueOf();
   var timeMS = endTime - startTime;
-  totalTimeMS += timeMS;
   totalCount++;
   console.log(
     '(' +
@@ -45,8 +44,6 @@ var onReceiveMessage = function (method, targetUri, message) {
       ')' +
       'Resource API mode elapsed time: ' +
       timeMS +
-      'ms / average: ' +
-      totalTimeMS / totalCount +
       'ms'
   );
 };
