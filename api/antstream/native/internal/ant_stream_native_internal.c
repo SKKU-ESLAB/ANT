@@ -408,16 +408,14 @@ handle_method_call_fn(GDBusConnection *connection, const gchar *sender,
 
     // Parsing arguments
     {
-      static char *save;
       char *token;
-      token = strtok_r((char *)inputMessage, "\n", &save);
+      token = strtok((char *)inputMessage, "\n");
       while (token != NULL) {
         if (argc < RPC_MAX_ARGC) {
           snprintf(argv[argc], MAX_ARG_LENGTH, "%s", token);
         }
         argc++;
-        static char *save2;
-        token = strtok_r(NULL, "\n", &save2);
+        token = strtok(NULL, "\n");
       }
     }
     // g_print("Incoming method call message:%s\n", argv[0]);
