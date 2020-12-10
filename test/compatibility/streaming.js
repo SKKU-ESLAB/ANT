@@ -13,19 +13,20 @@
  * limitations under the License.
  */
 
-// Streaming Example
-// It requires Companion, Resource, Remote UI, Stream API. (option2)
-//  - Video Source => TCP Network (video) => Smartphone Streaming View
+// ANT compatibility test 1: Streaming
 
 var ant = require('ant');
 var console = require('console');
 
 var settings = {};
-settings.sourceType = '/dev/video0'; // "rpi", "test", or others(v4l2src)
+settings.sourceType = 'nvidia'; // "rpi", "nvidia", "test", or others("/dev/video0")
 settings.isH264Enabled = false;
 settings.isSourceFilterEnabled = false;
 settings.isScaleEnabled = true;
 settings.isConvertEnabled = true;
+if(settings.sourceType == "nvidia") {
+  settings.isConvertEnabled = false;
+}
 settings.videoWidth = 224;
 settings.videoHeight = 224;
 settings.videoFormat = 'RGB';
@@ -56,11 +57,20 @@ var onStart = function () {
     } else if (settings.sourceType == 'test') {
       source = ant.stream.createElement('videotestsrc');
       source.setProperty('pattern', 1);
+    } else if (settings.sourceType == 'nvidia') {
+      source = ant.stream.createElement('nvcamerasrc');
+      source.setProperty("fpsRange", "30.0 30.0");
     } else {
       source = ant.stream.createElement('v4l2src');
       source.setProperty('device', settings.sourceType);
     }
     elements.push(source);
+
+    if(settings.sourceType == 'nvidia') {
+      converter = ant.stream.createElement('nvvidconv');
+      converter.setProperty("flip-method", 0);
+      elements.push(converter);
+    }
 
     // source filter
     var sourcefilter = ant.stream.createElement('capsfilter');
