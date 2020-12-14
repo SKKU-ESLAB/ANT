@@ -18,7 +18,7 @@ var console = require('console');
 
 var settings = {};
 settings.ml = {};
-settings.ml.modelName = 'sample-models/rpi3_mobilenet_full';
+settings.ml.modelName = 'ml/sample-models/rpi3_mobilenet_full';
 settings.ml.inputShape = [3, 224, 224, 1];
 settings.ml.inputType = 'uint8';
 settings.ml.outputShape = [1000, 1, 1, 1];
