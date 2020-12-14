@@ -64,6 +64,7 @@ then
   git submodule update
   make runtime -j${BUILD_THREADS}
   echo "export PYTHONPATH=$PWD/python:$PYTHONPATH" >> ~/.bashrc
+  sudo sh -c 'echo "export PYTHONPATH=$PWD/python:$PYTHONPATH" >> /root/.bashrc'
   export PYTHONPATH=$PWD/python:$PYTHONPATH
   
   ${SUDO} chmod 777 /dev/vchiq
