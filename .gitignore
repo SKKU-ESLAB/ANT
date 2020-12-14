@@ -43,6 +43,7 @@ node-modules
 
 # ML sample
 ml/sample-models
+__pycache__
 
 # Companion
 android-companion/gradlew.bat

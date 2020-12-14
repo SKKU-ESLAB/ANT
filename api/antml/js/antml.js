@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 
- var console = require('console');
+var console = require('console');
 
 var StreamAPI = undefined;
 try {
@@ -74,7 +74,7 @@ ANTML.prototype.createMLElement = function (
   var inputShapeStr = shapeArrayToStr(inputShape);
   var outputShapeStr = shapeArrayToStr(outputShape);
 
-  var tensorFilter = StreamAPI.createElement('tensorFilter');
+  var tensorFilter = StreamAPI.createElement('tensor_filter');
   tensorFilter.setProperty('framework', 'python3');
   tensorFilter.setProperty('model', './ml/tvm_nnstreamer.py');
   tensorFilter.setProperty('input', inputShapeStr);
