@@ -17,21 +17,12 @@ $ git clone https://github.com/SKKU-ESLAB/ANT ant
 $ cd ant
 $ ./scripts/prepare-ubuntu.sh
 ```
-<!--
-```
-# TARGET_BOARD=[rpi2,rpi3,oxu3,oxu4,tx1,tx2]
-$ ./tools/install-deps.sh --target-board={TARGET_BOARD}
-$ sudo apt-get install cmake python3 pip3
-$ sudo pip3 install kconfiglib
-```
 
-### Build Configuration
-
-You can configure how to build ANT framework with following commands.
+To run machine learning interence example, please download also the sample models.
 ```
-$ ./menuconfig.py
+$ cd ml
+$ ./download_sample_model.sh
 ```
--->
 
 ### How to Build
 ```
