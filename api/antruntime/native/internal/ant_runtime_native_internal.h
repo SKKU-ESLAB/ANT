@@ -16,7 +16,13 @@
 #ifndef __ANT_RUNTIME_NATIVE_INTERNAL_H__
 #define __ANT_RUNTIME_NATIVE_INTERNAL_H__
 
+#include <stdbool.h>
+
 int ant_runtime_getPssInKB_internal();
+void ant_runtime_getEnv_internal(const char *envKey, char *resultEnvValue);
+
+bool ant_runtime_downloadFileViaHTTP_internal(const char *url, const char *local_path);
+bool ant_runtime_unarchive_internal(const char *archiveFilePath, const char *local_path);
 
 void initANTRuntime(void);
 

@@ -18,12 +18,11 @@ var console = require('console');
 
 var settings = {};
 settings.ml = {};
-settings.ml.modelName = 'ml/sample-models/rpi3_mobilenet_full';
+settings.ml.modelPath = '';
 settings.ml.inputShape = [3, 224, 224, 1];
 settings.ml.inputType = 'uint8';
 settings.ml.outputShape = [1000, 1, 1, 1];
 settings.ml.outputType = 'float32';
-settings.ml.labelFileName = 'imagenet-simple-labels.json';
 
 settings.sourceType = '/dev/video0'; // "rpi", "test", or others(v4l2src)
 settings.isH264Enabled = false;
@@ -40,6 +39,11 @@ settings.myPort = 5000;
 
 var onInitialize = function () {
   console.log('onInitialize');
+  var modelUrl = 'http://github.com/SKKU-ESLAB/ant-sample-ml-models/raw/master/xu4_mobilenetv3/xu4_mobilenetv3.tar';
+  settings.ml.modelPath = ant.ml.downloadModel(modelUrl);
+  if(settings.ml.modelPath === undefined) {
+    console.log('Error on downloading model ' + modelUrl);
+  }
 };
 
 var prepareLabel = function (labelFilepath) {
@@ -52,7 +56,12 @@ var prepareLabel = function (labelFilepath) {
 var onStart = function () {
   console.log('onStart');
 
-  var labelFilepath = settings.ml.modelName + '/' + settings.ml.labelFileName;
+  if(settings.ml.modelPath === undefined) {
+    console.log('Cannot find model!');
+    return;
+  }
+
+  var labelFilepath = settings.ml.modelPath + '/labels.json';
   var labels = prepareLabel(labelFilepath);
 
   // Because ant.stream.initialize() is an async function without finish
@@ -144,7 +153,7 @@ var onStart = function () {
 
     // tensor_filter (ml element)
     var mlElement = ant.ml.createMLElement(
-      settings.ml.modelName,
+      settings.ml.modelPath,
       settings.ml.inputShape,
       settings.ml.inputType,
       settings.ml.outputShape,

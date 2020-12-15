@@ -14,6 +14,7 @@
  */
 
 var console = require('console');
+var fs = require('fs');
 
 var StreamAPI = undefined;
 try {
@@ -99,25 +100,73 @@ ANTML.prototype.getMaxOfBuffer = function (buffer, type) {
   return native.ant_ml_getMaxOfBuffer(buffer, type);
 };
 
-ANTML.prototype.connectCompressionServer = function (ipAddress) {
-  return new CompressionServer(ipAddress);
-};
+ANTML.prototype.downloadModel = function (modelUrl, overwriteIfExists) {
+  if(overwriteIfExists === undefined) {
+    overwriteIfExists = false;
+  }
 
-/**
- * Compression server object
- * @param {string} ipAddress compression server's IP address
- */
-function CompressionServer(ipAddress) {
-  this.ipAddress = ipAddress;
-}
+  var antruntime = require('antruntime');
+  var antRootDir = antruntime.getEnv('ANT_ROOT');
+  if(antRootDir.length == 0) {
+    console.log("ANT_ROOT is not defined!");
+    return undefined;
+  }
+  var fileName = modelUrl.substring(modelUrl.lastIndexOf('/')+1, modelUrl.length);
+  var modelName = fileName.substring(0, fileName.lastIndexOf('.'));
+  var modelRootDir = antRootDir + '/ml';
+  var modelArchivePath = modelRootDir + fileName;
+  var modelDirectoryPath = modelRootDir + modelName;
 
-CompressionServer.prototype.downloadModel = function (modelId) {
-  if (this.ipAddress === undefined) return undefined;
-  // TODO: implement details
-};
-CompressionServer.prototype.downloadKernel = function (kernelId) {
-  if (this.ipAddress === undefined) return undefined;
-  // TODO: implement details
+  console.log('Download model from ' + modelUrl
+    + '\n => ' + modelArchivePath
+    + '\n => ' + modelDirectoryPath);
+
+  // Make model root directory if it does not exist
+  if(!fs.existsSync(modelRootDir)) {
+    fs.mkdirSync(modelRootDir);
+  }
+  
+  // Check if the model archive file
+  var isDownload = true;
+  if(fs.existsSync(modelArchivePath)) {
+    console.log('Model archive file already exists. (' + modelArchivePath + ')');
+    if(!overwriteIfExists) {
+      console.log('Skip downloading the model archive file...');
+      isDownload = false;
+    }
+  }
+
+  // Download model archive file
+  if(isDownload) {
+    console.log('Model download from ' + modelUrl + ' to ' + modelArchivePath);
+    var res_download = antruntime.downloadFileViaHTTP(modelUrl, modelArchivePath);
+    if(!res_download) {
+      console.log('Error on downloading model');
+      return undefined;
+    }
+  }
+
+  // Check if the model directory
+  var isArchive = true;
+  if(fs.existsSync(modelDirectoryPath)) {
+    console.log('Model directory already exists. (' + modelDirectoryPath + ')');
+    if(!overwriteIfExists) {
+      console.log('Skip unarchiving the model archive file...');
+      isArchive = false;
+    }
+  } else {
+    fs.mkdirSync(modelDirectoryPath);
+  }
+
+  // Unarchive model archive file
+  if(isArchive) {
+    var res_archive = antruntime.unarchive(modelArchivePath, modelDirectoryPath);
+    if(!res_archive) {
+      console.log('Error on archiving the model archive file');
+      return undefined;
+    }
+  }
+  return modelDirectoryPath;
 };
 
 module.exports = new ANTML();

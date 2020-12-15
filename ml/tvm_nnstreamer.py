@@ -54,10 +54,10 @@ class CustomFilter(object):
         self.input_dims = [nns.TensorShape(input_shape, input_type)]
         self.output_dims = [nns.TensorShape(output_shape, output_type)]
 
-        loaded_json = open(model_path + 'deploy_graph.json').read()
-        loaded_lib = tvm.module.load(model_path + 'deploy_lib.tar')
+        loaded_json = open(model_path + 'mod.json').read()
+        loaded_lib = tvm.module.load(model_path + 'mod.so')
         loaded_params = bytearray(
-            open(model_path + 'deploy_param.params', 'rb').read())
+            open(model_path + 'mod.params', 'rb').read())
 
         self.module = graph_runtime.create(loaded_json, loaded_lib, ctx)
         self.module.load_params(loaded_params)

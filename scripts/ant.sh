@@ -1,4 +1,4 @@
 #!/bin/bash
-ANT_DIR="$( cd "$( dirname "$0" )" && pwd -P )"
-
-${ANT_DIR}/iotjs ${ANT_DIR}/main.js
+export ANT_ROOT="$( cd "$( dirname "$0" )" && pwd -P )"
+echo "ANT_ROOT: $ANT_ROOT"
+${ANT_ROOT}/iotjs ${ANT_ROOT}/main.js
