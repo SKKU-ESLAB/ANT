@@ -1,10 +1,16 @@
 package skku.eslab.ant.companion.ui.streaming;
 
+import android.graphics.Canvas;
+import android.graphics.Color;
+import android.graphics.Paint;
+import android.graphics.PixelFormat;
+import android.graphics.Rect;
 import android.os.Bundle;
 import android.os.StrictMode;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.SurfaceHolder;
+import android.view.SurfaceView;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
@@ -14,6 +20,8 @@ import com.ant.ant_manager.view.cameraviewer.GStreamerSurfaceView;
 
 import org.freedesktop.gstreamer.GStreamer;
 
+import java.util.ArrayList;
+
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
@@ -21,16 +29,71 @@ import androidx.fragment.app.FragmentActivity;
 import androidx.lifecycle.Observer;
 import androidx.lifecycle.ViewModelProviders;
 import skku.eslab.ant.companion.R;
+import skku.eslab.ant.companion.remoteuiapi.BoundingBox;
 import skku.eslab.ant.companion.remoteuiapi.RemoteUIAPI;
 
-public class StreamingFragment extends Fragment
-        implements SurfaceHolder.Callback {
+class BoundingBoxesManager implements SurfaceHolder.Callback {
+    private final String TAG = "LabelSurfaceViewHolder";
+    private ArrayList<BoundingBox> mBoundingBoxes = new ArrayList<>();
+
+    // LabelSurfaceView SurfaceHolder
+    @Override
+    public void surfaceCreated(SurfaceHolder holder) {
+        drawCanvas(holder);
+    }
+
+    @Override
+    public void surfaceChanged(SurfaceHolder holder, int frmt, int w, int h) {
+        Log.i(TAG, "surface changed: (" + w + ", " + h + ")");
+        drawCanvas(holder);
+    }
+
+    @Override
+    public void surfaceDestroyed(SurfaceHolder holder) {
+    }
+
+    public void setBoundingBoxes(ArrayList<BoundingBox> boundingBoxes) {
+        this.mBoundingBoxes = boundingBoxes;
+    }
+
+    public void drawCanvas(SurfaceHolder holder) {
+        Log.i(TAG, "Trying to draw...");
+
+        Canvas canvas = holder.lockCanvas();
+        if (canvas == null) {
+            Log.e(TAG, "Cannot draw onto the canvas as it's null");
+        } else {
+            drawBoundingBoxes(canvas, this.mBoundingBoxes);
+            holder.unlockCanvasAndPost(canvas);
+        }
+    }
+
+    private void drawBoundingBoxes(final Canvas canvas, ArrayList<BoundingBox> boundingBoxes) {
+        canvas.drawARGB(0, 128, 128, 128);
+
+        for (BoundingBox boundingBox : boundingBoxes) {
+            Rect rect = new Rect((int) boundingBox.xMin, (int) boundingBox.yMin, (int) boundingBox.xMax, (int) boundingBox.yMax);
+            Paint paint = new Paint();
+            paint.setColor(Color.RED);
+            paint.setStyle(Paint.Style.STROKE);
+            paint.setStrokeWidth(10f);
+            canvas.drawRect(rect, paint);
+            canvas.drawText(boundingBox.labelText, (int) boundingBox.xMin, (int) boundingBox.yMin, paint);
+        }
+    }
+}
+
+public class StreamingFragment extends Fragment implements SurfaceHolder.Callback {
+//    private final String TAG = "StreamingFragment";
 
     private StreamingViewModel mModel;
 
     private GStreamerSurfaceView mVideoSurfaceView;
     private TextView mStatusTextView;
     private TextView mLabelTextView;
+
+    private SurfaceView mBoundingBoxesSurfaceView;
+    private BoundingBoxesManager mBoundingBoxesManager;
 
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater,
@@ -39,8 +102,14 @@ public class StreamingFragment extends Fragment
         View root =
                 inflater.inflate(R.layout.fragment_streaming, container, false);
         this.mVideoSurfaceView = root.findViewById(R.id.videoSurfaceView);
+        this.mBoundingBoxesSurfaceView = root.findViewById(R.id.boundingBoxesSurfaceView);
         this.mStatusTextView = root.findViewById(R.id.statusTextView);
         this.mLabelTextView = root.findViewById(R.id.labelTextView);
+
+        this.mBoundingBoxesManager = new BoundingBoxesManager();
+        SurfaceHolder boundingBoxesSurfaceHolder = this.mBoundingBoxesSurfaceView.getHolder();
+        boundingBoxesSurfaceHolder.addCallback(this.mBoundingBoxesManager);
+        boundingBoxesSurfaceHolder.setFormat(PixelFormat.TRANSPARENT);
 
         FragmentActivity activity = getActivity();
         assert activity != null;
@@ -55,8 +124,8 @@ public class StreamingFragment extends Fragment
         StrictMode.ThreadPolicy policy =
                 new StrictMode.ThreadPolicy.Builder().permitAll().build();
         StrictMode.setThreadPolicy(policy);
-        SurfaceHolder surfaceHolder = this.mVideoSurfaceView.getHolder();
-        surfaceHolder.addCallback(this);
+        SurfaceHolder videoSurfaceHolder = this.mVideoSurfaceView.getHolder();
+        videoSurfaceHolder.addCallback(this);
 
         // Retrieve our previous state, or connectChannel it to default values
         this.mIsPlayingDesired = false;
@@ -73,6 +142,16 @@ public class StreamingFragment extends Fragment
                 updateLabelTextView();
             }
         });
+        RemoteUIAPI.get().getBoundingBoxesJSON().observe(this, new Observer<String>() {
+            @Override
+            public void onChanged(String s) {
+                updateBoundingBoxesSurfaceView();
+            }
+        });
+
+        this.mBoundingBoxesSurfaceView.setZOrderOnTop(true);
+        this.mBoundingBoxesSurfaceView.setZOrderMediaOverlay(true);
+        this.mVideoSurfaceView.setZOrderMediaOverlay(true);
         return root;
     }
 
@@ -80,8 +159,8 @@ public class StreamingFragment extends Fragment
     public void onDestroyView() {
         super.onDestroyView();
 
-        SurfaceHolder surfaceHolder = this.mVideoSurfaceView.getHolder();
-        surfaceHolder.removeCallback(this);
+        SurfaceHolder videoSurfaceHolder = this.mVideoSurfaceView.getHolder();
+        videoSurfaceHolder.removeCallback(this);
 
         // Finalize gstreamer
         this.finalizeGstreamer();
@@ -136,6 +215,12 @@ public class StreamingFragment extends Fragment
         this.mLabelTextView.setText(labelText);
     }
 
+    private void updateBoundingBoxesSurfaceView() {
+        ArrayList<BoundingBox> boundingBoxes = RemoteUIAPI.get().getBoundingBoxes();
+        this.mBoundingBoxesManager.setBoundingBoxes(boundingBoxes);
+        this.mBoundingBoxesManager.drawCanvas(this.mBoundingBoxesSurfaceView.getHolder());
+    }
+
     // Initialize Gstreamer connection
     private void initializeGstreamer(String pipeline) {
         Log.d("CameraViewerActivity", "initializeGstreamer()");
@@ -182,7 +267,11 @@ public class StreamingFragment extends Fragment
         nativeSurfaceInit(holder.getSurface());
         this.mDelayedSurface = holder.getSurface();
 
+        // Update video surface view
         updateVideoSurfaceView();
+
+        // Update label surface view's size
+        this.mBoundingBoxesSurfaceView.getHolder().setFixedSize(width, height);
 
         Log.d("GStreamer", "end surfaceChanged");
     }
