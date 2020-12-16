@@ -41,6 +41,17 @@ ANTRemoteUI.prototype.setStreamingViewLabelText = function (
     handler
   );
 };
+ANTRemoteUI.prototype.setStreamingViewBoundingBoxes = function (
+  boundingBoxes,
+  handler
+) {
+  var boundingBoxesJSON = JSON.stringify(boundingBoxes);
+  ResourceAPI.requestPost(
+    '/remoteui/streamingview/boundingBoxes',
+    boundingBoxesJSON,
+    handler
+  );
+};
 
 module.exports = new ANTRemoteUI();
 module.exports.ANTRemoteUI = ANTRemoteUI;
