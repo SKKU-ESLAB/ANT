@@ -15,6 +15,7 @@
 
 var RESULT_SUCCESS = 'Success';
 var RESULT_FAILED = 'Failed';
+var fs = require('fs');
 
 /**
  * ANT Resource API
@@ -47,6 +48,26 @@ ANTRuntime.prototype.getPssInKB = function () {
   return native.ant_runtime_getPssInKB();
 };
 ANTRuntime.prototype.getPSSInKB = ANTRuntime.prototype.getPssInKB;
+
+ANTRuntime.prototype.getEnv = function (envKey) {
+  return native.ant_runtime_getEnv(envKey);
+};
+
+ANTRuntime.prototype.downloadFileViaHTTP = function (url, downloadPath) {
+  return native.ant_runtime_downloadFileViaHTTP(url, downloadPath);
+};
+
+ANTRuntime.prototype.unarchive = function(archiveFilePath, targetDirPath) {
+  if(!fs.existsSync(archiveFilePath)) {
+    console.log("Error: cannot find archive file! " + archiveFilePath);
+    return false;
+  }
+  if(!fs.existsSync(targetDirPath)) {
+    console.log("Error: cannot find target directory! " + archiveDirPath);
+    return false;
+  }
+  return native.ant_runtime_unarchive(archiveFilePath, targetDirPath);
+}
 
 /**
  * Application
@@ -100,6 +121,7 @@ App.prototype.getInfo = function () {
   var appInfo = {state: this.getState()};
   return appInfo;
 };
+
 /* App end */
 
 module.exports = new ANTRuntime();

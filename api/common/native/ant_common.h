@@ -35,6 +35,16 @@
     return jerry_create_string((const jerry_char_t *)result_string);           \
   }
 
+#define ANT_API_STRING_TO_VOID(api_name, function_name)                        \
+  JS_FUNCTION(api_name##_##function_name) {                                    \
+    iotjs_string_t argString;                                                  \
+    DJS_CHECK_ARGS(1, string);                                                 \
+    argString = JS_GET_ARG(0, string);                                         \
+    api_name##_##function_name##_internal(iotjs_string_data(&argString));      \
+    iotjs_string_destroy(&argString);                                          \
+    return jerry_create_undefined();                                           \
+  }
+
 #define ANT_API_VOID_TO_STRING(api_name, function_name)                        \
   JS_FUNCTION(api_name##_##function_name) {                                    \
     char result_string[MAX_RESULT_MESSAGE_LENGTH];                             \
