@@ -149,7 +149,7 @@ var onStart = function () {
     subpipe1Elements.push(tensorConverter);
 
     // tensor_filter (ml element)
-    var mlElement = ant.ml.createObjdetCocoElement(
+    var mlElement = ant.ml.createObjDetCocoElement(
       settings.ml.modelPath, settings.videoWidth, settings.maxBoundingBoxes);
     subpipe1Elements.push(mlElement);
 
@@ -159,8 +159,10 @@ var onStart = function () {
     var totalFrameLatency = 0.0;
     var sampleCount = 0;
     sink.connectSignal('new-sample', function (name, data) {
-      var result = ant.ml.getMaxOfBuffer(data, 'float32');
-      var labelMessage = '';
+      var dataLength = data.length;
+      var labelMessage = 'Buffer=' + dataLength + '\n';
+//      var result = ant.ml.getMaxOfBuffer(data, 'float32');
+//      var labelMessage = '';
 
       var frameLatency = -1;
       if (prevTimestamp != 0) {
@@ -171,11 +173,10 @@ var onStart = function () {
         prevTimestamp = new Date().valueOf();
       }
 
-      if (result === undefined) {
-        labelMessage = 'Label error';
-      } else {
+//      if (result === undefined) {
+//        labelMessage = 'Label error';
+//      } else {
         sampleCount++;
-        labelMessage = '';
         if (frameLatency > 0) {
           totalFrameLatency += frameLatency;
           var averageFrameLatency = totalFrameLatency / sampleCount;
@@ -187,7 +188,7 @@ var onStart = function () {
             averageFPS.toFixed(2) +
             ' FPS)';
         }
-      }
+//      }
       ant.remoteui.setStreamingViewLabelText(labelMessage);
     });
     subpipe1Elements.push(sink);
