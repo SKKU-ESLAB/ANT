@@ -19,6 +19,8 @@ then
   ${SUDO} apt-get install -y cmake git glib-2.0 \
     libdbus-1-dev libdbus-glib-1-2 libdbus-glib-1-dev python
   ${SUDO} apt-get install -y software-properties-common
+  ${SUDO} apt-get install -y libcurl-dev libcurl4-openssl-dev
+  ${SUDO} apt-get install -y libtar-dev
   if [[ $ARCH == *"arm"* ]];
   then
     ${SUDO} apt-get install -y libraspberrypi-dev
@@ -64,6 +66,7 @@ then
   git submodule update
   make runtime -j${BUILD_THREADS}
   echo "export PYTHONPATH=$PWD/python:$PYTHONPATH" >> ~/.bashrc
+  sudo sh -c 'echo "export PYTHONPATH=$PWD/python:$PYTHONPATH" >> /root/.bashrc'
   export PYTHONPATH=$PWD/python:$PYTHONPATH
   
   ${SUDO} chmod 777 /dev/vchiq

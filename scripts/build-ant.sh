@@ -50,6 +50,5 @@ cp -r ${ANT_ROOT}/app-runtime/* ${OUT_PATH}/
 # Install ANT-ML
 mkdir -p ${OUT_PATH}/ml
 cp -r ${ANT_ROOT}/ml/*.py ${OUT_PATH}/ml/
-cp -r ${ANT_ROOT}/ml/sample-models ${OUT_PATH}/ml/
 
 exit ${BUILD_RESULT}
