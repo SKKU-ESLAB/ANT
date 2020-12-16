@@ -72,13 +72,23 @@ class BoundingBoxesManager implements SurfaceHolder.Callback {
         canvas.drawARGB(0, 128, 128, 128);
 
         for (BoundingBox boundingBox : boundingBoxes) {
-            Rect rect = new Rect((int) boundingBox.xMin, (int) boundingBox.yMin, (int) boundingBox.xMax, (int) boundingBox.yMax);
-            Paint paint = new Paint();
-            paint.setColor(Color.RED);
-            paint.setStyle(Paint.Style.STROKE);
-            paint.setStrokeWidth(10f);
-            canvas.drawRect(rect, paint);
-            canvas.drawText(boundingBox.labelText, (int) boundingBox.xMin, (int) boundingBox.yMin, paint);
+            Log.i(TAG,
+                    "Bbox: " + boundingBox.xMin + ", " + boundingBox.xMax + ", " + boundingBox.yMin + ", " + boundingBox.yMax + ", " + boundingBox.labelText);
+            Rect rect = new Rect((int) boundingBox.xMin, (int) boundingBox.yMax,
+                    (int) boundingBox.xMax, (int) boundingBox.yMin);
+            float strokeWidth = 5.0f;
+            Paint rectPaint = new Paint();
+            rectPaint.setColor(Color.RED);
+            rectPaint.setStyle(Paint.Style.STROKE);
+            rectPaint.setStrokeWidth(strokeWidth);
+            canvas.drawRect(rect, rectPaint);
+
+            float textSize = 32.0f;
+            Paint textPaint = new Paint();
+            textPaint.setColor(Color.RED);
+            textPaint.setTextSize(textSize);
+            canvas.drawText(boundingBox.labelText, (int) boundingBox.xMin,
+                    (int) boundingBox.yMin - strokeWidth, textPaint);
         }
     }
 }
