@@ -124,9 +124,9 @@ ANTML.prototype.createImgClsImagenetElement = function (modelPath) {
 ANTML.prototype.createObjDetCocoElement = function (modelPath, resolution, maxBoundingBoxes) {
   var mlElement = this.createMLElement(modelPath,
     [3, resolution, resolution, 1],
-    'uint8', 'input0',
-    [[1], [maxBoundingBoxes, 1], [maxBoundingBoxes, 1], [4, maxBoundingBoxes], [1]],
-    'float32', ['num_detections', 'classes', 'scores', 'bboxes'],
+    'uint8', 'data',
+    [[1, 1, 1, 1], [maxBoundingBoxes, 1, 1, 1], [maxBoundingBoxes, 1, 1, 1], [4, maxBoundingBoxes, 1, 1]],
+    ['float32', 'float32', 'float32', 'float32'], ['num_detections', 'classes', 'scores', 'bboxes'],
     'objdet_coco');
   return mlElement;
 };

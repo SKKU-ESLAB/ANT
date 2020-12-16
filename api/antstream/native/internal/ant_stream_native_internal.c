@@ -93,7 +93,7 @@ GstElement *getElement(int index) { return g_element_registry[index]; }
 // RPC functions
 // TODO(RedCarrottt): hardcoded args, argv length
 #define RPC_MAX_ARGC 10
-#define MAX_ARG_LENGTH 100
+#define MAX_ARG_LENGTH 1000
 void rpc_streamapi_quitMainLoop(int argc, char argv[][MAX_ARG_LENGTH],
                                 char *responseMessage) {
   // Input arguments

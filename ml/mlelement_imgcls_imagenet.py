@@ -74,6 +74,18 @@ class CustomFilter(object):
             if output_type is None:
                 print("Invalid output_type")
                 return None
+        if (len(input_shapes) > 4 or len(input_types) > 4 or len(input_names) > 4
+                or len(input_shapes) != len(input_types)
+                or len(input_shapes) != len(input_names)):
+            print("Invalid input count: (%d,%d,%d)".format(
+                len(input_shapes), len(input_types), len(input_names)))
+            return None
+        if (len(output_shapes) > 4 or len(output_types) > 4 or len(output_names) > 4
+                or len(output_shapes) != len(output_types)
+                or len(output_shapes) != len(output_names)):
+            print("Invalid output count: (%d,%d,%d)".format(
+                len(output_shapes), len(output_types), len(output_names)))
+            return None
         self.input_dims = []
         self.output_dims = []
         for i in range(len(input_shapes)):

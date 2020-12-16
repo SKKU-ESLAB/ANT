@@ -22,6 +22,8 @@ from tvm.contrib import graph_runtime as runtime
 import nnstreamer_python as nns
 import numpy as np
 
+import bbox
+
 def shape_str_to_npshape(shape_str):
     shape_str_tokens = shape_str.split(":")
     return [int(token) for token in shape_str_tokens]
@@ -56,6 +58,36 @@ def transform_image(image):
     image = image[np.newaxis, :]
     return image
 
+def nms(self, detected):
+    threshold_iou = 0.5
+    detected = sorted(detected, key=lambda a: a['prob'])
+    boxes_size = len(detected)
+
+    _del = [False for _ in range(boxes_size)]
+
+    for i in range(boxes_size):
+        if not _del[i]:
+            for j in range(i + 1, boxes_size):
+                if self.iou(detected[i], detected[j]) > threshold_iou:
+                    _del[j] = True
+
+    # update result
+    self.detected_objects.clear()
+
+    for i in range(boxes_size):
+        if not _del[i]:
+            self.detected_objects.append(detected[i])
+
+        if DEBUG:
+            print("==============================")
+            print("LABEL           : {}".format(
+                   self.tflite_labels[detected[i]["class_id"]]))
+            print("x               : {}".format(detected[i]["x"]))
+            print("y               : {}".format(detected[i]["y"]))
+            print("width           : {}".format(detected[i]["width"]))
+            print("height          : {}".format(detected[i]["height"]))
+            print("Confidence Score: {}".format(detected[i]["prob"]))
+
 class CustomFilter(object):
     def __init__(self, *args):
         # Parse arguments
@@ -74,12 +106,28 @@ class CustomFilter(object):
             if output_type is None:
                 print("Invalid output_type")
                 return None
+        if (len(input_shapes) > 4 or len(input_types) > 4 or len(input_names) > 4
+                or len(input_shapes) != len(input_types)
+                or len(input_shapes) != len(input_names)):
+            print("Invalid input count: (%d,%d,%d)".format(
+                len(input_shapes), len(input_types), len(input_names)))
+            return None
+        if (len(output_shapes) > 4 or len(output_types) > 4 or len(output_names) > 4
+                or len(output_shapes) != len(output_types)
+                or len(output_shapes) != len(output_names)):
+            print("Invalid output count: (%d,%d,%d)".format(
+                len(output_shapes), len(output_types), len(output_names)))
+            return None
         self.input_dims = []
         self.output_dims = []
+        self.input_types = input_types
+        self.output_types = output_types
         for i in range(len(input_shapes)):
-            self.input_dims.append(input_shapes[i], input_types[i])
+            input_dim = nns.TensorShape(input_shapes[i], input_types[i])
+            self.input_dims.append(input_dim)
         for i in range(len(output_shapes)):
-            self.output_dims.append(output_shapes[i], output_types[i])
+            output_dim = nns.TensorShape(output_shapes[i], output_types[i])
+            self.output_dims.append(output_dim)
         self.input_names = input_names
         self.output_names = output_names
 
@@ -133,4 +181,13 @@ class CustomFilter(object):
             nptype = self.output_types[i]
             outputs.append(output_element.asnumpy().astype(nptype))
 
-        return outputs
+        # Post-processing
+	app_output = postProcessing(outputs)
+
+        return app_output
+
+    def postProcessing(self, outputs):
+	classes = outputs[0] # (100, 1, 1, 1)
+	scores = outputs[1]  # (100, 1, 1, 1)
+	bboxes = outptus[2]  # (4, 100, 1, 1)
+ 
