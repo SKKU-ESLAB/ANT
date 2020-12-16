@@ -19,13 +19,21 @@
 
     <com.ant.ant_manager.view.cameraviewer.GStreamerSurfaceView
         android:id="@+id/videoSurfaceView"
-        android:layout_width="wrap_content"
+        android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_gravity="center_vertical|center_horizontal"
         android:layout_marginTop="9dp"
         app:layout_constraintLeft_toLeftOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/labelTextView"
-         />
+        app:layout_constraintTop_toBottomOf="@+id/labelTextView" />
+
+    <SurfaceView
+        android:id="@+id/boundingBoxesSurfaceView"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_gravity="center_vertical|center_horizontal"
+        android:layout_marginTop="9dp"
+        app:layout_constraintLeft_toLeftOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/labelTextView" />
 
     <TextView
         android:id="@+id/statusTextView"
