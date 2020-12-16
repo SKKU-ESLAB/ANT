@@ -159,23 +159,24 @@ var onStart = function () {
     var totalFrameLatency = 0.0;
     var sampleCount = 0;
     sink.connectSignal('new-sample', function (name, data) {
-      var result = ant.ml.getMaxOfBuffer(data, 'float32');
-      var labelMessage = '';
-
-      var frameLatency = -1;
-      if (prevTimestamp != 0) {
-        var nowTimestamp = new Date().valueOf();
-        frameLatency = nowTimestamp - prevTimestamp;
-        prevTimestamp = nowTimestamp;
-      } else {
-        prevTimestamp = new Date().valueOf();
-      }
-
-      if (result === undefined) {
-        labelMessage = 'Label error';
-      } else {
+      var dataLength = data.length;
+      var labelMessage = 'Buffer=' + dataLength;
+//      var result = ant.ml.getMaxOfBuffer(data, 'float32');
+//      var labelMessage = '';
+//
+//      var frameLatency = -1;
+//      if (prevTimestamp != 0) {
+//        var nowTimestamp = new Date().valueOf();
+//        frameLatency = nowTimestamp - prevTimestamp;
+//        prevTimestamp = nowTimestamp;
+//      } else {
+//        prevTimestamp = new Date().valueOf();
+//      }
+//
+//      if (result === undefined) {
+//        labelMessage = 'Label error';
+//      } else {
         sampleCount++;
-        labelMessage = '';
         if (frameLatency > 0) {
           totalFrameLatency += frameLatency;
           var averageFrameLatency = totalFrameLatency / sampleCount;
@@ -187,7 +188,7 @@ var onStart = function () {
             averageFPS.toFixed(2) +
             ' FPS)';
         }
-      }
+//      }
       ant.remoteui.setStreamingViewLabelText(labelMessage);
     });
     subpipe1Elements.push(sink);
