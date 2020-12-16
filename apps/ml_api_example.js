@@ -190,9 +190,7 @@ var onStart = function () {
         labelMessage =
           '' +
           labels[result.max_index] +
-          ' (' +
-          Math.round(result.max_value * 10000) / 100 +
-          '%)\n' +
+          '\n' +
           (averagePssInKB / 1024.0).toFixed(1) +
           ' MB';
         if (frameLatency > 0) {

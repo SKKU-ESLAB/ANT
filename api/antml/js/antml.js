@@ -113,7 +113,7 @@ ANTML.prototype.downloadModel = function (modelUrl, overwriteIfExists) {
   }
   var fileName = modelUrl.substring(modelUrl.lastIndexOf('/')+1, modelUrl.length);
   var modelName = fileName.substring(0, fileName.lastIndexOf('.'));
-  var modelRootDir = antRootDir + '/ml';
+  var modelRootDir = antRootDir + '/ml/';
   var modelArchivePath = modelRootDir + fileName;
   var modelDirectoryPath = modelRootDir + modelName;
 
