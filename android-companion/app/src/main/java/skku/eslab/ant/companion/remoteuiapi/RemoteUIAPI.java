@@ -143,7 +143,7 @@ public class RemoteUIAPI {
                 int yMin = bboxJSON.getInt("ymin");
                 int yMax = bboxJSON.getInt("ymax");
                 String labelText = bboxJSON.getString("labeltext");
-                BoundingBox bbox = new BoundingBox(xMin, xMax, yMin, yMax, labelText);
+                BoundingBox bbox = new BoundingBox(xMin, yMin, xMax, yMax, labelText);
                 bboxes.add(bbox);
             }
         } catch (JSONException e) {
