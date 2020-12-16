@@ -32,15 +32,48 @@ try {
 
 var shapeArrayToStr = function (shapeArray) {
   var shapeStr = '';
-  for (var i = 0; i < shapeArray.length; i++) {
-    if (i == 0) {
-      shapeStr = shapeStr + shapeArray[i];
-    } else {
-      shapeStr = shapeStr + ':' + shapeArray[i];
+  var isMultipleElements = Array.isArray(shapeArray[0]);
+  
+  var elementArrayToStr = function(elementArray) {
+    var elementStr = '';
+    for (var i = 0; i < elementArray.length; i++) {
+      if (i == 0) {
+        elementStr = elementStr + elementArray[i];
+      } else {
+        elementStr = elementStr + ':' + elementArray[i];
+      }
     }
+    return elementStr;
+  };
+
+  if(isMultipleElements) {
+    if(shapeArray.length == 0) return undefined;
+    for(var i = 0; i < shapeArray.length; i++) {
+      if(i > 0)
+        shapeStr += ',';
+      shapeStr += elementArrayToStr(shapeArray[i]);
+    }
+  } else {
+    shapeStr += elementArrayToStr(shapeArray);
   }
   return shapeStr;
 };
+
+var typeArrayToStr = function (typeArray) {
+  var typeStr = '';
+  var isMultipleElements = Array.isArray(typeArray[0]);
+  
+  if(isMultipleElements) {
+    if(typeArray.length == 0) return undefined;
+    if(i > 0)
+      typeStr += ',';
+    typeStr += typeArray;
+  } else {
+    typeStr += typeArray;
+  }
+  return typeStr;
+};
+var nameArrayToStr = typeArrayToStr;
 
 var getAntRootDir = function () {
   var antRootDir = RuntimeAPI.getEnv('ANT_ROOT');
@@ -80,33 +113,45 @@ ANTML.prototype.getAvailableTaskNames = function () {
   return availableTaskNames;
 };
 
+ANTML.prototype.createImgClsImagenetElement = function (modelPath) {
+  var mlElement = this.createMLElement(modelPath,
+    [3, 224, 224, 1], 'uint8', 'input0',
+    [1000, 1, 1, 1], 'float32', 'classes',
+    'imgcls_imagenet');
+  return mlElement;
+};
+
+ANTML.prototype.createObjDetCocoElement = function (modelPath, resolution, maxBoundingBoxes) {
+  var mlElement = this.createMLElement(modelPath,
+    [3, resolution, resolution, 1],
+    'uint8', 'input0',
+    [[1], [maxBoundingBoxes, 1], [maxBoundingBoxes, 1], [4, maxBoundingBoxes], [1]],
+    'float32', ['num_detections', 'classes', 'scores', 'bboxes'],
+    'objdet_coco');
+  return mlElement;
+};
+
 ANTML.prototype.createMLElement = function (
-  modelName,
-  inputShape,
-  inputType,
-  outputShape,
-  outputType,
+  modelPath,
+  inputShapes,
+  inputTypes,
+  inputNames,
+  outputShapes,
+  outputTypes,
+  outputNames,
   taskName 
 ) {
   // Checking arguments
-  if (modelName.indexOf(' ') >= 0) {
-    console.error('ERROR: Invalid modelName! ' + modelName);
+  if (modelPath.indexOf(' ') >= 0) {
+    console.error('ERROR: Invalid modelPath! ' + modelPath);
     return undefined;
   }
-  if (inputShape.indexOf(' ') >= 0) {
-    console.error('ERROR: Invalid inputShape! ' + inputShape);
+  if (inputTypes.indexOf(' ') >= 0) {
+    console.error('ERROR: Invalid inputTypes! ' + inputTypes);
     return undefined;
   }
-  if (inputType.indexOf(' ') >= 0) {
-    console.error('ERROR: Invalid inputType! ' + inputType);
-    return undefined;
-  }
-  if (outputShape.indexOf(' ') >= 0) {
-    console.error('ERROR: Invalid outputShape! ' + outputShape);
-    return undefined;
-  }
-  if (outputType.indexOf(' ') >= 0) {
-    console.error('ERROR: Invalid outputType! ' + outputType);
+  if (outputTypes.indexOf(' ') >= 0) {
+    console.error('ERROR: Invalid outputTypes! ' + outputTypes);
     return undefined;
   }
   if (!StreamAPI.isInitialized()) {
@@ -123,27 +168,38 @@ ANTML.prototype.createMLElement = function (
     return undefined;
   }
 
-  var inputShapeStr = shapeArrayToStr(inputShape);
-  var outputShapeStr = shapeArrayToStr(outputShape);
+  var inputShapesStr = shapeArrayToStr(inputShapes);
+  var outputShapesStr = shapeArrayToStr(outputShapes);
+  var inputTypesStr = typeArrayToStr(inputTypes);
+  var outputTypesStr = typeArrayToStr(outputTypes);
+  var inputNamesStr = nameArrayToStr(inputNames);
+  var outputNamesStr = nameArrayToStr(outputNames);
 
   var tensorFilter = StreamAPI.createElement('tensor_filter');
   tensorFilter.setProperty('framework', 'python3');
   tensorFilter.setProperty('model', taskPath);
-  tensorFilter.setProperty('input', inputShapeStr);
-  tensorFilter.setProperty('inputtype', inputType);
-  tensorFilter.setProperty('output', outputShapeStr);
-  tensorFilter.setProperty('outputtype', outputType);
+  tensorFilter.setProperty('input', inputShapesStr);
+  tensorFilter.setProperty('inputtype', inputTypesStr);
+  tensorFilter.setProperty('inputname', inputNamesStr);
+  tensorFilter.setProperty('output', outputShapesStr);
+  tensorFilter.setProperty('outputtype', outputTypesStr);
+  tensorFilter.setProperty('outputname', outputNamesStr);
   var custom =
-    modelName +
+    modelPath +
     ' ' +
-    inputShapeStr +
+    inputShapesStr +
     ' ' +
-    inputType +
+    inputTypesStr +
     ' ' +
-    outputShapeStr +
+    outputShapesStr +
     ' ' +
-    outputType;
+    outputTypesStr +
+    ' ' +
+    inputNamesStr + 
+    ' ' +
+    outputNamesStr;
   tensorFilter.setProperty('custom', custom);
+  tensorFilter.modelPath = modelPath;
   return tensorFilter;
 };
 
@@ -162,10 +218,10 @@ ANTML.prototype.downloadModel = function (modelUrl, overwriteIfExists) {
     return undefined;
   }
   var fileName = modelUrl.substring(modelUrl.lastIndexOf('/')+1, modelUrl.length);
-  var modelName = fileName.substring(0, fileName.lastIndexOf('.'));
+  var modelPath = fileName.substring(0, fileName.lastIndexOf('.'));
   var modelRootDir = antRootDir + '/ml/';
   var modelArchivePath = modelRootDir + fileName;
-  var modelDirectoryPath = modelRootDir + modelName;
+  var modelDirectoryPath = modelRootDir + modelPath;
 
   console.log('Download model from ' + modelUrl
     + '\n => ' + modelArchivePath
