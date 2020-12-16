@@ -19,10 +19,6 @@ var console = require('console');
 var settings = {};
 settings.ml = {};
 settings.ml.modelPath = '';
-settings.ml.inputShape = [3, 224, 224, 1];
-settings.ml.inputType = 'uint8';
-settings.ml.outputShape = [1000, 1, 1, 1];
-settings.ml.outputType = 'float32';
 
 settings.sourceType = '/dev/video0'; // "rpi", "test", or others(v4l2src)
 settings.isH264Enabled = false;
@@ -152,13 +148,7 @@ var onStart = function () {
     subpipe1Elements.push(tensorConverter);
 
     // tensor_filter (ml element)
-    var mlElement = ant.ml.createMLElement(
-      settings.ml.modelPath,
-      settings.ml.inputShape,
-      settings.ml.inputType,
-      settings.ml.outputShape,
-      settings.ml.outputType
-    );
+    var mlElement = ant.ml.createImgClsImagenetElement(settings.ml.modelPath);
     subpipe1Elements.push(mlElement);
 
     var sink = ant.stream.createElement('appsink');
@@ -168,7 +158,7 @@ var onStart = function () {
     var totalFrameLatency = 0.0;
     var sampleCount = 0;
     sink.connectSignal('new-sample', function (name, data) {
-      var result = ant.ml.getMaxOfBuffer(data, settings.ml.outputType);
+      var result = ant.ml.getMaxOfBuffer(data, 'float32');
       var labelMessage = '';
 
       var pssInKB = ant.runtime.getPSSInKB() - baselinePssInKB;
