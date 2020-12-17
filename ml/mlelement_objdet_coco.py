@@ -169,7 +169,7 @@ class CustomFilter(object):
             input_tensor = np.reshape(input_element, input_dim.getDims()[::-1])[i]
             input_image = transform_image(input_tensor)
             inputs_dict[input_name] = input_image
-            self.module.set_input(**inputs_dict)
+        self.module.set_input(**inputs_dict)
 
         # Run inference
         self.module.run()
@@ -190,4 +190,7 @@ class CustomFilter(object):
 	classes = outputs[0] # (100, 1, 1, 1)
 	scores = outputs[1]  # (100, 1, 1, 1)
 	bboxes = outptus[2]  # (4, 100, 1, 1)
+
+        ### 
  
+        return app_output
