@@ -189,6 +189,10 @@ var onStart = function () {
             ' FPS)';
         }
 //      }
+      //  var bboxes = [];
+      //  var bbox1 = {xmin: 100, ymin:100, xmax:500, ymax:500, labeltext:"tv"};
+      //  bboxes.push(bbox1)
+      //  ant.remoteui.setStreamingViewBoundingBoxes(bboxes);
       ant.remoteui.setStreamingViewLabelText(labelMessage);
     });
     subpipe1Elements.push(sink);
