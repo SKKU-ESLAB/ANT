@@ -41,6 +41,13 @@ ANTRemoteUI.prototype.setStreamingViewLabelText = function (
     handler
   );
 };
+
+// Example:
+// [
+//  {xmin: 100, ymin:100, xmax:500, ymax:500, labeltext: "tv"},
+//  {xmin: 100, ymin:100, xmax:500, ymax:500, labeltext: "tv"},
+//  {xmin: 100, ymin:100, xmax:500, ymax:500, labeltext: "tv"}
+// ]
 ANTRemoteUI.prototype.setStreamingViewBoundingBoxes = function (
   boundingBoxes,
   handler
