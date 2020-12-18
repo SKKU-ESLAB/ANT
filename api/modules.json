@@ -87,18 +87,6 @@
         "buffer",
         "console"
       ]
-    },
-    "antgateway": {
-      "js_file": "antgateway/js/antgateway.js",
-      "native_files": [
-        "antgateway/native/ant_gateway_native.c"
-      ],
-      "init": "InitANTGatewayNative",
-      "cmakefile": "antgateway/native/ant_gateway_native.cmake",
-      "require": [
-        "buffer",
-        "console"
-      ]
     }
   }
 }

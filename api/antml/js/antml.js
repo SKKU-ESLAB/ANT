@@ -27,7 +27,7 @@ try {
 try {
   RuntimeAPI = require('antruntime');
 } catch (e) {
-  throw new Error('ML API Dependency Error: not found Stream API');
+  throw new Error('ML API Dependency Error: not found Runtime API');
 }
 
 var shapeArrayToStr = function (shapeArray) {
@@ -189,6 +189,70 @@ ANTML.prototype.createMLElement = function (
     inputNamesStr + 
     ' ' +
     outputNamesStr;
+  tensorFilter.setProperty('custom', custom);
+  tensorFilter.modelPath = modelPath;
+  return tensorFilter;
+};
+
+ANTML.prototype.createMLFragmentElement = function (
+  modelPath,
+  inputShapes,
+  inputTypes,
+  inputNames,
+  taskName,
+  numFragments,
+  targetUri
+) {
+  // Checking arguments
+  if (modelPath.indexOf(' ') >= 0) {
+    console.error('ERROR: Invalid modelPath! ' + modelPath);
+    return undefined;
+  }
+  if (inputTypes.indexOf(' ') >= 0) {
+    console.error('ERROR: Invalid inputTypes! ' + inputTypes);
+    return undefined;
+  }
+  if (outputTypes.indexOf(' ') >= 0) {
+    console.error('ERROR: Invalid outputTypes! ' + outputTypes);
+    return undefined;
+  }
+  if (!StreamAPI.isInitialized()) {
+    console.error('ERROR: Stream API is not initialized');
+    return undefined;
+  }
+  if(taskName === undefined) {
+    // Default task: imgcls_imagenet
+    taskName = "imgcls_imagenet";
+  }
+  var taskPath = getTaskPath(taskName);
+  if(taskPath === undefined) {
+    console.error("ERROR: task does not exist: " + taskPath);
+    return undefined;
+  }
+
+  var inputShapesStr = shapeArrayToStr(inputShapes);
+  var outputShapesStr = shapeArrayToStr(outputShapes);
+  var inputTypesStr = typeArrayToStr(inputTypes);
+  var inputNamesStr = nameArrayToStr(inputNames);
+
+  var tensorFilter = StreamAPI.createElement('tensor_filter');
+  tensorFilter.setProperty('framework', 'python3');
+  tensorFilter.setProperty('model', taskPath);
+  tensorFilter.setProperty('input', inputShapesStr);
+  tensorFilter.setProperty('inputtype', inputTypesStr);
+  tensorFilter.setProperty('inputname', inputNamesStr);
+  var custom =
+    modelPath +
+    ' ' +
+    inputShapesStr +
+    ' ' +
+    inputTypesStr +
+    ' ' +
+    inputNamesStr +
+    ' ' +
+    numFragments +
+    ' ' +
+    targetUri;
   tensorFilter.setProperty('custom', custom);
   tensorFilter.modelPath = modelPath;
   return tensorFilter;

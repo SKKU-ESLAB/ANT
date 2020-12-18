@@ -13,12 +13,18 @@
 # limitations under the License.
 #
 
+import errno
+import socket
+from socket import error as socket_error
+import time
 import os
-
-import fragment_runner as runner
 
 import nnstreamer_python as nns
 import numpy as np
+from keras.preprocessing import image
+from keras.applications import imagenet_utils, mobilenet
+
+import fragment_runner as runner
 
 def shape_str_to_npshape(shape_str):
     shape_str_tokens = shape_str.split(":")
@@ -87,7 +93,9 @@ class CustomFilter(object):
         model_path_head = os.path.join(model_path, 'mod')
         self.interpreters = runner.load_model(model_path_head, num_fragments)
 
-        # TODO: check target URI's existence
+        # Connect to target
+        connectToTarget()
+        self.offload_from = num_fragments
 
         return None
 
@@ -99,10 +107,57 @@ class CustomFilter(object):
         # pylint: disable=invalid-name
         return self.output_dims
 
-    def invoke(self, input_array):
-        output_tensor = runner.run_fragments(self.interpreters,
-                input_array[0], 0, self.end_layer_num)
+    def connectToTarget(self):
+        print("Trying to connect to: {}".format(self.target_uri))
+        self.client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        target_ip_addr = target_addr[:self.target_uri.find(":")]
+        target_port = int(target_addr[(self.target_uri.find(":")+1):])
+        try:
+            self.client_socket.timeout(1.0)
+            self.client_socket.connect((target_ip_addr, target_port))
+        except socket.timeout:
+            return False
+        return True
 
-        ## TODO: send the output tensor to the target URI
+    def invoke(self, input_array):
+        # TODO:
+        try:
+            if self.client_socket is None:
+                isConnected = connetToTarget()
+                if isConnected:
+
+                # inference locally
+                head_from = 0
+                head_to = self.offload_from - 1
+                head_in_tensor = process_image_for_mobilenet_imagenet("test.jpg")
+                head_out_tensor = runner.run_fragments(interpreters, head_in_tensor, head_from, head_to)
+                output_tensor = runner.run_fragments(self.interpreters,
+                        input_array[0], 0, self.end_layer_num)
+
+                # send the output tensor to the target URI
+                tail_from = self.offload_from
+                tail_to = offload_to
+
+                payload_buffer = head_out_tensor.tobytes()
+
+                payload_length = len(payload_buffer)
+                payload_length_buffer = payload_length.to_bytes(4, 'big')
+
+                tail_from_buffer = tail_from.to_bytes(4, 'big')
+
+                client_socket.send(payload_length_buffer)
+                client_socket.send(tail_from_buffer)
+                client_socket.send(payload_buffer)
+
+                result_buffer = client_socket.recv(4)
+                result = int.from_bytes(result_buffer, byteorder='big')
+                if result >= 0 and result < num_fragments:
+                    self.offload_from = result
+
+        except socket_error as serr:
+            if serr.errno != errno.ECONNREFUSED:
+                raise serr
+            else:
+                self.client_socket = None
 
         return output_tensor
