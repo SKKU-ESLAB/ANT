@@ -203,6 +203,10 @@ ANTML.prototype.createMLElement = function (
   return tensorFilter;
 };
 
+ANTML.prototype.toFloatArray = function(buffer) {
+  return native.ant_ml_toFloatArray(buffer);
+};
+
 ANTML.prototype.getMaxOfBuffer = function (buffer, type) {
   return native.ant_ml_getMaxOfBuffer(buffer, type);
 };
