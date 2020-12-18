@@ -22,10 +22,15 @@ from tvm.contrib import graph_runtime as runtime
 import nnstreamer_python as nns
 import numpy as np
 
+import bbox
+
 def shape_str_to_npshape(shape_str):
     shape_str_tokens = shape_str.split(":")
     return [int(token) for token in shape_str_tokens]
 
+def shapes_str_to_npshapes(shapes_str):
+    shapes_str_tokens = shapes_str.split(",")
+    return [shape_str_to_npshape(token) for token in shapes_str_tokens]
 
 def datatype_str_to_nptype(datatype_str):
     ret = None
@@ -37,6 +42,14 @@ def datatype_str_to_nptype(datatype_str):
         ret = np.uint8
     return ret
 
+def datatypes_str_to_nptypes(datatypes_str):
+    datatypes_str_tokens = datatypes_str.split(",")
+    return [datatype_str_to_nptype(token) for token in datatypes_str_tokens]
+
+def names_str_to_strarray(names_str):
+    names_str_tokens = names_str.split(",")
+    return [token for token in names_str_tokens]
+
 def transform_image(image):
     # TODO: Hardcoded ImageNet dataset mean
     image = np.array(image) - np.array([103.939, 116.779, 123.68])
@@ -45,69 +58,78 @@ def transform_image(image):
     image = image[np.newaxis, :]
     return image
 
-#def get_input_info(graph_str, params):
-#    shape_dict = {}
-#    dtype_dict = {}
-#    # Use a special function to load the binary params back into a dict
-#    load_arr = tvm.get_global_func("tvm.relay._load_param_dict")(params)
-#    param_names = [v.name for v in load_arr]
-#    graph = json.loads(graph_str)
-#    for node_id in graph["arg_nodes"]:
-#        node = graph["nodes"][node_id]
-#        # If a node is not in the params, infer it to be an input node
-#        name = node["name"]
-#        if name not in param_names:
-#            shape_dict[name] = graph["attrs"]["shape"][1][node_id]
-#            dtype_dict[name] = graph["attrs"]["dltype"][1][node_id]
-#    return shape_dict, dtype_dict
+def nms(self, detected):
+    threshold_iou = 0.5
+    detected = sorted(detected, key=lambda a: a['prob'])
+    boxes_size = len(detected)
 
-def make_inputs_dict(inputs_file, shape_dict, dtype_dict, fill_mode):
-    try:
-        inputs = np.load(inputs_file) if inputs_file else {}
-    except IOError as ex:
-        raise print("Error loading inputs file: %s" % ex)
+    _del = [False for _ in range(boxes_size)]
 
-    # First check all the keys in inputs exist in the graph
-    for input_name in inputs:
-        if input_name not in shape_dict.keys():
-            raise print(
-                "the input tensor '{}' is not in the graph. Expected inputs: '{}'".format(
-                    input_name, shape_dict.keys()
-                )
-            )
+    for i in range(boxes_size):
+        if not _del[i]:
+            for j in range(i + 1, boxes_size):
+                if self.iou(detected[i], detected[j]) > threshold_iou:
+                    _del[j] = True
 
-    # Now construct the input dict, generating tensors where no
-    # data already exists in 'inputs'
-    inputs_dict = {}
-    for input_name in shape_dict:
-        print("input_name: %s" % input_name) ###
-        
-        if input_name in inputs.keys():
-            inputs_dict[input_name] = inputs[input_name]
-        else:
-            shape = shape_dict[input_name]
-            dtype = dtype_dict[input_name]
-            data = generate_tensor_data(shape, dtype, fill_mode)
-            inputs_dict[input_name] = data
+    # update result
+    self.detected_objects.clear()
 
-    return inputs_dict
+    for i in range(boxes_size):
+        if not _del[i]:
+            self.detected_objects.append(detected[i])
+
+        if DEBUG:
+            print("==============================")
+            print("LABEL           : {}".format(
+                   self.tflite_labels[detected[i]["class_id"]]))
+            print("x               : {}".format(detected[i]["x"]))
+            print("y               : {}".format(detected[i]["y"]))
+            print("width           : {}".format(detected[i]["width"]))
+            print("height          : {}".format(detected[i]["height"]))
+            print("Confidence Score: {}".format(detected[i]["prob"]))
 
 class CustomFilter(object):
     def __init__(self, *args):
         # Parse arguments
         model_path = args[0]
-        input_shape = shape_str_to_npshape(args[1])
-        input_type = datatype_str_to_nptype(args[2])
-        output_shape = shape_str_to_npshape(args[3])
-        output_type = datatype_str_to_nptype(args[4])
-        if input_type is None:
-            print("Invalid input_shape")
+        input_shapes = shapes_str_to_npshapes(args[1])
+        input_types = datatypes_str_to_nptypes(args[2])
+        output_shapes = shapes_str_to_npshapes(args[3])
+        output_types = datatypes_str_to_nptypes(args[4])
+        input_names = names_str_to_strarray(args[5])
+        output_names = names_str_to_strarray(args[6])
+        for input_type in input_types:
+            if input_type is None:
+                print("Invalid input_type")
+                return None
+        for output_type in output_types:
+            if output_type is None:
+                print("Invalid output_type")
+                return None
+        if (len(input_shapes) > 4 or len(input_types) > 4 or len(input_names) > 4
+                or len(input_shapes) != len(input_types)
+                or len(input_shapes) != len(input_names)):
+            print("Invalid input count: (%d,%d,%d)".format(
+                len(input_shapes), len(input_types), len(input_names)))
             return None
-        if output_type is None:
-            print("Invalid output_shape")
+        if (len(output_shapes) > 4 or len(output_types) > 4 or len(output_names) > 4
+                or len(output_shapes) != len(output_types)
+                or len(output_shapes) != len(output_names)):
+            print("Invalid output count: (%d,%d,%d)".format(
+                len(output_shapes), len(output_types), len(output_names)))
             return None
-        self.input_dims = [nns.TensorShape(input_shape, input_type)]
-        self.output_dims = [nns.TensorShape(output_shape, output_type)]
+        self.input_dims = []
+        self.output_dims = []
+        self.input_types = input_types
+        self.output_types = output_types
+        for i in range(len(input_shapes)):
+            input_dim = nns.TensorShape(input_shapes[i], input_types[i])
+            self.input_dims.append(input_dim)
+        for i in range(len(output_shapes)):
+            output_dim = nns.TensorShape(output_shapes[i], output_types[i])
+            self.output_dims.append(output_dim)
+        self.input_names = input_names
+        self.output_names = output_names
 
         # Initialize TVM runtime session with given binary
         session = rpc.LocalSession()
@@ -138,18 +160,37 @@ class CustomFilter(object):
         fill_mode = "random"
 
         # Setting input
-        input_tensor = np.reshape(input_array[0], self.input_dims[0].getDims()[::-1])[0]
-        input_image = transform_image(input_tensor)
-#        shape_dict, dtype_dict = get_input_info(graph, params)
-#        inputs_dict = make_inputs_dict(inputs_file, shape_dict, dtype_dict, fill_mode)
         inputs_dict = {}
-        inputs_dict["input0"] = input_image
+        for i in range(len(self.input_dims)):
+            input_element = input_array[i]
+            input_dim = self.input_dims[i]
+            input_name = self.input_names[i]
+
+            input_tensor = np.reshape(input_element, input_dim.getDims()[::-1])[i]
+            input_image = transform_image(input_tensor)
+            inputs_dict[input_name] = input_image
         self.module.set_input(**inputs_dict)
 
         # Run inference
         self.module.run()
 
-        # Get output tensor
-        out = self.module.get_output(0)
-        
-        return [out.asnumpy().astype(np.float32)]
+        # Get output tensors
+        outputs = []
+        for i in range(len(self.output_dims)):
+            output_element = self.module.get_output(i)
+            nptype = self.output_types[i]
+            outputs.append(output_element.asnumpy().astype(nptype))
+
+        # Post-processing
+	app_output = postProcessing(outputs)
+
+        return app_output
+
+    def postProcessing(self, outputs):
+	classes = outputs[0] # (100, 1, 1, 1)
+	scores = outputs[1]  # (100, 1, 1, 1)
+	bboxes = outptus[2]  # (4, 100, 1, 1)
+
+        ### 
+ 
+        return app_output
