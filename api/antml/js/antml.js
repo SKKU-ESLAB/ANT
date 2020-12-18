@@ -99,19 +99,10 @@ var getTaskPath = function (taskName) {
   return taskPath;
 };
 
-var availableTaskNames = [
-  "imgcls_imagenet",
-  "objdet_coco"
-];
-
 /**
  * ANT ML API
  */
 function ANTML() {}
-
-ANTML.prototype.getAvailableTaskNames = function () {
-  return availableTaskNames;
-};
 
 ANTML.prototype.createImgClsImagenetElement = function (modelPath) {
   var mlElement = this.createMLElement(modelPath,
