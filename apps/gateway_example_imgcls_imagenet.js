@@ -22,12 +22,12 @@ settings.ml.modelPath = '';
 settings.ml.num_fragments = 12
 settings.ml.target = '';
 
-settings.sourceType = 'nvidia'; // "rpi", "nvidia", "test", or others(v4l2src)
+settings.deviceType = 'tx2';
 settings.isH264Enabled = false;
 settings.isSourceFilterEnabled = false;
 settings.isScaleEnabled = true;
 settings.isConvertEnabled = true;
-if(settings.sourceType == "nvidia") {
+if(settings.deviceType == "nvidia") {
   settings.isConvertEnabled = false;
 }
 settings.videoWidth = 224;
@@ -68,22 +68,10 @@ var onStart = function () {
     var subpipe2Elements = [];
 
     // source
-    var source;
-    if (settings.sourceType == 'rpi') {
-      source = ant.stream.createElement('rpicamsrc');
-    } else if (settings.sourceType == 'test') {
-      source = ant.stream.createElement('videotestsrc');
-      source.setProperty('pattern', 1);
-    } else if (settings.sourceType == 'nvidia') {
-      source = ant.stream.createElement('nvcamerasrc');
-      source.setProperty("fpsRange", "30.0 30.0");
-    } else {
-      source = ant.stream.createElement('v4l2src');
-      source.setProperty('device', settings.sourceType);
-    }
+    var source = ant.camera.createCameraElement(deviceType);
     mainpipeElements.push(source);
 
-    if(settings.sourceType == 'nvidia') {
+    if(settings.deviceType == 'nvidia') {
       converter = ant.stream.createElement('nvvidconv');
       converter.setProperty("flip-method", 0);
       elements.push(converter);

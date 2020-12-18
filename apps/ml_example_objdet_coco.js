@@ -20,7 +20,7 @@ var settings = {};
 settings.ml = {};
 settings.ml.modelPath = '';
 
-settings.sourceType = '/dev/video0'; // "rpi", "test", or others(v4l2src)
+settings.deviceType = 'xu4'; // "rpi", "test", or others(v4l2src)
 settings.isH264Enabled = false;
 settings.isSourceFilterEnabled = false;
 settings.isScaleEnabled = true;
@@ -74,16 +74,7 @@ var onStart = function () {
     var subpipe2Elements = [];
 
     // source
-    var source;
-    if (settings.sourceType == 'rpi') {
-      source = ant.stream.createElement('rpicamsrc');
-    } else if (settings.sourceType == 'test') {
-      source = ant.stream.createElement('videotestsrc');
-      source.setProperty('pattern', 1);
-    } else {
-      source = ant.stream.createElement('v4l2src');
-      source.setProperty('device', settings.sourceType);
-    }
+    var source = ant.camera.createCameraElement(deviceType);
     mainpipeElements.push(source);
 
     // source filter
