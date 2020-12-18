@@ -44,6 +44,7 @@ node-modules
 # ML sample
 ml/sample-models
 __pycache__
+*.tflite
 
 # Companion
 android-companion/gradlew.bat

@@ -11,6 +11,7 @@ import android.view.View;
 import android.view.inputmethod.EditorInfo;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.SeekBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -27,6 +28,7 @@ import androidx.navigation.Navigation;
 import androidx.navigation.ui.AppBarConfiguration;
 import androidx.navigation.ui.NavigationUI;
 import skku.eslab.ant.companion.companionapi.CompanionAPI;
+import skku.eslab.ant.companion.gatewayconnector.GatewayConnector;
 import skku.eslab.ant.companion.httpconnection.HTTPClient;
 import skku.eslab.ant.companion.httpconnection.HTTPResponseHandler;
 import skku.eslab.ant.companion.remoteuiapi.RemoteUIAPI;
@@ -56,6 +58,8 @@ public class MainActivity extends AppCompatActivity {
     final String OXU4_ADDRESS = "192.168.0.18:8001";
     final String JTX2_ADDRESS = "115.145.209.162:8001";
 
+    private GatewayConnector mGatewayConnector;
+
     @Override
     protected void onStart() {
         super.onStart();
@@ -79,6 +83,9 @@ public class MainActivity extends AppCompatActivity {
 
         // Resource Benchmark Test
         ResourceBenchHelper.get();
+
+        // Gateway Connector
+        this.mGatewayConnector = new GatewayConnector(this);
     }
 
     @Override
@@ -157,37 +164,31 @@ public class MainActivity extends AppCompatActivity {
         Button appStartStopButton = findViewById(R.id.appStartStopButton);
         appStartStopButton.setOnClickListener(onClickAppStartStopButton);
 
-        final Button targetButton1 = findViewById(R.id.targetButton1);
-        final Button targetButton2 = findViewById(R.id.targetButton2);
-        final Button targetButton3 = findViewById(R.id.targetButton3);
-        targetButton1.setOnClickListener(new View.OnClickListener() {
+        final Button settingButton = findViewById(R.id.settingButton);
+        settingButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                targetAddressEditText.setText(RPI3_ADDRESS);
-                onUpdateTargetAddress(RPI3_ADDRESS);
-                targetButton1.setTextColor(Color.parseColor("#0000ff"));
-                targetButton2.setTextColor(Color.parseColor("#000000"));
-                targetButton3.setTextColor(Color.parseColor("#000000"));
+                int isVisible = targetAddressEditText.getVisibility();
+                isVisible = (isVisible == View.VISIBLE) ? View.INVISIBLE : View.VISIBLE;
+                targetAddressEditText.setVisibility(isVisible);
             }
         });
-        targetButton2.setOnClickListener(new View.OnClickListener() {
+
+        // Partitioning UI
+        SeekBar partitioningSeekBar = findViewById(R.id.partitioningSeekbar);
+        partitioningSeekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
             @Override
-            public void onClick(View v) {
-                targetAddressEditText.setText(OXU4_ADDRESS);
-                onUpdateTargetAddress(OXU4_ADDRESS);
-                targetButton2.setTextColor(Color.parseColor("#0000ff"));
-                targetButton1.setTextColor(Color.parseColor("#000000"));
-                targetButton3.setTextColor(Color.parseColor("#000000"));
+            public void onProgressChanged(SeekBar seekBar, int i, boolean b) {
             }
-        });
-        targetButton3.setOnClickListener(new View.OnClickListener() {
+
             @Override
-            public void onClick(View v) {
-                targetAddressEditText.setText(JTX2_ADDRESS);
-                onUpdateTargetAddress(JTX2_ADDRESS);
-                targetButton3.setTextColor(Color.parseColor("#0000ff"));
-                targetButton2.setTextColor(Color.parseColor("#000000"));
-                targetButton1.setTextColor(Color.parseColor("#000000"));
+            public void onStartTrackingTouch(SeekBar seekBar) {
+            }
+
+            @Override
+            public void onStopTrackingTouch(SeekBar seekBar) {
+                int partitioningPoint = seekBar.getProgress();
+                mGatewayConnector.setNextStartIdx(partitioningPoint);
             }
         });
 
@@ -206,6 +207,22 @@ public class MainActivity extends AppCompatActivity {
         if (isCompanionTestEnabled) {
             this.initializeCompanionTest();
         }
+    }
+
+    public void enablePartitioningPointUI(boolean isEnabled) {
+        // Partitioning point UI
+        TextView leftPartitioningLabel = findViewById(R.id.leftPartitioningLabel);
+        SeekBar partitioningSeekbar = findViewById(R.id.partitioningSeekbar);
+        TextView rightPartitioningLabel = findViewById(R.id.rightPartitioningLabel);
+        int visibility = (isEnabled) ? View.VISIBLE : View.INVISIBLE;
+        leftPartitioningLabel.setVisibility(visibility);
+        partitioningSeekbar.setVisibility(visibility);
+        rightPartitioningLabel.setVisibility(visibility);
+    }
+
+    public void setPartitioningPoint(int partitioningPoint) {
+        SeekBar partitioningSeekbar = findViewById(R.id.partitioningSeekbar);
+        partitioningSeekbar.setProgress(partitioningPoint);
     }
 
     private final boolean isCompanionTestEnabled = true;

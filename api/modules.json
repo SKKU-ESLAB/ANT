@@ -87,6 +87,18 @@
         "buffer",
         "console"
       ]
+    },
+    "antgateway": {
+      "js_file": "antgateway/js/antgateway.js",
+      "require": [
+        "console"
+      ]
+    },
+    "antcamera": {
+      "js_file": "antcamera/js/antcamera.js",
+      "require": [
+        "console"
+      ]
     }
   }
 }
