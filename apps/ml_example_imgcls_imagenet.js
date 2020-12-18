@@ -73,7 +73,7 @@ var onStart = function () {
     var subpipe2Elements = [];
 
     // source
-    var source = ant.camera.createCameraElement(deviceType);
+    var source = ant.camera.createCameraElement(settings.deviceType);
     mainpipeElements.push(source);
 
     // source filter

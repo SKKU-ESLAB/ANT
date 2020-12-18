@@ -89,13 +89,12 @@ class CustomFilter(object):
         self.target_uri = target_uri
 
         # Initialize fragment runner
-        self.end_layer_num = num_fragments - 1 # Initial setting
+        self.offload_from = num_fragments - 1 # Initial setting
         model_path_head = os.path.join(model_path, 'mod')
         self.interpreters = runner.load_model(model_path_head, num_fragments)
 
         # Connect to target
         connectToTarget()
-        self.offload_from = num_fragments
 
         return None
 
@@ -103,9 +102,9 @@ class CustomFilter(object):
         # pylint: disable=invalid-name
         return self.input_dims
 
-    def getOutputDim(self):
-        # pylint: disable=invalid-name
-        return self.output_dims
+#    def getOutputDim(self):
+#        # pylint: disable=invalid-name
+#        return self.output_dims
 
     def connectToTarget(self):
         print("Trying to connect to: {}".format(self.target_uri))
@@ -120,23 +119,24 @@ class CustomFilter(object):
         return True
 
     def invoke(self, input_array):
-        # TODO:
         try:
             if self.client_socket is None:
                 isConnected = connetToTarget()
-                if isConnected:
+                if isConnected is False:
+                    data = [ 0 ]
+                    return np.array(data)
 
                 # inference locally
                 head_from = 0
                 head_to = self.offload_from - 1
                 head_in_tensor = process_image_for_mobilenet_imagenet("test.jpg")
-                head_out_tensor = runner.run_fragments(interpreters, head_in_tensor, head_from, head_to)
+                head_out_tensor = runner.run_fragments(self.interpreters, head_in_tensor, head_from, head_to)
                 output_tensor = runner.run_fragments(self.interpreters,
-                        input_array[0], 0, self.end_layer_num)
+                        input_array[0], 0, self.offload_from - 1)
 
                 # send the output tensor to the target URI
                 tail_from = self.offload_from
-                tail_to = offload_to
+                tail_to = num_fragments - 1
 
                 payload_buffer = head_out_tensor.tobytes()
 
