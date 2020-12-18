@@ -38,63 +38,75 @@
         android:id="@+id/appStartStopButton"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginTop="60dp"
-        android:layout_marginEnd="16dp"
+        android:layout_marginTop="2dp"
         android:text="Start"
-        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/settingButton" />
+
+    <Button
+        android:id="@+id/settingButton"
+        android:layout_width="93dp"
+        android:layout_height="44dp"
+        android:text="Setting"
+        app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
-
-    <Button
-        android:id="@+id/targetButton1"
-        android:layout_width="56dp"
-        android:layout_height="45dp"
-        android:layout_marginTop="16dp"
-        android:layout_marginEnd="104dp"
-        android:text="RPi3"
-        app:layout_constraintLeft_toRightOf="@+id/targetAddressEditText"
-        app:layout_constraintBottom_toTopOf="@+id/appStartStopButton"/>
-
-    <Button
-        android:id="@+id/targetButton2"
-        android:layout_width="66dp"
-        android:layout_height="45dp"
-        android:layout_marginTop="16dp"
-        android:layout_marginEnd="104dp"
-        android:text="OXU4"
-        app:layout_constraintLeft_toRightOf="@+id/targetButton1"
-        app:layout_constraintBottom_toTopOf="@+id/appStartStopButton"/>
-    <Button
-        android:id="@+id/targetButton3"
-        android:layout_width="66dp"
-        android:layout_height="45dp"
-        android:layout_marginTop="16dp"
-        android:layout_marginEnd="104dp"
-        android:text="JTX2"
-        app:layout_constraintLeft_toRightOf="@+id/targetButton2"
-        app:layout_constraintBottom_toTopOf="@+id/appStartStopButton"/>
 
     <EditText
         android:id="@+id/targetAddressEditText"
         android:layout_width="206dp"
         android:layout_height="46dp"
-        android:layout_marginStart="16dp"
-        android:layout_marginTop="16dp"
         android:gravity="center_vertical"
         android:text="@string/defaultTargetAddress"
         android:textSize="18sp"
-        app:layout_constraintStart_toStartOf="parent"
+        android:visibility="invisible"
+        app:layout_constraintStart_toEndOf="@+id/settingButton"
         app:layout_constraintTop_toTopOf="parent" />
 
     <TextView
         android:id="@+id/statusLabel"
         android:layout_width="254dp"
         android:layout_height="46dp"
-        android:layout_marginStart="16dp"
         android:gravity="center_vertical"
         android:text="Disconnected"
         android:textColor="#ff0000"
         android:textSize="24sp"
-        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintStart_toEndOf="@+id/appStartStopButton"
         app:layout_constraintTop_toBottomOf="@+id/targetAddressEditText" />
+
+    <SeekBar
+        android:id="@+id/partitioningSeekbar"
+        style="@style/Widget.AppCompat.SeekBar.Discrete"
+        android:layout_width="200dp"
+        android:layout_height="wrap_content"
+        android:indeterminate="false"
+        android:max="13"
+        android:thumb="@drawable/seekbar_drawable"
+        android:visibility="invisible"
+        app:layout_constraintBottom_toTopOf="@+id/statusLabel"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintEnd_toStartOf="@+id/rightPartitioningLabel"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <TextView
+        android:id="@+id/leftPartitioningLabel"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="12dp"
+        android:layout_marginEnd="4dp"
+        android:text="Gateway"
+        android:visibility="invisible"
+        app:layout_constraintEnd_toStartOf="@+id/partitioningSeekbar"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <TextView
+        android:id="@+id/rightPartitioningLabel"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="12dp"
+        android:layout_marginEnd="16dp"
+        android:text="User"
+        android:visibility="invisible"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

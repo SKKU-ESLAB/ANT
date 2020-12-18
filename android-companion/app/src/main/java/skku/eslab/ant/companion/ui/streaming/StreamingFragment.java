@@ -100,8 +100,8 @@ class BoundingBoxesManager implements SurfaceHolder.Callback {
 
     private void drawBoundingBoxes(final Canvas canvas, ArrayList<BoundingBox> boundingBoxes) {
         // TODO: hardcoding model input size
-        float MODEL_INPUT_WIDTH = 512.0f;
-        float MODEL_INPUT_HEIGHT = 512.0f;
+        float MODEL_INPUT_WIDTH = 256f;
+        float MODEL_INPUT_HEIGHT = 256f;
 
         canvas.drawColor(Color.TRANSPARENT, PorterDuff.Mode.CLEAR);
         canvas.drawARGB(0, 128, 128, 128);
