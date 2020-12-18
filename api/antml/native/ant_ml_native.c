@@ -110,9 +110,31 @@ JS_FUNCTION(ant_ml_getMaxOfBuffer) {
   }
 }
 
+JS_FUNCTION(ant_ml_toFloatArray) {
+  jerry_value_t argBuffer;
+  DJS_CHECK_ARGS(1, object);
+  argBuffer = JS_GET_ARG(0, object);
+
+  iotjs_bufferwrap_t *buffer_wrap;
+  buffer_wrap= iotjs_jbuffer_get_bufferwrap_ptr(argBuffer);
+
+  float *data_array = (float *)buffer_wrap->buffer;
+  size_t buffer_len = iotjs_bufferwrap_length(buffer_wrap);
+  size_t data_array_len = buffer_len / sizeof(float);
+
+  jerry_value_t retArray = jerry_create_object();
+  for(int i = 0; i < (int)data_array_len; i++) {
+    jerry_value_t element = jerry_create_number(data_array[i]);
+    iotjs_jval_set_property_by_index(retArray, (uint32_t)i, element);
+  }
+
+  return retArray;
+}
+
 jerry_value_t InitANTMLNative() {
   jerry_value_t antMLNative = jerry_create_object();
   REGISTER_ANT_API(antMLNative, ant_ml, getMaxOfBuffer);
+  REGISTER_ANT_API(antMLNative, ant_ml, toFloatArray);
 
   initANTML();
 
