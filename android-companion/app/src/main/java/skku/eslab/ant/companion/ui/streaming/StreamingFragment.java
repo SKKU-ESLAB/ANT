@@ -4,6 +4,7 @@ import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.PixelFormat;
+import android.graphics.PorterDuff;
 import android.graphics.Rect;
 import android.os.Bundle;
 import android.os.StrictMode;
@@ -21,6 +22,8 @@ import com.ant.ant_manager.view.cameraviewer.GStreamerSurfaceView;
 import org.freedesktop.gstreamer.GStreamer;
 
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Random;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -68,27 +71,69 @@ class BoundingBoxesManager implements SurfaceHolder.Callback {
         }
     }
 
+    public BoundingBoxesManager() {
+        this.mRandom.setSeed(System.currentTimeMillis());
+    }
+
+    private HashMap<String, Integer> mBoundingBoxColorMap = new HashMap<>();
+    private Random mRandom = new Random();
+
+    private int getBoundingBoxColor(String labelText) {
+        Integer color = this.mBoundingBoxColorMap.get(labelText);
+        if (color == null) {
+            int alpha = 255;
+            int sumRGBMin = 200;
+            int sumRGBMax = 600;
+            int sumRGB = sumRGBMin;
+            int red, green, blue;
+            do {
+                red = mRandom.nextInt() % 256;
+                green = mRandom.nextInt() % 256;
+                blue = mRandom.nextInt() % 256;
+                sumRGB = red + green + blue;
+            } while (sumRGB > sumRGBMax || sumRGB < sumRGBMin);
+            color = Color.argb(alpha, red, green, blue);
+            this.mBoundingBoxColorMap.put(labelText, color);
+        }
+        return color;
+    }
+
     private void drawBoundingBoxes(final Canvas canvas, ArrayList<BoundingBox> boundingBoxes) {
+        // TODO: hardcoding model input size
+        float MODEL_INPUT_WIDTH = 512.0f;
+        float MODEL_INPUT_HEIGHT = 512.0f;
+
+        canvas.drawColor(Color.TRANSPARENT, PorterDuff.Mode.CLEAR);
         canvas.drawARGB(0, 128, 128, 128);
 
+        int canvasWidth = canvas.getWidth();
+        int canvasHeight = canvas.getHeight();
+
         for (BoundingBox boundingBox : boundingBoxes) {
-            Log.i(TAG,
-                    "Bbox: " + boundingBox.xMin + ", " + boundingBox.xMax + ", " + boundingBox.yMin + ", " + boundingBox.yMax + ", " + boundingBox.labelText);
-            Rect rect = new Rect((int) boundingBox.xMin, (int) boundingBox.yMax,
-                    (int) boundingBox.xMax, (int) boundingBox.yMin);
+            int xMin = (int) (boundingBox.xMin / MODEL_INPUT_WIDTH * canvasWidth);
+            int yMin = (int) (boundingBox.yMin / MODEL_INPUT_HEIGHT * canvasHeight);
+            int xMax = (int) (boundingBox.xMax / MODEL_INPUT_WIDTH * canvasWidth);
+            int yMax = (int) (boundingBox.yMax / MODEL_INPUT_HEIGHT * canvasHeight);
+            String labelText = boundingBox.labelText;
+            Log.i(TAG, "Bbox: " + xMin + ", " + xMax + ", " + yMin + ", " + yMax
+                    + ", " + labelText);
+            Rect rect = new Rect(xMin, yMax, xMax, yMin);
             float strokeWidth = 5.0f;
+            int boundingBoxColor = getBoundingBoxColor(labelText);
             Paint rectPaint = new Paint();
-            rectPaint.setColor(Color.RED);
+            rectPaint.setColor(boundingBoxColor);
             rectPaint.setStyle(Paint.Style.STROKE);
             rectPaint.setStrokeWidth(strokeWidth);
             canvas.drawRect(rect, rectPaint);
 
-            float textSize = 32.0f;
+            float textSize = 64.0f;
             Paint textPaint = new Paint();
-            textPaint.setColor(Color.RED);
+            textPaint.setColor(boundingBoxColor);
             textPaint.setTextSize(textSize);
-            canvas.drawText(boundingBox.labelText, (int) boundingBox.xMin,
-                    (int) boundingBox.yMin - strokeWidth, textPaint);
+            textPaint.setFakeBoldText(true);
+            canvas.drawText(labelText,
+                    xMin + strokeWidth,
+                    yMin + strokeWidth + textSize, textPaint);
         }
     }
 }
