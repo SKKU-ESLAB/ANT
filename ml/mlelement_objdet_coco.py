@@ -164,7 +164,7 @@ class CustomFilter(object):
         return self.output_dims
 
     def invoke(self, input_array):
-        size = 512
+        size = 256
         jump_output = True
 
         print(len(input_array[0]))
