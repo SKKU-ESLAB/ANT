@@ -160,10 +160,10 @@ var onStart = function () {
     var sampleCount = 0;
     sink.connectSignal('new-sample', function (name, data) {
       var dataLength = data.length;
-      var labelMessage = 'Buffer=' + dataLength + '\n';
-      var result = ant.ml.getMaxOfBuffer(data, 'float32');
-      console.log(result)
-//      var labelMessage = '';
+//      var labelMessage = 'Buffer=' + dataLength + '\n';
+//      var result = ant.ml.getMaxOfBuffer(data, 'float32');
+//      console.log(result)
+      var labelMessage = '';
 
       var frameLatency = -1;
       if (prevTimestamp != 0) {
@@ -190,15 +190,25 @@ var onStart = function () {
             ' FPS)';
         }
 //      }
-      //  var bboxes = [];
-      //  arr = ant.ml.getBboxes(data, 'float32');
-      //  var bbox1 = {xmin: arr[6], ymin:arr[7], xmax:arr[8], ymax:arr[9], labeltext:"tv"};
-      //  var bbox2 = {xmin: arr[10], ymin:arr[11], xmax:arr[12], ymax:arr[13], labeltext:"tv"};
-      //  var bbox3 = {xmin: arr[14], ymin:arr[15], xmax:arr[16], ymax:500[17], labeltext:"tv"};
-      //  bboxes.push(bbox1)
-      //  bboxes.push(bbox2)
-      //  bboxes.push(bbox3)
-      //  ant.remoteui.setStreamingViewBoundingBoxes(bboxes);
+      var bboxes = [];
+      var arr = ant.ml.toFloatArray(data);
+      num_objects = arr[0]
+      
+      console.log(arr);
+      console.log(num_objects);
+      for (step = 0; step < num_objects ; step++){ 
+        var base = 21 + step * 4;
+        var bbox1 = {
+          "xmin": arr[base], 
+          "ymin": arr[base+1], 
+          "xmax": arr[base+2], 
+          "ymax": arr[base+3],
+          "labeltext": labels[arr[1+step]]
+        };
+        bboxes.push(bbox1)
+      }
+      console.log(JSON.stringify(bboxes));
+      ant.remoteui.setStreamingViewBoundingBoxes(bboxes);
       ant.remoteui.setStreamingViewLabelText(labelMessage);
     });
     subpipe1Elements.push(sink);
