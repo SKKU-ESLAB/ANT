@@ -19,15 +19,19 @@ var console = require('console');
 var settings = {};
 settings.ml = {};
 settings.ml.modelPath = '';
+settings.ml.num_fragments = 12
+settings.ml.target = '';
 
-settings.deviceType = 'xu4'; // "rpi", "test", or others(v4l2src)
+settings.deviceType = 'tx2';
 settings.isH264Enabled = false;
 settings.isSourceFilterEnabled = false;
 settings.isScaleEnabled = true;
 settings.isConvertEnabled = true;
-settings.videoWidth = 512;
-settings.videoHeight = 512;
-settings.maxBoundingBoxes = 100;
+if(settings.deviceType == "nvidia") {
+  settings.isConvertEnabled = false;
+}
+settings.videoWidth = 224;
+settings.videoHeight = 224;
 settings.videoFormat = 'BGR';
 settings.videoFramerate = '30/1';
 settings.videoSinkSync = false;
@@ -36,18 +40,11 @@ settings.myPort = 5000;
 
 var onInitialize = function () {
   console.log('onInitialize');
-  var modelUrl = 'http://115.145.178.78:8001/downloads/ssd_512_mobilenet1.0_coco.tar';
+  var modelUrl = 'http://115.145.178.78:8001/downloads/gateway/mobilenetv1-gateway.tar';
   settings.ml.modelPath = ant.ml.downloadModel(modelUrl);
   if(settings.ml.modelPath === undefined) {
     console.log('Error on downloading model ' + modelUrl);
   }
-};
-
-var prepareLabel = function (labelFilepath) {
-  var fs = require('fs');
-  var fileContents = fs.readFileSync(labelFilepath).toString();
-  var labels = JSON.parse(fileContents);
-  return labels;
 };
 
 var onStart = function () {
@@ -57,9 +54,6 @@ var onStart = function () {
     console.log('Cannot find model!');
     return;
   }
-
-  var labelFilepath = settings.ml.modelPath + '/labels.json';
-  var labels = prepareLabel(labelFilepath);
 
   // Because ant.stream.initialize() is an async function without finish
   // callback, pipeline setting should be executed by setTimeout.
@@ -76,6 +70,12 @@ var onStart = function () {
     // source
     var source = ant.camera.createCameraElement(deviceType);
     mainpipeElements.push(source);
+
+    if(settings.deviceType == 'nvidia') {
+      converter = ant.stream.createElement('nvvidconv');
+      converter.setProperty("flip-method", 0);
+      elements.push(converter);
+    }
 
     // source filter
     var sourcefilter = ant.stream.createElement('capsfilter');
@@ -139,69 +139,13 @@ var onStart = function () {
     var tensorConverter = ant.stream.createElement('tensor_converter');
     subpipe1Elements.push(tensorConverter);
 
-    // tensor_filter (ml element)
-    var mlElement = ant.ml.createObjDetCocoElement(
-      settings.ml.modelPath, settings.videoWidth, settings.maxBoundingBoxes);
-    subpipe1Elements.push(mlElement);
+    // tensor_filter (ml fragment element)
+    var mlFragmentElement = ant.gateway.createImgClsImagenetElement(
+        settings.ml.modelPath,
+        settings.ml.num_fragments, settings.ml.target);
+    subpipe1Elements.push(mlFragmentElement);
 
-    var sink = ant.stream.createElement('appsink');
-    sink.setProperty('emit-signals', true);
-    var prevTimestamp = 0;
-    var totalFrameLatency = 0.0;
-    var sampleCount = 0;
-    sink.connectSignal('new-sample', function (name, data) {
-      var dataLength = data.length;
-//      var labelMessage = 'Buffer=' + dataLength + '\n';
-//      var result = ant.ml.getMaxOfBuffer(data, 'float32');
-//      console.log(result)
-      var labelMessage = '';
-
-      var frameLatency = -1;
-      if (prevTimestamp != 0) {
-        var nowTimestamp = new Date().valueOf();
-        frameLatency = nowTimestamp - prevTimestamp;
-        prevTimestamp = nowTimestamp;
-      } else {
-        prevTimestamp = new Date().valueOf();
-      }
-
-//      if (result === undefined) {
-//        labelMessage = 'Label error';
-//      } else {
-        sampleCount++;
-        if (frameLatency > 0) {
-          totalFrameLatency += frameLatency;
-          var averageFrameLatency = totalFrameLatency / sampleCount;
-          var averageFPS = 1000.0 / averageFrameLatency;
-          labelMessage +=
-            '' +
-            averageFrameLatency.toFixed(2) +
-            ' ms (' +
-            averageFPS.toFixed(2) +
-            ' FPS)';
-        }
-//      }
-      var bboxes = [];
-      var arr = ant.ml.toFloatArray(data);
-      num_objects = arr[0]
-      
-      console.log(arr);
-      console.log(num_objects);
-      for (step = 0; step < num_objects ; step++){ 
-        var base = 21 + step * 4;
-        var bbox1 = {
-          "xmin": arr[base], 
-          "ymin": arr[base+1], 
-          "xmax": arr[base+2], 
-          "ymax": arr[base+3],
-          "labeltext": labels[arr[1+step]]
-        };
-        bboxes.push(bbox1)
-      }
-      console.log(JSON.stringify(bboxes));
-      ant.remoteui.setStreamingViewBoundingBoxes(bboxes);
-      ant.remoteui.setStreamingViewLabelText(labelMessage);
-    });
+    var sink = ant.stream.createElement('fakesink');
     subpipe1Elements.push(sink);
 
     // sub-pipeline 2
