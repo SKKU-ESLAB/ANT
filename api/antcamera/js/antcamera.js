@@ -41,30 +41,30 @@ ANTCamera.prototype.createCameraElement = function (deviceType) {
     return undefined;
   }
   if(cameraType == 'rpi') {
-    source = createRPiCameraElement();
+    source = this.createRPiCameraElement();
   } else if(cameraType == 'test') {
-    source = createTestCameraElement();
+    source = this.createTestCameraElement();
   } else if(cameraType == 'v4l2') {
-    source = createV4L2CameraElement();
+    source = this.createV4L2CameraElement();
   } else if(cameraType == 'nvidia') {
-    source = createNvidiaCameraElement();
+    source = this.createNvidiaCameraElement();
   }
   return source;
 };
 
 ANTCamera.prototype.createRPiCameraElement = function () {
-  source = ant.stream.createElement('rpicamsrc');
+  source = StreamAPI.createElement('rpicamsrc');
   return source;
 };
 
 ANTCamera.prototype.createTestCameraElement = function () {
-  source = ant.stream.createElement('videotestsrc');
+  source = StreamAPI.createElement('videotestsrc');
   source.setProperty('pattern', 1);
   return source;
 }
 
 ANTCamera.prototype.createV4L2CameraElement = function (sourcePath) {
-  source = ant.stream.createElement('v4l2src');
+  source = StreamAPI.createElement('v4l2src');
   if(sourcePath === undefined) {
     sourcePath = '/dev/video0';
   }
@@ -73,7 +73,7 @@ ANTCamera.prototype.createV4L2CameraElement = function (sourcePath) {
 };
 
 ANTCamera.prototype.createNvidiaCameraElement = function () {
-  source = ant.stream.createElement('nvcamsrc');
+  source = StreamAPI.createElement('nvcamsrc');
   source.setProperty('fpsRange', '30.0 30.0');
   return source;
 };
