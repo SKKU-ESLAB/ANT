@@ -36,7 +36,7 @@ settings.myPort = 5000;
 
 var onInitialize = function () {
   console.log('onInitialize');
-  var modelUrl = 'http://115.145.178.78:8001/downloads/ssd_512_mobilenet1.0_coco.tar';
+  var modelUrl = 'http://115.145.178.78:8001/downloads/efficientdet-d0.tar';
   settings.ml.modelPath = ant.ml.downloadModel(modelUrl);
   if(settings.ml.modelPath === undefined) {
     console.log('Error on downloading model ' + modelUrl);
@@ -151,9 +151,7 @@ var onStart = function () {
     var sampleCount = 0;
     sink.connectSignal('new-sample', function (name, data) {
       var dataLength = data.length;
-//      var labelMessage = 'Buffer=' + dataLength + '\n';
-//      var result = ant.ml.getMaxOfBuffer(data, 'float32');
-//      console.log(result)
+      var result = ant.ml.getMaxOfBuffer(data, 'float32');
       var labelMessage = '';
 
       var frameLatency = -1;
