@@ -44,6 +44,9 @@ JS_FUNCTION(ant_ml_getMaxOfBuffer) {
     return JS_CREATE_ERROR(TYPE, "Invalid buffer given");
   }
   buffer_len = iotjs_bufferwrap_length(buffer_wrap);
+  
+  printf("\n* %d *\n", (int)buffer_len);
+
 
   if (buffer_len <= 0) {
     fprintf(stderr, "Invalid buffer length!: %d\n", buffer_len);
@@ -52,6 +55,7 @@ JS_FUNCTION(ant_ml_getMaxOfBuffer) {
   }
 
   if (strncmp(type, "uint8", strlen("uint8")) == 0) {
+    printf("\nuint8\n");
     unsigned char *data_array = (unsigned char *)buffer_wrap->buffer;
     size_t data_len = buffer_len / sizeof(unsigned char);
     int result_max_index;
@@ -69,6 +73,7 @@ JS_FUNCTION(ant_ml_getMaxOfBuffer) {
     iotjs_string_destroy(&argType);
     return ret;
   } else if (strncmp(type, "int32", strlen("int32")) == 0) {
+    printf("\nint32\n");
     int32_t *data_array = (int32_t *)buffer_wrap->buffer;
     size_t data_len = buffer_len / sizeof(int32_t);
     int result_max_index;
@@ -86,6 +91,7 @@ JS_FUNCTION(ant_ml_getMaxOfBuffer) {
     iotjs_string_destroy(&argType);
     return ret;
   } else if (strncmp(type, "float32", strlen("float32")) == 0) {
+    printf("\nfloat32\n");
     float *data_array = (float *)buffer_wrap->buffer;
     size_t data_len = buffer_len / sizeof(float);
     int result_max_index;
