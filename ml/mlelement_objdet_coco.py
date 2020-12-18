@@ -21,8 +21,7 @@ from tvm.contrib import graph_runtime as runtime
 
 import nnstreamer_python as nns
 import numpy as np
-
-#import bbox
+import time 
 
 def shape_str_to_npshape(shape_str):
     shape_str_tokens = shape_str.split(":")
@@ -50,12 +49,19 @@ def names_str_to_strarray(names_str):
     names_str_tokens = names_str.split(",")
     return [token for token in names_str_tokens]
 
-def transform_image(image):
+def transform_image(image, size):
     # TODO: Hardcoded ImageNet dataset mean
-    image = np.array(image) - np.array([103.939, 116.779, 123.68])
-    image = image / np.array([57.375, 57.12, 58.395])
-    image = image.transpose((2, 0, 1))
-    image = image[np.newaxis, :]
+    #image = np.array(image) - np.array([0.40, 116.779, 123.68])
+    #image = image / np.array([57.375, 57.12, 58.395])
+    
+    mean=np.array([0.406, 0.456, 0.485])
+    std=np.array([0.225, 0.224, 0.229])
+    image = (image / 255 - mean) / std
+    image = image.reshape(1,size,size,3)
+    image = np.transpose(image, (0,3,1,2))
+
+    #image = image.transpose((2, 0, 1))
+    #image = image[np.newaxis, :]
     return image
 
 def nms(self, detected):
@@ -91,7 +97,7 @@ def nms(self, detected):
 class CustomFilter(object):
     def __init__(self, *args):
         # Parse arguments
-        print(args)
+        print("\nML element I/O spec: \n", args, '\n')
         model_path = args[0]
         input_shapes = shapes_str_to_npshapes(args[1])
         input_types = datatypes_str_to_nptypes(args[2])
@@ -142,6 +148,7 @@ class CustomFilter(object):
         # Load graph and create a module
         self.graph = open(os.path.join(model_path, "mod.json")).read()
         self.module = runtime.create(self.graph, lib, ctx)
+        self.ctx = ctx
 
         # Load params
         self.params = bytearray(open(os.path.join(model_path, "mod.params"), "rb").read())
@@ -157,73 +164,233 @@ class CustomFilter(object):
         return self.output_dims
 
     def invoke(self, input_array):
+        size = 512
+        jump_output = True
+
+        print(len(input_array[0]))
+        t = time.time();
+        t0 = t
         graph = self.graph
         params = self.params
         fill_mode = "random"
 
         # Setting input
         inputs_dict = {}
+        #print(len(self.input_dims))
         for i in range(len(self.input_dims)):
             input_element = input_array[i]
             input_dim = self.input_dims[i]
             input_name = self.input_names[i]
-
+            
             input_tensor = np.reshape(input_element, input_dim.getDims()[::-1])[i]
-            input_image = transform_image(input_tensor)
+            print(input_tensor.shape)
+            input_image = transform_image(input_tensor, size)
             inputs_dict[input_name] = input_image
         self.module.set_input(**inputs_dict)
 
         # Run inference
+        
+        print(f'Preprocessing: {int((time.time()-t)*1000)} ms\n')
+        t = time.time();
+        
         self.module.run()
 
         # Get output tensors
         outputs = []
-        #print(self.output_dims)
-        for i in range(len(self.output_dims)):
-            #print(f"\n\n ** {i} **\n\n")
+        #for i in range(len(self.output_dims)-1):
+        print(f'Inference: {int((time.time()-t)*1000)} ms\n') 
+
+        t = time.time(); 
+        num_outputs = self.module.get_num_outputs()
+        if jump_output:
+            _range_ = range(5,8) if num_outputs > 5 else range(num_outputs)
+        else : 
+            _range_ = range(num_outputs)
+        for i in _range_:
+            t1 = time.time(); 
             output_element = self.module.get_output(i)
-            #print(output_element)
-            nptype = self.output_types[i]
+            print(output_element.shape)
+            t2 = time.time(); 
+            print(f'Get output{i+1}: {int((t2-t1)*1000)} ms') 
+            nptype = self.output_types[0]
+            t3 = time.time(); 
+            print(f'Get output{i+1}: {int((t3-t2)*1000)} ms') 
             outputs.append(output_element.asnumpy().astype(nptype))
+            t4 = time.time(); 
+            print(f'Get output{i+1}: {int((t4-t3)*1000)} ms\n') 
 
-        # Post-processing
-        app_output = self.postProcessing(outputs)
+        t = time.time();
+        #if num_outputs > 5:
+        app_output = postprocess_numpy((1,3,512,512),
+                    outputs[2], outputs[0], outputs[1],
+                    #anchors, regression, classification
+                    0.3, 0.1)
+        print(f'Postprocessing: {int((time.time()-t)*1000)} ms\n')
+        print(f'Total python time: {int((time.time()-t0)*1000)} ms\n\n\n')
+        #print(f'{app_output[0].shape} {app_output[1].shape} {app_output[2].shape} {app_output[3].shape} \n\n')
 
         return app_output
 
-    def postProcessing(self, outputs):
-        classes = outputs[0] # (1, 100, 1) : (5,1,1,1) 
-        scores = outputs[1]  # (1, 100, 1) : (5,1,1,1)
-        bboxes = outputs[2]  # (1, 100, 4) : (4,5,1,1)
-        #print(classes.shape)
-        #print(scores.shape)
-        print(bboxes.shape)
+    # For Single-shot detector
+    def postProcessing_ssd(self, outputs):
+        classes = outputs[0] # (1, 100, 1) : (100,1,1,1) 
+        scores = outputs[1]  # (1, 100, 1) : (100,1,1,1)
+        bboxes = outputs[2]  # (1, 100, 4) : (4,100,1,1)
 
-
-        ####
-        # 2. score filtering
-        sel_classes = []
-        sel_scores = []
-        sel_bboxes = []
-        
-        thresh = 0
+        thresh = 0.4
+        count = 0 
         for i, bbox in enumerate(bboxes[0]):
-            if i == 3:
-                break
+            if i == 10:
+                break;
             if scores[0][i][0] > thresh:
-                sel_classes.append(classes[0][i])
-                sel_scores.append(scores[0][i])
-                sel_bboxes.append(bboxes[0][i])
-        # TODO: if confident boxes are too few, add default boxes
-        # TODO: replace this by num_detection
+                count += 1
 
-
-        #print(np.asarray([sel_classes]).shape)
-        #print(np.asarray([sel_scores]).shape)
-        print(np.asarray([sel_bboxes]).shape)
-        app_output = [np.asarray([sel_classes]), np.asarray([sel_scores]), np.asarray([sel_bboxes])]
+        sel_count = np.array([count], dtype=np.float32).reshape([1,1,1])
+        app_output = [sel_count,
+                classes[:,:10],
+                scores[:,:10],
+                bboxes[:,:10]]
+                    
         #print(app_output)
-        print(f'{len(sel_classes)}, {len(sel_scores)}, {len(sel_bboxes)}')
-        #app_output = outputs
+        #print(f'{len(sel_classes)}, {len(sel_scores)}, {len(sel_bboxes)}')
 
         return app_output
+
+
+def BBoxTransform(anchors, regression):
+    """
+    decode_box_outputs adapted from https://github.com/google/automl/blob/master/efficientdet/anchors.py
+
+    Args:
+        anchors: [batchsize, boxes, (y1, x1, y2, x2)]
+        regression: [batchsize, boxes, (dy, dx, dh, dw)]
+
+    Returns:
+
+    """
+    y_centers_a = (anchors[..., 0] + anchors[..., 2]) / 2
+    x_centers_a = (anchors[..., 1] + anchors[..., 3]) / 2
+    ha = anchors[..., 2] - anchors[..., 0]
+    wa = anchors[..., 3] - anchors[..., 1]
+
+    w = np.exp(regression[..., 3]) * wa
+    h = np.exp(regression[..., 2]) * ha
+
+    y_centers = regression[..., 0] * ha + y_centers_a
+    x_centers = regression[..., 1] * wa + x_centers_a
+
+    ymin = y_centers - h / 2.
+    xmin = x_centers - w / 2.
+    ymax = y_centers + h / 2.
+    xmax = x_centers + w / 2.
+
+    return np.stack([xmin, ymin, xmax, ymax], 2)
+def ClipBoxes(boxes, img_shape):
+    batch_size, num_channels, height, width = img_shape
+
+    boxes[:, :, 0] = np.clip(boxes[:, :, 0], a_min=0, a_max=np.inf)
+    boxes[:, :, 1] = np.clip(boxes[:, :, 1], a_min=0, a_max=np.inf)
+
+    boxes[:, :, 2] = np.clip(boxes[:, :, 2], a_min=-np.inf ,a_max=width - 1)
+    boxes[:, :, 3] = np.clip(boxes[:, :, 3], a_min=-np.inf , a_max=height - 1)
+
+    return boxes
+# nms numpy version
+def nms_cpu(boxes, scores,  overlap_threshold=0.5, min_mode=False):
+    boxes = boxes
+    x1 = boxes[:, 0]
+    y1 = boxes[:, 1]
+    x2 = boxes[:, 2]
+    y2 = boxes[:, 3]
+    scores = scores
+
+    areas = (x2 - x1 + 1) * (y2 - y1 + 1)
+    order = scores.argsort()[::-1]
+
+    keep = []
+    while order.size > 0:
+        keep.append(order[0])
+        xx1 = np.maximum(x1[order[0]], x1[order[1:]])
+        yy1 = np.maximum(y1[order[0]], y1[order[1:]])
+        xx2 = np.minimum(x2[order[0]], x2[order[1:]])
+        yy2 = np.minimum(y2[order[0]], y2[order[1:]])
+
+        w = np.maximum(0.0, xx2 - xx1 + 1)
+        h = np.maximum(0.0, yy2 - yy1 + 1)
+        inter = w * h
+
+        if min_mode:
+            ovr = inter / np.minimum(areas[order[0]], areas[order[1:]])
+        else:
+            ovr = inter / (areas[order[0]] + areas[order[1:]] - inter)
+
+        inds = np.where(ovr <= overlap_threshold)[0]
+        order = order[inds + 1]
+    return keep
+
+def postprocess_numpy(input_shape, anchors, regression, classification, threshold, iou_threshold):
+    transformed_anchors = BBoxTransform(anchors, regression)
+    transformed_anchors = ClipBoxes(transformed_anchors, input_shape)
+
+    scores = np.max(classification, axis=2, keepdims=True)
+    scores_over_thresh = (scores > threshold)[:, :, 0]
+    
+    out = []
+    for i in range(input_shape[0]):
+        if scores_over_thresh.sum() == 0:
+            out.append({
+                'rois': np.array(()),
+                'class_ids': np.array(()),
+                'scores': np.array(()),
+            })
+
+        #classification_per = classification[i, scores_over_thresh[i, :], ...].permute(1, 0)
+        classification_per = np.transpose(classification[i, scores_over_thresh[i, :], ...], (1,0))
+        transformed_anchors_per = transformed_anchors[i, scores_over_thresh[i, :], ...]
+        scores_per = scores[i, scores_over_thresh[i, :], ...]
+        anchors_nms_idx = nms_cpu(transformed_anchors_per, scores_per[:, 0], overlap_threshold=iou_threshold)
+        anchors_nms_idx = np.array(anchors_nms_idx)
+        
+        if anchors_nms_idx.shape[0] != 0:
+            scores_ = classification_per[:, anchors_nms_idx].max(0)
+            classes_ = classification_per[:, anchors_nms_idx].argmax(0)
+            boxes_ = transformed_anchors_per[anchors_nms_idx, :]
+
+            out.append({
+                'rois': boxes_,
+                'class_ids': classes_,
+                'scores': scores_,
+            })
+        else:
+            out.append({
+                'rois': np.array(()),
+                'class_ids': np.array(()),
+                'scores': np.array(()),
+            })
+    app_output = []
+    num = out[0]['scores'].shape[0]
+    if num == 0:
+        return [np.array([[[0]]], dtype=np.float32), 
+                np.zeros((1, 10, 1), dtype=np.float32),
+                np.zeros((1, 10, 1), dtype=np.float32),
+                np.zeros((1, 10, 4), dtype=np.float32)]
+
+    #objects
+    num_objects = np.array(num, dtype=np.float32).reshape(1,1,1)
+    #classes
+    num_classes = np.zeros(10, dtype=np.float32)
+    num_classes[:num] = out[0]['class_ids']
+    num_classes = num_classes.reshape(1,10,1)
+    #scores
+    num_scores = np.zeros(10, dtype=np.float32)
+    num_scores[:num] = out[0]['scores']
+    num_scores = num_scores.reshape(1,10,1)
+    #bboxes
+    num_bboxes = np.zeros((10,4), dtype=np.float32)
+    num_bboxes[:num] = out[0]['rois']
+    num_bboxes = num_bboxes.reshape(1,10,4)
+    
+
+    app_output = [num_objects, num_classes, num_scores, num_bboxes] 
+
+    return app_output
