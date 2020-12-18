@@ -116,6 +116,7 @@ public class RemoteUIAPI {
                 ResourceAPI.get().sendResponse(request, boundingBoxesJSON);
             }
         });
+        ResourceAPI.get().registerResource(this.mBoundingBoxesResource);
     }
 
     public LiveData<String> getPipeline() {
