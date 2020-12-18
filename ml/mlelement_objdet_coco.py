@@ -22,7 +22,7 @@ from tvm.contrib import graph_runtime as runtime
 import nnstreamer_python as nns
 import numpy as np
 
-import bbox
+#import bbox
 
 def shape_str_to_npshape(shape_str):
     shape_str_tokens = shape_str.split(":")
@@ -91,6 +91,7 @@ def nms(self, detected):
 class CustomFilter(object):
     def __init__(self, *args):
         # Parse arguments
+        print(args)
         model_path = args[0]
         input_shapes = shapes_str_to_npshapes(args[1])
         input_types = datatypes_str_to_nptypes(args[2])
@@ -98,6 +99,7 @@ class CustomFilter(object):
         output_types = datatypes_str_to_nptypes(args[4])
         input_names = names_str_to_strarray(args[5])
         output_names = names_str_to_strarray(args[6])
+        self.input_shapes = input_shapes
         for input_type in input_types:
             if input_type is None:
                 print("Invalid input_type")
@@ -176,21 +178,52 @@ class CustomFilter(object):
 
         # Get output tensors
         outputs = []
+        #print(self.output_dims)
         for i in range(len(self.output_dims)):
+            #print(f"\n\n ** {i} **\n\n")
             output_element = self.module.get_output(i)
+            #print(output_element)
             nptype = self.output_types[i]
             outputs.append(output_element.asnumpy().astype(nptype))
 
         # Post-processing
-	app_output = postProcessing(outputs)
+        app_output = self.postProcessing(outputs)
 
         return app_output
 
     def postProcessing(self, outputs):
-	classes = outputs[0] # (100, 1, 1, 1)
-	scores = outputs[1]  # (100, 1, 1, 1)
-	bboxes = outptus[2]  # (4, 100, 1, 1)
+        classes = outputs[0] # (1, 100, 1) : (5,1,1,1) 
+        scores = outputs[1]  # (1, 100, 1) : (5,1,1,1)
+        bboxes = outputs[2]  # (1, 100, 4) : (4,5,1,1)
+        #print(classes.shape)
+        #print(scores.shape)
+        print(bboxes.shape)
 
-        ### 
- 
+
+        ####
+        # 2. score filtering
+        sel_classes = []
+        sel_scores = []
+        sel_bboxes = []
+        
+        thresh = 0
+        for i, bbox in enumerate(bboxes[0]):
+            if i == 3:
+                break
+            if scores[0][i][0] > thresh:
+                sel_classes.append(classes[0][i])
+                sel_scores.append(scores[0][i])
+                sel_bboxes.append(bboxes[0][i])
+        # TODO: if confident boxes are too few, add default boxes
+        # TODO: replace this by num_detection
+
+
+        #print(np.asarray([sel_classes]).shape)
+        #print(np.asarray([sel_scores]).shape)
+        print(np.asarray([sel_bboxes]).shape)
+        app_output = [np.asarray([sel_classes]), np.asarray([sel_scores]), np.asarray([sel_bboxes])]
+        #print(app_output)
+        print(f'{len(sel_classes)}, {len(sel_scores)}, {len(sel_bboxes)}')
+        #app_output = outputs
+
         return app_output
