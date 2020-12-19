@@ -137,7 +137,7 @@ var onStart = function () {
     subpipe1Elements.push(tensorTransform);
 
     // tensor_filter (ml fragment element)
-    var gateway_host = ant.companion.getCompanionAddress().host;
+    var gateway_host = ant.companion.getCompanionHost();
     var gateway_address = gateway_host + ":" + 3000;
     var mlFragmentElement = ant.gateway.createImgClsImagenetElement(
         settings.ml.modelPath,

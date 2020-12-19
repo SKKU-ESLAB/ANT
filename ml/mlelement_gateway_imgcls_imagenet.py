@@ -114,7 +114,6 @@ class CustomFilter(object):
         target_ip_addr = self.target_uri[:self.target_uri.find(":")]
         target_port = int(self.target_uri[(self.target_uri.find(":")+1):])
         try:
-            self.client_socket.settimeout(1.0)
             self.client_socket.connect((target_ip_addr, target_port))
             self.isConnected = True
         except socket.timeout:
@@ -123,43 +122,38 @@ class CustomFilter(object):
 
     def invoke(self, input_array):
         try:
-            print("1")
-            retdata = np.array([0])
+            retdata = np.array([0]).reshape([1,1,1,1]).astype(np.int32)
             if self.isConnected is False:
                 connectToTarget()
-                return retdata
+                return [retdata]
 
             # inference locally
             head_from = 0
             head_to = self.offload_from - 1
-            head_in_tensor = input_array[0]
+            input_tensor = input_array[0]
+            input_tensor = np.reshape(input_tensor, self.input_dims[0].getDims()[::-1])[0]
+            head_in_tensor = transform_image(input_tensor)
             head_out_tensor = runner.run_fragments(self.interpreters, head_in_tensor, head_from, head_to)
-            output_tensor = runner.run_fragments(self.interpreters,
-                    input_array[0], 0, self.offload_from - 1)
-            print("2")
 
             # send the output tensor to the target URI
             tail_from = self.offload_from
-            tail_to = num_fragments - 1
+            tail_to = self.num_fragments - 1
 
             payload_buffer = head_out_tensor.tobytes()
 
             payload_length = len(payload_buffer)
             payload_length_buffer = payload_length.to_bytes(4, 'big')
-            print("3")
 
             tail_from_buffer = tail_from.to_bytes(4, 'big')
 
             self.client_socket.send(payload_length_buffer)
             self.client_socket.send(tail_from_buffer)
             self.client_socket.send(payload_buffer)
-            print("4")
 
             result_buffer = self.client_socket.recv(4)
             result = int.from_bytes(result_buffer, byteorder='big')
-            if result >= 0 and result < num_fragments:
+            if result >= 0 and result < self.num_fragments:
                 self.offload_from = result
-            print("5")
 
         except socket_error as serr:
             if serr.errno != errno.ECONNREFUSED:
@@ -167,4 +161,4 @@ class CustomFilter(object):
             else:
                 self.isConnected = False
 
-        return retdata 
+        return [retdata]
