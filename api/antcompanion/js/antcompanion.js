@@ -26,6 +26,15 @@ ANTCompanion.prototype._mCompanionPort = undefined;
 ANTCompanion.prototype._mCompanionPath = undefined;
 ANTCompanion.prototype._mHandlers = [];
 
+ANTCompanion.prototype.getCompanionAddress = function () {
+  var companionAddress = {
+    'host': this._mCompanionHost,
+    'port': this._mCompanionPort,
+    'path': this._mCompanionPath
+  };
+  return companionAddress;
+};
+
 ANTCompanion.prototype._setCompanionAddress = function (
   companionHost,
   companionPort,
@@ -74,11 +83,6 @@ ANTCompanion.prototype.unregisterOnReceiveMessage = function (handler) {
     }
   }
   return false;
-};
-
-ANTCompanion.prototype.getMyIPAddress = function (interfaceName) {
-  var antcompanion = require('antcompanion');
-  return antcompanion.getMyIPAddress(interfaceName);
 };
 
 ANTCompanion.prototype.getMyIPAddress = function (interfaceName) {
