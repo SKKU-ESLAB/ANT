@@ -19,9 +19,7 @@ var console = require('console');
 var settings = {};
 settings.ml = {};
 settings.ml.modelPath = '';
-settings.ml.num_fragments = 12
-settings.ml.target = '';
-
+settings.ml.num_fragments = 12;
 settings.deviceType = 'tx2';
 settings.isH264Enabled = false;
 settings.isSourceFilterEnabled = false;
@@ -140,9 +138,11 @@ var onStart = function () {
     subpipe1Elements.push(tensorConverter);
 
     // tensor_filter (ml fragment element)
+    var gateway_host = ant.companion.getCompanionAddress().host;
+    var gateway_address = gateway_host + ":" + 3000;
     var mlFragmentElement = ant.gateway.createImgClsImagenetElement(
         settings.ml.modelPath,
-        settings.ml.num_fragments, settings.ml.target);
+        settings.ml.num_fragments, gateway_address);
     subpipe1Elements.push(mlFragmentElement);
 
     var sink = ant.stream.createElement('fakesink');

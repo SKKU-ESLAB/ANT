@@ -94,7 +94,7 @@ class CustomFilter(object):
         self.interpreters = runner.load_model(model_path_head, num_fragments)
 
         # Connect to target
-        connectToTarget()
+        self.connectToTarget()
 
         return None
 
@@ -109,8 +109,8 @@ class CustomFilter(object):
     def connectToTarget(self):
         print("Trying to connect to: {}".format(self.target_uri))
         self.client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        target_ip_addr = target_addr[:self.target_uri.find(":")]
-        target_port = int(target_addr[(self.target_uri.find(":")+1):])
+        target_ip_addr = self.target_uri[:self.target_uri.find(":")]
+        target_port = int(self.target_uri[(self.target_uri.find(":")+1):])
         try:
             self.client_socket.timeout(1.0)
             self.client_socket.connect((target_ip_addr, target_port))

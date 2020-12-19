@@ -212,10 +212,6 @@ ANTML.prototype.createMLFragmentElement = function (
     console.error('ERROR: Invalid inputTypes! ' + inputTypes);
     return undefined;
   }
-  if (outputTypes.indexOf(' ') >= 0) {
-    console.error('ERROR: Invalid outputTypes! ' + outputTypes);
-    return undefined;
-  }
   if (!StreamAPI.isInitialized()) {
     console.error('ERROR: Stream API is not initialized');
     return undefined;
@@ -231,7 +227,6 @@ ANTML.prototype.createMLFragmentElement = function (
   }
 
   var inputShapesStr = shapeArrayToStr(inputShapes);
-  var outputShapesStr = shapeArrayToStr(outputShapes);
   var inputTypesStr = typeArrayToStr(inputTypes);
   var inputNamesStr = nameArrayToStr(inputNames);
 
