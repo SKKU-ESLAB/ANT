@@ -236,6 +236,8 @@ ANTML.prototype.createMLFragmentElement = function (
   tensorFilter.setProperty('input', inputShapesStr);
   tensorFilter.setProperty('inputtype', inputTypesStr);
   tensorFilter.setProperty('inputname', inputNamesStr);
+  tensorFilter.setProperty('output', '1:1:1:1');
+  tensorFilter.setProperty('outputtype', 'int32');
   var custom =
     modelPath +
     ' ' +
