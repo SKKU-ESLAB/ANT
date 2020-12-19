@@ -77,6 +77,12 @@ var onStart = function () {
     var source = ant.camera.createCameraElement(settings.deviceType);
     mainpipeElements.push(source);
 
+    if(settings.deviceType == 'tx2') {
+      converter = ant.stream.createElement('nvvidconv');
+      converter.setProperty("flip-method", 0);
+      elements.push(converter);
+    }
+
     // source filter
     var sourcefilter = ant.stream.createElement('capsfilter');
     if (settings.isSourceFilterEnabled) {

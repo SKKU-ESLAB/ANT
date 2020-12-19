@@ -20,7 +20,7 @@ var settings = {};
 settings.ml = {};
 settings.ml.modelPath = '';
 
-settings.deviceType = 'tx4'; // "rpi", "test", or others(v4l2src)
+settings.deviceType = 'xu4'; // "rpi", "test", or others(v4l2src)
 settings.isH264Enabled = false;
 settings.isSourceFilterEnabled = false;
 settings.isScaleEnabled = true;
@@ -75,6 +75,12 @@ var onStart = function () {
     // source
     var source = ant.camera.createCameraElement(settings.deviceType);
     mainpipeElements.push(source);
+
+    if(settings.deviceType == 'tx2') {
+      converter = ant.stream.createElement('nvvidconv');
+      converter.setProperty("flip-method", 0);
+      elements.push(converter);
+    }
 
     // source filter
     var sourcefilter = ant.stream.createElement('capsfilter');
