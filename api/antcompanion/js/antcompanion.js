@@ -26,13 +26,8 @@ ANTCompanion.prototype._mCompanionPort = undefined;
 ANTCompanion.prototype._mCompanionPath = undefined;
 ANTCompanion.prototype._mHandlers = [];
 
-ANTCompanion.prototype.getCompanionAddress = function () {
-  var companionAddress = {
-    'host': this._mCompanionHost,
-    'port': this._mCompanionPort,
-    'path': this._mCompanionPath
-  };
-  return companionAddress;
+ANTCompanion.prototype.getCompanionHost = function () {
+  return this._mCompanionHost;
 };
 
 ANTCompanion.prototype._setCompanionAddress = function (

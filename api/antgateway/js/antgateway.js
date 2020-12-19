@@ -45,7 +45,7 @@ function ANTGateway() {}
 ANTGateway.prototype.createImgClsImagenetElement = function (
     modelPath, numFragments, targetUri) {
   var mlFragmentElement = MLAPI.createMLFragmentElement(modelPath,
-    [3, 224, 224, 1], 'float32', 'input',
+    [3, 224, 224, 1], 'uint8', 'input',
     'gateway_imgcls_imagenet', numFragments, targetUri);
   return mlFragmentElement;
 };

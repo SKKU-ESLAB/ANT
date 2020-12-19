@@ -1,5 +1,6 @@
 import tensorflow as tf
 from keras.preprocessing import image
+import numpy as np
 
 def load_model(model_name, num_fragments):
     # load model fragments
@@ -21,7 +22,7 @@ def run_fragments(interpreters, input_tensor, start_layer_num, end_layer_num):
     input_shape = interpreters[start_layer_num].get_input_details()[0]['shape']
     input_tensor = input_tensor.reshape(input_shape)
 
-    prev_output_tensor = input_tensor
+    prev_output_tensor = input_tensor.astype(np.float32)
     for i in range(start_layer_num, end_layer_num + 1):
         interpreter = interpreters[i]
         # Get input and output tensors.
