@@ -171,7 +171,6 @@ class CustomFilter(object):
 
         # Setting input
         inputs_dict = {}
-        #print(len(self.input_dims))
         for i in range(len(self.input_dims)):
             input_element = input_array[i]
             input_dim = self.input_dims[i]
@@ -184,53 +183,31 @@ class CustomFilter(object):
         self.module.set_input(**inputs_dict)
 
         # Run inference
-        
-        print(f'Preprocessing: {int((time.time()-t)*1000)} ms\n')
-        t = time.time();
-        
         self.module.run()
 
         # Get output tensors
         outputs = []
-        #for i in range(len(self.output_dims)-1):
-        print(f'Inference: {int((time.time()-t)*1000)} ms\n') 
-
-        t = time.time(); 
         num_outputs = self.module.get_num_outputs()
         if jump_output:
             _range_ = range(5,8) if num_outputs > 5 else range(num_outputs)
         else : 
             _range_ = range(num_outputs)
         for i in _range_:
-            t1 = time.time(); 
             output_element = self.module.get_output(i)
-            print(output_element.shape)
-            t2 = time.time(); 
-            print(f'Get output{i+1}: {int((t2-t1)*1000)} ms') 
             nptype = self.output_types[0]
-            t3 = time.time(); 
-            print(f'Get output{i+1}: {int((t3-t2)*1000)} ms') 
             outputs.append(output_element.asnumpy().astype(nptype))
-            t4 = time.time(); 
-            print(f'Get output{i+1}: {int((t4-t3)*1000)} ms\n') 
 
-        t = time.time();
-        #if num_outputs > 5:
         app_output = postprocess_numpy((1,3,size,size),
-                    outputs[2], outputs[0], outputs[1],
-                    #anchors, regression, classification
+                    outputs[2], outputs[0], outputs[1], 
+                    # anchors, regression, classification
                     0.4, 0.1)
-        print(f'Postprocessing: {int((time.time()-t)*1000)} ms\n')
-        print(f'Total python time: {int((time.time()-t0)*1000)} ms\n\n\n')
-        #print(f'{app_output[0].shape} {app_output[1].shape} {app_output[2].shape} {app_output[3].shape} \n\n')
-
         return app_output
 
     # For Single-shot detector
     def postProcessing_ssd(self, outputs):
-        classes = outputs[0] # (1, 100, 1) : (100,1,1,1) 
-        scores = outputs[1]  # (1, 100, 1) : (100,1,1,1)
-        bboxes = outputs[2]  # (1, 100, 4) : (4,100,1,1)
+        classes = outputs[0] # shape: np (1, 100, 1) : js (10, 1, 1, 1) 
+        scores = outputs[1]  # shape: np (1, 100, 1) : js (10, 1, 1, 1)
+        bboxes = outputs[2]  # shape: np (1, 100, 4) : js (4, 10, 1, 1)
 
         thresh = 0.4
         count = 0 
@@ -245,10 +222,6 @@ class CustomFilter(object):
                 classes[:,:10],
                 scores[:,:10],
                 bboxes[:,:10]]
-                    
-        #print(app_output)
-        #print(f'{len(sel_classes)}, {len(sel_scores)}, {len(sel_bboxes)}')
-
         return app_output
 
 
@@ -280,6 +253,8 @@ def BBoxTransform(anchors, regression):
     xmax = x_centers + w / 2.
 
     return np.stack([xmin, ymin, xmax, ymax], 2)
+
+
 def ClipBoxes(boxes, img_shape):
     batch_size, num_channels, height, width = img_shape
 
@@ -290,6 +265,8 @@ def ClipBoxes(boxes, img_shape):
     boxes[:, :, 3] = np.clip(boxes[:, :, 3], a_min=-np.inf , a_max=height - 1)
 
     return boxes
+
+
 # nms numpy version
 def nms_cpu(boxes, scores,  overlap_threshold=0.5, min_mode=False):
     boxes = boxes
@@ -339,7 +316,6 @@ def postprocess_numpy(input_shape, anchors, regression, classification, threshol
                 'scores': np.array(()),
             })
 
-        #classification_per = classification[i, scores_over_thresh[i, :], ...].permute(1, 0)
         classification_per = np.transpose(classification[i, scores_over_thresh[i, :], ...], (1,0))
         transformed_anchors_per = transformed_anchors[i, scores_over_thresh[i, :], ...]
         scores_per = scores[i, scores_over_thresh[i, :], ...]
@@ -370,22 +346,21 @@ def postprocess_numpy(input_shape, anchors, regression, classification, threshol
                 np.zeros((1, 10, 1), dtype=np.float32),
                 np.zeros((1, 10, 4), dtype=np.float32)]
 
-    #objects
+    # Output formatting
     num_objects = np.array(num, dtype=np.float32).reshape(1,1,1)
-    #classes
+    
     num_classes = np.zeros(10, dtype=np.float32)
     num_classes[:num] = out[0]['class_ids']
     num_classes = num_classes.reshape(1,10,1)
-    #scores
+    
     num_scores = np.zeros(10, dtype=np.float32)
     num_scores[:num] = out[0]['scores']
     num_scores = num_scores.reshape(1,10,1)
-    #bboxes
+    
     num_bboxes = np.zeros((10,4), dtype=np.float32)
     num_bboxes[:num] = out[0]['rois']
     num_bboxes = num_bboxes.reshape(1,10,4)
     
-
     app_output = [num_objects, num_classes, num_scores, num_bboxes] 
 
     return app_output
