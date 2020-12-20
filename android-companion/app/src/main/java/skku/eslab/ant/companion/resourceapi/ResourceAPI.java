@@ -62,10 +62,16 @@ public class ResourceAPI implements OnReceiveMessageListener {
                 new ResourceRequest(requestId, method, targetUri, message);
         this.mRequestId++;
 
-        this.mResponseListeners.put(requestId, responseListener);
+        if (responseListener != null) {
+            this.mResponseListeners.put(requestId, responseListener);
+        }
 
+        // Send to companion
         CompanionAPI companionAPI = CompanionAPI.get();
         companionAPI.sendMessage(request.toRawMessage());
+
+        // Send to local
+        this.onReceiveMessageListener(request.toRawMessage());
     }
 
     public void sendResponse(ResourceRequest request, String message) {
@@ -77,7 +83,7 @@ public class ResourceAPI implements OnReceiveMessageListener {
 
     @Override
     public void onReceiveMessageListener(String rawMessage) {
-        if(rawMessage.startsWith("**")) // Testing purpose
+        if (rawMessage.startsWith("**")) // Testing purpose
             return;
         int firstLineEnd = rawMessage.indexOf("\n");
         String firstLine = rawMessage.substring(0, firstLineEnd);

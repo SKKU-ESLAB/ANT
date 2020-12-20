@@ -50,6 +50,16 @@ try {
 } catch (e) {
   console.log('> Not found Companion API');
 }
+try {
+  ANT.prototype.gateway = require('antgateway');
+} catch (e) {
+  console.log('> Not found Gateway API');
+}
+try {
+  ANT.prototype.camera = require('antcamera');
+} catch (e) {
+  console.log('> Not found Camera API');
+}
 
 /** ANT main object end **/
 
