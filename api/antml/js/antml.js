@@ -116,8 +116,9 @@ ANTML.prototype.createObjDetCocoElement = function (modelPath, resolution, maxBo
   var mlElement = this.createMLElement(modelPath,
     [3, resolution, resolution, 1],
     'uint8', 'data',
-    [[1, 1, 1, 1], [maxBoundingBoxes, 1, 1, 1], [maxBoundingBoxes, 1, 1, 1], [4, maxBoundingBoxes, 1, 1]],
-    ['float32', 'float32', 'float32', 'float32'], ['num_detections', 'classes', 'scores', 'bboxes'],
+    [[1,1,1,1], [10, 1, 1, 1], [10, 1, 1, 1], [4, 10, 1, 1]],
+    ['float32', 'float32', 'float32', 'float32'], 
+    ['num_objects', 'classes', 'scores', 'bboxes'],
     'objdet_coco');
   return mlElement;
 };
