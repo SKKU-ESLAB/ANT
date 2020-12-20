@@ -49,19 +49,14 @@ def names_str_to_strarray(names_str):
     names_str_tokens = names_str.split(",")
     return [token for token in names_str_tokens]
 
-def transform_image(image, size):
+def transform_image(image):
     # TODO: Hardcoded ImageNet dataset mean
-    #image = np.array(image) - np.array([0.40, 116.779, 123.68])
-    #image = image / np.array([57.375, 57.12, 58.395])
-    
     mean=np.array([0.406, 0.456, 0.485])
     std=np.array([0.225, 0.224, 0.229])
     image = (image / 255 - mean) / std
-    image = image.reshape(1,size,size,3)
+    image = image[np.newaxis, :]
     image = np.transpose(image, (0,3,1,2))
-
     #image = image.transpose((2, 0, 1))
-    #image = image[np.newaxis, :]
     return image
 
 def nms(self, detected):
@@ -164,7 +159,7 @@ class CustomFilter(object):
         return self.output_dims
 
     def invoke(self, input_array):
-        size = 256
+        size = 512
         jump_output = True
 
         print(len(input_array[0]))
@@ -184,7 +179,7 @@ class CustomFilter(object):
             
             input_tensor = np.reshape(input_element, input_dim.getDims()[::-1])[i]
             print(input_tensor.shape)
-            input_image = transform_image(input_tensor, size)
+            input_image = transform_image(input_tensor)
             inputs_dict[input_name] = input_image
         self.module.set_input(**inputs_dict)
 
@@ -221,10 +216,10 @@ class CustomFilter(object):
 
         t = time.time();
         #if num_outputs > 5:
-        app_output = postprocess_numpy((1,3,512,512),
+        app_output = postprocess_numpy((1,3,size,size),
                     outputs[2], outputs[0], outputs[1],
                     #anchors, regression, classification
-                    0.3, 0.1)
+                    0.4, 0.1)
         print(f'Postprocessing: {int((time.time()-t)*1000)} ms\n')
         print(f'Total python time: {int((time.time()-t0)*1000)} ms\n\n\n')
         #print(f'{app_output[0].shape} {app_output[1].shape} {app_output[2].shape} {app_output[3].shape} \n\n')
