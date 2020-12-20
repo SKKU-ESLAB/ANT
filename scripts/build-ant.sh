@@ -30,6 +30,8 @@ fi
     --cmake-param=-DENABLE_MODULE_ANTSTREAM=ON \
     --cmake-param=-DENABLE_MODULE_ANTML=ON \
     --cmake-param=-DENABLE_MODULE_OCF=ON \
+    --cmake-param=-DENABLE_MODULE_ANTGATEWAY=ON \
+    --cmake-param=-DENABLE_MODULE_ANTCAMERA=ON \
     --external-modules=${MODULE_PATH} \
     --no-init-submodule
 BUILD_RESULT=$?

@@ -19,48 +19,41 @@ var console = require('console');
 var settings = {};
 settings.ml = {};
 settings.ml.modelPath = '';
+settings.ml.num_fragments = 12
+settings.ml.target = '';
 
-settings.deviceType = 'xu4'; // "rpi", "test", or others(v4l2src)
+settings.deviceType = 'tx2';
 settings.isH264Enabled = false;
 settings.isSourceFilterEnabled = false;
 settings.isScaleEnabled = true;
 settings.isConvertEnabled = true;
-settings.videoWidth = 512;
-settings.videoHeight = 512;
-settings.maxBoundingBoxes = 100;
+if(settings.deviceType == "nvidia") {
+  settings.isConvertEnabled = false;
+}
+settings.videoWidth = 224;
+settings.videoHeight = 224;
 settings.videoFormat = 'BGR';
 settings.videoFramerate = '30/1';
 settings.videoSinkSync = false;
 settings.myIpAddress = ant.companion.getMyIPAddress('eth0');
 settings.myPort = 5000;
 
-var onInitialize = function() {
+var onInitialize = function () {
   console.log('onInitialize');
-  var modelUrl =
-      'https://github.com/SKKU-ESLAB/ant-sample-ml-models/blob/master/xu4_efficientdetd0/efficientdet-d0.tar';
+  var modelUrl = 'http://115.145.178.78:8001/downloads/gateway/mobilenetv1-gateway.tar';
   settings.ml.modelPath = ant.ml.downloadModel(modelUrl);
-  if (settings.ml.modelPath === undefined) {
+  if(settings.ml.modelPath === undefined) {
     console.log('Error on downloading model ' + modelUrl);
   }
 };
 
-var prepareLabel = function(labelFilepath) {
-  var fs = require('fs');
-  var fileContents = fs.readFileSync(labelFilepath).toString();
-  var labels = JSON.parse(fileContents);
-  return labels;
-};
-
-var onStart = function() {
+var onStart = function () {
   console.log('onStart');
 
-  if (settings.ml.modelPath === undefined) {
+  if(settings.ml.modelPath === undefined) {
     console.log('Cannot find model!');
     return;
   }
-
-  var labelFilepath = settings.ml.modelPath + '/labels.json';
-  var labels = prepareLabel(labelFilepath);
 
   // Because ant.stream.initialize() is an async function without finish
   // callback, pipeline setting should be executed by setTimeout.
@@ -68,7 +61,7 @@ var onStart = function() {
   console.log('Wait until stream thread is ready...');
   var baselinePssInKB = ant.runtime.getPSSInKB();
   console.log('Baseline Memory: ' + baselinePssInKB + ' KB');
-  setTimeout(function() {
+  setTimeout(function () {
     var pipeline = ant.stream.createPipeline('test');
     var mainpipeElements = [];
     var subpipe1Elements = [];
@@ -78,14 +71,26 @@ var onStart = function() {
     var source = ant.camera.createCameraElement(settings.deviceType);
     mainpipeElements.push(source);
 
+    if(settings.deviceType == 'nvidia') {
+      converter = ant.stream.createElement('nvvidconv');
+      converter.setProperty("flip-method", 0);
+      elements.push(converter);
+    }
+
     // source filter
     var sourcefilter = ant.stream.createElement('capsfilter');
     if (settings.isSourceFilterEnabled) {
-      sourcefilter.setCapsProperty('caps',
-                                   'video/x-raw,width=' + settings.videoWidth +
-                                       ',height=' + settings.videoHeight +
-                                       ',framerate=' + settings.videoFramerate +
-                                       ',format=' + settings.videoFormat);
+      sourcefilter.setCapsProperty(
+        'caps',
+        'video/x-raw,width=' +
+          settings.videoWidth +
+          ',height=' +
+          settings.videoHeight +
+          ',framerate=' +
+          settings.videoFramerate +
+          ',format=' +
+          settings.videoFormat
+      );
     } else {
       sourcefilter.setCapsProperty('caps', 'video/x-raw');
     }
@@ -97,9 +102,13 @@ var onStart = function() {
       videoscale.setProperty('method', 0);
       videoscale.setProperty('add-borders', false);
       var scalefilter = ant.stream.createElement('capsfilter');
-      scalefilter.setCapsProperty('caps',
-                                  'video/x-raw,width=' + settings.videoWidth +
-                                      ',height=' + settings.videoHeight);
+      scalefilter.setCapsProperty(
+        'caps',
+        'video/x-raw,width=' +
+          settings.videoWidth +
+          ',height=' +
+          settings.videoHeight
+      );
       mainpipeElements.push(videoscale);
       mainpipeElements.push(scalefilter);
     }
@@ -109,8 +118,10 @@ var onStart = function() {
     mainpipeElements.push(converter);
     if (settings.isConvertEnabled) {
       var convertfilter = ant.stream.createElement('capsfilter');
-      convertfilter.setCapsProperty('caps', 'video/x-raw,format=' +
-                                                settings.videoFormat);
+      convertfilter.setCapsProperty(
+        'caps',
+        'video/x-raw,format=' + settings.videoFormat
+      );
       mainpipeElements.push(convertfilter);
     }
 
@@ -128,57 +139,13 @@ var onStart = function() {
     var tensorConverter = ant.stream.createElement('tensor_converter');
     subpipe1Elements.push(tensorConverter);
 
-    // tensor_filter (ml element)
-    var mlElement = ant.ml.createObjDetCocoElement(
-        settings.ml.modelPath, settings.videoWidth, settings.maxBoundingBoxes);
-    subpipe1Elements.push(mlElement);
+    // tensor_filter (ml fragment element)
+    var mlFragmentElement = ant.gateway.createImgClsImagenetElement(
+        settings.ml.modelPath,
+        settings.ml.num_fragments, settings.ml.target);
+    subpipe1Elements.push(mlFragmentElement);
 
-    var sink = ant.stream.createElement('appsink');
-    sink.setProperty('emit-signals', true);
-    var prevTimestamp = 0;
-    var totalFrameLatency = 0.0;
-    var sampleCount = 0;
-    sink.connectSignal('new-sample', function(name, data) {
-      var dataLength = data.length;
-      var result = ant.ml.getMaxOfBuffer(data, 'float32');
-      var labelMessage = '';
-
-      var frameLatency = -1;
-      if (prevTimestamp != 0) {
-        var nowTimestamp = new Date().valueOf();
-        frameLatency = nowTimestamp - prevTimestamp;
-        prevTimestamp = nowTimestamp;
-      } else {
-        prevTimestamp = new Date().valueOf();
-      }
-
-      sampleCount++;
-      if (frameLatency > 0) {
-        totalFrameLatency += frameLatency;
-        var averageFrameLatency = totalFrameLatency / sampleCount;
-        var averageFPS = 1000.0 / averageFrameLatency;
-        labelMessage += '' + averageFrameLatency.toFixed(2) + ' ms (' +
-                        averageFPS.toFixed(2) + ' FPS)';
-      }
-      var bboxes = [];
-      var arr = ant.ml.toFloatArray(data);
-      num_objects = arr[0]
-
-          for (step = 0; step < num_objects; step++) {
-        var base = 21 + step * 4;
-        var bbox1 = {
-          "xmin" : arr[base],
-          "ymin" : arr[base + 1],
-          "xmax" : arr[base + 2],
-          "ymax" : arr[base + 3],
-          "labeltext" : labels[arr[1 + step]]
-        };
-        bboxes.push(bbox1)
-      }
-      console.log('\n\nResult:\n ' + JSON.stringify(bboxes) + '\n');
-      ant.remoteui.setStreamingViewBoundingBoxes(bboxes);
-      ant.remoteui.setStreamingViewLabelText(labelMessage);
-    });
+    var sink = ant.stream.createElement('fakesink');
     subpipe1Elements.push(sink);
 
     // sub-pipeline 2
@@ -210,31 +177,38 @@ var onStart = function() {
     pipeline.binAdd(subpipe1Elements);
     pipeline.binAdd(subpipe2Elements);
     pipeline.linkMany(mainpipeElements);
-    pipeline.linkMany([ tee ].concat(subpipe1Elements));
-    pipeline.linkMany([ tee ].concat(subpipe2Elements));
+    pipeline.linkMany([tee].concat(subpipe1Elements));
+    pipeline.linkMany([tee].concat(subpipe2Elements));
     pipeline.setState(pipeline.STATE_PLAYING);
 
-    console.log('Pipeline ready! (' + settings.myIpAddress + ':' +
-                settings.myPort + ')');
+    console.log(
+      'Pipeline ready! (' + settings.myIpAddress + ':' + settings.myPort + ')'
+    );
 
     // Remote pipeline
     var remotePipeline;
     if (settings.isH264Enabled) {
-      remotePipeline = 'tcpclientsrc host=' + settings.myIpAddress +
-                       ' port=' + settings.myPort +
-                       ' ! gdpdepay ! rtph264depay ! h264parse ! avdec_h264 !' +
-                       ' videoconvert ! autovideosink sync=false';
+      remotePipeline =
+        'tcpclientsrc host=' +
+        settings.myIpAddress +
+        ' port=' +
+        settings.myPort +
+        ' ! gdpdepay ! rtph264depay ! h264parse ! avdec_h264 !' +
+        ' videoconvert ! autovideosink sync=false';
     } else {
-      remotePipeline = 'tcpclientsrc host=' + settings.myIpAddress +
-                       ' port=' + settings.myPort +
-                       ' ! gdpdepay ! videoconvert ! autovideosink sync=false';
+      remotePipeline =
+        'tcpclientsrc host=' +
+        settings.myIpAddress +
+        ' port=' +
+        settings.myPort +
+        ' ! gdpdepay ! videoconvert ! autovideosink sync=false';
     }
     ant.remoteui.setStreamingViewPipeline(remotePipeline);
     ant.remoteui.setStreamingViewLabelText('Waiting for Inference...');
   }, 5000);
 };
 
-var onStop = function() {
+var onStop = function () {
   console.log('onStop');
   ant.stream.finalize();
   ant.remoteui.setStreamingViewLabelText('-');
