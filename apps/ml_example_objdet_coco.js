@@ -36,7 +36,7 @@ settings.myPort = 5000;
 
 var onInitialize = function () {
   console.log('onInitialize');
-  var modelUrl = 'http://115.145.178.78:8001/downloads/efficientdet-d0.tar';
+  var modelUrl = 'https://github.com/SKKU-ESLAB/ant-sample-ml-models/blob/master/xu4_efficientdetd0/efficientdet-d0.tar';
   settings.ml.modelPath = ant.ml.downloadModel(modelUrl);
   if(settings.ml.modelPath === undefined) {
     console.log('Error on downloading model ' + modelUrl);
@@ -163,9 +163,6 @@ var onStart = function () {
         prevTimestamp = new Date().valueOf();
       }
 
-//      if (result === undefined) {
-//        labelMessage = 'Label error';
-//      } else {
         sampleCount++;
         if (frameLatency > 0) {
           totalFrameLatency += frameLatency;
@@ -178,13 +175,10 @@ var onStart = function () {
             averageFPS.toFixed(2) +
             ' FPS)';
         }
-//      }
       var bboxes = [];
       var arr = ant.ml.toFloatArray(data);
       num_objects = arr[0]
       
-      console.log(arr);
-      console.log(num_objects);
       for (step = 0; step < num_objects ; step++){ 
         var base = 21 + step * 4;
         var bbox1 = {
@@ -196,7 +190,6 @@ var onStart = function () {
         };
         bboxes.push(bbox1)
       }
-      console.log(JSON.stringify(bboxes));
       ant.remoteui.setStreamingViewBoundingBoxes(bboxes);
       ant.remoteui.setStreamingViewLabelText(labelMessage);
     });
