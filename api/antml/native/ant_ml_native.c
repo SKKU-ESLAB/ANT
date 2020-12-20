@@ -116,14 +116,14 @@ JS_FUNCTION(ant_ml_toFloatArray) {
   argBuffer = JS_GET_ARG(0, object);
 
   iotjs_bufferwrap_t *buffer_wrap;
-  buffer_wrap= iotjs_jbuffer_get_bufferwrap_ptr(argBuffer);
+  buffer_wrap = iotjs_jbuffer_get_bufferwrap_ptr(argBuffer);
 
   float *data_array = (float *)buffer_wrap->buffer;
   size_t buffer_len = iotjs_bufferwrap_length(buffer_wrap);
   size_t data_array_len = buffer_len / sizeof(float);
 
   jerry_value_t retArray = jerry_create_object();
-  for(int i = 0; i < (int)data_array_len; i++) {
+  for (int i = 0; i < (int)data_array_len; i++) {
     jerry_value_t element = jerry_create_number(data_array[i]);
     iotjs_jval_set_property_by_index(retArray, (uint32_t)i, element);
   }
