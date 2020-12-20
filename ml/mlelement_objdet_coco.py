@@ -161,7 +161,6 @@ class CustomFilter(object):
         size = 512
         jump_output = True
 
-        print(len(input_array[0]))
         t = time.time();
         t0 = t
         graph = self.graph
@@ -176,7 +175,6 @@ class CustomFilter(object):
             input_name = self.input_names[i]
             
             input_tensor = np.reshape(input_element, input_dim.getDims()[::-1])[i]
-            print(input_tensor.shape)
             input_image = transform_image(input_tensor)
             inputs_dict[input_name] = input_image
         self.module.set_input(**inputs_dict)

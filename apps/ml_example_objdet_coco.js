@@ -190,6 +190,7 @@ var onStart = function () {
         };
         bboxes.push(bbox1)
       }
+      console.log('\n\nResult:\n ' + JSON.stringify(bboxes) + '\n');
       ant.remoteui.setStreamingViewBoundingBoxes(bboxes);
       ant.remoteui.setStreamingViewLabelText(labelMessage);
     });
