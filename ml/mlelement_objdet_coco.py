@@ -15,44 +15,14 @@
 
 import os
 
-import tvm
+import numpy as np
+
 from tvm import rpc
 from tvm.contrib import graph_runtime as runtime
 
 import nnstreamer_python as nns
-import numpy as np
-import time
 
-
-def shape_str_to_npshape(shape_str):
-    shape_str_tokens = shape_str.split(":")
-    return [int(token) for token in shape_str_tokens]
-
-
-def shapes_str_to_npshapes(shapes_str):
-    shapes_str_tokens = shapes_str.split(",")
-    return [shape_str_to_npshape(token) for token in shapes_str_tokens]
-
-
-def datatype_str_to_nptype(datatype_str):
-    ret = None
-    if datatype_str == "float32":
-        ret = np.float32
-    elif datatype_str == "int32":
-        ret = np.int32
-    elif datatype_str == "uint8":
-        ret = np.uint8
-    return ret
-
-
-def datatypes_str_to_nptypes(datatypes_str):
-    datatypes_str_tokens = datatypes_str.split(",")
-    return [datatype_str_to_nptype(token) for token in datatypes_str_tokens]
-
-
-def names_str_to_strarray(names_str):
-    names_str_tokens = names_str.split(",")
-    return [token for token in names_str_tokens]
+import antml_util as util
 
 
 def transform_image(image):
@@ -85,28 +55,18 @@ def nms(self, detected):
         if not _del[i]:
             self.detected_objects.append(detected[i])
 
-        if DEBUG:
-            print("==============================")
-            print("LABEL           : {}".format(
-                self.tflite_labels[detected[i]["class_id"]]))
-            print("x               : {}".format(detected[i]["x"]))
-            print("y               : {}".format(detected[i]["y"]))
-            print("width           : {}".format(detected[i]["width"]))
-            print("height          : {}".format(detected[i]["height"]))
-            print("Confidence Score: {}".format(detected[i]["prob"]))
-
 
 class CustomFilter(object):
     def __init__(self, *args):
         # Parse arguments
         print("\nML element I/O spec: \n", args, '\n')
         model_path = args[0]
-        input_shapes = shapes_str_to_npshapes(args[1])
-        input_types = datatypes_str_to_nptypes(args[2])
-        output_shapes = shapes_str_to_npshapes(args[3])
-        output_types = datatypes_str_to_nptypes(args[4])
-        input_names = names_str_to_strarray(args[5])
-        output_names = names_str_to_strarray(args[6])
+        input_shapes = util.shapes_str_to_npshapes(args[1])
+        input_types = util.datatypes_str_to_nptypes(args[2])
+        output_shapes = util.shapes_str_to_npshapes(args[3])
+        output_types = util.datatypes_str_to_nptypes(args[4])
+        input_names = util.names_str_to_strarray(args[5])
+        output_names = util.names_str_to_strarray(args[6])
         self.input_shapes = input_shapes
         for input_type in input_types:
             if input_type is None:
@@ -134,11 +94,11 @@ class CustomFilter(object):
         self.output_dims = []
         self.input_types = input_types
         self.output_types = output_types
-        for i in range(len(input_shapes)):
-            input_dim = nns.TensorShape(input_shapes[i], input_types[i])
+        for i, input_shape in enumerate(input_shapes):
+            input_dim = nns.TensorShape(input_shape, input_types[i])
             self.input_dims.append(input_dim)
-        for i in range(len(output_shapes)):
-            output_dim = nns.TensorShape(output_shapes[i], output_types[i])
+        for i, output_shape in enumerate(output_shapes):
+            output_dim = nns.TensorShape(output_shape, output_types[i])
             self.output_dims.append(output_dim)
         self.input_names = input_names
         self.output_names = output_names
@@ -171,12 +131,6 @@ class CustomFilter(object):
     def invoke(self, input_array):
         size = 512
         jump_output = True
-
-        t = time.time()
-        t0 = t
-        graph = self.graph
-        params = self.params
-        fill_mode = "random"
 
         # Setting input
         inputs_dict = {}
@@ -216,33 +170,36 @@ class CustomFilter(object):
             0.1)
         return app_output
 
-    # For Single-shot detector
-    def postProcessing_ssd(self, outputs):
-        classes = outputs[0]  # shape: np (1, 100, 1) : js (10, 1, 1, 1)
-        scores = outputs[1]  # shape: np (1, 100, 1) : js (10, 1, 1, 1)
-        bboxes = outputs[2]  # shape: np (1, 100, 4) : js (4, 10, 1, 1)
-
-        thresh = 0.4
-        count = 0
-        for i, bbox in enumerate(bboxes[0]):
-            if i == 10:
-                break
-            if scores[0][i][0] > thresh:
-                count += 1
-
-        sel_count = np.array([count], dtype=np.float32).reshape([1, 1, 1])
-        app_output = [
-            sel_count, classes[:, :10], scores[:, :10], bboxes[:, :10]
-        ]
-        return app_output
+# For Single-shot detector
 
 
-def BBoxTransform(anchors, regression):
+def postprocessing_ssd(outputs):
+    classes = outputs[0]  # shape: np (1, 100, 1) : js (10, 1, 1, 1)
+    scores = outputs[1]  # shape: np (1, 100, 1) : js (10, 1, 1, 1)
+    bboxes = outputs[2]  # shape: np (1, 100, 4) : js (4, 10, 1, 1)
+
+    thresh = 0.4
+    count = 0
+    for i, _ in enumerate(bboxes[0]):
+        if i == 10:
+            break
+        if scores[0][i][0] > thresh:
+            count += 1
+
+    sel_count = np.array([count], dtype=np.float32).reshape([1, 1, 1])
+    app_output = [
+        sel_count, classes[:, :10], scores[:, :10], bboxes[:, :10]
+    ]
+    return app_output
+
+
+def bbox_transform(anchors, regression):
     """
-    decode_box_outputs adapted from https://github.com/google/automl/blob/master/efficientdet/anchors.py
+    decode_box_outputs adapted from
+    https://github.com/google/automl/blob/master/efficientdet/anchors.py
 
     Args:
-        anchors: [batchsize, boxes, (y1, x1, y2, x2)]
+        anchors: [batchsize, boxes, (boxes_y1, boxes_x1, boxes_y2, boxes_x2)]
         regression: [batchsize, boxes, (dy, dx, dh, dw)]
 
     Returns:
@@ -250,25 +207,25 @@ def BBoxTransform(anchors, regression):
     """
     y_centers_a = (anchors[..., 0] + anchors[..., 2]) / 2
     x_centers_a = (anchors[..., 1] + anchors[..., 3]) / 2
-    ha = anchors[..., 2] - anchors[..., 0]
-    wa = anchors[..., 3] - anchors[..., 1]
+    height_a = anchors[..., 2] - anchors[..., 0]
+    width_a = anchors[..., 3] - anchors[..., 1]
 
-    w = np.exp(regression[..., 3]) * wa
-    h = np.exp(regression[..., 2]) * ha
+    width = np.exp(regression[..., 3]) * width_a
+    height = np.exp(regression[..., 2]) * height_a
 
-    y_centers = regression[..., 0] * ha + y_centers_a
-    x_centers = regression[..., 1] * wa + x_centers_a
+    y_centers = regression[..., 0] * height_a + y_centers_a
+    x_centers = regression[..., 1] * width_a + x_centers_a
 
-    ymin = y_centers - h / 2.
-    xmin = x_centers - w / 2.
-    ymax = y_centers + h / 2.
-    xmax = x_centers + w / 2.
+    ymin = y_centers - height / 2.
+    xmin = x_centers - width / 2.
+    ymax = y_centers + height / 2.
+    xmax = x_centers + width / 2.
 
     return np.stack([xmin, ymin, xmax, ymax], 2)
 
 
-def ClipBoxes(boxes, img_shape):
-    batch_size, num_channels, height, width = img_shape
+def clip_boxes(boxes, img_shape):
+    _, _, height, width = img_shape
 
     boxes[:, :, 0] = np.clip(boxes[:, :, 0], a_min=0, a_max=np.inf)
     boxes[:, :, 1] = np.clip(boxes[:, :, 1], a_min=0, a_max=np.inf)
@@ -281,27 +238,25 @@ def ClipBoxes(boxes, img_shape):
 
 # nms numpy version
 def nms_cpu(boxes, scores, overlap_threshold=0.5, min_mode=False):
-    boxes = boxes
-    x1 = boxes[:, 0]
-    y1 = boxes[:, 1]
-    x2 = boxes[:, 2]
-    y2 = boxes[:, 3]
-    scores = scores
+    boxes_x1 = boxes[:, 0]
+    boxes_y1 = boxes[:, 1]
+    boxes_x2 = boxes[:, 2]
+    boxes_y2 = boxes[:, 3]
 
-    areas = (x2 - x1 + 1) * (y2 - y1 + 1)
+    areas = (boxes_x2 - boxes_x1 + 1) * (boxes_y2 - boxes_y1 + 1)
     order = scores.argsort()[::-1]
 
     keep = []
     while order.size > 0:
         keep.append(order[0])
-        xx1 = np.maximum(x1[order[0]], x1[order[1:]])
-        yy1 = np.maximum(y1[order[0]], y1[order[1:]])
-        xx2 = np.minimum(x2[order[0]], x2[order[1:]])
-        yy2 = np.minimum(y2[order[0]], y2[order[1:]])
+        xx1 = np.maximum(boxes_x1[order[0]], boxes_x1[order[1:]])
+        yy1 = np.maximum(boxes_y1[order[0]], boxes_y1[order[1:]])
+        xx2 = np.minimum(boxes_x2[order[0]], boxes_x2[order[1:]])
+        yy2 = np.minimum(boxes_y2[order[0]], boxes_y2[order[1:]])
 
-        w = np.maximum(0.0, xx2 - xx1 + 1)
-        h = np.maximum(0.0, yy2 - yy1 + 1)
-        inter = w * h
+        width = np.maximum(0.0, xx2 - xx1 + 1)
+        height = np.maximum(0.0, yy2 - yy1 + 1)
+        inter = width * height
 
         if min_mode:
             ovr = inter / np.minimum(areas[order[0]], areas[order[1:]])
@@ -315,8 +270,8 @@ def nms_cpu(boxes, scores, overlap_threshold=0.5, min_mode=False):
 
 def postprocess_numpy(input_shape, anchors, regression, classification,
                       threshold, iou_threshold):
-    transformed_anchors = BBoxTransform(anchors, regression)
-    transformed_anchors = ClipBoxes(transformed_anchors, input_shape)
+    transformed_anchors = bbox_transform(anchors, regression)
+    transformed_anchors = clip_boxes(transformed_anchors, input_shape)
 
     scores = np.max(classification, axis=2, keepdims=True)
     scores_over_thresh = (scores > threshold)[:, :, 0]

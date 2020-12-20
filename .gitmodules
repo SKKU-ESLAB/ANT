@@ -22,3 +22,6 @@
 [submodule "dep/iotivity"]
 	path = dep/iotivity
 	url = https://github.com/iotivity/iotivity-lite
+[submodule "dep/libcoap"]
+	path = dep/libcoap
+	url = https://github.com/obgm/libcoap

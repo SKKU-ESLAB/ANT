@@ -15,38 +15,13 @@
 
 import os
 
-import tvm
 from tvm import rpc
 from tvm.contrib import graph_runtime as runtime
 
 import nnstreamer_python as nns
 import numpy as np
 
-def shape_str_to_npshape(shape_str):
-    shape_str_tokens = shape_str.split(":")
-    return [int(token) for token in shape_str_tokens]
-
-def shapes_str_to_npshapes(shapes_str):
-    shapes_str_tokens = shapes_str.split(",")
-    return [shape_str_to_npshape(token) for token in shapes_str_tokens]
-
-def datatype_str_to_nptype(datatype_str):
-    ret = None
-    if datatype_str == "float32":
-        ret = np.float32
-    elif datatype_str == "int32":
-        ret = np.int32
-    elif datatype_str == "uint8":
-        ret = np.uint8
-    return ret
-
-def datatypes_str_to_nptypes(datatypes_str):
-    datatypes_str_tokens = datatypes_str.split(",")
-    return [datatype_str_to_nptype(token) for token in datatypes_str_tokens]
-
-def names_str_to_strarray(names_str):
-    names_str_tokens = names_str.split(",")
-    return [token for token in names_str_tokens]
+import antml_util as util
 
 def transform_image(image):
     # TODO: Hardcoded ImageNet dataset mean
@@ -60,12 +35,12 @@ class CustomFilter(object):
     def __init__(self, *args):
         # Parse arguments
         model_path = args[0]
-        input_shapes = shapes_str_to_npshapes(args[1])
-        input_types = datatypes_str_to_nptypes(args[2])
-        output_shapes = shapes_str_to_npshapes(args[3])
-        output_types = datatypes_str_to_nptypes(args[4])
-        input_names = names_str_to_strarray(args[5])
-        output_names = names_str_to_strarray(args[6])
+        input_shapes = util.shapes_str_to_npshapes(args[1])
+        input_types = util.datatypes_str_to_nptypes(args[2])
+        output_shapes = util.shapes_str_to_npshapes(args[3])
+        output_types = util.datatypes_str_to_nptypes(args[4])
+        input_names = util.names_str_to_strarray(args[5])
+        output_names = util.names_str_to_strarray(args[6])
         for input_type in input_types:
             if input_type is None:
                 print("Invalid input_type")
@@ -88,11 +63,11 @@ class CustomFilter(object):
             return None
         self.input_dims = []
         self.output_dims = []
-        for i in range(len(input_shapes)):
-            input_dim = nns.TensorShape(input_shapes[i], input_types[i])
+        for i, input_shape in enumerate(input_shapes):
+            input_dim = nns.TensorShape(input_shape, input_types[i])
             self.input_dims.append(input_dim)
-        for i in range(len(output_shapes)):
-            output_dim = nns.TensorShape(output_shapes[i], output_types[i])
+        for i, output_shape in enumerate(output_shapes):
+            output_dim = nns.TensorShape(output_shape, output_types[i])
             self.output_dims.append(output_dim)
         self.input_names = input_names
         self.output_names = output_names
@@ -121,10 +96,6 @@ class CustomFilter(object):
         return self.output_dims
 
     def invoke(self, input_array):
-        graph = self.graph
-        params = self.params
-        fill_mode = "random"
-
         # Setting input
         inputs_dict = {}
         for i in range(len(self.input_dims)):

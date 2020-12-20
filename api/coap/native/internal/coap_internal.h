@@ -13,35 +13,15 @@
  * limitations under the License.
  */
 
-var MLAPI = undefined;
+#ifndef __COAP_INTERNAL_H__
+#define __COAP_INTERNAL_H__
 
-try {
-  MLAPI = require('antml');
-} catch (e) {
-  throw new Error('Gateway API Dependency Error: not found ML API');
-}
+#include <pthread.h>
+#include <stdbool.h>
+#include <stdlib.h>
 
-/**
- * ANT Gateway API
- */
-function ANTGateway() {}
+#include <coap2/coap.h>
 
-ANTGateway.prototype.createImgClsImagenetElement = function (
-  modelPath,
-  numFragments,
-  targetUri
-) {
-  var mlFragmentElement = MLAPI.createMLFragmentElement(
-    modelPath,
-    [3, 224, 224, 1],
-    'uint8',
-    'input',
-    'gateway_imgcls_imagenet',
-    numFragments,
-    targetUri
-  );
-  return mlFragmentElement;
-};
+void coap_request_end(void);
 
-module.exports = new ANTGateway();
-module.exports.ANTGateway = ANTGateway;
+#endif /* !defined(__COAP_INTERNAL_H__) */

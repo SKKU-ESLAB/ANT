@@ -16,7 +16,7 @@
 var console = require('console');
 var fs = require('fs');
 
-var RuntimeAPI = undefined; 
+var RuntimeAPI = undefined;
 var StreamAPI = undefined;
 try {
   StreamAPI = require('antstream');
@@ -33,8 +33,8 @@ try {
 var shapeArrayToStr = function (shapeArray) {
   var shapeStr = '';
   var isMultipleElements = Array.isArray(shapeArray[0]);
-  
-  var elementArrayToStr = function(elementArray) {
+
+  var elementArrayToStr = function (elementArray) {
     var elementStr = '';
     for (var i = 0; i < elementArray.length; i++) {
       if (i == 0) {
@@ -46,11 +46,10 @@ var shapeArrayToStr = function (shapeArray) {
     return elementStr;
   };
 
-  if(isMultipleElements) {
-    if(shapeArray.length == 0) return undefined;
-    for(var i = 0; i < shapeArray.length; i++) {
-      if(i > 0)
-        shapeStr += ',';
+  if (isMultipleElements) {
+    if (shapeArray.length == 0) return undefined;
+    for (var i = 0; i < shapeArray.length; i++) {
+      if (i > 0) shapeStr += ',';
       shapeStr += elementArrayToStr(shapeArray[i]);
     }
   } else {
@@ -62,11 +61,10 @@ var shapeArrayToStr = function (shapeArray) {
 var typeArrayToStr = function (typeArray) {
   var typeStr = '';
   var isMultipleElements = Array.isArray(typeArray[0]);
-  
-  if(isMultipleElements) {
-    if(typeArray.length == 0) return undefined;
-    if(i > 0)
-      typeStr += ',';
+
+  if (isMultipleElements) {
+    if (typeArray.length == 0) return undefined;
+    if (i > 0) typeStr += ',';
     typeStr += typeArray;
   } else {
     typeStr += typeArray;
@@ -77,7 +75,7 @@ var nameArrayToStr = typeArrayToStr;
 
 var getAntRootDir = function () {
   var antRootDir = RuntimeAPI.getEnv('ANT_ROOT');
-  if(antRootDir.length == 0) {
+  if (antRootDir.length == 0) {
     return undefined;
   }
   return antRootDir;
@@ -85,15 +83,15 @@ var getAntRootDir = function () {
 
 var getTaskPath = function (taskName) {
   var antRootDir = getAntRootDir();
-  if(antRootDir === undefined) {
-    console.error("ERROR: ANT_ROOT is not defined!");
+  if (antRootDir === undefined) {
+    console.error('ERROR: ANT_ROOT is not defined!');
     return undefined;
   }
 
   var mlRootDir = antRootDir + '/ml/';
   var taskPath = mlRootDir + 'mlelement_' + taskName + '.py';
-  if(!fs.existsSync(taskPath)) {
-    console.error("ERROR: cannot find file! " + taskPath);
+  if (!fs.existsSync(taskPath)) {
+    console.error('ERROR: cannot find file! ' + taskPath);
     return undefined;
   }
   return taskPath;
@@ -105,21 +103,39 @@ var getTaskPath = function (taskName) {
 function ANTML() {}
 
 ANTML.prototype.createImgClsImagenetElement = function (modelPath) {
-  var mlElement = this.createMLElement(modelPath,
-    [3, 224, 224, 1], 'uint8', 'input0',
-    [1000, 1, 1, 1], 'float32', 'classes',
-    'imgcls_imagenet');
+  var mlElement = this.createMLElement(
+    modelPath,
+    [3, 224, 224, 1],
+    'uint8',
+    'input0',
+    [1000, 1, 1, 1],
+    'float32',
+    'classes',
+    'imgcls_imagenet'
+  );
   return mlElement;
 };
 
-ANTML.prototype.createObjDetCocoElement = function (modelPath, resolution, maxBoundingBoxes) {
-  var mlElement = this.createMLElement(modelPath,
+ANTML.prototype.createObjDetCocoElement = function (
+  modelPath,
+  resolution,
+  maxBoundingBoxes
+) {
+  var mlElement = this.createMLElement(
+    modelPath,
     [3, resolution, resolution, 1],
-    'uint8', 'data',
-    [[1,1,1,1], [10, 1, 1, 1], [10, 1, 1, 1], [4, 10, 1, 1]],
-    ['float32', 'float32', 'float32', 'float32'], 
+    'uint8',
+    'data',
+    [
+      [1, 1, 1, 1],
+      [10, 1, 1, 1],
+      [10, 1, 1, 1],
+      [4, 10, 1, 1]
+    ],
+    ['float32', 'float32', 'float32', 'float32'],
     ['num_objects', 'classes', 'scores', 'bboxes'],
-    'objdet_coco');
+    'objdet_coco'
+  );
   return mlElement;
 };
 
@@ -131,7 +147,7 @@ ANTML.prototype.createMLElement = function (
   outputShapes,
   outputTypes,
   outputNames,
-  taskName 
+  taskName
 ) {
   // Checking arguments
   if (modelPath.indexOf(' ') >= 0) {
@@ -150,13 +166,13 @@ ANTML.prototype.createMLElement = function (
     console.error('ERROR: Stream API is not initialized');
     return undefined;
   }
-  if(taskName === undefined) {
+  if (taskName === undefined) {
     // Default task: imgcls_imagenet
-    taskName = "imgcls_imagenet";
+    taskName = 'imgcls_imagenet';
   }
   var taskPath = getTaskPath(taskName);
-  if(taskPath === undefined) {
-    console.error("ERROR: task does not exist: " + taskPath);
+  if (taskPath === undefined) {
+    console.error('ERROR: task does not exist: ' + taskPath);
     return undefined;
   }
 
@@ -187,7 +203,7 @@ ANTML.prototype.createMLElement = function (
     ' ' +
     outputTypesStr +
     ' ' +
-    inputNamesStr + 
+    inputNamesStr +
     ' ' +
     outputNamesStr;
   tensorFilter.setProperty('custom', custom);
@@ -217,13 +233,13 @@ ANTML.prototype.createMLFragmentElement = function (
     console.error('ERROR: Stream API is not initialized');
     return undefined;
   }
-  if(taskName === undefined) {
+  if (taskName === undefined) {
     // Default task: imgcls_imagenet
-    taskName = "imgcls_imagenet";
+    taskName = 'imgcls_imagenet';
   }
   var taskPath = getTaskPath(taskName);
-  if(taskPath === undefined) {
-    console.error("ERROR: task does not exist: " + taskPath);
+  if (taskPath === undefined) {
+    console.error('ERROR: task does not exist: ' + taskPath);
     return undefined;
   }
 
@@ -256,7 +272,7 @@ ANTML.prototype.createMLFragmentElement = function (
   return tensorFilter;
 };
 
-ANTML.prototype.toFloatArray = function(buffer) {
+ANTML.prototype.toFloatArray = function (buffer) {
   return native.ant_ml_toFloatArray(buffer);
 };
 
@@ -265,45 +281,58 @@ ANTML.prototype.getMaxOfBuffer = function (buffer, type) {
 };
 
 ANTML.prototype.downloadModel = function (modelUrl, overwriteIfExists) {
-  if(overwriteIfExists === undefined) {
+  if (overwriteIfExists === undefined) {
     overwriteIfExists = false;
   }
 
   var antRootDir = getAntRootDir();
-  if(antRootDir === undefined) {
-    console.error("ERROR: ANT_ROOT is not defined!");
+  if (antRootDir === undefined) {
+    console.error('ERROR: ANT_ROOT is not defined!');
     return undefined;
   }
-  var fileName = modelUrl.substring(modelUrl.lastIndexOf('/')+1, modelUrl.length);
+  var fileName = modelUrl.substring(
+    modelUrl.lastIndexOf('/') + 1,
+    modelUrl.length
+  );
   var modelPath = fileName.substring(0, fileName.lastIndexOf('.'));
   var modelRootDir = antRootDir + '/ml/';
   var modelArchivePath = modelRootDir + fileName;
   var modelDirectoryPath = modelRootDir + modelPath;
 
-  console.log('Download model from ' + modelUrl
-    + '\n => ' + modelArchivePath
-    + '\n => ' + modelDirectoryPath);
+  console.log(
+    'Download model from ' +
+      modelUrl +
+      '\n => ' +
+      modelArchivePath +
+      '\n => ' +
+      modelDirectoryPath
+  );
 
   // Make model root directory if it does not exist
-  if(!fs.existsSync(modelRootDir)) {
+  if (!fs.existsSync(modelRootDir)) {
     fs.mkdirSync(modelRootDir);
   }
-  
+
   // Check if the model archive file
   var isDownload = true;
-  if(fs.existsSync(modelArchivePath)) {
-    console.log('Model archive file already exists. (' + modelArchivePath + ')');
-    if(!overwriteIfExists) {
+  if (fs.existsSync(modelArchivePath)) {
+    console.log(
+      'Model archive file already exists. (' + modelArchivePath + ')'
+    );
+    if (!overwriteIfExists) {
       console.log('Skip downloading the model archive file...');
       isDownload = false;
     }
   }
 
   // Download model archive file
-  if(isDownload) {
+  if (isDownload) {
     console.log('Model download from ' + modelUrl + ' to ' + modelArchivePath);
-    var res_download = RuntimeAPI.downloadFileViaHTTP(modelUrl, modelArchivePath);
-    if(!res_download) {
+    var resultDownload = RuntimeAPI.downloadFileViaHTTP(
+      modelUrl,
+      modelArchivePath
+    );
+    if (!resultDownload) {
       console.error('ERROR: downloading model failed');
       return undefined;
     }
@@ -311,9 +340,9 @@ ANTML.prototype.downloadModel = function (modelUrl, overwriteIfExists) {
 
   // Check if the model directory
   var isArchive = true;
-  if(fs.existsSync(modelDirectoryPath)) {
+  if (fs.existsSync(modelDirectoryPath)) {
     console.log('Model directory already exists. (' + modelDirectoryPath + ')');
-    if(!overwriteIfExists) {
+    if (!overwriteIfExists) {
       console.log('Skip unarchiving the model archive file...');
       isArchive = false;
     }
@@ -322,9 +351,12 @@ ANTML.prototype.downloadModel = function (modelUrl, overwriteIfExists) {
   }
 
   // Unarchive model archive file
-  if(isArchive) {
-    var res_archive = RuntimeAPI.unarchive(modelArchivePath, modelDirectoryPath);
-    if(!res_archive) {
+  if (isArchive) {
+    var resultArchive = RuntimeAPI.unarchive(
+      modelArchivePath,
+      modelDirectoryPath
+    );
+    if (!resultArchive) {
       console.error('ERROR: archiving the model archive file failed');
       return undefined;
     }
