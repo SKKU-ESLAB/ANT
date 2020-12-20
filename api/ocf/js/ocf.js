@@ -139,7 +139,7 @@ OCFAdapter.prototype.getPlatform = function () {
  * @param {String} name name of device to be serviced
  * @param {String} specVersion specification of device to be serviced
  * @param {String} dataModelVersion data model version of device to be serviced
- * Set the device to be serviced by the OCFAdapter. 
+ * Set the device to be serviced by the OCFAdapter.
  * One OCFAdapter can service multiple devices.
  */
 OCFAdapter.prototype.addDevice = function (
@@ -192,7 +192,7 @@ OCFAdapter.prototype.onPrepareEventLoop = function (handler) {
 };
 /**
  * OCFAdapter.onPrepareClient
- * @param {Function} handler 
+ * @param {Function} handler
  * called when all preparations for executing client functions in the OCF thread are complete
  */
 OCFAdapter.prototype.onPrepareClient = function (handler) {
@@ -201,7 +201,7 @@ OCFAdapter.prototype.onPrepareClient = function (handler) {
 };
 /**
  * OCFAdapter.onPrepareServer
- * @param {Function} handler 
+ * @param {Function} handler
  * called when all preparations for executing server functions in OCF thread are complete
  */
 OCFAdapter.prototype.onPrepareServer = function (handler) {
@@ -210,15 +210,15 @@ OCFAdapter.prototype.onPrepareServer = function (handler) {
 };
 /**
  * OCFAdapter.start
- * Run the OCF thread. This function must be called after OCFAdapter.initialize() is called. 
+ * Run the OCF thread. This function must be called after OCFAdapter.initialize() is called.
  * You can use the OCF Server API and OCF Client API only while the OCF thread is running.
- * If you need to know exactly when you can use OCF Server API and OCF Client API, 
+ * If you need to know exactly when you can use OCF Server API and OCF Client API,
  * you can use the handlers of OCFAdapter.onPrepareServer() and OCFAdapter.onPrepareClient().
  */
 OCFAdapter.prototype.start = function () {
   oaStartRequestListCleaner();
   native.ocf_adapter_start();
-}
+};
 /**
  * OCFAdapter.stop
  * Stop the OCF thread.
@@ -229,7 +229,7 @@ OCFAdapter.prototype.stop = function () {
 };
 /**
  * OCFAdapter.addResource
- * @param {OCFResource} resource 
+ * @param {OCFResource} resource
  */
 OCFAdapter.prototype.addResource = function (resource) {
   this._resources.push(resource);
@@ -237,7 +237,7 @@ OCFAdapter.prototype.addResource = function (resource) {
 };
 /**
  * OCFAdapter.deleteResource
- * @param {OCFResource} resource 
+ * @param {OCFResource} resource
  */
 OCFAdapter.prototype.deleteResource = function (resource) {
   resource.destroyer();
@@ -260,9 +260,9 @@ OCFAdapter.prototype.repStartRootObject = function () {
 };
 /**
  * OCFAdapter.repSet
- * @param {String} key 
- * @param {[Boolean, Number, String]} value 
- * The value is stored in a specific key among OCRepresentations being created by OCF thread. 
+ * @param {String} key
+ * @param {[Boolean, Number, String]} value
+ * The value is stored in a specific key among OCRepresentations being created by OCF thread.
  * In this function, various types of data including Boolean, Number, and String can be used as value.
  */
 OCFAdapter.prototype.repSet = function (key, value) {
@@ -299,7 +299,7 @@ OCFAdapter.prototype.sendResponse = function (ocfRequest, statusCode) {
 };
 /**
  * OCFAdapter.stopDiscovery
- * @returns {Boolean} isSuccess 
+ * @returns {Boolean} isSuccess
  */
 OCFAdapter.prototype.stopDiscovery = function () {
   return native.ocf_adapter_stopDiscovery();
@@ -403,11 +403,11 @@ var oaStopRequestListCleaner = function () {
 };
 /**
  * OCFAdapter.observe
- * @param {OCFEndpoint} endpoint 
- * @param {String} uri 
- * @param {Function} userHandler 
- * @param {String} query 
- * @param {Integer} qos 
+ * @param {OCFEndpoint} endpoint
+ * @param {String} uri
+ * @param {Function} userHandler
+ * @param {String} query
+ * @param {Integer} qos
  * @return {Boolean} isSuccess
  */
 OCFAdapter.prototype.observe = function (
@@ -435,8 +435,8 @@ OCFAdapter.prototype.observe = function (
 };
 /**
  * OCFAdapter.stopObserve
- * @param {OCFEndpoint} endpoint 
- * @param {String} uri 
+ * @param {OCFEndpoint} endpoint
+ * @param {String} uri
  * @returns {Boolean} isSuccess
  */
 OCFAdapter.prototype.stopObserve = function (endpoint, uri) {
@@ -460,11 +460,11 @@ OCFAdapter.prototype.stopObserve = function (endpoint, uri) {
 };
 /**
  * OCFAdapter.get
- * @param {OCFEndpoint} endpoint 
- * @param {String} uri 
- * @param {Function} userHandler 
- * @param {String} query 
- * @param {Integer} qos 
+ * @param {OCFEndpoint} endpoint
+ * @param {String} uri
+ * @param {Function} userHandler
+ * @param {String} query
+ * @param {Integer} qos
  * @returns {Boolean} isSuccess
  */
 OCFAdapter.prototype.get = function (endpoint, uri, userHandler, query, qos) {
@@ -485,11 +485,11 @@ OCFAdapter.prototype.get = function (endpoint, uri, userHandler, query, qos) {
 };
 /**
  * OCFAdapter.delete
- * @param {OCFEndpoint} endpoint 
- * @param {String} uri 
- * @param {Function} userHandler 
- * @param {String} query 
- * @param {Integer} qos 
+ * @param {OCFEndpoint} endpoint
+ * @param {String} uri
+ * @param {Function} userHandler
+ * @param {String} query
+ * @param {Integer} qos
  * @returns
  */
 OCFAdapter.prototype.delete = function (
@@ -516,11 +516,11 @@ OCFAdapter.prototype.delete = function (
 };
 /**
  * OCFAdapter.initPost
- * @param {OCFEndpoint} endpoint 
- * @param {String} uri 
- * @param {Function} userHandler 
- * @param {String} query 
- * @param {Integer} qos 
+ * @param {OCFEndpoint} endpoint
+ * @param {String} uri
+ * @param {Function} userHandler
+ * @param {String} query
+ * @param {Integer} qos
  * @returns {Boolean} isSuccess
  */
 OCFAdapter.prototype.initPost = function (
@@ -547,10 +547,10 @@ OCFAdapter.prototype.initPost = function (
 };
 /**
  * OCFAdapter.initPut
- * @param {OCFEndpoint} endpoint 
- * @param {String} uri 
- * @param {Function} userHandler 
- * @param {String} query 
+ * @param {OCFEndpoint} endpoint
+ * @param {String} uri
+ * @param {Function} userHandler
+ * @param {String} query
  * @param {Integer} qos
  * @returns {Boolean} isSuccess
  */
@@ -651,7 +651,7 @@ OCFResource.prototype.destroyer = function () {
 };
 /**
  * OCFResource.setDiscoverable
- * @param {Boolean} isDiscoverable 
+ * @param {Boolean} isDiscoverable
  */
 OCFResource.prototype.setDiscoverable = function (isDiscoverable) {
   this.isDiscoverable = isDiscoverable;
@@ -659,18 +659,19 @@ OCFResource.prototype.setDiscoverable = function (isDiscoverable) {
 };
 /**
  * OCFResource.setPeriodicObservable
- * @param {Integer} periodSec 
+ * @param {Integer} periodSec
  */
 OCFResource.prototype.setPeriodicObservable = function (periodSec) {
   this.periodSec = periodSec;
   native.ocf_resource_setPeriodicObservable(this, periodSec);
 };
 
-var gOCFResourceHandlerId = 0;s
+var gOCFResourceHandlerId = 0;
+s;
 /**
  * OCFResource.setHandler
- * @param {Number} method 
- * @param {Function} handler 
+ * @param {Number} method
+ * @param {Function} handler
  */
 OCFResource.prototype.setHandler = function (method, handler) {
   // Handler: void function(OCFRequest request, int method)

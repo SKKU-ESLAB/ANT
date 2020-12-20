@@ -1,5 +1,4 @@
 import tensorflow as tf
-from keras.preprocessing import image
 import numpy as np
 
 def load_model(model_name, num_fragments):
@@ -11,7 +10,7 @@ def load_model(model_name, num_fragments):
     # Load the TFLite model and allocate tensors.
     interpreters = []
     for fragment_file in fragment_files:
-        interpreter = tf.lite.Interpreter(model_path=fragment_file)
+        interpreter = tf.lite.Interpreter(model_path=fragment_file, num_threads=4)
         interpreter.allocate_tensors()
         interpreters.append(interpreter)
 

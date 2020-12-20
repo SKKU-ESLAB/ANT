@@ -57,17 +57,17 @@ ANTRuntime.prototype.downloadFileViaHTTP = function (url, downloadPath) {
   return native.ant_runtime_downloadFileViaHTTP(url, downloadPath);
 };
 
-ANTRuntime.prototype.unarchive = function(archiveFilePath, targetDirPath) {
-  if(!fs.existsSync(archiveFilePath)) {
-    console.log("Error: cannot find archive file! " + archiveFilePath);
+ANTRuntime.prototype.unarchive = function (archiveFilePath, targetDirPath) {
+  if (!fs.existsSync(archiveFilePath)) {
+    console.log('Error: cannot find archive file! ' + archiveFilePath);
     return false;
   }
-  if(!fs.existsSync(targetDirPath)) {
-    console.log("Error: cannot find target directory! " + archiveDirPath);
+  if (!fs.existsSync(targetDirPath)) {
+    console.log('Error: cannot find target directory! ' + archiveDirPath);
     return false;
   }
   return native.ant_runtime_unarchive(archiveFilePath, targetDirPath);
-}
+};
 
 /**
  * Application
