@@ -54,9 +54,8 @@ def transform_image(image):
     mean=np.array([0.406, 0.456, 0.485])
     std=np.array([0.225, 0.224, 0.229])
     image = (image / 255 - mean) / std
+    image = image.transpose((2, 0, 1))
     image = image[np.newaxis, :]
-    image = np.transpose(image, (0,3,1,2))
-    #image = image.transpose((2, 0, 1))
     return image
 
 def nms(self, detected):
