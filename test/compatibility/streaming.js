@@ -19,12 +19,15 @@ var ant = require('ant');
 var console = require('console');
 
 var settings = {};
-settings.sourceType = 'nvidia'; // "rpi", "nvidia", "test", or others("/dev/video0")
+
+// "rpi", "nvidia", "test", or others("/dev/video0")
+settings.sourceType = 'nvidia';
+
 settings.isH264Enabled = false;
 settings.isSourceFilterEnabled = false;
 settings.isScaleEnabled = true;
 settings.isConvertEnabled = true;
-if(settings.sourceType == "nvidia") {
+if (settings.sourceType == 'nvidia') {
   settings.isConvertEnabled = false;
 }
 settings.videoWidth = 224;
@@ -59,16 +62,16 @@ var onStart = function () {
       source.setProperty('pattern', 1);
     } else if (settings.sourceType == 'nvidia') {
       source = ant.stream.createElement('nvcamerasrc');
-      source.setProperty("fpsRange", "30.0 30.0");
+      source.setProperty('fpsRange', '30.0 30.0');
     } else {
       source = ant.stream.createElement('v4l2src');
       source.setProperty('device', settings.sourceType);
     }
     elements.push(source);
 
-    if(settings.sourceType == 'nvidia') {
+    if (settings.sourceType == 'nvidia') {
       converter = ant.stream.createElement('nvvidconv');
-      converter.setProperty("flip-method", 0);
+      converter.setProperty('flip-method', 0);
       elements.push(converter);
     }
 

@@ -20,7 +20,7 @@ var settings = {};
 settings.ml = {};
 settings.ml.modelPath = '';
 
-settings.deviceType = 'tx4'; // "rpi", "test", or others(v4l2src)
+settings.deviceType = 'xu4'; // "rpi", "test", or others(v4l2src)
 settings.isH264Enabled = false;
 settings.isSourceFilterEnabled = false;
 settings.isScaleEnabled = true;
@@ -35,9 +35,10 @@ settings.myPort = 5000;
 
 var onInitialize = function () {
   console.log('onInitialize');
-  var modelUrl = 'http://github.com/SKKU-ESLAB/ant-sample-ml-models/raw/master/xu4_mobilenetv3/xu4_mobilenetv3.tar';
+  var modelUrl =
+    'http://github.com/SKKU-ESLAB/ant-sample-ml-models/raw/master/xu4_mobilenetv3/xu4_mobilenetv3.tar';
   settings.ml.modelPath = ant.ml.downloadModel(modelUrl);
-  if(settings.ml.modelPath === undefined) {
+  if (settings.ml.modelPath === undefined) {
     console.log('Error on downloading model ' + modelUrl);
   }
 };
@@ -52,7 +53,7 @@ var prepareLabel = function (labelFilepath) {
 var onStart = function () {
   console.log('onStart');
 
-  if(settings.ml.modelPath === undefined) {
+  if (settings.ml.modelPath === undefined) {
     console.log('Cannot find model!');
     return;
   }
@@ -75,6 +76,12 @@ var onStart = function () {
     // source
     var source = ant.camera.createCameraElement(settings.deviceType);
     mainpipeElements.push(source);
+
+    if (settings.deviceType == 'tx2') {
+      converter = ant.stream.createElement('nvvidconv');
+      converter.setProperty('flip-method', 0);
+      elements.push(converter);
+    }
 
     // source filter
     var sourcefilter = ant.stream.createElement('capsfilter');

@@ -48,8 +48,9 @@ JS_FUNCTION(ant_runtime_unarchive) {
   argArchiveFilePath = JS_GET_ARG(0, string);
   argTargetDirPath = JS_GET_ARG(1, string);
 
-  bool res = ant_runtime_unarchive_internal(
-      iotjs_string_data(&argArchiveFilePath), iotjs_string_data(&argTargetDirPath));
+  bool res =
+      ant_runtime_unarchive_internal(iotjs_string_data(&argArchiveFilePath),
+                                     iotjs_string_data(&argTargetDirPath));
   iotjs_string_destroy(&argArchiveFilePath);
   iotjs_string_destroy(&argTargetDirPath);
   return jerry_create_boolean(res);

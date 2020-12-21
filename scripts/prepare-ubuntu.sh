@@ -21,6 +21,7 @@ then
   ${SUDO} apt-get install -y software-properties-common
   ${SUDO} apt-get install -y libcurl4-openssl-dev
   ${SUDO} apt-get install -y libtar-dev
+  ${SUDO} apt-get install -y
   if [[ $ARCH == *"arm"* ]];
   then
     ${SUDO} apt-get install -y libraspberrypi-dev
@@ -77,6 +78,16 @@ then
   git submodule init
   git submodule update
   make SECURE=0
+
+  # Build libcoap
+  echo "** Build libcoap..."
+  cd ${ANT_ROOT}/dep/libcoap
+  git submodule init
+  git submoudle update
+  ./autogen.sh
+  ./configure --disable-documentation
+  make -j${BUILD_THREADS}
+  sudo make install
 
   # Build IoT.js
   echo "** Build IoT.js..."

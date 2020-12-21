@@ -13,21 +13,11 @@
  * limitations under the License.
  */
 
-var console = require('console');
-var fs = require('fs');
-
-var RuntimeAPI = undefined; 
 var StreamAPI = undefined;
 try {
   StreamAPI = require('antstream');
 } catch (e) {
   throw new Error('Gateway API Dependency Error: not found Stream API');
-}
-
-try {
-  RuntimeAPI = require('antruntime');
-} catch (e) {
-  throw new Error('Gateway API Dependency Error: not found Runtime API');
 }
 
 /**
@@ -37,16 +27,16 @@ function ANTCamera() {}
 
 ANTCamera.prototype.createCameraElement = function (deviceType) {
   var cameraType = deviceTypeToCameraType[deviceType];
-  if(cameraType == undefined) {
+  if (cameraType == undefined) {
     return undefined;
   }
-  if(cameraType == 'rpi') {
+  if (cameraType == 'rpi') {
     source = this.createRPiCameraElement();
-  } else if(cameraType == 'test') {
+  } else if (cameraType == 'test') {
     source = this.createTestCameraElement();
-  } else if(cameraType == 'v4l2') {
+  } else if (cameraType == 'v4l2') {
     source = this.createV4L2CameraElement();
-  } else if(cameraType == 'nvidia') {
+  } else if (cameraType == 'nvidia') {
     source = this.createNvidiaCameraElement();
   }
   return source;
@@ -61,11 +51,11 @@ ANTCamera.prototype.createTestCameraElement = function () {
   source = StreamAPI.createElement('videotestsrc');
   source.setProperty('pattern', 1);
   return source;
-}
+};
 
 ANTCamera.prototype.createV4L2CameraElement = function (sourcePath) {
   source = StreamAPI.createElement('v4l2src');
-  if(sourcePath === undefined) {
+  if (sourcePath === undefined) {
     sourcePath = '/dev/video0';
   }
   source.setProperty('device', sourcePath);
@@ -79,12 +69,12 @@ ANTCamera.prototype.createNvidiaCameraElement = function () {
 };
 
 var deviceTypeToCameraType = {
-  'rpi2': 'rpi',
-  'rpi3': 'rpi',
-  'xu3': 'v4l2',
-  'xu4': 'v4l2',
-  'tx1': 'nvidia',
-  'tx2': 'nvidia'
+  rpi2: 'rpi',
+  rpi3: 'rpi',
+  xu3: 'v4l2',
+  xu4: 'v4l2',
+  tx1: 'nvidia',
+  tx2: 'nvidia'
 };
 
 module.exports = new ANTCamera();

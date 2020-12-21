@@ -181,6 +181,7 @@ public class GatewayConnector {
 //                    mInputStream = null;
 //                    mOutputStream = null;
                     e.printStackTrace();
+                    setRemoteUILabel(" ");
                 } catch (NullPointerException e) {
                     Log.e(TAG, "NullPointerException");
                     try {
@@ -194,9 +195,9 @@ public class GatewayConnector {
 //                    mInputStream = null;
 //                    mOutputStream = null;
                     e.printStackTrace();
+                    setRemoteUILabel(" ");
                 }
                 setEnablePartitioningUI(false);
-                setRemoteUILabel("Gateway is disconnected.");
             }
         }
 
