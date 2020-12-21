@@ -1,20 +1,19 @@
-import os
-import numpy as np
 import argparse
 import urllib
 import urllib.request
 
-import tvm
+import numpy as np
 from tvm.driver import tvmc
 
-def run(tuning_opt):
+def run():
+    # tuning_opt is removed since it is not used
     name_list = ['mobilenet_v3.tar', 'ant_model.tar']
     url_list = ['http://nyx.skku.ac.kr/starlab/ml/mobilenet_v3.tar',
                 'http://nyx.skku.ac.kr/starlab/ml/ant_model.tar']
 
     for name, url in zip(name_list, url_list):
         urllib.request.urlretrieve(url, name)
-        outputs, times = tvmc.runner.run_module(
+        _, times = tvmc.runner.run_module(
             name,
             args.host,
             port=args.port,

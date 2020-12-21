@@ -58,6 +58,12 @@
         "console"
       ]
     },
+    "antcamera": {
+      "js_file": "antcamera/js/antcamera.js",
+      "require": [
+        "console"
+      ]
+    },
     "antresource": {
       "js_file": "antresource/js/antresource.js",
       "require": [
@@ -88,14 +94,25 @@
         "console"
       ]
     },
-    "antgateway": {
-      "js_file": "antgateway/js/antgateway.js",
+    "coap": {
+      "js_file": "coap/js/coap.js",
+      "native_files": [
+        "coap/native/coap.c"
+      ],
+      "init": "InitCoAPNative",
+      "cmakefile": "coap/native/coap.cmake",
       "require": [
         "console"
       ]
     },
-    "antcamera": {
-      "js_file": "antcamera/js/antcamera.js",
+    "lwm2m": {
+      "js_file": "lwm2m/js/lwm2m.js",
+      "require": [
+        "console"
+      ]
+    },
+    "antgateway": {
+      "js_file": "antgateway/js/antgateway.js",
       "require": [
         "console"
       ]

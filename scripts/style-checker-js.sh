@@ -7,6 +7,7 @@ find . \
   -not -path "${ANT_BASE_DIR}/.eslintrc.js" -and \
   -not -path "${ANT_BASE_DIR}/node_modules/*" -and \
   -not -path "${ANT_BASE_DIR}/apps/*" -and \
+  -not -path "${ANT_BASE_DIR}/test/appbench/*" -and \
   -not -path "*.eslintrc*.js" \) \
   | xargs npx eslint
 find ./apps \

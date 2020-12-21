@@ -19,15 +19,13 @@ var console = require('console');
 var settings = {};
 settings.ml = {};
 settings.ml.modelPath = '';
-settings.ml.num_fragments = 12
-settings.ml.target = '';
-
+settings.ml.num_fragments = 12;
 settings.deviceType = 'tx2';
 settings.isH264Enabled = false;
 settings.isSourceFilterEnabled = false;
 settings.isScaleEnabled = true;
 settings.isConvertEnabled = true;
-if(settings.deviceType == "nvidia") {
+if (settings.deviceType == 'nvidia') {
   settings.isConvertEnabled = false;
 }
 settings.videoWidth = 224;
@@ -40,9 +38,10 @@ settings.myPort = 5000;
 
 var onInitialize = function () {
   console.log('onInitialize');
-  var modelUrl = 'http://115.145.178.78:8001/downloads/gateway/mobilenetv1-gateway.tar';
+  var modelUrl =
+    'http://115.145.178.78:8001/downloads/gateway/mobilenetv1-gateway.tar';
   settings.ml.modelPath = ant.ml.downloadModel(modelUrl);
-  if(settings.ml.modelPath === undefined) {
+  if (settings.ml.modelPath === undefined) {
     console.log('Error on downloading model ' + modelUrl);
   }
 };
@@ -50,7 +49,7 @@ var onInitialize = function () {
 var onStart = function () {
   console.log('onStart');
 
-  if(settings.ml.modelPath === undefined) {
+  if (settings.ml.modelPath === undefined) {
     console.log('Cannot find model!');
     return;
   }
@@ -68,14 +67,8 @@ var onStart = function () {
     var subpipe2Elements = [];
 
     // source
-    var source = ant.camera.createCameraElement(settings.deviceType);
+    var source = ant.camera.createV4L2CameraElement('/dev/video1');
     mainpipeElements.push(source);
-
-    if(settings.deviceType == 'nvidia') {
-      converter = ant.stream.createElement('nvvidconv');
-      converter.setProperty("flip-method", 0);
-      elements.push(converter);
-    }
 
     // source filter
     var sourcefilter = ant.stream.createElement('capsfilter');
@@ -139,10 +132,19 @@ var onStart = function () {
     var tensorConverter = ant.stream.createElement('tensor_converter');
     subpipe1Elements.push(tensorConverter);
 
+    var tensorTransform = ant.stream.createElement('tensor_transform');
+    tensorTransform.setProperty('mode', 'typecast');
+    tensorTransform.setProperty('option', 'float32');
+    subpipe1Elements.push(tensorTransform);
+
     // tensor_filter (ml fragment element)
+    var gatewayHost = ant.companion.getCompanionHost();
+    var gatewayAddress = gatewayHost + ':' + 3000;
     var mlFragmentElement = ant.gateway.createImgClsImagenetElement(
-        settings.ml.modelPath,
-        settings.ml.num_fragments, settings.ml.target);
+      settings.ml.modelPath,
+      settings.ml.num_fragments,
+      gatewayAddress
+    );
     subpipe1Elements.push(mlFragmentElement);
 
     var sink = ant.stream.createElement('fakesink');
