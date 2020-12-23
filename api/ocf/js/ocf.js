@@ -18,7 +18,7 @@ var console = require('console');
 var assert = require('assert');
 
 /**
- * ANT OCF API
+ * ANT OCF API's main object. OCF only generates OCF adapter, and the OCF adapter takes charge of the main role of OCF API.
  */
 function OCF() {
   // Interface constants
@@ -95,7 +95,7 @@ gOnewayRequestLists = [
 ];
 
 /**
- * OCF Adapter
+ * OCF Adapter. It manages OCF thread's lifecycle.
  */
 function OCFAdapter() {
   this._mfgName = '';
@@ -612,7 +612,7 @@ function OCFDevice(id, uri, resourceType, name, specVersion, dataModelVersion) {
 }
 
 /**
- * OCF Resource
+ * OCF Resource.
  * @param {object} device OCF device that serves this resource
  * @param {string} name the resource's name
  * @param {string} uri URI of the resource
