@@ -261,7 +261,7 @@ OCFAdapter.prototype.repStartRootObject = function () {
 /**
  * OCFAdapter.repSet
  * @param {String} key
- * @param {[Boolean, Number, String]} value
+ * @param {Boolean|Number|String} value
  * The value is stored in a specific key among OCRepresentations being created by OCF thread.
  * In this function, various types of data including Boolean, Number, and String can be used as value.
  */
@@ -322,7 +322,7 @@ OCFAdapter.prototype.discovery = function (resourceType, discoveryHandler) {
 };
 /**
  * OCFAdapter.discoveryAll
- * @param {Function handler} discoveryHandler Handler function for discovery response
+ * @param {Function} discoveryHandler Handler function for discovery response
  * @returns {Boolean} isSuccess
  * Search all resources regardless of any type on the network.
  */
@@ -490,7 +490,7 @@ OCFAdapter.prototype.get = function (endpoint, uri, userHandler, query, qos) {
  * @param {Function} userHandler
  * @param {String} query
  * @param {Integer} qos
- * @returns
+ * @returns {Boolean} isSuccess
  */
 OCFAdapter.prototype.delete = function (
   endpoint,
