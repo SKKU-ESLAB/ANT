@@ -1,5 +1,6 @@
 # Table of content
 * [Getting Started](Getting-Started.md)
+* [Architecture](Architecture.md)
 
 ## Basic APIs
 * [Runtime API](api/Runtime-API.md)
