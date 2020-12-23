@@ -1,5 +1,6 @@
 {
   "gitbook": "3.2.2",
+  "title": "ANT Framework",
   "root": "./docs",
   "structure": {
     "readme": "intro.md",
