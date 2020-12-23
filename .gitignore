@@ -52,3 +52,6 @@ android-companion/gradlew.bat
 # ANT app
 app0.js
 app1.js
+
+# JSDoc
+_book
