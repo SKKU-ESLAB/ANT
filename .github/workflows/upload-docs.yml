@@ -53,6 +53,7 @@ jobs:
           rm -rf ~/ant-docs/
           git config --local user.email "eslab-ant-docs-bot@skku.edu"
           git config --local user.name "ESLAB ANT Documentation Bot"
+          git add --all
           git commit -m "Update Documentation Page" -a
       - name: Push changes
         uses: ad-m/github-push-action@master
