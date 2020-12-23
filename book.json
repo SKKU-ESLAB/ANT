@@ -1,0 +1,20 @@
+{
+  "gitbook": "3.2.2",
+  "root": "./docs",
+  "structure": {
+    "readme": "intro.md",
+    "summary": "toc.md"
+  },
+  "plugins": ["insert-logo", "page-toc"],
+  "pluginsConfig": {
+    "insert-logo": {
+      "url": "https://raw.githubusercontent.com/SKKU-ESLAB/ANT/master/docs/logo.png",
+      "style": "background: none; height: 150px;"
+    },
+    "page-toc": {
+      "selector": ".markdown-section h1, .markdown-section h2, .markdown-section h3, .markdown-section h4",
+      "position": "before-first",
+      "showByDefault": true
+    }
+  }
+}
