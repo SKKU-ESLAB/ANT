@@ -1,8 +1,11 @@
 # ANT Framework
 
+ANT is AI-based Networked Things framework. You can easily implement your own IoT devices and applications with the ANT framework.
+
 This is the documentation page of ANT framework. This document mainly covers ANT Lite.
 
 * [Getting Started](Getting-Started.md)
+* [Architecture](Architecture.md)
 * [License](License.md)
 * [Release Note](Release-Note.md)
 

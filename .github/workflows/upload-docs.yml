@@ -42,6 +42,20 @@ jobs:
       - name: Run documentations
         run: |
           npm run docs:prepare
-          npm run docs:serve
-          git clone https://github.com/SKKU-ESLAB/ANT /ant-docs/ -b gh-pages
-          cp -r ./_book /ant-docs/
+          npm run docs:build
+          mkdir -p ~/ant-docs/
+          cp -r ./_book/* ~/ant-docs/
+          git remote -v
+          git fetch origin
+          git checkout origin/gh-pages -b gh-pages
+          rm -rf ./*
+          cp -r ~/ant-docs/* ./
+          rm -rf ~/ant-docs/
+          git config --local user.email "eslab-ant-docs-bot@skku.edu"
+          git config --local user.name "ESLAB ANT Documentation Bot"
+          git commit -m "Update Documentation Page" -a
+      - name: Push changes
+        uses: ad-m/github-push-action@master
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          branch: gh-pages
