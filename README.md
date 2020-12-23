@@ -3,8 +3,9 @@
 # ANT: AI-based Networked Things Framework
 <img src="https://raw.githubusercontent.com/SKKU-ESLAB/ANT/master/docs/logo.png" width="30%" align="right" />
 
+* [Documents](https://SKKU-ESLAB.github.io/ANT)
+
 ## Quick Start
-ANT is being migrated to ANT lite, so its current build process is temporary.
 
 ### How to Get the Source Code
 
