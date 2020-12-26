@@ -47,6 +47,13 @@ then
   ${SUDO} apt-add-repository -y ppa:nnstreamer
   ${SUDO} apt-get update
   ${SUDO} apt-get install -y nnstreamer-python3 nnstreamer-dev
+
+  # nodejs
+  echo "** Install node.js"
+  ${SUDO} apt-get install -y nodejs-dev node-gyp libssl1.0-dev
+  ${SUDO} apt-get install -y npm
+  ${SUDO} npm install -g n
+  ${SUDO} n 10
 fi
   
 if [[ ! $2 = "--only-packages" ]];
