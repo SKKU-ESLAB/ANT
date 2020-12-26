@@ -13,6 +13,9 @@
  * limitations under the License.
  */
 
+// TODO: (resource server) start app
+// TODO: (resource server) stop app
+
 var console = require('console');
 var http = require('http');
 var fs = require('fs');
