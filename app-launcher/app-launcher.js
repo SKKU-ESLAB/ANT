@@ -17,6 +17,9 @@ var http = require('http');
 var fs = require('fs');
 var os = require('os');
 
+var RESULT_SUCCESS = 'Success';
+var RESULT_FAILED = 'Failed';
+
 /**
  * App launcher
  *
@@ -39,96 +42,128 @@ var Config = function () {
 };
 var gConfig = new Config();
 
-function _getIPAddress(nameHead) {
+var _getIPAddress = function (nameHead) {
   var networkInterfaces = os.networkInterfaces();
   for (var ni in networkInterfaces) {
     if (ni.startsWith(nameHead)) {
-      return networkInterfaces[ni];
+      return networkInterfaces[ni][0].address;
     }
   }
   return undefined;
-}
+};
 
-// TODO: transform into HTTP request map
+/**
+ * Event handler invoked when an alive request comes from the companion
+ */
+var onAliveRequest = function (request, data) {
+  var results = {message: 'Alive', code: 200};
+  return results;
+};
+
+var _parseUrl = function (url) {
+  var urlTokens = url.split('/');
+  var uniqueTokens = [];
+  for (var i = 0; i < urlTokens.length; i++) {
+    var token = urlTokens[i];
+    if (token.length > 0) {
+      uniqueTokens.push(token);
+    }
+  }
+  return uniqueTokens;
+};
+
+var _getAntRootDir = function () {
+  var antRootDir = process.env['ANT_ROOT'];
+  if (antRootDir.length == 0) {
+    return undefined;
+  }
+  return antRootDir;
+};
+
+/**
+ * Event handler invoked when a get app editor page request comes from
+ * the companion
+ */
+var onGetControlpadPage = function (request, data) {
+  var results = {message: RESULT_FAILED, code: 404};
+
+  var urlTokens = _parseUrl(request.url);
+  // urlTokens.splice(0, 1);
+  var path = _getAntRootDir() + '/controlpad';
+  if (urlTokens.length == 0) {
+    path += '/index.html';
+
+    if (fs.existsSync(path)) {
+      var originalIndexHtml = fs.readFileSync(path).toString();
+      var jQueryTagEndIdx =
+        originalIndexHtml.indexOf('</script>') + '</script>'.length;
+      var ipAddress = _getIPAddress(gConfig.defaultInterfaceName);
+      var ipAddressSetting =
+        '\n<script>$(document).ready(function () {\n' +
+        '$("#targetAddressInput").val("' +
+        ipAddress +
+        ':' +
+        gConfig.defaultPort +
+        '");\n});</script>\n';
+      var indexHtml =
+        originalIndexHtml.slice(0, jQueryTagEndIdx) +
+        ipAddressSetting +
+        originalIndexHtml.slice(jQueryTagEndIdx + 1);
+      results.message = indexHtml;
+      results.code = 200;
+    }
+  } else {
+    for (var i = 0; i < urlTokens.length; i++) {
+      path += '/' + urlTokens[i];
+    }
+    console.log('read: ' + path);
+    if (fs.existsSync(path)) {
+      var originalIndexHtml = fs.readFileSync(path);
+      results.message = originalIndexHtml;
+      results.code = 200;
+    }
+  }
+  return results;
+};
+
+/**
+ * HTTP request entries
+ */
+var gHttpEntries = [
+  {u: '/', m: 'GET', f: onGetControlpadPage},
+  {u: '/app-editor', m: 'GET', f: onGetControlpadPage},
+  {u: '/controlpad', m: 'GET', f: onGetControlpadPage},
+  {u: '/alive', m: 'GET', f: onAliveRequest}
+];
+// {u: '/runtime/currentApp', m: 'GET', f: onGetAppInfo},
+// {u: '/runtime/currentApp', m: 'POST', f: onInstallApp},
+// {u: '/runtime/currentApp', m: 'DELETE', f: onRemoveApp},
+// {u: '/runtime/currentApp/command', m: 'POST', f: onAppCommand},
+// {u: '/runtime/currentApp/code', m: 'GET', f: onGetAppCode},
+// {u: '/runtime/currentApp/state', m: 'GET', f: onGetAppState},
+// {u: '/runtime/companionAddress', m: 'POST', f: onSetCompanionAddress},
+// {u: '/runtime/companion', m: 'POST', f: onReceiveMessageFromCompanion}
 
 var _onHTTPRequest = function (request, response, data) {
   response.setHeader('Content-Type', 'text/html');
-  var urlTokens = parseUrl(request.url);
-  var results = {message: 'Not Found Entry', code: 404};
+  var responseParams = {message: 'Entry not found', code: 404};
+  var entryFound = false;
+  for (var i in gHttpEntries) {
+    var entry = gHttpEntries[i];
+    var urlRegExp = new RegExp(entry.u);
 
-  if (urlTokens.length == 0 || urlTokens[0] == 'app-editor') {
-    // "/" or "/app-editor"
-    if (request.method == 'GET') {
-      // GET "/" or "/app-editor": Return app editor page
-      results = onGetAppEditorPage(request, data);
-    }
-  } else if (urlTokens[0] == 'alive') {
-    // "/alive"
-    if (request.method == 'GET') {
-      // GET "/alive": Alive message
-      results = onAliveRequest(request, data);
-    }
-  } else if (urlTokens[0] == 'runtime') {
-    // "/runtime*"
-    if (urlTokens.length == 1) {
-      // "/runtime": Not found
-    } else if (urlTokens[1] == 'currentApp') {
-      // "/runtime/currentApp*"
-      if (urlTokens.length == 2) {
-        // "/runtime/currentApp"
-        if (request.method == 'GET') {
-          // GET "/runtime/currentApp"
-          results = onGetAppInfo(request, data);
-        } else if (request.method == 'POST') {
-          // POST "/runtime/currentApp"
-          results = onInstallApp(request, data);
-        } else if (request.method == 'DELETE') {
-          // DELETE "/runtime/currentApp"
-          results = onRemoveApp(request, data);
-        }
-      } else if (urlTokens[2] == 'command') {
-        // "/runtime/currentApp/command"
-        if (request.method == 'POST') {
-          // POST "/runtime/currentApp/command"
-          results = onAppCommand(request, data);
-        }
-      } else if (urlTokens[2] == 'code') {
-        // "/runtime/currentApp/code"
-        if (request.method == 'GET') {
-          // GET "/runtime/currentApp/code"
-          results = onGetAppCode(request, data, false);
-        }
-      } else if (urlTokens[2] == 'codeInHtml') {
-        // "/runtime/currentApp/code"
-        if (request.method == 'GET') {
-          // GET "/runtime/currentApp/code"
-          results = onGetAppCode(request, data, true);
-        }
-      } else if (urlTokens[2] == 'state') {
-        // "/runtime/currentApp/state"
-        if (request.method == 'GET') {
-          // GET "/runtime/currentApp/state"
-          results = onGetAppState(request, data);
-        }
-      } else if (urlTokens[2] == 'companionAddress') {
-        // "/runtime/currentApp/companionAddress"
-        if (request.method == 'POST') {
-          // POST "/runtime/currentApp/companionAddress"
-          results = onSetCompanionAddress(request, data);
-        }
-      } else if (urlTokens[2] == 'companion') {
-        // "/runtime/currentApp/companion"
-        if (request.method == 'POST') {
-          // POST "/runtime/currentApp/companion"
-          results = onReceiveMessageFromCompanion(request, data);
-        }
-      }
+    if (entry.u == request.url) {
+      responseParams = entry.f(request, data);
+      entryFound = true;
+      break;
     }
   }
-
-  response.setHeader('Content-Length', results.message.length);
-  response.writeHead(results.code);
-  response.write(results.message);
+  if (!entryFound) {
+    responseParams = onGetControlpadPage(request, data);
+  }
+  response.setHeader('Content-Length', responseParams.message.length);
+  response.writeHead(responseParams.code);
+  response.write(responseParams.message);
   response.end();
 };
 
@@ -137,7 +172,7 @@ var _onHTTPRequest = function (request, response, data) {
  * @param {object} request request object sent from the companion
  * @param {object} response response object that will be sent to the companion
  */
-function onHTTPRequest(request, response) {
+var onHTTPRequest = function (request, response) {
   if (gConfig.showHTTPRequestPath) {
     console.log('Request for path: ' + request.url);
   }
@@ -153,12 +188,12 @@ function onHTTPRequest(request, response) {
     }
     _onHTTPRequest(request, response, body);
   });
-}
+};
 
 /**
  * App launcher's main loop
  */
-function mainLoop() {
+var mainLoop = function () {
   console.log('ANT app launcher daemon start');
 
   var server = http.createServer();
@@ -173,6 +208,6 @@ function mainLoop() {
         gConfig.defaultPort
     );
   });
-}
+};
 
 mainLoop();

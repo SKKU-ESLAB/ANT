@@ -1,0 +1,204 @@
+<html>
+  <head>
+    <title>ANT Controlpad</title>
+    <meta charset="utf-8" />
+
+    <!-- jQuery -->
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
+
+    <!-- Material Lite -->
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/icon?family=Material+Icons"
+    />
+    <link
+      rel="stylesheet"
+      href="https://code.getmdl.io/1.3.0/material.indigo-pink.min.css"
+    />
+    <link rel="stylesheet" href="styles.css" />
+    <script defer src="https://code.getmdl.io/1.3.0/material.min.js"></script>
+
+    <!-- Monaco editor -->
+    <script src="./vs/loader.js"></script>
+    <script>
+      var gContentViews = {};
+
+      function getDashboardContentView() {
+        if(gContentViews.dashboard === undefined) {
+          var dashboard_card = document.createElement('div');
+          dashboard_card.setAttribute('class', 'mdl-card mdl-shadow--2dp');
+          dashboard_card.setAttribute('style', 'width: 512px');
+          dashboard_card.innerHTML = 'App List';
+          gContentViews.dashboard = dashboard_card;
+        }
+        return gContentViews.dashboard;
+      }
+
+      function getCodeEditorContentView() {
+        if(gContentViews.codeEditor === undefined) {
+          var code_editor = document.createElement('div');
+          code_editor.setAttribute('id', 'code_editor');
+          code_editor.setAttribute('style', 'width: 800px; height: 600px; border: 1px solid grey');
+
+          require.config({paths: {vs: './vs'}});
+          require(['vs/editor/editor.main'], function () {
+            var editor = monaco.editor.create(
+              document.getElementById('code_editor'),
+              {
+                value: ['// Input your code here!!!'].join('\n'),
+                language: 'javascript'
+              }
+            );
+          });
+          gContentViews.codeEditor = code_editor;
+        }
+        return gContentViews.codeEditor;
+      }
+
+      var nav_items = [
+        {id: 'navitem_dashboard', title: 'Dashboard', getContentView: getDashboardContentView},
+        {id: 'navitem_codeeditor', title: 'Code Editor', getContentView: getCodeEditorContentView}
+      ];
+      
+      function updateHeaderTitle(title) {
+        var titleText = "ANT Controlpad: " + title;
+        $('#header_title').html(titleText);
+      }
+      function updateContentView(contentView) {
+        $('#content_root').html(contentView);
+      }
+
+      var ge;
+      function initializeNavItemCallbacks() {
+        for(var i in nav_items) {
+          var nav_item = nav_items[i];
+          var nav_item_element = $('#' + nav_item.id);
+          nav_item_element.click(function(e) {
+            var _nav_item = undefined;
+            for(var j in nav_items) {
+              if(nav_items[j].id == e.target.id) {
+                _nav_item = nav_items[j];
+                break;
+              }
+            }
+            if(_nav_item !== undefined) {
+              updateHeaderTitle(_nav_item.title);
+              updateContentView(_nav_item.getContentView());
+            }
+          });
+        }
+      }
+
+      function showInitialNavItem() {
+        var nav_item = nav_items[0];
+        updateHeaderTitle(nav_item.title);
+        updateContentView(nav_item.getContentView());
+      }
+
+      function onInitialize() {
+        initializeNavItemCallbacks();
+        showInitialNavItem();
+      }
+
+      $(document).ready(onInitialize);
+    </script>
+  </head>
+  <body>
+    <div
+      class="demo-layout mdl-layout mdl-js-layout mdl-layout--fixed-drawer mdl-layout--fixed-header"
+    >
+      <header
+        class="demo-header mdl-layout__header mdl-color--grey-100 mdl-color-text--grey-600"
+      >
+        <div class="mdl-layout__header-row">
+          <span id="header_title" class="mdl-layout-title"></span>
+          <div class="mdl-layout-spacer"></div>
+          <div class="mdl-textfield mdl-js-textfield mdl-textfield--expandable">
+            <label
+              class="mdl-button mdl-js-button mdl-button--icon"
+              for="search"
+            >
+              <i class="material-icons">search</i>
+            </label>
+            <div class="mdl-textfield__expandable-holder">
+              <input class="mdl-textfield__input" type="text" id="search" />
+              <label class="mdl-textfield__label" for="search"
+                >Enter your query...</label
+              >
+            </div>
+          </div>
+          <button
+            class="mdl-button mdl-js-button mdl-js-ripple-effect mdl-button--icon"
+            id="hdrbtn"
+          >
+            <i class="material-icons">more_vert</i>
+          </button>
+          <ul
+            class="mdl-menu mdl-js-menu mdl-js-ripple-effect mdl-menu--bottom-right"
+            for="hdrbtn"
+          >
+            <li class="mdl-menu__item">About</li>
+            <li class="mdl-menu__item">Contact</li>
+            <li class="mdl-menu__item">Legal information</li>
+          </ul>
+        </div>
+      </header>
+      <div
+        class="demo-drawer mdl-layout__drawer mdl-color--blue-grey-900 mdl-color-text--blue-grey-50"
+      >
+        <header class="demo-drawer-header">
+          <img
+            src="images/app_icon.png"
+            class="demo-avatar"
+            style="width: 50px"
+          />
+          <div class="demo-avatar-dropdown">
+            <span>hello@example.com</span>
+            <div class="mdl-layout-spacer"></div>
+            <button
+              id="accbtn"
+              class="mdl-button mdl-js-button mdl-js-ripple-effect mdl-button--icon"
+            >
+              <i class="material-icons" role="presentation">arrow_drop_down</i>
+              <span class="visuallyhidden">Accounts</span>
+            </button>
+            <ul
+              class="mdl-menu mdl-menu--bottom-right mdl-js-menu mdl-js-ripple-effect"
+              for="accbtn"
+            >
+              <li class="mdl-menu__item">hello@example.com</li>
+              <li class="mdl-menu__item">info@example.com</li>
+              <li class="mdl-menu__item">
+                <i class="material-icons">add</i>Add another account...
+              </li>
+            </ul>
+          </div>
+        </header>
+        <nav class="demo-navigation mdl-navigation mdl-color--blue-grey-800">
+          <a id="navitem_dashboard" class="mdl-navigation__link" 
+            ><i
+              class="mdl-color-text--blue-grey-400 material-icons"
+              role="presentation"
+              >home</i
+            >Dashboard</a
+          >
+          <a id="navitem_codeeditor" class="mdl-navigation__link" 
+            ><i
+              class="mdl-color-text--blue-grey-400 material-icons"
+              role="presentation"
+              >inbox</i
+            >Code Editor</a
+          >
+        </nav>
+      </div>
+      <main class="mdl-layout__content mdl-color--grey-100">
+        <div id="content_root" class="mdl-grid demo-content">
+          <!-- <div
+            id="code_editor"
+            style="width: 800px; height: 600px; border: 1px solid grey"
+          ></div> -->
+        </div>
+      </main>
+    </div>
+  </body>
+</html>
