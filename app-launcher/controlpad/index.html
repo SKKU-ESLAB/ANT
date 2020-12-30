@@ -20,88 +20,9 @@
 
     <!-- Monaco editor -->
     <script src="./vs/loader.js"></script>
-    <script>
-      var gContentViews = {};
 
-      function getDashboardContentView() {
-        if(gContentViews.dashboard === undefined) {
-          var dashboard_card = document.createElement('div');
-          dashboard_card.setAttribute('class', 'mdl-card mdl-shadow--2dp');
-          dashboard_card.setAttribute('style', 'width: 512px');
-          dashboard_card.innerHTML = 'App List';
-          gContentViews.dashboard = dashboard_card;
-        }
-        return gContentViews.dashboard;
-      }
-
-      function getCodeEditorContentView() {
-        if(gContentViews.codeEditor === undefined) {
-          var code_editor = document.createElement('div');
-          code_editor.setAttribute('id', 'code_editor');
-          code_editor.setAttribute('style', 'width: 800px; height: 600px; border: 1px solid grey');
-
-          require.config({paths: {vs: './vs'}});
-          require(['vs/editor/editor.main'], function () {
-            var editor = monaco.editor.create(
-              document.getElementById('code_editor'),
-              {
-                value: ['// Input your code here!!!'].join('\n'),
-                language: 'javascript'
-              }
-            );
-          });
-          gContentViews.codeEditor = code_editor;
-        }
-        return gContentViews.codeEditor;
-      }
-
-      var nav_items = [
-        {id: 'navitem_dashboard', title: 'Dashboard', getContentView: getDashboardContentView},
-        {id: 'navitem_codeeditor', title: 'Code Editor', getContentView: getCodeEditorContentView}
-      ];
-      
-      function updateHeaderTitle(title) {
-        var titleText = "ANT Controlpad: " + title;
-        $('#header_title').html(titleText);
-      }
-      function updateContentView(contentView) {
-        $('#content_root').html(contentView);
-      }
-
-      var ge;
-      function initializeNavItemCallbacks() {
-        for(var i in nav_items) {
-          var nav_item = nav_items[i];
-          var nav_item_element = $('#' + nav_item.id);
-          nav_item_element.click(function(e) {
-            var _nav_item = undefined;
-            for(var j in nav_items) {
-              if(nav_items[j].id == e.target.id) {
-                _nav_item = nav_items[j];
-                break;
-              }
-            }
-            if(_nav_item !== undefined) {
-              updateHeaderTitle(_nav_item.title);
-              updateContentView(_nav_item.getContentView());
-            }
-          });
-        }
-      }
-
-      function showInitialNavItem() {
-        var nav_item = nav_items[0];
-        updateHeaderTitle(nav_item.title);
-        updateContentView(nav_item.getContentView());
-      }
-
-      function onInitialize() {
-        initializeNavItemCallbacks();
-        showInitialNavItem();
-      }
-
-      $(document).ready(onInitialize);
-    </script>
+    <!-- Main -->
+    <script src="./ui-controller.js"></script>
   </head>
   <body>
     <div
@@ -175,14 +96,14 @@
           </div>
         </header>
         <nav class="demo-navigation mdl-navigation mdl-color--blue-grey-800">
-          <a id="navitem_dashboard" class="mdl-navigation__link" 
+          <a id="navitem_dashboard" class="mdl-navigation__link" href="#"
             ><i
               class="mdl-color-text--blue-grey-400 material-icons"
               role="presentation"
               >home</i
             >Dashboard</a
           >
-          <a id="navitem_codeeditor" class="mdl-navigation__link" 
+          <a id="navitem_codeeditor" class="mdl-navigation__link" href="#"
             ><i
               class="mdl-color-text--blue-grey-400 material-icons"
               role="presentation"
