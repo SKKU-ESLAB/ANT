@@ -144,13 +144,22 @@ var gHttpEntries = [
 // {u: '/runtime/companionAddress', m: 'POST', f: onSetCompanionAddress},
 // {u: '/runtime/companion', m: 'POST', f: onReceiveMessageFromCompanion}
 
+var getContentType = function (url) {
+  if (url.endsWith('.js')) {
+    return 'text/javascript';
+  } else if (url.endsWith('.css')) {
+    return 'text/css';
+  } else {
+    return 'text/html';
+  }
+};
+
 var _onHTTPRequest = function (request, response, data) {
-  response.setHeader('Content-Type', 'text/html');
+  response.setHeader('Content-Type', getContentType(request.url));
   var responseParams = {message: 'Entry not found', code: 404};
   var entryFound = false;
   for (var i in gHttpEntries) {
     var entry = gHttpEntries[i];
-    var urlRegExp = new RegExp(entry.u);
 
     if (entry.u == request.url) {
       responseParams = entry.f(request, data);
