@@ -26,6 +26,7 @@ function updateForNavItem(navItem) {
 
   // Update content view
   $('#content_root').html(navItem.view.getDom());
+  navItem.view.onAddedDom();
 }
 
 function onClickNavItem(e) {
