@@ -1,6 +1,7 @@
-function ButtonView(id, text) {
+function ButtonView(id, iconType, text) {
   // Setting attributes
   this.mId = id;
+  this.mIconType = iconType;
   this.mText = text;
 
   this.mRootDom = document.createElement('button');
@@ -8,8 +9,28 @@ function ButtonView(id, text) {
     'class',
     'mdl-button mdl-js-button mdl-button--raised mdl-js-ripple-effect mdl-button--accent'
   );
-  this.mRootDom.innerHTML = text;
+  this.mRootDom.setAttribute('style', 'margin-left:5px; margin-right:5px;');
+  if (this.mIconType !== undefined) {
+    var icon = document.createElement('i');
+    icon.setAttribute('class', 'material-icons');
+    icon.setAttribute('style', 'margin-right:5px;');
+    icon.innerHTML = this.mIconType;
+    this.mRootDom.append(icon);
+  }
+  this.mRootDom.append(text);
 }
+
+ButtonView.prototype.append = function (childView) {
+  if (childView.getDom !== undefined) {
+    this.mRootDom.append(childView.getDom());
+  } else {
+    this.mRootDom.append(childView);
+  }
+};
+
+ButtonView.prototype.click = function (onClickHandler) {
+  this.mRootDom.click(onClickHandler);
+};
 
 ButtonView.prototype.getDom = function () {
   return this.mRootDom;
@@ -89,7 +110,7 @@ CardView.prototype.append = function (childView) {
 CardView.prototype.enableListView = function () {
   this.mListView = document.createElement('ul');
   this.mListView.setAttribute('id', this.mId + '--list');
-  this.mListView.setAttribute('class', 'demo-list-icon mdl-list');
+  this.mListView.setAttribute('class', 'demo-list-iconType mdl-list');
   this.append(this.mListView);
 };
 
@@ -100,12 +121,14 @@ CardView.prototype.addListItem = function (iconType, text) {
   listItem.setAttribute('id', this.mId + '--list-' + gNextListItemId++);
   listItem.setAttribute('class', 'mdl-list__item');
   {
-    var listItemContent = document.createElement('span');
+    var listItemContent = document.createElement('a');
     listItemContent.setAttribute('class', 'mdl-list__item-primary-content');
+    listItemContent.setAttribute('href', '#');
     listItem.append(listItemContent);
     {
       var icon = document.createElement('i');
-      icon.setAttribute('class', 'material-icons mdl-list__item-icon');
+      icon.setAttribute('class', 'material-icons mdl-list__item-iconType');
+      icon.setAttribute('style', 'margin-right:5px;');
       icon.innerHTML = iconType;
       listItemContent.append(icon);
       listItemContent.append(text);

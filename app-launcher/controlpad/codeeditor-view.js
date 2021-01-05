@@ -59,8 +59,14 @@ function CommandBar(id, height, margin = 10) {
     'height: ' + this.mHeight + 'px;' + ' margin: ' + this.mMargin + 'px;'
   );
 
-  this.mInstallButton = new ButtonView('install-button', 'Install');
-  this.append(this.mInstallButton);
+  this.mSaveButton = new ButtonView('save-button', 'save', 'Save');
+  this.append(this.mSaveButton);
+
+  this.mRunButton = new ButtonView('run-button', 'play_arrow', 'run');
+  this.append(this.mRunButton);
+
+  this.mRemoveButton = new ButtonView('remove-button', 'delete', 'remove');
+  this.append(this.mRemoveButton);
 }
 
 CommandBar.prototype.append = function (childView) {
