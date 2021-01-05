@@ -1,7 +1,7 @@
 function DashboardView() {
   this.mRootGrid = new CardGrid();
 
-  this.mAppListCard = new CardView('app-list-card', 'Applications', 4);
+  this.mAppListCard = new CardView('app-list-card', 'Applications', 6);
   this.mAppListCard.enableListView();
   {
     this.mAppListCard.addListItem('pause', 'image-classification.js');
@@ -10,7 +10,7 @@ function DashboardView() {
   }
   this.append(this.mAppListCard);
 
-  this.mDeviceStatusCard = new CardView('device-status-card', 'Devices', 8);
+  this.mDeviceStatusCard = new CardView('device-status-card', 'Devices', 6);
   this.mDeviceStatusCard.enableListView();
   {
     this.mDeviceStatusCard.addListItem(
@@ -22,7 +22,7 @@ function DashboardView() {
   }
   this.append(this.mDeviceStatusCard);
 
-  this.mSensorListCard = new CardView('sensor-list-card', 'Sensors', 4);
+  this.mSensorListCard = new CardView('sensor-list-card', 'Sensors', 6);
   this.mSensorListCard.enableListView();
   {
     this.mSensorListCard.addListItem('linked_camera', '/gateway/camera');

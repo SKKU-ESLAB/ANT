@@ -1,8 +1,11 @@
 /* UI config area start */
 var initialCode = '// Input your code here!!!';
 
+var gANTClient = new ANTClient();
+
 var gDashboard = new DashboardView();
 var gCodeEditor = new CodeEditorView(initialCode);
+var gConsole = undefined;
 
 var gNavItems = [
   {
@@ -14,6 +17,11 @@ var gNavItems = [
     id: 'navitem_codeeditor',
     title: 'Code Editor',
     view: gCodeEditor
+  },
+  {
+    id: 'navitem_console',
+    title: 'Console',
+    view: gConsole
   }
 ];
 
