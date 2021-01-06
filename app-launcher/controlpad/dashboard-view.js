@@ -10,9 +10,10 @@ function DashboardView() {
   }
   this.append(this.mAppListCard);
 
-  this.mDeviceStatusCard = new CardView('device-status-card', 'Devices', 6);
+  this.mDeviceStatusCard = new CardView('device-status-card', 'Device', 6);
   this.mDeviceStatusCard.enableListView();
   {
+    this.mDeviceStatusCard.addListItem('memory', 'Status: Connected');
     this.mDeviceStatusCard.addListItem(
       'memory',
       'Device Type: Nvidia Jetson TX2'

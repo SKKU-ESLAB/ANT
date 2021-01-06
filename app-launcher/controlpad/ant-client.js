@@ -1,4 +1,11 @@
-function sendHTTPRequest(url, method, data, responseHandler) {
+function ANTClient() {}
+
+ANTClient.prototype._sendHTTPRequest = function (
+  url,
+  method,
+  data,
+  responseHandler
+) {
   var xhr = new XMLHttpRequest();
   xhr.open(method, url, true);
   xhr.setRequestHeader('Content-Type', 'application/json');
@@ -15,21 +22,22 @@ function sendHTTPRequest(url, method, data, responseHandler) {
   } catch (e) {
     changeStatusLabel(e.toString());
   }
-}
-
-function ANTClient() {}
+};
 
 ANTClient.prototype.getAppList = function () {
   var url = 'http://' + getTargetUrl() + '/runtime/currentApp/code';
   var data = $('#appCode').val();
-  sendHTTPRequest(url, 'GET', data, function (responseCode, responseText) {
-    if (responseCode == 200) {
-      setAppCode(responseText);
+  this._sendHTTPRequest(
+    url,
+    'GET',
+    data,
+    function (responseCode, responseText) {
+      if (responseCode == 200) {
+        setAppCode(responseText);
+      }
+      handler(responseCode, responseText);
     }
-    handler(responseCode, responseText);
-  });
+  );
 };
 
-ANTClient.prototype.installApp = function () {
-  
-};
+ANTClient.prototype.installApp = function () {};
