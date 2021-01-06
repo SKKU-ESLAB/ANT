@@ -16,6 +16,10 @@
 var http = require('http');
 var fs = require('fs');
 var os = require('os');
+var path = require('path');
+
+var AppManager = require('./app-manager.js');
+var Util = require('./util.js');
 
 var RESULT_SUCCESS = 'Success';
 var RESULT_FAILED = 'Failed';
@@ -27,20 +31,17 @@ var RESULT_FAILED = 'Failed';
  * applications.
  */
 
-// TODO: (HTTP server) app editor file hosting
-// TODO: (HTTP server) get app list
-// TODO: (HTTP server, resource client) launch app -> start app
-// TODO: (HTTP server, resource client) stop app -> terminate app
-// TODO: (Web socket server, pipe) app's output
-
-/* App Launcher Config START */
+/* Config START */
 var Config = function () {
   this.showHTTPRequestPath = true;
   this.showHTTPRequestData = false;
   this.defaultInterfaceName = 'eth0';
   this.defaultPort = 8001;
+  this.maxStdoutBufferLength = 100;
+  this.maxStderrBufferLength = 100;
 };
 var gConfig = new Config();
+/* Config END */
 
 var _getIPAddress = function (nameHead) {
   var networkInterfaces = os.networkInterfaces();
@@ -72,12 +73,22 @@ var _parseUrl = function (url) {
   return uniqueTokens;
 };
 
-var _getAntRootDir = function () {
-  var antRootDir = process.env['ANT_ROOT'];
-  if (antRootDir.length == 0) {
-    return undefined;
-  }
-  return antRootDir;
+var _addTargetAddressScript = function (originalHtml) {
+  var jQueryTagEndIdx = originalHtml.indexOf('</script>') + '</script>'.length;
+  var ipAddress = _getIPAddress(gConfig.defaultInterfaceName);
+  var portNum = gConfig.defaultPort;
+  var ipAddressSetting =
+    '\n<script>$(document).ready(function () {\n' +
+    '$("#targetAddressInput").val("' +
+    ipAddress +
+    ':' +
+    portNum +
+    '");\n});</script>\n';
+  var html =
+    originalHtml.slice(0, jQueryTagEndIdx) +
+    ipAddressSetting +
+    originalHtml.slice(jQueryTagEndIdx + 1);
+  return html;
 };
 
 /**
@@ -88,38 +99,23 @@ var onGetControlpadPage = function (request, data) {
   var results = {message: RESULT_FAILED, code: 404};
 
   var urlTokens = _parseUrl(request.url);
-  // urlTokens.splice(0, 1);
-  var path = _getAntRootDir() + '/controlpad';
+  var controlpadDir = path.join(Util.getAntRootDir(), 'controlpad');
   if (urlTokens.length == 0) {
-    path += '/index.html';
+    var filePath = path.join(controlpadDir, '/index.html');
 
-    if (fs.existsSync(path)) {
-      var originalIndexHtml = fs.readFileSync(path).toString();
-      var jQueryTagEndIdx =
-        originalIndexHtml.indexOf('</script>') + '</script>'.length;
-      var ipAddress = _getIPAddress(gConfig.defaultInterfaceName);
-      var ipAddressSetting =
-        '\n<script>$(document).ready(function () {\n' +
-        '$("#targetAddressInput").val("' +
-        ipAddress +
-        ':' +
-        gConfig.defaultPort +
-        '");\n});</script>\n';
-      var indexHtml =
-        originalIndexHtml.slice(0, jQueryTagEndIdx) +
-        ipAddressSetting +
-        originalIndexHtml.slice(jQueryTagEndIdx + 1);
-      results.message = indexHtml;
+    if (fs.existsSync(filePath)) {
+      var originalHtml = fs.readFileSync(filePath).toString();
+      results.message = _addTargetAddressScript(originalHtml);
       results.code = 200;
     }
   } else {
+    var filePath = controlpadDir;
     for (var i = 0; i < urlTokens.length; i++) {
-      path += '/' + urlTokens[i];
+      filePath = path.join(filePath, urlTokens[i]);
     }
-    console.log('read: ' + path);
-    if (fs.existsSync(path)) {
-      var originalIndexHtml = fs.readFileSync(path);
-      results.message = originalIndexHtml;
+    console.log('read: ' + filePath);
+    if (fs.existsSync(filePath)) {
+      results.message = fs.readFileSync(filePath);
       results.code = 200;
     }
   }
@@ -133,18 +129,16 @@ var gHttpEntries = [
   {u: '/', m: 'GET', f: onGetControlpadPage},
   {u: '/app-editor', m: 'GET', f: onGetControlpadPage},
   {u: '/controlpad', m: 'GET', f: onGetControlpadPage},
-  {u: '/alive', m: 'GET', f: onAliveRequest}
+  {u: '/alive', m: 'GET', f: onAliveRequest},
+  {u: '/companionAddress', m: 'POST', f: onSetCompanionAddress},
+  {u: '/apps', m: 'GET', f: onGetAppList}
 ];
-// {u: '/runtime/currentApp', m: 'GET', f: onGetAppInfo},
-// {u: '/runtime/currentApp', m: 'POST', f: onInstallApp},
-// {u: '/runtime/currentApp', m: 'DELETE', f: onRemoveApp},
-// {u: '/runtime/currentApp/command', m: 'POST', f: onAppCommand},
-// {u: '/runtime/currentApp/code', m: 'GET', f: onGetAppCode},
-// {u: '/runtime/currentApp/state', m: 'GET', f: onGetAppState},
-// {u: '/runtime/companionAddress', m: 'POST', f: onSetCompanionAddress},
-// {u: '/runtime/companion', m: 'POST', f: onReceiveMessageFromCompanion}
 
-var getContentType = function (url) {
+function HTTPServer() {
+  this.mEntries = [];
+}
+
+HTTPServer.prototype._getContentType = function (url) {
   if (url.endsWith('.js')) {
     return 'text/javascript';
   } else if (url.endsWith('.css')) {
@@ -154,8 +148,8 @@ var getContentType = function (url) {
   }
 };
 
-var _onHTTPRequest = function (request, response, data) {
-  response.setHeader('Content-Type', getContentType(request.url));
+HTTPServer.prototype._onHTTPRequest = function (request, response, data) {
+  response.setHeader('Content-Type', this._getContentType(request.url));
   var responseParams = {message: 'Entry not found', code: 404};
   var entryFound = false;
   for (var i in gHttpEntries) {
@@ -202,12 +196,16 @@ var onHTTPRequest = function (request, response) {
 /**
  * App launcher's main loop
  */
+var gAppManager = undefined;
 var mainLoop = function () {
   console.log('ANT app launcher daemon start');
 
+  // Initialize app manager
+  gAppManager = new AppManager();
+
+  // Initialize and run HTTP server
   var server = http.createServer();
   server.on('request', onHTTPRequest);
-
   server.listen(gConfig.defaultPort, function () {
     var ipAddress = _getIPAddress(gConfig.defaultInterfaceName);
     console.log(
