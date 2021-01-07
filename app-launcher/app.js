@@ -16,6 +16,12 @@
 var childProcess = require('child_process');
 var net = require('net');
 
+var AppConfig = function () {
+  this.maxStdoutBufferLength = 100;
+  this.maxStderrBufferLength = 100;
+};
+var gAppConfig = new AppConfig();
+
 var AppState = Object.freeze({
   Inactive: 0,
   Launching: 1,
@@ -114,14 +120,14 @@ App.prototype.launch = function () {
   this.mProcess.stdout.on('data', function (data) {
     // Handler on stdout event
     self.mStdoutBuffer.push(data);
-    while (self.mStdoutBuffer.length > gConfig.maxStdoutBufferLength) {
+    while (self.mStdoutBuffer.length > gAppConfig.maxStdoutBufferLength) {
       self.mStdoutBuffer.shift();
     }
   });
   this.mProcess.stderr.on('data', function (data) {
     // Handler on stderr event
     self.mStderrBuffer.push(data);
-    while (self.mStderrBuffer.length > gConfig.maxStderrBufferLength) {
+    while (self.mStderrBuffer.length > gAppConfig.maxStderrBufferLength) {
       self.mStderrBuffer.shift();
     }
   });
