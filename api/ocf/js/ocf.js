@@ -16,6 +16,7 @@
 
 var console = require('console');
 var assert = require('assert');
+var Buffer = require('buffer');
 
 /**
  * ANT OCF API's main object. OCF only generates OCF adapter, and the OCF adapter takes charge of the main role of OCF API.
@@ -276,6 +277,8 @@ OCFAdapter.prototype.repSet = function (key, value) {
     }
   } else if (typeof value === 'string') {
     native.ocf_adapter_repSetString(key, value);
+  } else if (typeof value === 'object' && value instanceof Buffer) {
+    native.ocf_adapter_repSetByteArray(key, value);
   } else {
     console.log('repSet(): Not supported type (' + typeof value + ')');
   }
@@ -292,7 +295,6 @@ OCFAdapter.prototype.repEndRootObject = function () {
  * @param {OCFRequest} ocfRequest target of response
  * @param {Number} statusCode Response status code value
  * Sends a response with a specific status code to a request from another device.
-
  */
 OCFAdapter.prototype.sendResponse = function (ocfRequest, statusCode) {
   native.ocf_adapter_sendResponse(ocfRequest, statusCode);
