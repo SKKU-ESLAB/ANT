@@ -18,8 +18,10 @@ var path = require('path');
 var App = require('./app.js');
 var Util = require('./util.js');
 
-function AppManager() {
+function AppManager(onAppAdded, onAppRemoved) {
   this.mApps = [];
+  this.mOnAppAdded = onAppAdded;
+  this.mOnAppRemoved = onAppRemoved;
 
   // Get file list
   var antAppsDir = path.join(Util.getAntRootDir(), 'apps');
@@ -61,8 +63,12 @@ AppManager.prototype.getApp = function (appName) {
 };
 
 AppManager.prototype._addApp = function (appName, appFilePath) {
+  // Add app metadata
   var app = new App(appName, appFilePath);
   this.mApps.append(app);
+
+  // Call handler
+  this.mOnAppAdded(app);
   return app;
 };
 
@@ -81,7 +87,7 @@ AppManager.prototype.installApp = function (appName, appCode) {
     var app = this._addApp(appName, appFilePath);
     return app;
   } catch (e) {
-    throw 'Install app failure: ' + JSON.stringify(e);
+    throw JSON.stringify(e);
   }
 };
 
@@ -89,18 +95,21 @@ AppManager.prototype.removeApp = function (appName) {
   // Find app
   var app = this.getApp(appName);
   if (app === undefined) {
-    throw 'Remove app failure: cannot find app ' + appName;
+    throw 'cannot find app ' + appName;
   }
   var index = this.mApps.indexOf(app);
   if (index < 0) {
-    throw 'Remove app failure: cannot find app ' + appName;
+    throw 'cannot find app ' + appName;
   }
 
   // Check app state
   var appState = app.getState();
   if (appState !== 'Inactive') {
-    throw 'Remove app failure: invalid app state ' + appState;
+    throw 'invalid app state ' + appState;
   }
+
+  // Call handler
+  this.mOnAppRemoved(app);
 
   // Remove app metadata
   this.mApps.splice(index);
@@ -110,7 +119,7 @@ AppManager.prototype.removeApp = function (appName) {
     var appFilePath = app.getFilePath();
     fs.unlinkSync(appFilePath);
   } catch (e) {
-    throw 'Remove app failure: errno ' + JSON.stringify(e);
+    throw 'errno ' + JSON.stringify(e);
   }
 };
 
@@ -118,20 +127,20 @@ AppManager.prototype.launchApp = function (appName) {
   // Find app
   var app = this.getApp(appName);
   if (app === undefined) {
-    throw 'Launch app failure: cannot find app ' + appName;
+    throw 'cannot find app ' + appName;
   }
 
   // Check app state
   var appState = app.getState();
   if (appState !== 'Inactive') {
-    throw 'Launch app failure: invalid app state ' + appState;
+    throw 'invalid app state ' + appState;
   }
 
   // Launch app
   try {
     app.launch();
   } catch (e) {
-    throw 'Launch app failure: app.launch() error - ' + e;
+    throw 'app.launch() error - ' + e;
   }
 };
 
@@ -139,20 +148,20 @@ AppManager.prototype.terminateApp = function (appName) {
   // Find app
   var app = this.getApp(appName);
   if (app === undefined) {
-    throw 'Terminate app failure: cannot find app ' + appName;
+    throw 'cannot find app ' + appName;
   }
 
   // Check app state
   var appState = app.getState();
   if (appState !== 'Active') {
-    throw 'Terminate app failure: invalid app state ' + appState;
+    throw 'invalid app state ' + appState;
   }
 
-  // Launch app
+  // Terminate app
   try {
     app.terminate();
   } catch (e) {
-    throw 'Terminate app failure: app.terminate() error - ' + e;
+    throw 'app.terminate() error - ' + e;
   }
 };
 
@@ -160,15 +169,15 @@ AppManager.prototype.terminateAppInForce = function (appName) {
   // Find app
   var app = this.getApp(appName);
   if (app === undefined) {
-    throw 'Terminate app in force failure: cannot find app ' + appName;
+    throw 'cannot find app ' + appName;
   }
 
-  // Launch app
+  // Terminate app in force
   try {
     app.terminateAppInForce();
   } catch (e) {
-    throw 'Terminate app in force failure: app.terminate() error - ' + e;
+    throw 'app.terminate() error - ' + e;
   }
 };
 
-AppManager.module.exports = AppManager;
+module.exports = AppManager;

@@ -125,12 +125,59 @@ function onGetAppList(request, data) {
   }
 }
 
+function onInstallApp(request, data) {
+  var results = {message: RESULT_FAILED, code: 500};
+  try {
+    var newlineIndex = data.indexOf('\n');
+    if (newlineIndex < 0) {
+      throw 'invalid message\n' + data;
+    }
+    var appName = data.substring(0, newlineIndex);
+    var appCode = data.substring(newlineIndex);
+
+    // Install app
+    gAppManager.installApp(appName, appCode);
+
+    results.message = RESULT_SUCCESS;
+    results.code = 200;
+    return results;
+  } catch (e) {
+    results.message = 'Install app failure: ' + e;
+    return results;
+  }
+}
+
+function onRemoveApp(request, data) {
+  var results = {message: RESULT_FAILED, code: 500};
+  try {
+    // Check arguments
+    var urlTokens = Util.parseUrl(request.url);
+    var appName = urlTokens[1];
+    if (appName === undefined) {
+      throw 'invalid URL ' + request.url;
+    }
+
+    // Remove app
+    gAppManager.removeApp(appName);
+
+    results.message = RESULT_SUCCESS;
+    results.code = 200;
+    return results;
+  } catch (e) {
+    results.message = 'Remove app failure: ' + e;
+    return results;
+  }
+}
+
 function onLaunchApp(request, data) {
   var results = {message: RESULT_FAILED, code: 500};
   try {
     // Check arguments
     var urlTokens = Util.parseUrl(request.url);
     var appName = urlTokens[1];
+    if (appName === undefined) {
+      throw 'invalid URL ' + request.url;
+    }
 
     // Launch app
     gAppManager.launchApp(appName);
@@ -139,7 +186,7 @@ function onLaunchApp(request, data) {
     results.code = 200;
     return results;
   } catch (e) {
-    results.message = e;
+    results.message = 'Launch app failure: ' + e;
     return results;
   }
 }
@@ -150,6 +197,9 @@ function onTerminateApp(request, data) {
     // Check arguments
     var urlTokens = Util.parseUrl(request.url);
     var appName = urlTokens[1];
+    if (appName === undefined) {
+      throw 'invalid URL ' + request.url;
+    }
 
     // Terminate app
     gAppManager.terminateApp(appName);
@@ -158,7 +208,7 @@ function onTerminateApp(request, data) {
     results.code = 200;
     return results;
   } catch (e) {
-    results.message = e;
+    results.message = 'Terminate app failure: ' + e;
     return results;
   }
 }
@@ -169,6 +219,9 @@ function onTerminateAppInForce(request, data) {
     // Check arguments
     var urlTokens = Util.parseUrl(request.url);
     var appName = urlTokens[1];
+    if (appName === undefined) {
+      throw 'invalid URL ' + request.url;
+    }
 
     // Terminate app in force
     gAppManager.terminateAppInForce(appName);
@@ -177,7 +230,119 @@ function onTerminateAppInForce(request, data) {
     results.code = 200;
     return results;
   } catch (e) {
-    results.message = e;
+    results.message = 'Terminate app in force failure: ' + e;
+    return results;
+  }
+}
+
+function onGetAppCode(request, data) {
+  var results = {message: RESULT_FAILED, code: 500};
+  try {
+    // Check arguments
+    var urlTokens = Util.parseUrl(request.url);
+    var appName = urlTokens[1];
+    if (appName === undefined) {
+      throw 'invalid URL ' + request.url;
+    }
+
+    // Get app code
+    var app = gAppManager.getApp(appName);
+    if (app === undefined) {
+      throw 'not found app ' + appName;
+    }
+    var appCode = app.readCode();
+
+    results.message = appCode;
+    results.code = 200;
+    return results;
+  } catch (e) {
+    results.message = 'Get app code failure: ' + e;
+    return results;
+  }
+}
+
+function onGetAppState(request, data) {
+  var results = {message: RESULT_FAILED, code: 500};
+  try {
+    // Check arguments
+    var urlTokens = Util.parseUrl(request.url);
+    var appName = urlTokens[1];
+    if (appName === undefined) {
+      throw 'invalid URL ' + request.url;
+    }
+
+    // Get app state
+    var app = gAppManager.getApp(appName);
+    if (app === undefined) {
+      throw 'not found app ' + appName;
+    }
+    var appState = app.getState();
+
+    results.message = appState;
+    results.code = 200;
+    return results;
+  } catch (e) {
+    results.message = 'Get app state failure: ' + e;
+    return results;
+  }
+}
+
+function onGetAppStdout(request, data) {
+  var results = {message: RESULT_FAILED, code: 500};
+  try {
+    // Check arguments
+    var urlTokens = Util.parseUrl(request.url);
+    var appName = urlTokens[1];
+    if (appName === undefined) {
+      throw 'invalid URL ' + request.url;
+    }
+    var tsFrom = parseInt(data);
+    if (tsFrom == NaN) {
+      throw 'invalid tsFrom ' + data;
+    }
+
+    // Get app stdouts
+    var app = gAppManager.getApp(appName);
+    if (app === undefined) {
+      throw 'not found app ' + appName;
+    }
+    var stdouts = app.onGetStdouts(tsFrom);
+
+    results.message = JSON.stringify(stdouts);
+    results.code = 200;
+    return results;
+  } catch (e) {
+    results.message = 'Get app state failure: ' + e;
+    return results;
+  }
+}
+
+function onGetAppStderr(request, data) {
+  var results = {message: RESULT_FAILED, code: 500};
+  try {
+    // Check arguments
+    var urlTokens = Util.parseUrl(request.url);
+    var appName = urlTokens[1];
+    if (appName === undefined) {
+      throw 'invalid URL ' + request.url;
+    }
+    var tsFrom = parseInt(data);
+    if (tsFrom == NaN) {
+      throw 'invalid tsFrom ' + data;
+    }
+
+    // Get app stderrs
+    var app = gAppManager.getApp(appName);
+    if (app === undefined) {
+      throw 'not found app ' + appName;
+    }
+    var stderrs = app.onGetStderrs(tsFrom);
+
+    results.message = JSON.stringify(stderrs);
+    results.code = 200;
+    return results;
+  } catch (e) {
+    results.message = 'Get app state failure: ' + e;
     return results;
   }
 }
@@ -188,8 +353,37 @@ var gInitialHTTPServerEntries = [
   {u: '/controlpad', m: 'GET', f: onGetControlpadPage},
   {u: '/alive', m: 'GET', f: onAliveRequest},
   {u: '/companionAddress', m: 'POST', f: onSetCompanionAddress},
-  {u: '/apps', m: 'GET', f: onGetAppList}
+  {u: '/apps', m: 'GET', f: onGetAppList},
+  {u: '/apps', m: 'POST', f: onInstallApp}
 ];
+
+function onAppAdded(app) {
+  var rootUrl = '/apps/' + app.getname();
+  gHTTPServer.addEntry(rootUrl, 'DELETE', onRemoveApp);
+  gHTTPServer.addEntry(rootUrl + '/launch', 'POST', onLaunchApp);
+  gHTTPServer.addEntry(rootUrl + '/terminate', 'POST', onTerminateApp);
+  gHTTPServer.addEntry(
+    rootUrl + '/terminateInForce',
+    'POST',
+    onTerminateAppInForce
+  );
+  gHTTPServer.addEntry(rootUrl + '/code', 'GET', onGetAppCode);
+  gHTTPServer.addEntry(rootUrl + '/state', 'GET', onGetAppState);
+  gHTTPServer.addEntry(rootUrl + '/stdout', 'GET', onGetAppStdout);
+  gHTTPServer.addEntry(rootUrl + '/stderr', 'GET', onGetAppStderr);
+}
+
+function onAppRemoved(app) {
+  var rootUrl = '/apps/' + app.getname();
+  gHTTPServer.removeEntry(rootUrl, 'DELETE');
+  gHTTPServer.removeEntry(rootUrl + '/launch', 'POST');
+  gHTTPServer.removeEntry(rootUrl + '/terminate', 'POST');
+  gHTTPServer.removeEntry(rootUrl + '/terminateInForce', 'POST');
+  gHTTPServer.removeEntry(rootUrl + '/code', 'GET');
+  gHTTPServer.removeEntry(rootUrl + '/state', 'GET');
+  gHTTPServer.removeEntry(rootUrl + '/stdout', 'GET');
+  gHTTPServer.removeEntry(rootUrl + '/stderr', 'GET');
+}
 
 /**
  * App launcher's main loop
@@ -203,7 +397,7 @@ var mainLoop = function () {
 
   // Initialize app manager and HTTP server
   gHTTPServer = new HTTPServer(gInitialHTTPServerEntries, gConfig.isVerbose);
-  gAppManager = new AppManager();
+  gAppManager = new AppManager(onAppAdded, onAppRemoved);
   gCompanionAdapter = new CompanionAdapter();
 
   // run HTTP server
