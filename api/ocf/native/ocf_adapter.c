@@ -13,9 +13,9 @@
  * limitations under the License.
  */
 
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <stdint.h>
 #include <string.h>
 
 #include <iotjs_def.h>
@@ -288,6 +288,27 @@ JS_FUNCTION(ocf_adapter_repSetString) {
   return jerry_create_undefined();
 }
 
+// OCFAdapter.repSetByteArray()
+JS_FUNCTION(ocf_adapter_repSetByteArray) {
+  iotjs_string_t argKey;
+  jerry_value_t argValue;
+  DJS_CHECK_ARGS(2, string, object);
+  argKey = JS_GET_ARG(0, string);
+  argValue = JS_GET_ARG(1, object);
+  const char *key = iotjs_string_data(&argKey);
+  iotjs_bufferwrap_t *valueBuffer = iotjs_bufferwrap_from_jbuffer(argValue);
+
+  const char *value = (const char *)valueBuffer->buffer;
+  size_t value_length = iotjs_bufferwrap_length(valueBuffer);
+
+  ocf_adapter_repSetByteArray_internal(key, (const uint8_t *)value,
+                                       value_length);
+
+  iotjs_string_destroy(&argKey);
+
+  return jerry_create_undefined();
+}
+
 // OCFAdapter.repEndRootObject()
 ANT_API_VOID_TO_VOID(ocf_adapter, repEndRootObject);
 
@@ -493,6 +514,7 @@ void InitOCFAdapterNative(jerry_value_t ocfNative) {
   REGISTER_ANT_API(ocfNative, ocf_adapter, repSetInt);
   REGISTER_ANT_API(ocfNative, ocf_adapter, repSetDouble);
   REGISTER_ANT_API(ocfNative, ocf_adapter, repSetString);
+  REGISTER_ANT_API(ocfNative, ocf_adapter, repSetByteArray);
   REGISTER_ANT_API(ocfNative, ocf_adapter, repEndRootObject);
 
   // Send Response on Server-side

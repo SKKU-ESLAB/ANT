@@ -41,6 +41,8 @@ void ocf_adapter_repSetBoolean_internal(const char *key, bool value);
 void ocf_adapter_repSetInt_internal(const char *key, int value);
 void ocf_adapter_repSetDouble_internal(const char *key, double value);
 void ocf_adapter_repSetString_internal(const char *key, const char *value);
+void ocf_adapter_repSetByteArray_internal(const char *key, const uint8_t *value,
+                                          size_t value_length);
 void ocf_adapter_repEndRootObject_internal(void);
 void ocf_adapter_sendResponse_internal(void *ocf_request_nobject,
                                        int status_code);
