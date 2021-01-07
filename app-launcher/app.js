@@ -14,6 +14,7 @@
  */
 
 var childProcess = require('child_process');
+var fs = require('fs');
 var net = require('net');
 
 var AppConfig = function () {
@@ -40,6 +41,8 @@ function App(name, filePath) {
   this.mProcess = undefined;
   this.mStdoutBuffer = [];
   this.mStderrBuffer = [];
+  this.mStdoutBufferTS = 0;
+  this.mStderrBufferTS = 0;
   this.mSocket = undefined;
 }
 
@@ -119,14 +122,16 @@ App.prototype.launch = function () {
   // Set stdout and stderr handlers
   this.mProcess.stdout.on('data', function (data) {
     // Handler on stdout event
-    self.mStdoutBuffer.push(data);
+    var stdoutEntry = {ts: self.mStdoutBufferTS++, d: data};
+    self.mStdoutBuffer.push(stdoutEntry);
     while (self.mStdoutBuffer.length > gAppConfig.maxStdoutBufferLength) {
       self.mStdoutBuffer.shift();
     }
   });
   this.mProcess.stderr.on('data', function (data) {
     // Handler on stderr event
-    self.mStderrBuffer.push(data);
+    var stderrEntry = {ts: self.mStderrBufferTS++, d: data};
+    self.mStderrBuffer.push(stderrEntry);
     while (self.mStderrBuffer.length > gAppConfig.maxStderrBufferLength) {
       self.mStderrBuffer.shift();
     }
@@ -181,6 +186,29 @@ App.prototype.terminate = function () {
 
   // Send 'terminate' command to the child app process
   this.mSocket.write('Terminate');
+};
+
+App.prototype.readCode = function () {
+  var appCode = fs.readFileSync(this.mFilePath);
+  return appCode;
+};
+
+App.prototype.getStdouts = function (fromTs) {
+  var stdouts = [];
+  for (var i in this.mStdoutBuffer) {
+    var entry = this.mStdoutBuffer[i];
+    if (entry.ts >= fromTs) stdouts.push(entry);
+  }
+  return stdouts;
+};
+
+App.prototype.getStderrs = function (fromTs) {
+  var stderrs = [];
+  for (var i in this.mStderrBuffer) {
+    var entry = this.mStderrBuffer[i];
+    if (entry.ts >= fromTs) stderrs.push(entry);
+  }
+  return stderrs;
 };
 
 module.exports = App;
