@@ -23,14 +23,10 @@
 #include "../../common/native/ant_common.h"
 #include "./internal/coap_internal.h"
 
-JS_FUNCTION(coap_response_end) {
-}
-JS_FUNCTION(coap_response_get) {
-}
+JS_FUNCTION(coap_response_end) { return jerry_create_undefined(); }
+JS_FUNCTION(coap_response_get) { return jerry_create_undefined(); }
 
-JS_FUNCTION(coap_request_onEvent) {
-}
-ANT_API_VOID_TO_VOID(coap_request_end)
+JS_FUNCTION(coap_request_onEvent) { return jerry_create_undefined(); }
 
 jerry_value_t InitCoAPNative() {
   // Initialize sub-objects of CoAP API
@@ -39,6 +35,5 @@ jerry_value_t InitCoAPNative() {
   REGISTER_ANT_API(coapNative, coap_response, end);
   REGISTER_ANT_API(coapNative, coap_response, get);
   REGISTER_ANT_API(coapNative, coap_request, onEvent);
-  REGISTER_ANT_API(coapNative, coap_request, end);
-  return CoAPNative;
+  return coapNative;
 }
