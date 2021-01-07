@@ -120,6 +120,11 @@ void ocf_adapter_repSetString_internal(const char *key, const char *value) {
     g_err |= cbor_encode_text_string(&root_map, "", 0);
   }
 }
+void ocf_adapter_repSetByteArray_internal(const char *key, const uint8_t *value,
+                                          size_t value_length) {
+  g_err |= cbor_encode_text_string(&root_map, key, strlen(key));
+  g_err |= cbor_encode_byte_string(&root_map, value, value_length);
+}
 void ocf_adapter_repEndRootObject_internal(void) { oc_rep_end_root_object(); }
 void ocf_adapter_sendResponse_internal(void *ocf_request_nobject,
                                        int status_code) {
