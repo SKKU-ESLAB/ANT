@@ -13,9 +13,9 @@
  * limitations under the License.
  */
 
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <stdint.h>
 
 #include <iotjs_def.h>
 #include <iotjs_uv_request.h>
