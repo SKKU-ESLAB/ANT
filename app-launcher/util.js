@@ -13,6 +13,8 @@
  * limitations under the License.
  */
 
+var os = require('os');
+
 function Util() {}
 
 Util.prototype.getAntRootDir = function () {
@@ -21,6 +23,28 @@ Util.prototype.getAntRootDir = function () {
     return undefined;
   }
   return antRootDir;
+};
+
+Util.prototype.parseUrl = function (url) {
+  var urlTokens = url.split('/');
+  var uniqueTokens = [];
+  for (var i = 0; i < urlTokens.length; i++) {
+    var token = urlTokens[i];
+    if (token.length > 0) {
+      uniqueTokens.push(token);
+    }
+  }
+  return uniqueTokens;
+};
+
+Util.prototype.getIPAddress = function (nameHead) {
+  var networkInterfaces = os.networkInterfaces();
+  for (var ni in networkInterfaces) {
+    if (ni.startsWith(nameHead)) {
+      return networkInterfaces[ni][0].address;
+    }
+  }
+  return undefined;
 };
 
 module.exports = Util;

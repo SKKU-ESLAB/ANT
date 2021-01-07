@@ -20,8 +20,7 @@ var Util = require('./util.js');
 
 function AppManager() {
   this.mApps = [];
-}
-AppManager.prototype.initialize = function () {
+
   // Get file list
   var antAppsDir = path.join(Util.getAntRootDir(), 'apps');
   if (!fs.existsSync(antAppsDir)) {
@@ -39,7 +38,7 @@ AppManager.prototype.initialize = function () {
     }
   }
   console.log('Apps: ' + JSON.stringify(this.mApps));
-};
+}
 
 AppManager.prototype.getAppList = function () {
   var appList = [];
