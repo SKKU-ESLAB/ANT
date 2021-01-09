@@ -13,10 +13,14 @@
  * limitations under the License.
  */
 
-/* UI config area start */
+/* UI config area START */
 var initialCode = '// Input your code here!!!';
+/* UI config area END */
 
-/* ANT Client */
+/* Sub-controllers */
+var gContext = {
+  presentAppName: undefined
+};
 var gANTClient = new ANTClient();
 
 /* Contents */
@@ -28,25 +32,46 @@ var gConsole;
 var gAppSelectorLabel;
 var gAppSelectorMenu;
 var gNavMenu;
+var gCreateAppDialogView;
 
-function onSelectApp(appName) {
-  // TODO:
+/* Control handlers */
+function selectApp(appName) {
   console.log('on select app: ' + appName);
+  gContext.presentAppName = appName;
+
+  // Update app selector label
+  gAppSelectorLabel.setText(appName);
+
+  // TODO: Update code editor when code editor is opened
 }
 
-function onCreateApp() {
-  // TODO:
+function tryToCreateApp() {
   console.log('on create app');
+
+  // Show create app dialog
+  gCreateAppDialogView.show(createApp);
 }
 
+function createApp(appName) {
+  // Update app selector menu
+  gAppSelectorMenu.addApp(appName);
+
+  // TODO: Update app list card when dashboard is opened
+
+  // Select this app
+  selectApp(appName);
+}
+
+/* Initializers */
 function onInitialize() {
   gDashboard = new DashboardView();
   gCodeEditor = new CodeEditorView(initialCode);
   gConsole = undefined;
 
-  gAppSelectorLabel = new AppSelectorLabel();
-  gAppSelectorMenu = new AppSelectorMenu(onSelectApp, onCreateApp);
-  gNavMenu = new NavMenu();
+  gAppSelectorLabel = new AppSelectorLabelView();
+  gAppSelectorMenu = new AppSelectorMenuView(selectApp, tryToCreateApp);
+  gNavMenu = new NavMenuView();
+  gCreateAppDialogView = new CreateAppDialogView();
 
   initializeAppSelector();
   initializeNavMenu();

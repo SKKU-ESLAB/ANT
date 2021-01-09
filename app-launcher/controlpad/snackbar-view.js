@@ -13,22 +13,4 @@
  * limitations under the License.
  */
 
-function AppSelectorLabel() {
-  this.mRootDom = document.getElementById('app-selector-label');
-}
-
-AppSelectorLabel.prototype.getDom = function () {
-  return this.mRootDom;
-};
-
-AppSelectorLabel.prototype.append = function (childView) {
-  if (typeof childView === 'object' && childView.getDom !== undefined) {
-    this.mRootDom.append(childView.getDom());
-  } else {
-    this.mRootDom.append(childView);
-  }
-};
-
-AppSelectorLabel.prototype.setText = function (text) {
-  this.mRootDom.innerHTML = text;
-};
+ // TODO:
