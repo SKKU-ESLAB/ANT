@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 
-function AppSelectorMenuEntry(iconType, title, onClickHandler) {
+function AppSelectorMenuEntryView(iconType, title, onClickHandler) {
   this.mIconType = iconType;
   this.mTitle = title;
 
@@ -32,11 +32,11 @@ function AppSelectorMenuEntry(iconType, title, onClickHandler) {
   this.append(title);
 }
 
-AppSelectorMenuEntry.prototype.getDom = function () {
+AppSelectorMenuEntryView.prototype.getDom = function () {
   return this.mRootDom;
 };
 
-AppSelectorMenuEntry.prototype.append = function (childView) {
+AppSelectorMenuEntryView.prototype.append = function (childView) {
   if (typeof childView === 'object' && childView.getDom !== undefined) {
     this.mRootDom.append(childView.getDom());
   } else {
@@ -44,21 +44,21 @@ AppSelectorMenuEntry.prototype.append = function (childView) {
   }
 };
 
-AppSelectorMenuEntry.prototype.getTitle = function () {
+AppSelectorMenuEntryView.prototype.getTitle = function () {
   return this.mTitle;
 };
 
-AppSelectorMenuEntry.prototype.getIconType = function () {
+AppSelectorMenuEntryView.prototype.getIconType = function () {
   return this.mIconType;
 };
 
-function AppSelectorMenu(onClickAppEntry, onClickCreateAppEntry) {
+function AppSelectorMenuView(onClickAppEntry, onClickCreateAppEntry) {
   this.mOnClickAppEntry = onClickAppEntry;
   this.mOnClickCreateAppEntry = onClickCreateAppEntry;
   this.mRootDom = document.getElementById('app-selector-menu');
 
   var self = this;
-  this.mCreateAppEntry = new AppSelectorMenuEntry(
+  this.mCreateAppEntry = new AppSelectorMenuEntryView(
     'add',
     'Create new app',
     function () {
@@ -68,7 +68,7 @@ function AppSelectorMenu(onClickAppEntry, onClickCreateAppEntry) {
   this.append(this.mCreateAppEntry);
 }
 
-AppSelectorMenu.prototype.append = function (childView) {
+AppSelectorMenuView.prototype.append = function (childView) {
   if (typeof childView === 'object' && childView.getDom !== undefined) {
     this.mRootDom.append(childView.getDom());
   } else {
@@ -76,26 +76,28 @@ AppSelectorMenu.prototype.append = function (childView) {
   }
 };
 
-AppSelectorMenu.prototype.insertBefore = function (childView, beforeElement) {
+AppSelectorMenuView.prototype.insertBefore = function (childView, beforeView) {
   if (typeof childView === 'object' && childView.getDom !== undefined) {
-    this.mRootDom.insertBefore(childView.getDom(), beforeElement);
-  } else {
-    this.mRootDom.insertBefore(childView, beforeElement);
+    childView = childView.getDom();
   }
+  if (typeof beforeView === 'object' && beforeView.getDom !== undefined) {
+    beforeView = beforeView.getDom();
+  }
+  this.mRootDom.insertBefore(childView, beforeView);
 };
 
-AppSelectorMenu.prototype.addApp = function (appName) {
+AppSelectorMenuView.prototype.addApp = function (appName) {
   var self = this;
-  var entry = new AppSelectorMenuEntry(undefined, appName, function (e) {
+  var entry = new AppSelectorMenuEntryView(undefined, appName, function (e) {
     var id = e.target.id;
-    var appName = id.substring(id.indexOf('app-selector-menu-entry-') + 1);
+    var appName = id.substring('app-selector-menu-entry-'.length() + 1);
     self.mOnClickAppEntry(appName);
   });
 
   this.insertBefore(entry, this.mCreateAppEntry);
 };
 
-AppSelectorMenu.prototype.removeApp = function (appName) {
+AppSelectorMenuView.prototype.removeApp = function (appName) {
   for (var i in this.mRootDom.children) {
     var childView = this.mRootDom.children[i];
     if (childView.id == 'app-selector-menu-entry-' + appName) {

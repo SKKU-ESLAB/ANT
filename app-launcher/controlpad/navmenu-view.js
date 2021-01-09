@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 
-function NavItem(id, iconType, title, view) {
+function NavMenuItemView(id, iconType, title, view) {
   this.mId = id;
   this.mIconType = iconType;
   this.mTitle = title;
@@ -33,11 +33,11 @@ function NavItem(id, iconType, title, view) {
   }
 }
 
-NavItem.prototype.getDom = function () {
+NavMenuItemView.prototype.getDom = function () {
   return this.mRootDom;
 };
 
-NavItem.prototype.append = function (childView) {
+NavMenuItemView.prototype.append = function (childView) {
   if (typeof childView === 'object' && childView.getDom !== undefined) {
     this.mRootDom.append(childView.getDom());
   } else {
@@ -45,29 +45,29 @@ NavItem.prototype.append = function (childView) {
   }
 };
 
-NavItem.prototype.getId = function () {
+NavMenuItemView.prototype.getId = function () {
   return this.mId;
 };
 
-NavItem.prototype.getTitle = function () {
+NavMenuItemView.prototype.getTitle = function () {
   return this.mTitle;
 };
 
-NavItem.prototype.getView = function () {
+NavMenuItemView.prototype.getView = function () {
   return this.mView;
 };
 
-function NavMenu() {
+function NavMenuView() {
   // Set attributes
   this.mNavItems = [];
   this.mRootDom = document.getElementById('nav-menu');
 }
 
-NavMenu.prototype.getDom = function () {
+NavMenuView.prototype.getDom = function () {
   return this.mRootDom;
 };
 
-NavMenu.prototype.append = function (childView) {
+NavMenuView.prototype.append = function (childView) {
   if (childView.getDom !== undefined) {
     this.mRootDom.append(childView.getDom());
   } else {
@@ -75,21 +75,21 @@ NavMenu.prototype.append = function (childView) {
   }
 };
 
-NavMenu.prototype.getItem = function (index) {
+NavMenuView.prototype.getItem = function (index) {
   return this.mNavItems[index];
 };
 
-NavMenu.prototype.updateForItem = function (navItem) {
+NavMenuView.prototype.updateForItem = function (navItemView) {
   // Update header title
-  var titleText = 'ANT Controlpad: ' + navItem.getTitle();
+  var titleText = 'ANT Controlpad: ' + navItemView.getTitle();
   $('#header_title').html(titleText);
 
   // Update content view
-  $('#content_root').html(navItem.getView().getDom());
-  navItem.getView().onAddedDom();
+  $('#content_root').html(navItemView.getView().getDom());
+  navItemView.getView().onAddedDom();
 };
 
-NavMenu.prototype.addItem = function (id, iconType, title, view) {
+NavMenuView.prototype.addItem = function (id, iconType, title, view) {
   var self = this;
   var onClickNavItem = function (e) {
     var _nav_item = undefined;
@@ -105,12 +105,12 @@ NavMenu.prototype.addItem = function (id, iconType, title, view) {
   };
 
   // New nav menu item
-  var navItem = new NavItem(id, iconType, title, view);
-  navItem.getDom().onclick = onClickNavItem;
+  var navItemView = new NavMenuItemView(id, iconType, title, view);
+  navItemView.getDom().onclick = onClickNavItem;
 
-  // Add navItem to the list
-  this.mNavItems.push(navItem);
+  // Add navItemView to the list
+  this.mNavItems.push(navItemView);
 
   // Add to DOM tree
-  this.append(navItem);
+  this.append(navItemView);
 };

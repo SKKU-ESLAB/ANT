@@ -20,11 +20,16 @@
 
   <!-- Main -->
   <script type="text/javascript" src="./view-util.js"></script>
-  <script type="text/javascript" src="./nav-menu.js"></script>
-  <script type="text/javascript" src="./app-selector-label.js"></script>
-  <script type="text/javascript" src="./app-selector-menu.js"></script>
+
+  <script type="text/javascript" src="./createapp-dialog-view.js"></script>
+  <script type="text/javascript" src="./snackbar-view.js"></script>
+
+  <script type="text/javascript" src="./navmenu-view.js"></script>
+  <script type="text/javascript" src="./appselector-label-view.js"></script>
+  <script type="text/javascript" src="./appselector-menu-view.js"></script>
   <script type="text/javascript" src="./dashboard-view.js"></script>
   <script type="text/javascript" src="./codeeditor-view.js"></script>
+
   <script type="text/javascript" src="./ant-client.js"></script>
   <script type="text/javascript" src="./ui-controller.js"></script>
 
@@ -86,6 +91,31 @@
           ></div> -->
       </div>
     </main>
+  </div>
+
+  <!-- Create app dialog -->
+  <dialog id="create-app-dialog" class="mdl-dialog">
+    <h4 class="mdl-dialog__title">Create app</h4>
+    <div class="mdl-dialog__content">
+      <p>
+      <form action="#">
+        <div class="mdl-textfield mdl-js-textfield mdl-textfield--floating-label">
+          <input class="mdl-textfield__input" type="text" id="create-app-dialog-appname-textfield">
+          <label class="mdl-textfield__label" for="create-app-dialog-appname-textfield">App name</label>
+        </div>
+      </form>
+      </p>
+    </div>
+    <div class="mdl-dialog__actions">
+      <button type="button" class="mdl-button" id="create-app-dialog-confirm-button">Confirm</button>
+      <button type="button" class="mdl-button close" id="create-app-dialog-dismiss-button">Dismiss</button>
+    </div>
+  </dialog>
+
+  <!-- Snack bar-->
+  <div id="snack-bar" class="mdl-js-snackbar mdl-snackbar">
+    <div class="mdl-snackbar__text"></div>
+    <button class="mdl-snackbar__action" type="button"></button>
   </div>
 </body>
 
