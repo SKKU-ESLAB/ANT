@@ -1,70 +1,67 @@
+/* Copyright (c) 2017-2020 SKKU ESLAB, and contributors. All rights reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *  http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 /* UI config area start */
 var initialCode = '// Input your code here!!!';
 
+/* ANT Client */
 var gANTClient = new ANTClient();
 
-var gDashboard = new DashboardView();
-var gCodeEditor = new CodeEditorView(initialCode);
-var gConsole = undefined;
+/* Contents */
+var gDashboard;
+var gCodeEditor;
+var gConsole;
 
-var gNavItems = [
-  {
-    id: 'navitem_dashboard',
-    title: 'Dashboard',
-    view: gDashboard
-  },
-  {
-    id: 'navitem_codeeditor',
-    title: 'Code Editor',
-    view: gCodeEditor
-  },
-  {
-    id: 'navitem_console',
-    title: 'Console',
-    view: gConsole
-  }
-];
+/* Main UI components */
+var gAppSelectorLabel;
+var gAppSelectorMenu;
+var gNavMenu;
 
-/* UI config area end */
-
-function updateForNavItem(navItem) {
-  // Update header title
-  var titleText = 'ANT Controlpad: ' + navItem.title;
-  $('#header_title').html(titleText);
-
-  // Update content view
-  $('#content_root').html(navItem.view.getDom());
-  navItem.view.onAddedDom();
+function onSelectApp(appName) {
+  // TODO:
+  console.log('on select app: ' + appName);
 }
 
-function onClickNavItem(e) {
-  var _nav_item = undefined;
-  for (var j in gNavItems) {
-    if (gNavItems[j].id == e.target.id) {
-      _nav_item = gNavItems[j];
-      break;
-    }
-  }
-  if (_nav_item !== undefined) {
-    updateForNavItem(_nav_item);
-  }
-}
-
-function initializeNavItemCallbacks() {
-  for (var i in gNavItems) {
-    var nav_item = gNavItems[i];
-    var nav_item_element = $('#' + nav_item.id);
-    nav_item_element.click(onClickNavItem);
-  }
-}
-
-function showInitialNavItem() {
-  updateForNavItem(gNavItems[0]);
+function onCreateApp() {
+  // TODO:
+  console.log('on create app');
 }
 
 function onInitialize() {
-  initializeNavItemCallbacks();
-  showInitialNavItem();
+  gDashboard = new DashboardView();
+  gCodeEditor = new CodeEditorView(initialCode);
+  gConsole = undefined;
+
+  gAppSelectorLabel = new AppSelectorLabel();
+  gAppSelectorMenu = new AppSelectorMenu(onSelectApp, onCreateApp);
+  gNavMenu = new NavMenu();
+
+  initializeAppSelector();
+  initializeNavMenu();
+}
+
+function initializeAppSelector() {
+  gAppSelectorLabel.setText('No app selected');
+}
+
+function initializeNavMenu() {
+  gNavMenu.addItem('navitem-dashboard', 'home', 'Dashboard', gDashboard);
+  gNavMenu.addItem('navitem-codeeditor', 'inbox', 'Code Editor', gCodeEditor);
+  gNavMenu.addItem('navitem-console', 'wysiwyg', 'Console', gConsole);
+
+  gNavMenu.updateForItem(gNavMenu.getItem(0));
 }
 
 $(document).ready(onInitialize);
