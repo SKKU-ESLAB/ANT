@@ -20,6 +20,9 @@
 
   <!-- Main -->
   <script type="text/javascript" src="./view-util.js"></script>
+  <script type="text/javascript" src="./nav-menu.js"></script>
+  <script type="text/javascript" src="./app-selector-label.js"></script>
+  <script type="text/javascript" src="./app-selector-menu.js"></script>
   <script type="text/javascript" src="./dashboard-view.js"></script>
   <script type="text/javascript" src="./codeeditor-view.js"></script>
   <script type="text/javascript" src="./ant-client.js"></script>
@@ -54,36 +57,25 @@
     <div class="demo-drawer mdl-layout__drawer mdl-color--blue-grey-900 mdl-color-text--blue-grey-50">
       <header class="demo-drawer-header">
         <img src="images/app_icon.png" class="demo-avatar" style="width: 50px" />
-        <div class="demo-avatar-dropdown">
-          <span>image-classification.js</span>
+        <div id="app-selector" class="demo-avatar-dropdown">
+          <span id="app-selector-label"></span>
           <div class="mdl-layout-spacer"></div>
           <button id="accbtn" class="mdl-button mdl-js-button mdl-js-ripple-effect mdl-button--icon">
             <i class="material-icons" role="presentation">arrow_drop_down</i>
             <span class="visuallyhidden">Accounts</span>
           </button>
-          <ul class="mdl-menu mdl-menu--bottom-right mdl-js-menu mdl-js-ripple-effect" for="accbtn">
-            <li class="mdl-menu__item">image-classification.js</li>
+          <ul id="app-selector-menu" class="mdl-menu mdl-menu--bottom-right mdl-js-menu mdl-js-ripple-effect"
+            for="accbtn">
+            <!-- <li class="mdl-menu__item">image-classification.js</li>
             <li class="mdl-menu__item">face-detection.js</li>
             <li class="mdl-menu__item">segmentation.js</li>
             <li class="mdl-menu__item">
               <i class="material-icons">add</i>Add another account...
-            </li>
+            </li> -->
           </ul>
         </div>
       </header>
-      <nav class="demo-navigation mdl-navigation mdl-color--blue-grey-800">
-        <a id="navitem_dashboard" class="mdl-navigation__link" href="#">
-          <i class="mdl-color-text--blue-grey-400 material-icons" role="presentation">home</i>
-          Dashboard
-        </a>
-        <a id="navitem_codeeditor" class="mdl-navigation__link" href="#">
-          <i class="mdl-color-text--blue-grey-400 material-icons" role="presentation">inbox</i>
-          Code Editor
-        </a>
-        <a id="navitem_console" class="mdl-navigation__link" href="#">
-          <i class="mdl-color-text--blue-grey-400 material-icons" role="presentation">wysiwyg</i>
-          Console
-        </a>
+      <nav id="nav-menu" class="demo-navigation mdl-navigation mdl-color--blue-grey-800">
       </nav>
     </div>
     <main class="mdl-layout__content mdl-color--grey-100">
