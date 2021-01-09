@@ -19,6 +19,7 @@ then
   ${SUDO} apt-get install -y cmake git glib-2.0 \
     libdbus-1-dev libdbus-glib-1-2 libdbus-glib-1-dev python
   ${SUDO} apt-get install -y software-properties-common
+  ${SUDO} apt-get install -y libcurl3
   ${SUDO} apt-get install -y libcurl4-openssl-dev
   ${SUDO} apt-get install -y libtar-dev
   ${SUDO} apt-get install -y

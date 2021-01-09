@@ -47,4 +47,4 @@ Util.prototype.getIPAddress = function (nameHead) {
   return undefined;
 };
 
-module.exports = Util;
+module.exports = new Util();

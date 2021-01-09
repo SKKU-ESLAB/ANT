@@ -64,10 +64,14 @@ var onGetControlpadPage = function (request, data) {
     return html;
   };
 
-  var results = {message: RESULT_FAILED, code: 404};
+  var results = {message: 'Not found ' + request.url, code: 404};
 
   var urlTokens = Util.parseUrl(request.url);
-  var controlpadDir = path.join(Util.getAntRootDir(), 'controlpad');
+  var controlpadDir = path.join(
+    Util.getAntRootDir(),
+    'app-launcher',
+    'controlpad'
+  );
   if (urlTokens.length == 0) {
     var filePath = path.join(controlpadDir, '/index.html');
 
@@ -81,7 +85,6 @@ var onGetControlpadPage = function (request, data) {
     for (var i = 0; i < urlTokens.length; i++) {
       filePath = path.join(filePath, urlTokens[i]);
     }
-    console.log('read: ' + filePath);
     if (fs.existsSync(filePath)) {
       results.message = fs.readFileSync(filePath);
       results.code = 200;
@@ -396,7 +399,11 @@ var mainLoop = function () {
   console.log('ANT app launcher daemon start');
 
   // Initialize app manager and HTTP server
-  gHTTPServer = new HTTPServer(gInitialHTTPServerEntries, gConfig.isVerbose);
+  gHTTPServer = new HTTPServer(
+    gInitialHTTPServerEntries,
+    onGetControlpadPage,
+    gConfig.isVerbose
+  );
   gAppManager = new AppManager(onAppAdded, onAppRemoved);
   gCompanionAdapter = new CompanionAdapter();
 

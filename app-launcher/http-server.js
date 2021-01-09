@@ -14,10 +14,12 @@
  */
 
 var http = require('http');
+var Util = require('./util.js');
 
-function HTTPServer(entries, isVerbose = false) {
+function HTTPServer(entries, onDefaultEntryHandler, isVerbose = false) {
   // Initialize properties
   this.mEntries = [];
+  this.mOnDefaultEntryHandler = onDefaultEntryHandler;
   this.mServer = http.createServer();
 
   // Initial http server entries
@@ -65,7 +67,7 @@ HTTPServer.prototype._onHTTPRequest = function (request, response, data) {
     }
   }
   if (!entryFound) {
-    responseParams = onGetControlpadPage(request, data);
+    responseParams = this.mOnDefaultEntryHandler(request, data);
   }
   response.setHeader('Content-Length', responseParams.message.length);
   response.writeHead(responseParams.code);
