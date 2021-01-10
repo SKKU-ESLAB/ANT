@@ -14,14 +14,27 @@
  */
 
 var gMonacoEditor;
-function CodeEditorView(initialCode) {
+function CodeEditorView(
+  onAppear,
+  onSaveButton,
+  onLaunchButton,
+  onTerminateButton,
+  onRemoveButton
+) {
   // Attributes
-  this.mInitialCode = initialCode;
+  this.mOnAppear = onAppear;
   this.mCommandBarHeight = 64;
   this.mRootDom = document.createElement('div');
 
   // Command bar
-  this.mCommandBar = new CommandBar('command-bar', this.mCommandBarHeight);
+  this.mCommandBar = new CommandBar(
+    'command-bar',
+    this.mCommandBarHeight,
+    onSaveButton,
+    onLaunchButton,
+    onTerminateButton,
+    onRemoveButton
+  );
   this.append(this.mCommandBar);
 
   // Code Editor
@@ -55,17 +68,40 @@ CodeEditorView.prototype.onAddedDom = function () {
     require.config({paths: {vs: './vs'}});
     require(['vs/editor/editor.main'], function () {
       gMonacoEditor = monaco.editor.create(codeEditor, {
-        value: [initialCode].join('\n'),
+        value: '\n',
         language: 'javascript'
       });
     });
   }
+  this.mOnAppear();
 };
 
-function CommandBar(id, height, margin = 10) {
+CodeEditorView.prototype.setAppCode = function (appCode) {
+  gMonacoEditor.setValue(appCode);
+};
+
+CodeEditorView.prototype.toggleRunButton = function (isLaunchButton) {
+  this.mCommandBar.toggleRunButton(isLaunchButton);
+};
+
+function CommandBar(
+  id,
+  height,
+  margin = 10,
+  onSaveButton,
+  onLaunchButton,
+  onTerminateButton,
+  onRemoveButton
+) {
+  var self = this;
   this.mId = id;
   this.mMargin = margin;
   this.mHeight = height - margin * 2;
+
+  this.mOnSaveButton = onSaveButton;
+  this.mOnLaunchButton = onLaunchButton;
+  this.mOnTerminateButton = onTerminateButton;
+  this.mOnRemoveButton = onRemoveButton;
 
   this.mRootDom = document.createElement('div');
   this.mRootDom.setAttribute('id', this.mId);
@@ -75,12 +111,26 @@ function CommandBar(id, height, margin = 10) {
   );
 
   this.mSaveButton = new ButtonView('save-button', 'save', 'Save');
+  this.mSaveButton.setOnClickHandler(function () {
+    self.mOnSaveButton();
+  });
   this.append(this.mSaveButton);
 
-  this.mRunButton = new ButtonView('run-button', 'play_arrow', 'run');
+  this.mRunButton = new ButtonView('run-button', 'play_arrow', 'Launch');
+  this.mRunButton.setOnClickHandler(function () {
+    var buttonText = self.mRunButton.getText();
+    if (buttonText === 'Launch') {
+      self.mOnLaunchButton();
+    } else {
+      self.mOnTerminateButton();
+    }
+  });
   this.append(this.mRunButton);
 
-  this.mRemoveButton = new ButtonView('remove-button', 'delete', 'remove');
+  this.mRemoveButton = new ButtonView('remove-button', 'delete', 'Remove');
+  this.mRemoveButton.setOnClickHandler(function () {
+    self.mOnRemoveButton();
+  });
   this.append(this.mRemoveButton);
 }
 
@@ -94,4 +144,14 @@ CommandBar.prototype.append = function (childView) {
 
 CommandBar.prototype.getDom = function () {
   return this.mRootDom;
+};
+
+CommandBar.prototype.toggleRunButton = function (isLaunchButton) {
+  if (isLaunchButton) {
+    this.mRunButton.setIconType('play_arrow');
+    this.mRunButton.setText('Launch');
+  } else {
+    this.mRunButton.setIconType('pause');
+    this.mRunButton.setText('Terminate');
+  }
 };

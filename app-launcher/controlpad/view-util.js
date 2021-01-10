@@ -26,14 +26,38 @@ function ButtonView(id, iconType, text) {
   );
   this.mRootDom.setAttribute('style', 'margin-left:5px; margin-right:5px;');
   if (this.mIconType !== undefined) {
-    var icon = document.createElement('i');
-    icon.setAttribute('class', 'material-icons');
-    icon.setAttribute('style', 'margin-right:5px;');
-    icon.innerHTML = this.mIconType;
-    this.mRootDom.append(icon);
+    this.mIcon = document.createElement('i');
+    this.mIcon.setAttribute('class', 'material-icons');
+    this.mIcon.setAttribute('style', 'margin-right:5px;');
+    this.mIcon.innerHTML = this.mIconType;
+    this.mRootDom.append(this.mIcon);
   }
-  this.mRootDom.append(text);
+  this.mTextSpan = document.createElement('span');
+  this.mTextSpan.innerHTML = text;
+  this.mRootDom.append(this.mTextSpan);
 }
+
+ButtonView.prototype.getId = function () {
+  return this.mId;
+};
+
+ButtonView.prototype.getIconType = function () {
+  return this.mIconType;
+};
+
+ButtonView.prototype.getText = function () {
+  return this.mText;
+};
+
+ButtonView.prototype.setIconType = function (iconType) {
+  this.mIconType = iconType;
+  this.mIcon.innerHTML = this.mIconType;
+};
+
+ButtonView.prototype.setText = function (text) {
+  this.mText = text;
+  this.mTextSpan.innerHTML = text;
+};
 
 ButtonView.prototype.append = function (childView) {
   if (childView.getDom !== undefined) {
@@ -43,7 +67,7 @@ ButtonView.prototype.append = function (childView) {
   }
 };
 
-ButtonView.prototype.click = function (onClickHandler) {
+ButtonView.prototype.setOnClickHandler = function (onClickHandler) {
   this.mRootDom.click(onClickHandler);
 };
 

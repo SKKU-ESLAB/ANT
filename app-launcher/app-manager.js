@@ -74,6 +74,7 @@ AppManager.prototype._addApp = function (appName, appFilePath) {
 
 AppManager.prototype.installApp = function (appName, appCode) {
   try {
+    // Overwriting already-existing app is allowed.
     if (appName.endsWith('.js')) {
       appName = appName.substring(0, appName.indexOf('.js'));
     }
@@ -84,7 +85,10 @@ AppManager.prototype.installApp = function (appName, appCode) {
     fs.writeSync(appFile, appCode);
     fs.closeSync(appFile);
 
-    var app = this._addApp(appName, appFilePath);
+    var app = this.getApp(appName);
+    if (app === undefined) {
+      var app = this._addApp(appName, appFilePath);
+    }
     return app;
   } catch (e) {
     throw JSON.stringify(e);

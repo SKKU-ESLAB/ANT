@@ -14,12 +14,29 @@
  */
 
 /* UI config area START */
-var initialCode = '// Input your code here!!!';
+var initialCode =
+  'var ant = require("ant"); \
+var console = require("console"); \
+\
+var onInitialize = function () {\
+  console.log("onInitialize");\
+};\
+\
+var onStart = function () {\
+  console.log("onStart");\
+};\
+\
+var onStop = function () {\
+  console.log("onStop");\
+};\
+\
+ant.runtime.setCurrentApp(onInitialize, onStart, onStop);';
 /* UI config area END */
 
 /* Sub-controllers */
 var gContext = {
-  presentAppName: undefined
+  currentAppName: undefined,
+  currentContentId: undefined
 };
 var gANTClient = new ANTClient();
 
@@ -29,20 +46,24 @@ var gCodeEditor;
 var gConsole;
 
 /* Main UI components */
-var gAppSelectorLabel;
-var gAppSelectorMenu;
-var gNavMenu;
+var gAppSelectorLabelView;
+var gAppSelectorMenuView;
+var gNavMenuView;
 var gCreateAppDialogView;
+var gCreateAppFabButtonView;
 
 /* Control handlers */
 function selectApp(appName) {
   console.log('on select app: ' + appName);
-  gContext.presentAppName = appName;
+  gContext.currentAppName = appName;
 
   // Update app selector label
-  gAppSelectorLabel.setText(appName);
+  gAppSelectorLabelView.setText(appName);
 
-  // TODO: Update code editor when code editor is opened
+  // Update code editor when code editor is opened
+  refreshCodeEditor();
+
+  // TODO: Update console when console is opened
 }
 
 function tryToCreateApp() {
@@ -53,40 +74,134 @@ function tryToCreateApp() {
 }
 
 function createApp(appName) {
-  // Update app selector menu
-  gAppSelectorMenu.addApp(appName);
+  // Send "create app request"
+  gANTClient.installApp(appName, initialCode, function (isSuccess, text) {
+    if (isSuccess) {
+      // Update app selector menu
+      gAppSelectorMenuView.addApp(appName);
 
-  // TODO: Update app list card when dashboard is opened
+      // TODO: Update app list card when dashboard is opened
 
-  // Select this app
-  selectApp(appName);
+      // Select this app
+      selectApp(appName);
+    } else {
+      alert(text);
+    }
+  });
+}
+
+function refreshCodeEditor() {
+  if (gContext.currentContentId === 'navitem-codeeditor') {
+    var appName = gContext.currentAppName;
+    if (appName !== undefined) {
+      gANTClient.getAppCode(appName, function (isSuccess, appCode) {
+        if (isSuccess) {
+          gCodeEditor.setAppCode(appcode);
+        } else {
+          console.warn('Cannot get the code of app ' + appName);
+        }
+      });
+    } else {
+      alert('App has not been selected!');
+      gNavMenuView.selectItem(gNavMenuView.getItem(0));
+    }
+  }
+}
+
+function updateCurrentAppCode(appCode) {
+  // Send "create app request"
+  var appName = gContext.currentAppName;
+  gANTClient.installApp(appName, appCode, function (isSuccess, text) {
+    if (isSuccess) {
+      // TODO: toast UI
+      alert(text);
+    } else {
+      alert(text);
+    }
+  });
+}
+
+function launchCurrentApp() {
+  // Send "launch app request"
+  var appName = gContext.currentAppName;
+  gANTClient.launchApp(appName, function (isSuccess, text) {
+    if (isSuccess) {
+      // TODO: toast UI
+      alert(text);
+    } else {
+      alert(text);
+    }
+  });
+}
+
+function terminateCurrentApp() {
+  // Send "terminate app request"
+  var appName = gContext.currentAppName;
+  gANTClient.terminateApp(appName, function (isSuccess, text) {
+    if (isSuccess) {
+      // TODO: toast UI
+      alert(text);
+    } else {
+      alert(text);
+    }
+  });
+}
+
+function removeCurrentApp() {
+  // Send "remove app request"
+  var appName = gContext.currentAppName;
+  gANTClient.removeApp(appName, function (isSuccess, text) {
+    if (isSuccess) {
+      // TODO: toast UI
+      alert(text);
+    } else {
+      alert(text);
+    }
+  });
 }
 
 /* Initializers */
 function onInitialize() {
   gDashboard = new DashboardView();
-  gCodeEditor = new CodeEditorView(initialCode);
+  gCodeEditor = new CodeEditorView(
+    refreshCodeEditor,
+    updateCurrentAppCode,
+    launchCurrentApp,
+    terminateCurrentApp,
+    removeCurrentApp
+  );
   gConsole = undefined;
 
-  gAppSelectorLabel = new AppSelectorLabelView();
-  gAppSelectorMenu = new AppSelectorMenuView(selectApp, tryToCreateApp);
-  gNavMenu = new NavMenuView();
+  gAppSelectorLabelView = new AppSelectorLabelView();
+  gAppSelectorMenuView = new AppSelectorMenuView(selectApp, tryToCreateApp);
+  gNavMenuView = new NavMenuView(gContext);
   gCreateAppDialogView = new CreateAppDialogView();
+  gCreateAppFabButtonView = new CreateAppFabButtonView();
 
-  initializeAppSelector();
-  initializeNavMenu();
+  initializeAppSelectorView();
+  initializeNavMenuView();
+  initializeCreateAppFabButtonView();
 }
 
-function initializeAppSelector() {
-  gAppSelectorLabel.setText('No app selected');
+function initializeAppSelectorView() {
+  gAppSelectorLabelView.setText('No app selected');
 }
 
-function initializeNavMenu() {
-  gNavMenu.addItem('navitem-dashboard', 'home', 'Dashboard', gDashboard);
-  gNavMenu.addItem('navitem-codeeditor', 'inbox', 'Code Editor', gCodeEditor);
-  gNavMenu.addItem('navitem-console', 'wysiwyg', 'Console', gConsole);
+function initializeNavMenuView() {
+  gNavMenuView.addItem('navitem-dashboard', 'home', 'Dashboard', gDashboard);
+  gNavMenuView.addItem(
+    'navitem-codeeditor',
+    'inbox',
+    'Code Editor',
+    gCodeEditor
+  );
+  gNavMenuView.addItem('navitem-console', 'wysiwyg', 'Console', gConsole);
 
-  gNavMenu.updateForItem(gNavMenu.getItem(0));
+  gNavMenuView.selectItem(gNavMenuView.getItem(0));
+}
+
+function initializeCreateAppFabButtonView() {
+  gCreateAppFabButtonView.setOnClickHandler(tryToCreateApp);
 }
 
 $(document).ready(onInitialize);

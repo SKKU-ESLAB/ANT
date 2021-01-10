@@ -45,22 +45,17 @@ var gConfig = new Config();
 /* Config END */
 
 var onGetControlpadPage = function (request, data) {
-  var _addTargetAddressScript = function (originalHtml) {
-    var jQueryTagEndIdx =
-      originalHtml.indexOf('</script>') + '</script>'.length;
+  var _addTargetAddressScript = function (originalCode) {
     var ipAddress = Util.getIPAddress(gConfig.defaultInterfaceName);
     var portNum = gConfig.defaultPort;
     var ipAddressSetting =
-      '\n<script>$(document).ready(function () {\n' +
-      '$("#targetAddressInput").val("' +
+      'ANTClient.prototype.getTargetUri = function() {\n  return "' +
       ipAddress +
       ':' +
       portNum +
-      '");\n});</script>\n';
-    var html =
-      originalHtml.slice(0, jQueryTagEndIdx) +
-      ipAddressSetting +
-      originalHtml.slice(jQueryTagEndIdx + 1);
+      '";\n' +
+      '};';
+    var html = originalCode + '\n' + ipAddressSetting;
     return html;
   };
 
@@ -73,22 +68,21 @@ var onGetControlpadPage = function (request, data) {
     'controlpad'
   );
   if (urlTokens.length == 0) {
-    var filePath = path.join(controlpadDir, '/index.html');
+    urlTokens.push('index.html');
+  }
 
-    if (fs.existsSync(filePath)) {
-      var originalHtml = fs.readFileSync(filePath).toString();
-      results.message = _addTargetAddressScript(originalHtml);
-      results.code = 200;
+  var filePath = controlpadDir;
+  for (var i = 0; i < urlTokens.length; i++) {
+    filePath = path.join(filePath, urlTokens[i]);
+  }
+
+  if (fs.existsSync(filePath)) {
+    var fileContents = fs.readFileSync(filePath);
+    if (filePath.indexOf('ant-client.js') >= 0) {
+      fileContents = _addTargetAddressScript(fileContents);
     }
-  } else {
-    var filePath = controlpadDir;
-    for (var i = 0; i < urlTokens.length; i++) {
-      filePath = path.join(filePath, urlTokens[i]);
-    }
-    if (fs.existsSync(filePath)) {
-      results.message = fs.readFileSync(filePath);
-      results.code = 200;
-    }
+    results.message = fileContents;
+    results.code = 200;
   }
   return results;
 };
@@ -132,11 +126,11 @@ function onInstallApp(request, data) {
   var results = {message: RESULT_FAILED, code: 500};
   try {
     var newlineIndex = data.indexOf('\n');
-    if (newlineIndex < 0) {
+    if (newlineIndex < 0 || newlineIndex + 1 == data.length) {
       throw 'invalid message\n' + data;
     }
     var appName = data.substring(0, newlineIndex);
-    var appCode = data.substring(newlineIndex);
+    var appCode = data.substring(newlineIndex + 1);
 
     // Install app
     gAppManager.installApp(appName, appCode);
