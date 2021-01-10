@@ -139,7 +139,7 @@ function onInstallApp(request, data) {
     results.code = 200;
     return results;
   } catch (e) {
-    results.message = 'Install app failure: ' + e;
+    results.message = 'Install app failure: ' + JSON.stringify(e);
     return results;
   }
 }
@@ -355,7 +355,7 @@ var gInitialHTTPServerEntries = [
 ];
 
 function onAppAdded(app) {
-  var rootUrl = '/apps/' + app.getname();
+  var rootUrl = '/apps/' + app.getName();
   gHTTPServer.addEntry(rootUrl, 'DELETE', onRemoveApp);
   gHTTPServer.addEntry(rootUrl + '/launch', 'POST', onLaunchApp);
   gHTTPServer.addEntry(rootUrl + '/terminate', 'POST', onTerminateApp);
@@ -371,7 +371,7 @@ function onAppAdded(app) {
 }
 
 function onAppRemoved(app) {
-  var rootUrl = '/apps/' + app.getname();
+  var rootUrl = '/apps/' + app.getName();
   gHTTPServer.removeEntry(rootUrl, 'DELETE');
   gHTTPServer.removeEntry(rootUrl + '/launch', 'POST');
   gHTTPServer.removeEntry(rootUrl + '/terminate', 'POST');

@@ -15,7 +15,9 @@
 
 var childProcess = require('child_process');
 var fs = require('fs');
+var path = require('path');
 var net = require('net');
+var Util = require('./util.js');
 
 var AppConfig = function () {
   this.maxStdoutBufferLength = 100;
@@ -58,16 +60,12 @@ App.prototype.getState = function () {
   return AppState[this.mState];
 };
 
-App.prototype.setState = function (status) {
-  if (typeof status === string) {
-    this.mState = AppState[status];
-  } else if (typeof status === number) {
-    if (
-      Number.isInteger(status) &&
-      status >= 0 &&
-      status < AppState.length / 2
-    ) {
-      this.mState = status;
+App.prototype.setState = function (state) {
+  if (typeof state === 'string') {
+    this.mState = AppState[state];
+  } else if (typeof state === 'number') {
+    if (Number.isInteger(state) && state >= 0) {
+      this.mState = state;
     } else {
       this.mState = AppState.Inactive;
     }
@@ -77,7 +75,7 @@ App.prototype.setState = function (status) {
 App.prototype.launch = function () {
   var self = this;
 
-  // Check status
+  // Check state
   if (this.mState !== AppState.Inactive) {
     throw 'Cannot launch app ' + this.mName + ': invalid state=' + this.mState;
   }
@@ -106,19 +104,20 @@ App.prototype.launch = function () {
   this.mSocket.listen();
 
   // Spawn the child app process
-  var antRootDir = _getAntRootDir();
+  var antRootDir = Util.getAntRootDir();
   var iotjsPath = path.join(antRootDir, 'iotjs');
   var appMainPath = path.join(antRootDir, 'app-core', 'main.js');
   this.mProcess = childProcess.spawn(iotjsPath, [
     appMainPath,
     this.mName,
-    this.mSocket.localPort
+    this.mFilePath,
+    this.mSocket.address().port
   ]);
 
   // Set stdout and stderr handlers
   this.mProcess.stdout.on('data', function (data) {
     // Handler on stdout event
-    var stdoutEntry = {ts: self.mStdoutBufferTS++, d: data};
+    var stdoutEntry = {ts: self.mStdoutBufferTS++, d: data.toString()};
     self.mStdoutBuffer.push(stdoutEntry);
     while (self.mStdoutBuffer.length > gAppConfig.maxStdoutBufferLength) {
       self.mStdoutBuffer.shift();
@@ -126,7 +125,7 @@ App.prototype.launch = function () {
   });
   this.mProcess.stderr.on('data', function (data) {
     // Handler on stderr event
-    var stderrEntry = {ts: self.mStderrBufferTS++, d: data};
+    var stderrEntry = {ts: self.mStderrBufferTS++, d: data.toString()};
     self.mStderrBuffer.push(stderrEntry);
     while (self.mStderrBuffer.length > gAppConfig.maxStderrBufferLength) {
       self.mStderrBuffer.shift();
@@ -135,13 +134,21 @@ App.prototype.launch = function () {
   this.mProcess.on('close', function (code) {
     // Handler on app-terminated event
     console.log('App ' + self.mName + ' exited with code ' + code);
+    console.log('stdout:');
+    for (var i in self.mStdoutBuffer) {
+      console.log(self.mStdoutBuffer[i].d);
+    }
+    console.log('stderr:');
+    for (var i in self.mStderrBuffer) {
+      console.log(self.mStderrBuffer[i].d);
+    }
     this.mProcess = undefined;
     self.setState(AppState.Inactive);
   });
 };
 
 App.prototype.terminateInForce = function () {
-  // Check status
+  // Check state
   if (this.mProcess === undefined) {
     console.error(
       'Cannot terminate app ' + this.mName + ': already terminated'
@@ -157,7 +164,7 @@ App.prototype.terminateInForce = function () {
 };
 
 App.prototype.terminate = function () {
-  // Check status
+  // Check state
   if (this.mState !== AppState.Active) {
     console.error(
       'Cannot terminate app ' + this.mName + ': invalid state=' + this.mState

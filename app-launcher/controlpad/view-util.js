@@ -68,7 +68,7 @@ ButtonView.prototype.append = function (childView) {
 };
 
 ButtonView.prototype.setOnClickHandler = function (onClickHandler) {
-  this.mRootDom.click(onClickHandler);
+  this.mRootDom.onclick = onClickHandler;
 };
 
 ButtonView.prototype.getDom = function () {
