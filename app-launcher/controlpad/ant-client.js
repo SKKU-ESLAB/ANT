@@ -108,11 +108,10 @@ ANTClient.prototype.removeApp = function (appName, handler) {
 
 ANTClient.prototype.launchApp = function (appName, handler) {
   var url = 'http://' + this.getTargetUri() + '/apps/' + appName + '/launch';
-  var data = appName + '\n' + appCode;
   this._sendHTTPRequest(
     url,
     'POST',
-    data,
+    undefined,
     function (responseCode, responseText) {
       if (responseCode == 200) {
         handler(true, responseText);
@@ -125,11 +124,10 @@ ANTClient.prototype.launchApp = function (appName, handler) {
 
 ANTClient.prototype.terminateApp = function (appName, handler) {
   var url = 'http://' + this.getTargetUri() + '/apps/' + appName + '/terminate';
-  var data = appName + '\n' + appCode;
   this._sendHTTPRequest(
     url,
     'POST',
-    data,
+    undefined,
     function (responseCode, responseText) {
       if (responseCode == 200) {
         handler(true, responseText);

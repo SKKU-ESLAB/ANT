@@ -15,22 +15,22 @@
 
 /* UI config area START */
 var initialCode =
-  'var ant = require("ant"); \
-var console = require("console"); \
-\
-var onInitialize = function () {\
-  console.log("onInitialize");\
-};\
-\
-var onStart = function () {\
-  console.log("onStart");\
-};\
-\
-var onStop = function () {\
-  console.log("onStop");\
-};\
-\
-ant.runtime.setCurrentApp(onInitialize, onStart, onStop);';
+  'var ant = require("ant"); \n\
+var console = require("console"); \n\
+\n\
+var onInitialize = function () {\n\
+  console.log("onInitialize");\n\
+};\n\
+\n\
+var onStart = function () {\n\
+  console.log("onStart");\n\
+};\n\
+\n\
+var onStop = function () {\n\
+  console.log("onStop");\n\
+};\n\
+\n\
+ant.runtime.setCurrentApp(onInitialize, onStart, onStop);\n';
 /* UI config area END */
 
 /* Sub-controllers */
@@ -67,8 +67,6 @@ function selectApp(appName) {
 }
 
 function tryToCreateApp() {
-  console.log('on create app');
-
   // Show create app dialog
   gCreateAppDialogView.show(createApp);
 }
@@ -96,7 +94,7 @@ function refreshCodeEditor() {
     if (appName !== undefined) {
       gANTClient.getAppCode(appName, function (isSuccess, appCode) {
         if (isSuccess) {
-          gCodeEditor.setAppCode(appcode);
+          gCodeEditor.setAppCode(appCode);
         } else {
           console.warn('Cannot get the code of app ' + appName);
         }
@@ -128,6 +126,10 @@ function launchCurrentApp() {
     if (isSuccess) {
       // TODO: toast UI
       alert(text);
+
+      if(gContext.currentContentId === 'navitem-codeeditor') {
+        gCodeEditor.setRunButtonMode(false);
+      }
     } else {
       alert(text);
     }
@@ -141,6 +143,10 @@ function terminateCurrentApp() {
     if (isSuccess) {
       // TODO: toast UI
       alert(text);
+
+      if(gContext.currentContentId === 'navitem-codeeditor') {
+        gCodeEditor.setRunButtonMode(true);
+      }
     } else {
       alert(text);
     }

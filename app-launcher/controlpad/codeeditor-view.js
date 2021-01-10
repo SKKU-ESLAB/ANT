@@ -30,6 +30,7 @@ function CodeEditorView(
   this.mCommandBar = new CommandBar(
     'command-bar',
     this.mCommandBarHeight,
+    10,
     onSaveButton,
     onLaunchButton,
     onTerminateButton,
@@ -57,6 +58,7 @@ CodeEditorView.prototype.getDom = function () {
 
 CodeEditorView.prototype.onAddedDom = function () {
   // Initialize code editor on added the DOM element is added to root
+  var self = this;
   var codeEditor = this.mCodeEditor;
   codeEditor.setAttribute(
     'style',
@@ -71,23 +73,27 @@ CodeEditorView.prototype.onAddedDom = function () {
         value: '\n',
         language: 'javascript'
       });
+      self.mOnAppear();
     });
+  } else {
+    this.mOnAppear();
   }
-  this.mOnAppear();
 };
 
 CodeEditorView.prototype.setAppCode = function (appCode) {
-  gMonacoEditor.setValue(appCode);
+  if (gMonacoEditor !== undefined) {
+    gMonacoEditor.setValue(appCode);
+  }
 };
 
-CodeEditorView.prototype.toggleRunButton = function (isLaunchButton) {
-  this.mCommandBar.toggleRunButton(isLaunchButton);
+CodeEditorView.prototype.setRunButtonMode = function (isLaunchButton) {
+  this.mCommandBar.setRunButtonMode(isLaunchButton);
 };
 
 function CommandBar(
   id,
   height,
-  margin = 10,
+  margin,
   onSaveButton,
   onLaunchButton,
   onTerminateButton,
@@ -146,7 +152,7 @@ CommandBar.prototype.getDom = function () {
   return this.mRootDom;
 };
 
-CommandBar.prototype.toggleRunButton = function (isLaunchButton) {
+CommandBar.prototype.setRunButtonMode = function (isLaunchButton) {
   if (isLaunchButton) {
     this.mRunButton.setIconType('play_arrow');
     this.mRunButton.setText('Launch');

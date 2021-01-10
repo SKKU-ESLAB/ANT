@@ -65,7 +65,7 @@ AppManager.prototype.getApp = function (appName) {
 AppManager.prototype._addApp = function (appName, appFilePath) {
   // Add app metadata
   var app = new App(appName, appFilePath);
-  this.mApps.append(app);
+  this.mApps.push(app);
 
   // Call handler
   this.mOnAppAdded(app);
@@ -91,6 +91,7 @@ AppManager.prototype.installApp = function (appName, appCode) {
     }
     return app;
   } catch (e) {
+    console.error(e);
     throw JSON.stringify(e);
   }
 };

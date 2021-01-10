@@ -33,15 +33,16 @@ function mainLoop() {
   console.log('ANT app main loop start');
 
   // parse arguments
-  if (process.argv.length !== 4) {
+  if (process.argv.length !== 5) {
     console.error('Invalid arguements: ' + JSON.stringify(process.argv));
     return;
   }
   var appName = process.argv[2];
-  var launcherPort = parseInt(process.argv[3]);
+  var appFilePath = process.argv[3];
+  var launcherPort = parseInt(process.argv[4]);
 
   // Load app code
-  this.gAppObject = require(appFileName);
+  this.gAppObject = require(appFilePath);
 
   // Launch app
   var app = ant.runtime.getCurrentApp();

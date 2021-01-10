@@ -37,7 +37,7 @@ function HTTPServer(entries, onDefaultEntryHandler, isVerbose = false) {
       parts.push(chunk);
     });
     request.on('end', function () {
-      var body = Buffer.concat(parts);
+      var body = Buffer.concat(parts).toString();
       self._onHTTPRequest(request, response, body);
     });
   });
@@ -60,7 +60,7 @@ HTTPServer.prototype._onHTTPRequest = function (request, response, data) {
   for (var i in this.mEntries) {
     var entry = this.mEntries[i];
 
-    if (entry.u == request.url) {
+    if (entry.u == request.url && entry.m == request.method) {
       responseParams = entry.f(request, data);
       entryFound = true;
       break;
