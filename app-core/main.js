@@ -56,7 +56,7 @@ function mainLoop() {
   }
 
   // Connect to app launcher
-  gSocket = net.connect(launcherPort, 'localhost', function () {
+  gSocket = net.connect({port: launcherPort, family: 4}, function () {
     // Notify that the application is successfully launched
     var pid = '' + process.pid;
     gSocket.write(pid);
