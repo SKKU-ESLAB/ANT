@@ -108,13 +108,9 @@ App.prototype.launch = function () {
   // Spawn the child app process
   var antRootDir = _getAntRootDir();
   var iotjsPath = path.join(antRootDir, 'iotjs');
-  var appLauncherPath = path.join(
-    antRootDir,
-    'app-launcher',
-    'app-launcher.js'
-  );
+  var appMainPath = path.join(antRootDir, 'app-core', 'main.js');
   this.mProcess = childProcess.spawn(iotjsPath, [
-    appLauncherPath,
+    appMainPath,
     this.mName,
     this.mSocket.localPort
   ]);

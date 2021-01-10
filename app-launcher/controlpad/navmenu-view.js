@@ -57,10 +57,11 @@ NavMenuItemView.prototype.getView = function () {
   return this.mView;
 };
 
-function NavMenuView() {
+function NavMenuView(context) {
   // Set attributes
   this.mNavItems = [];
   this.mRootDom = document.getElementById('nav-menu');
+  this.mContext = context;
 }
 
 NavMenuView.prototype.getDom = function () {
@@ -79,7 +80,10 @@ NavMenuView.prototype.getItem = function (index) {
   return this.mNavItems[index];
 };
 
-NavMenuView.prototype.updateForItem = function (navItemView) {
+NavMenuView.prototype.selectItem = function (navItemView) {
+  // Update context
+  this.mContext.currentContentId = navItemView.getId();
+
   // Update header title
   var titleText = 'ANT Controlpad: ' + navItemView.getTitle();
   $('#header_title').html(titleText);
@@ -100,7 +104,7 @@ NavMenuView.prototype.addItem = function (id, iconType, title, view) {
       }
     }
     if (_nav_item !== undefined) {
-      self.updateForItem(_nav_item);
+      self.selectItem(_nav_item);
     }
   };
 
