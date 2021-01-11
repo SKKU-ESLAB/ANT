@@ -88,12 +88,20 @@ AppSelectorMenuView.prototype.insertBefore = function (childView, beforeView) {
 
 AppSelectorMenuView.prototype.addApp = function (appName) {
   var self = this;
+  // Check duplicated entry
+  for (var i in this.mRootDom.children) {
+    var childView = this.mRootDom.children[i];
+    if (childView.id == 'app-selector-menu-entry-' + appName) {
+      return;
+    }
+  }
+
+  // Make and insert new entry
   var entry = new AppSelectorMenuEntryView(undefined, appName, function (e) {
     var id = e.target.id;
     var appName = id.substring('app-selector-menu-entry-'.length() + 1);
     self.mOnClickAppEntry(appName);
   });
-
   this.insertBefore(entry, this.mCreateAppEntry);
 };
 
