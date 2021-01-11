@@ -82,7 +82,8 @@ NavMenuView.prototype.getItem = function (index) {
 
 NavMenuView.prototype.selectItem = function (navItemView) {
   // Update context
-  this.mContext.currentContentId = navItemView.getId();
+  var prevNavItemView = this.mContext.currentNavItem;
+  this.mContext.currentNavItem = navItemView;
 
   // Update header title
   var titleText = 'ANT Controlpad: ' + navItemView.getTitle();
@@ -90,7 +91,15 @@ NavMenuView.prototype.selectItem = function (navItemView) {
 
   // Update content view
   $('#content_root').html(navItemView.getView().getDom());
-  navItemView.getView().onAddedDom();
+
+  // Call handlers
+  if (
+    prevNavItemView !== undefined &&
+    prevNavItemView.getView().onRemovedDom !== undefined
+  )
+    prevNavItemView.getView().onRemovedDom();
+  if (navItemView.getView().onAddedDom !== undefined)
+    navItemView.getView().onAddedDom();
 };
 
 NavMenuView.prototype.addItem = function (id, iconType, title, view) {

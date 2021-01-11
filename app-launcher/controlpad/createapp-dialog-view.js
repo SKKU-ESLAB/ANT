@@ -36,6 +36,11 @@ function CreateAppDialogView() {
 CreateAppDialogView.prototype.show = function (onClickConfirm) {
   this.mOnClickConfirm = onClickConfirm;
 
+  var appNameTextField = document.getElementById(
+    'create-app-dialog-appname-textfield'
+  );
+  appNameTextField.value = '';
+
   this.mRootDom.showModal();
 };
 
@@ -47,9 +52,17 @@ CreateAppDialogView.prototype.confirm = function () {
   if (
     appName === undefined ||
     typeof appName !== 'string' ||
-    appName.length <= 0
+    appName.length <= 0 ||
+    appName.indexOf(' ') >= 0 ||
+    appName.indexOf('\n') >= 0 ||
+    appName.indexOf('.') >= 0
   ) {
-    alert('Invalid app name: ' + appName);
+    alert(
+      'Invalid app name: ' +
+        appName +
+        "\nApp name cannot include newline('\\n'), space(' '), and period ('.') characters."
+    );
+    return;
   }
 
   // Call handler

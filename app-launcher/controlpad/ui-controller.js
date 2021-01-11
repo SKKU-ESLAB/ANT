@@ -36,7 +36,9 @@ ant.runtime.setCurrentApp(onInitialize, onStart, onStop);\n';
 /* Sub-controllers */
 var gContext = {
   currentAppName: undefined,
-  currentContentId: undefined
+  currentNavItem: undefined,
+  currentConsoleAppName: undefined,
+  consoleTsPointers: []
 };
 var gANTClient = new ANTClient();
 
@@ -53,7 +55,7 @@ var gCreateAppDialogView;
 var gCreateAppFabButtonView;
 
 /* Control handlers */
-function refreshAppList() {
+function refreshAppList(onFinish) {
   gANTClient.getAppList(function (isSuccess, appList) {
     if (isSuccess) {
       for (var i in appList) {
@@ -61,9 +63,7 @@ function refreshAppList() {
         _addAppFromUI(app.name);
       }
 
-      if (appList.length > 0) {
-        selectApp(appList[0].name);
-      }
+      onFinish(appList);
     } else {
       // TODO: toast
       console.warn('Get app list failed');
@@ -78,12 +78,14 @@ function selectApp(appName) {
   gContext.currentAppName = appName;
 
   // Update app selector label
-  gAppSelectorLabelView.setText(appName);
+  var label = appName !== undefined ? appName : 'No app selected';
+  gAppSelectorLabelView.setText(label);
 
   // Update code editor when code editor is opened
   refreshCodeEditor();
 
-  // TODO: Update console when console is opened
+  // Update console when console is opened
+  refreshConsole();
 }
 
 function tryToCreateApp() {
@@ -113,10 +115,13 @@ function _addAppFromUI(appName) {
 }
 
 function refreshCodeEditor() {
-  if (gContext.currentContentId === 'navitem-codeeditor') {
+  if (gContext.currentNavItem.getId() === 'navitem-codeeditor') {
     var appName = gContext.currentAppName;
+    console.log('current app name: ' + appName);
     if (appName !== undefined) {
+      console.log('getAppCode request ' + appName);
       gANTClient.getAppCode(appName, function (isSuccess, appCode) {
+        console.log('getAppCode for ' + appName + 'result: ' + appCode);
         if (isSuccess) {
           gCodeEditor.setAppCode(appCode);
         } else {
@@ -124,7 +129,6 @@ function refreshCodeEditor() {
         }
       });
     } else {
-      alert('App has not been selected!');
       gNavMenuView.selectItem(gNavMenuView.getItem(0));
     }
   }
@@ -151,7 +155,7 @@ function launchCurrentApp() {
       // TODO: toast UI
       alert(text);
 
-      if (gContext.currentContentId === 'navitem-codeeditor') {
+      if (gContext.currentNavItem.getId() === 'navitem-codeeditor') {
         gCodeEditor.setRunButtonMode(false);
       }
     } else {
@@ -165,12 +169,10 @@ function terminateCurrentApp() {
   var appName = gContext.currentAppName;
   gANTClient.terminateApp(appName, function (isSuccess, text) {
     if (isSuccess) {
-      _removeAppFromUI(appName);
-
       // TODO: toast UI
       alert(text);
 
-      if (gContext.currentContentId === 'navitem-codeeditor') {
+      if (gContext.currentNavItem.getId() === 'navitem-codeeditor') {
         gCodeEditor.setRunButtonMode(true);
       }
     } else {
@@ -184,6 +186,8 @@ function removeCurrentApp() {
   var appName = gContext.currentAppName;
   gANTClient.removeApp(appName, function (isSuccess, text) {
     if (isSuccess) {
+      _removeAppFromUI(appName);
+
       // TODO: toast UI
       alert(text);
     } else {
@@ -193,10 +197,59 @@ function removeCurrentApp() {
 }
 
 function _removeAppFromUI(appName) {
-  // Update app selector menu
+  // Update app selector menu (remove the app and select another one)
+  var index = gAppSelectorLabelView.getIndex(appName);
+  if (index < 0) {
+    console.error('Invalid app index: ' + appName + ' / ' + index);
+    return;
+  }
+  var appsCount = gAppSelectorLabelView.getAppsCount();
+  var nextIndex = -1;
+  if (appsCount > 1) {
+    nextIndex = index > 0 ? index - 1 : 0;
+  }
   gAppSelectorMenuView.removeApp(appName);
+  selectApp(gAppSelectorMenuView.getAppNameAt(nextIndex));
 
   // TODO: Update app list card when dashboard is opened
+}
+
+function refreshConsole() {
+  // Update console when console is opened
+  if (gContext.currentNavItem.getId() === 'navitem-console') {
+    var appName = gContext.currentAppName;
+
+    var fromTs = gContext.consoleTsPointers[appName];
+    if (fromTs === undefined) fromTs = -1;
+
+    if (appName !== undefined) {
+      // Send "get app output request"
+      gANTClient.getOutput(appName, fromTs, function (isSuccess, outputs) {
+        if (isSuccess) {
+          // Update ts pointer of the app
+          var maxTs = -1;
+          for (var i in outputs) {
+            var entry = outputs[i];
+            if (maxTs < entry.ts) maxTs = entry.ts;
+          }
+          if (maxTs < 0) maxTs = undefined;
+          if (
+            gContext.consoleTsPointers[appName] === undefined ||
+            maxTs > gContext.consoleTsPointers[appName]
+          ) {
+            gContext.consoleTsPointers[appName] = maxTs + 1;
+          }
+
+          // Update console
+          gConsole.updateOutputs(appName, outputs);
+        } else {
+          console.warn('Cannot get the outputs of app ' + appName);
+        }
+      });
+    } else {
+      gNavMenuView.selectItem(gNavMenuView.getItem(0));
+    }
+  }
 }
 
 /* Initializers */
@@ -209,7 +262,7 @@ function onInitialize() {
     terminateCurrentApp,
     removeCurrentApp
   );
-  gConsole = undefined;
+  gConsole = new ConsoleView(refreshConsole);
 
   gAppSelectorLabelView = new AppSelectorLabelView();
   gAppSelectorMenuView = new AppSelectorMenuView(selectApp, tryToCreateApp);
@@ -217,15 +270,13 @@ function onInitialize() {
   gCreateAppDialogView = new CreateAppDialogView();
   gCreateAppFabButtonView = new CreateAppFabButtonView();
 
-  initializeAppSelectorView();
   initializeNavMenuView();
   initializeCreateAppFabButtonView();
 
-  refreshAppList();
-}
-
-function initializeAppSelectorView() {
-  gAppSelectorLabelView.setText('No app selected');
+  refreshAppList(function (appList) {
+    if (appList.length > 0) selectApp(appList[0].name);
+    else selectApp(undefined);
+  });
 }
 
 function initializeNavMenuView() {

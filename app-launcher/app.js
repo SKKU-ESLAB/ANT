@@ -20,8 +20,7 @@ var net = require('net');
 var Util = require('./util.js');
 
 var AppConfig = function () {
-  this.maxStdoutBufferLength = 100;
-  this.maxStderrBufferLength = 100;
+  this.maxOutputBufferLength = 1000;
 };
 var gAppConfig = new AppConfig();
 
@@ -41,10 +40,8 @@ function App(name, filePath) {
   this.mFilePath = filePath;
   this.setState(AppState.Inactive);
   this.mProcess = undefined;
-  this.mStdoutBuffer = [];
-  this.mStderrBuffer = [];
-  this.mStdoutBufferTS = 0;
-  this.mStderrBufferTS = 0;
+  this.mOutputBuffer = [];
+  this.mOutputBufferTS = 0;
   this.mSocket = undefined;
 }
 
@@ -85,8 +82,7 @@ App.prototype.launch = function () {
 
   // Set attributes
   this.setState(AppState.Launching);
-  this.mStdoutBuffer.splice(0, this.mStdoutBuffer.length);
-  this.mStderrBuffer.splice(0, this.mStderrBuffer.length);
+  this.mOutputBuffer.splice(0, this.mOutputBuffer.length);
 
   // Make socket to communicate with child app process
   this.mSocket = net.createServer();
@@ -117,30 +113,28 @@ App.prototype.launch = function () {
   // Set stdout and stderr handlers
   this.mProcess.stdout.on('data', function (data) {
     // Handler on stdout event
-    var stdoutEntry = {ts: self.mStdoutBufferTS++, d: data.toString()};
-    self.mStdoutBuffer.push(stdoutEntry);
-    while (self.mStdoutBuffer.length > gAppConfig.maxStdoutBufferLength) {
-      self.mStdoutBuffer.shift();
+    var stdoutEntry = {ts: self.mOutputBufferTS++, t: 'O', d: data.toString()};
+    self.mOutputBuffer.push(stdoutEntry);
+    while (self.mOutputBuffer.length > gAppConfig.maxOutputBufferLength) {
+      self.mOutputBuffer.shift();
     }
   });
   this.mProcess.stderr.on('data', function (data) {
     // Handler on stderr event
-    var stderrEntry = {ts: self.mStderrBufferTS++, d: data.toString()};
-    self.mStderrBuffer.push(stderrEntry);
-    while (self.mStderrBuffer.length > gAppConfig.maxStderrBufferLength) {
-      self.mStderrBuffer.shift();
+    var stderrEntry = {ts: self.mOutputBufferTS++, t: 'E', d: data.toString()};
+    self.mOutputBuffer.push(stderrEntry);
+    while (self.mOutputBuffer.length > gAppConfig.maxOutputBufferLength) {
+      self.mOutputBuffer.shift();
     }
   });
   this.mProcess.on('close', function (code) {
     // Handler on app-terminated event
     console.log('App ' + self.mName + ' exited with code ' + code);
-    console.log('stdout:');
-    for (var i in self.mStdoutBuffer) {
-      console.log(self.mStdoutBuffer[i].d);
-    }
-    console.log('stderr:');
-    for (var i in self.mStderrBuffer) {
-      console.log(self.mStderrBuffer[i].d);
+    console.log('output:');
+    for (var i in self.mOutputBuffer) {
+      console.log(
+        '[' + self.mOutputBuffer[i].t + ']' + self.mOutputBuffer[i].d
+      );
     }
     this.mProcess = undefined;
     self.setState(AppState.Inactive);
@@ -196,22 +190,13 @@ App.prototype.readCode = function () {
   return appCode;
 };
 
-App.prototype.getStdouts = function (fromTs) {
-  var stdouts = [];
-  for (var i in this.mStdoutBuffer) {
-    var entry = this.mStdoutBuffer[i];
-    if (entry.ts >= fromTs) stdouts.push(entry);
+App.prototype.getOutputs = function (fromTs) {
+  var outputs = [];
+  for (var i in this.mOutputBuffer) {
+    var entry = this.mOutputBuffer[i];
+    if (fromTs < 0 || entry.ts >= fromTs) outputs.push(entry);
   }
-  return stdouts;
-};
-
-App.prototype.getStderrs = function (fromTs) {
-  var stderrs = [];
-  for (var i in this.mStderrBuffer) {
-    var entry = this.mStderrBuffer[i];
-    if (entry.ts >= fromTs) stderrs.push(entry);
-  }
-  return stderrs;
+  return outputs;
 };
 
 module.exports = App;

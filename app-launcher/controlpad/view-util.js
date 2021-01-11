@@ -139,7 +139,7 @@ CardView.prototype.getDom = function () {
 };
 
 CardView.prototype.append = function (childView) {
-  if (childView.getDom !== undefined) {
+  if (typeof childView === 'object' && childView.getDom !== undefined) {
     this.mRootDom.append(childView.getDom());
   } else {
     this.mRootDom.append(childView);
@@ -178,6 +178,15 @@ CardView.prototype.addListItem = function (iconType, text) {
     return listItem;
   } else {
     return undefined;
+  }
+};
+
+CardView.prototype.clearListItems = function () {
+  for (var i in this.mListView.children) {
+    var childView = this.mListView.children[i];
+    if (childView.id !== undefined && childView.id.indexOf('--list-') >= 0) {
+      childView.remove();
+    }
   }
 };
 
