@@ -137,3 +137,21 @@ ANTClient.prototype.terminateApp = function (appName, handler) {
     }
   );
 };
+
+ANTClient.prototype.getOutput = function (appName, fromTs, handler) {
+  var url = 'http://' + this.getTargetUri() + '/apps/' + appName + '/output';
+  var data = '' + fromTs;
+  this._sendHTTPRequest(
+    url,
+    'POST',
+    data,
+    function (responseCode, responseText) {
+      if (responseCode == 200) {
+        var outputs = JSON.parse(responseText);
+        handler(true, outputs);
+      } else {
+        handler(false);
+      }
+    }
+  );
+};

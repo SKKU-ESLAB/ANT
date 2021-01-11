@@ -86,6 +86,27 @@ AppSelectorMenuView.prototype.insertBefore = function (childView, beforeView) {
   this.mRootDom.insertBefore(childView, beforeView);
 };
 
+AppSelectorMenuView.prototype.getIndex = function (appName) {
+  for (var i in this.mRootDom.children) {
+    var childView = this.mRootDom.children[i];
+    if (childView.id == 'app-selector-menu-entry-' + appName) {
+      return i;
+    }
+  }
+  return -1;
+};
+
+AppSelectorMenuView.prototype.getAppNameAt = function (index) {
+  if (index < 0) return undefined;
+  var childView = this.mRootDom.children[index];
+  var appName = childView.id.substring('app-selector-menu-entry-'.length);
+  return appName;
+};
+
+AppSelectorMenuView.prototype.getAppsCount = function () {
+  return this.mRootDom.children.length - 1;
+};
+
 AppSelectorMenuView.prototype.addApp = function (appName) {
   var self = this;
   // Check duplicated entry
@@ -99,7 +120,7 @@ AppSelectorMenuView.prototype.addApp = function (appName) {
   // Make and insert new entry
   var entry = new AppSelectorMenuEntryView(undefined, appName, function (e) {
     var id = e.target.id;
-    var appName = id.substring('app-selector-menu-entry-'.length() + 1);
+    var appName = id.substring('app-selector-menu-entry-'.length);
     self.mOnClickAppEntry(appName);
   });
   this.insertBefore(entry, this.mCreateAppEntry);

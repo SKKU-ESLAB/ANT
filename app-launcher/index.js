@@ -284,7 +284,7 @@ function onGetAppState(request, data) {
   }
 }
 
-function onGetAppStdout(request, data) {
+function onGetAppOutput(request, data) {
   var results = {message: RESULT_FAILED, code: 500};
   try {
     // Check arguments
@@ -294,48 +294,15 @@ function onGetAppStdout(request, data) {
       throw 'invalid URL ' + request.url;
     }
     var tsFrom = parseInt(data);
-    if (tsFrom == NaN) {
-      throw 'invalid tsFrom ' + data;
-    }
 
-    // Get app stdouts
+    // Get app stdouts and stderrs
     var app = gAppManager.getApp(appName);
     if (app === undefined) {
       throw 'not found app ' + appName;
     }
-    var stdouts = app.onGetStdouts(tsFrom);
+    var outputs = app.getOutputs(tsFrom);
 
-    results.message = JSON.stringify(stdouts);
-    results.code = 200;
-    return results;
-  } catch (e) {
-    results.message = 'Get app state failure: ' + e;
-    return results;
-  }
-}
-
-function onGetAppStderr(request, data) {
-  var results = {message: RESULT_FAILED, code: 500};
-  try {
-    // Check arguments
-    var urlTokens = Util.parseUrl(request.url);
-    var appName = urlTokens[1];
-    if (appName === undefined) {
-      throw 'invalid URL ' + request.url;
-    }
-    var tsFrom = parseInt(data);
-    if (tsFrom == NaN) {
-      throw 'invalid tsFrom ' + data;
-    }
-
-    // Get app stderrs
-    var app = gAppManager.getApp(appName);
-    if (app === undefined) {
-      throw 'not found app ' + appName;
-    }
-    var stderrs = app.onGetStderrs(tsFrom);
-
-    results.message = JSON.stringify(stderrs);
+    results.message = JSON.stringify(outputs);
     results.code = 200;
     return results;
   } catch (e) {
@@ -366,8 +333,7 @@ function onAppAdded(app) {
   );
   gHTTPServer.addEntry(rootUrl + '/code', 'GET', onGetAppCode);
   gHTTPServer.addEntry(rootUrl + '/state', 'GET', onGetAppState);
-  gHTTPServer.addEntry(rootUrl + '/stdout', 'GET', onGetAppStdout);
-  gHTTPServer.addEntry(rootUrl + '/stderr', 'GET', onGetAppStderr);
+  gHTTPServer.addEntry(rootUrl + '/output', 'POST', onGetAppOutput);
 }
 
 function onAppRemoved(app) {
@@ -378,8 +344,7 @@ function onAppRemoved(app) {
   gHTTPServer.removeEntry(rootUrl + '/terminateInForce', 'POST');
   gHTTPServer.removeEntry(rootUrl + '/code', 'GET');
   gHTTPServer.removeEntry(rootUrl + '/state', 'GET');
-  gHTTPServer.removeEntry(rootUrl + '/stdout', 'GET');
-  gHTTPServer.removeEntry(rootUrl + '/stderr', 'GET');
+  gHTTPServer.removeEntry(rootUrl + '/output', 'POST');
 }
 
 /**
