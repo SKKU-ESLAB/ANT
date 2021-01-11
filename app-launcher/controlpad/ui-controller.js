@@ -53,6 +53,26 @@ var gCreateAppDialogView;
 var gCreateAppFabButtonView;
 
 /* Control handlers */
+function refreshAppList() {
+  gANTClient.getAppList(function (isSuccess, appList) {
+    if (isSuccess) {
+      for (var i in appList) {
+        var app = appList[i];
+        _addAppFromUI(app.name);
+      }
+
+      if (appList.length > 0) {
+        selectApp(appList[0].name);
+      }
+    } else {
+      // TODO: toast
+      console.warn('Get app list failed');
+    }
+  });
+
+  // TODO: apply deleted app entry that is removed by another controlpad
+}
+
 function selectApp(appName) {
   console.log('on select app: ' + appName);
   gContext.currentAppName = appName;
@@ -75,10 +95,7 @@ function createApp(appName) {
   // Send "create app request"
   gANTClient.installApp(appName, initialCode, function (isSuccess, text) {
     if (isSuccess) {
-      // Update app selector menu
-      gAppSelectorMenuView.addApp(appName);
-
-      // TODO: Update app list card when dashboard is opened
+      _addAppFromUI(appName);
 
       // Select this app
       selectApp(appName);
@@ -86,6 +103,13 @@ function createApp(appName) {
       alert(text);
     }
   });
+}
+
+function _addAppFromUI(appName) {
+  // Update app selector menu
+  gAppSelectorMenuView.addApp(appName);
+
+  // TODO: Update app list card when dashboard is opened
 }
 
 function refreshCodeEditor() {
@@ -127,7 +151,7 @@ function launchCurrentApp() {
       // TODO: toast UI
       alert(text);
 
-      if(gContext.currentContentId === 'navitem-codeeditor') {
+      if (gContext.currentContentId === 'navitem-codeeditor') {
         gCodeEditor.setRunButtonMode(false);
       }
     } else {
@@ -141,10 +165,12 @@ function terminateCurrentApp() {
   var appName = gContext.currentAppName;
   gANTClient.terminateApp(appName, function (isSuccess, text) {
     if (isSuccess) {
+      _removeAppFromUI(appName);
+
       // TODO: toast UI
       alert(text);
 
-      if(gContext.currentContentId === 'navitem-codeeditor') {
+      if (gContext.currentContentId === 'navitem-codeeditor') {
         gCodeEditor.setRunButtonMode(true);
       }
     } else {
@@ -164,6 +190,13 @@ function removeCurrentApp() {
       alert(text);
     }
   });
+}
+
+function _removeAppFromUI(appName) {
+  // Update app selector menu
+  gAppSelectorMenuView.removeApp(appName);
+
+  // TODO: Update app list card when dashboard is opened
 }
 
 /* Initializers */
@@ -187,6 +220,8 @@ function onInitialize() {
   initializeAppSelectorView();
   initializeNavMenuView();
   initializeCreateAppFabButtonView();
+
+  refreshAppList();
 }
 
 function initializeAppSelectorView() {
