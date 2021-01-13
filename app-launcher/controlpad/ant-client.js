@@ -142,14 +142,12 @@ ANTClient.prototype.terminateApp = function (appName, handler) {
 ANTClient.prototype.getOutput = function (appName, fromTs, handler) {
   var url = 'http://' + this.getTargetUri() + '/apps/' + appName + '/output';
   var data = '' + fromTs;
-  console.log('getOutput request: fromTs ' + fromTs);
   this._sendHTTPRequest(
     url,
     'POST',
     data,
     function (responseCode, responseText) {
       if (responseCode == 200) {
-        console.log('getOutput response: ' + responseText);
         var outputs = JSON.parse(responseText);
         handler(true, outputs);
       } else {
