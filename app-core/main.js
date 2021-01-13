@@ -56,20 +56,20 @@ function mainLoop() {
   }
 
   // Connect to app launcher
-  // gSocket = net.connect({port: launcherPort, family: 4}, function () {
-  //   // Notify that the application is successfully launched
-  //   var pid = '' + process.pid;
-  //   gSocket.write(pid);
-  // });
-  // gSocket.on('data', function (data) {
-  //   if (data.indexOf('Terminate') >= 0) {
-  //     // Terminate app
-  //     var app = ant.runtime.getCurrentApp();
-  //     var text = app.stop();
-  //     console.log('App terminate result: ' + text);
-  //     gSocket.close();
-  //   }
-  // });
+  gSocket = net.connect({port: launcherPort, host: 'localhost'});
+  gSocket.on('data', function (data) {
+    if (data.indexOf('Terminate') >= 0) {
+      // Terminate app
+      var app = ant.runtime.getCurrentApp();
+      var text = app.stop();
+      console.log('App terminate result: ' + text);
+      gSocket.close();
+    }
+  });
+
+  // Notify that the application is successfully launched
+  var pid = '' + process.pid;
+  gSocket.write(pid);
 }
 
 mainLoop();

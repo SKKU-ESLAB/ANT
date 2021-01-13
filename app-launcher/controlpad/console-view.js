@@ -75,19 +75,17 @@ ConsoleView.prototype.updateOutputs = function (appName, givenOutputs) {
       newOutputs.push(givenEntry);
     }
   }
-  consoleData.maxTs = maxTs > 0 ? maxTs : undefined;
+  consoleData.maxTs = maxTs > 0 ? maxTs : -1;
   for (var i in newOutputs) {
     var entry = newOutputs[i];
     consoleData.outputs.push(entry);
   }
 
   // Update UI
+  var targetOutputs = undefined;
   if (this.mCurrentAppName == appName) {
-    // Add only newly-added outputs
-    for (var i in newOutputs) {
-      var entry = newOutputs[i];
-      this.addEntry(entry.t, entry.d);
-    }
+    // Set newly-added outputs to be added
+    targetOutputs = newOutputs;
   } else {
     // Update current app name
     this.mCurrentAppName = appName;
@@ -95,14 +93,17 @@ ConsoleView.prototype.updateOutputs = function (appName, givenOutputs) {
     // Clear console view
     this.clear();
 
-    // Add all the outputs
-    for (var i in consoleData.outputs) {
-      var entry = consoleData.outputs[i];
-      var lines = entry.d.split('\n');
-      for (var j in lines) {
-        var line = lines[j];
-        this.addEntry(entry.t, line);
-      }
+    // Set all the outputs to be added
+    targetOutputs = consoleData.outputs;
+  }
+
+  // Add the outputs
+  for (var i in targetOutputs) {
+    var entry = targetOutputs[i];
+    var lines = entry.d.split('\n');
+    for (var j in lines) {
+      var line = lines[j];
+      this.addEntry(entry.t, line);
     }
   }
 };
