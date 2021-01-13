@@ -133,13 +133,6 @@ App.prototype.launch = function () {
   });
   this.mProcess.on('close', function (code) {
     // Handler on app-terminated event
-    console.log('App ' + self.mName + ' exited with code ' + code);
-    console.log('output:');
-    for (var i in self.mOutputBuffer) {
-      console.log(
-        '[' + self.mOutputBuffer[i].t + ']' + self.mOutputBuffer[i].d
-      );
-    }
     this.mProcess = undefined;
     self.setState(AppState.Inactive);
   });

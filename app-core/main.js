@@ -51,7 +51,7 @@ function mainLoop() {
     resultMessage = app.start();
     if (resultMessage == RESULT_SUCCESS) {
       gPid = '' + process.pid;
-      console.log('App ' + appName + ' launched! (pid: ' + pid + ')');
+      console.log('App ' + appName + ' launched! (pid: ' + gPid + ')');
     } else {
       console.error('App launch failure');
     }
@@ -62,7 +62,7 @@ function mainLoop() {
   gSocket.on('data', onAppCommandReceived);
 
   // Notify that the application is successfully launched
-  gSocket.write(pid);
+  gSocket.write(gPid);
 }
 
 function onAppCommandReceived(data) {
@@ -74,7 +74,7 @@ function onAppCommandReceived(data) {
     app.stop();
 
     console.log('App terminated successfully!');
-    gSocket.close();
+    gSocket.destroy();
   }
 }
 
