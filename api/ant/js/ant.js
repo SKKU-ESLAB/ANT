@@ -18,8 +18,6 @@ var console = require('console');
 /** ANT main object start **/
 function ANT() {}
 
-console.log('ANT API checking...');
-
 try {
   ANT.prototype.runtime = require('antruntime');
 } catch (e) {
@@ -28,37 +26,37 @@ try {
 try {
   ANT.prototype.resource = require('antresource');
 } catch (e) {
-  console.log('> Not found Resource API');
+  console.error('> Not found Resource API');
 }
 try {
   ANT.prototype.remoteui = require('antremoteui');
 } catch (e) {
-  console.log('> Not found Remote UI API');
+  console.error('> Not found Remote UI API');
 }
 try {
   ANT.prototype.stream = require('antstream');
 } catch (e) {
-  console.log('> Not found Stream API');
+  console.error('> Not found Stream API');
 }
 try {
   ANT.prototype.ml = require('antml');
 } catch (e) {
-  console.log('> Not found ML API');
+  console.error('> Not found ML API');
 }
 try {
   ANT.prototype.companion = require('antcompanion');
 } catch (e) {
-  console.log('> Not found Companion API');
+  console.error('> Not found Companion API');
 }
 try {
   ANT.prototype.gateway = require('antgateway');
 } catch (e) {
-  console.log('> Not found Gateway API');
+  console.error('> Not found Gateway API');
 }
 try {
   ANT.prototype.camera = require('antcamera');
 } catch (e) {
-  console.log('> Not found Camera API');
+  console.error('> Not found Camera API');
 }
 
 /** ANT main object end **/

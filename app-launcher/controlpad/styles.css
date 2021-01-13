@@ -200,3 +200,20 @@ _:-ms-input-placeholder,
   -ms-flex-align: center;
   align-items: center;
 }
+
+.console-text {
+  width: 100%;
+  height: 100%;
+  background-color: #000000;
+  padding: 10px;
+}
+.console-text-span {
+  font-family: 'Monaco', 'Courier';
+  font-size: 12px;
+}
+.stderr {
+  color: #ff00aa;
+}
+.stdout {
+  color: #ffffff;
+}

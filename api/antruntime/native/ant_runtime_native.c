@@ -56,12 +56,18 @@ JS_FUNCTION(ant_runtime_unarchive) {
   return jerry_create_boolean(res);
 }
 
+JS_FUNCTION(ant_runtime_disableStdoutBuffering) {
+  setvbuf(stdout, NULL, _IONBF, 0);
+  return jerry_create_undefined();
+}
+
 jerry_value_t InitANTRuntimeNative() {
   jerry_value_t antRuntimeNative = jerry_create_object();
   REGISTER_ANT_API(antRuntimeNative, ant_runtime, getPssInKB);
   REGISTER_ANT_API(antRuntimeNative, ant_runtime, getEnv);
   REGISTER_ANT_API(antRuntimeNative, ant_runtime, downloadFileViaHTTP);
   REGISTER_ANT_API(antRuntimeNative, ant_runtime, unarchive);
+  REGISTER_ANT_API(antRuntimeNative, ant_runtime, disableStdoutBuffering);
 
   initANTRuntime();
 

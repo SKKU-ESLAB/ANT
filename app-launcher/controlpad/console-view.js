@@ -21,16 +21,16 @@ function ConsoleView(onRefreshRequired, updatePeriodMS = 1000) {
   this.mUpdatePeriodMS = updatePeriodMS;
 
   this.mRootDom = document.createElement('div');
-
-  {
-    this.mInfoCard = new CardView(
-      'console-view-info-card',
-      'Console output',
-      12
-    );
-    this.mInfoCard.enableListView();
-    this.append(this.mInfoCard);
-  }
+  this.mRootDom.setAttribute('class', 'console-text');
+  // {
+  //   this.mInfoCard = new CardView(
+  //     'console-view-info-card',
+  //     'Console output',
+  //     12
+  //   );
+  //   this.mInfoCard.enableListView();
+  //   this.append(this.mInfoCard);
+  // }
 }
 
 ConsoleView.prototype.append = function (childView) {
@@ -57,62 +57,97 @@ ConsoleView.prototype.onRemovedDom = function () {
   clearInterval(this.mPeriodicUpdate);
 };
 
-ConsoleView.prototype.updateOutputs = function (appName, givenOutputs) {
-  // Get cached outputs
+ConsoleView.prototype.updateOutputs = function (appName, outputBuffers) {
+  // Get the cached console data or create a console data for the app
   var consoleData = this.mCachedConsoleData[appName];
   if (consoleData === undefined) {
-    consoleData = {appName: appName, maxTs: -1, outputs: []};
+    consoleData = {appName: appName, maxTs: -1, textLines: []};
     this.mCachedConsoleData[appName] = consoleData;
   }
 
-  // Add given newly-added outputs to the consoleData
+  // Filter newly-added output buffers
   var maxTs = consoleData.maxTs;
-  var newOutputs = [];
-  for (var i in givenOutputs) {
-    var givenEntry = givenOutputs[i];
-    if (maxTs < givenEntry.ts) {
-      maxTs = givenEntry.ts;
-      newOutputs.push(givenEntry);
+  var newOutputBuffers = [];
+  for (var i in outputBuffers) {
+    var outputBuffer = outputBuffers[i];
+    if (maxTs < outputBuffer.ts) {
+      maxTs = outputBuffer.ts;
+      newOutputBuffers.push(outputBuffer);
     }
   }
+  outputBuffer = newOutputBuffers;
+
+  // Set max timestamp of the app
   consoleData.maxTs = maxTs > 0 ? maxTs : -1;
-  for (var i in newOutputs) {
-    var entry = newOutputs[i];
-    consoleData.outputs.push(entry);
+
+  // Update text lines based on the output buffers
+  var commands = [];
+  for (var i in outputBuffers) {
+    var outputBuffer = outputBuffers[i];
+    var tokens = outputBuffer.d.split('\n');
+    for (var j in tokens) {
+      var token = tokens[j];
+      var command;
+      if (j == 0) {
+        // append text
+        commands.push({cmdType: 'A', dataType: outputBuffer.t, data: token});
+      } else {
+        // append text + newline
+        commands.push({cmdType: 'N'});
+        commands.push({cmdType: 'A', dataType: outputBuffer.t, data: token});
+      }
+    }
+  }
+  for (var i in commands) {
+    var command = commands[i];
+    if (command.cmdType == 'N') {
+      var textLine = document.createElement('div');
+      textLine.isDisplayed = false;
+
+      consoleData.textLines.push(textLine);
+    } else if (command.cmdType == 'A') {
+      var textLine = consoleData.textLines.pop();
+      if (textLine === undefined) {
+        textLine = document.createElement('div');
+        textLine.setAttribute('class', 'console-text-line');
+        textLine.isDisplayed = false;
+      }
+
+      var textSpan = document.createElement('span');
+      if (command.dataType == 'E')
+        textSpan.setAttribute('class', 'console-text-span stderr');
+      else textSpan.setAttribute('class', 'console-text-span stdout');
+      textSpan.innerHTML = command.data;
+      textLine.append(textSpan);
+
+      consoleData.textLines.push(textLine);
+    }
   }
 
   // Update UI
-  var targetOutputs = undefined;
-  if (this.mCurrentAppName == appName) {
-    // Set newly-added outputs to be added
-    targetOutputs = newOutputs;
-  } else {
+  if (this.mCurrentAppName != appName) {
     // Update current app name
     this.mCurrentAppName = appName;
 
-    // Clear console view
-    this.clear();
-
-    // Set all the outputs to be added
-    targetOutputs = consoleData.outputs;
+    // Clear all the text spans
+    this.removeTextLines();
   }
-
-  // Add the outputs
-  for (var i in targetOutputs) {
-    var entry = targetOutputs[i];
-    var lines = entry.d.split('\n');
-    for (var j in lines) {
-      var line = lines[j];
-      this.addEntry(entry.t, line);
+  for (var i in consoleData.textLines) {
+    var textLine = consoleData.textLines[i];
+    if (!textLine.isDisplayed) {
+      textLine.isDisplayed = true;
+      this.append(textLine);
     }
   }
 };
 
-ConsoleView.prototype.addEntry = function (type, text) {
-  var iconType = type === 'E' ? 'error' : 'arrow_right';
-  this.mInfoCard.addListItem(iconType, text);
-};
-
-ConsoleView.prototype.clear = function () {
-  this.mInfoCard.clearListItems();
+ConsoleView.prototype.removeTextLines = function () {
+  var childViews = this.mRootDom.children;
+  for (var i = 0; i < childViews.length; i++) {
+    var childView = childViews.item(i);
+    if (childView.classList.contains('console-text-line')) {
+      childView.isDisplayed = false;
+      childView.remove();
+    }
+  }
 };

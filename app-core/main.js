@@ -29,8 +29,9 @@ var RESULT_FAILED = 'Failed';
  */
 var gAppObject = undefined;
 var gSocket = undefined;
+var gPid = undefined;
 function mainLoop() {
-  console.log('ANT app main loop start');
+  ant.runtime.disableStdoutBuffering();
 
   // parse arguments
   if (process.argv.length !== 5) {
@@ -49,7 +50,8 @@ function mainLoop() {
   if (app != undefined) {
     resultMessage = app.start();
     if (resultMessage == RESULT_SUCCESS) {
-      console.log('App ' + appName + ' launched!');
+      gPid = '' + process.pid;
+      console.log('App ' + appName + ' launched! (pid: ' + pid + ')');
     } else {
       console.error('App launch failure');
     }
@@ -57,19 +59,23 @@ function mainLoop() {
 
   // Connect to app launcher
   gSocket = net.connect({port: launcherPort, host: 'localhost'});
-  gSocket.on('data', function (data) {
-    if (data.indexOf('Terminate') >= 0) {
-      // Terminate app
-      var app = ant.runtime.getCurrentApp();
-      var text = app.stop();
-      console.log('App terminate result: ' + text);
-      gSocket.close();
-    }
-  });
+  gSocket.on('data', onAppCommandReceived);
 
   // Notify that the application is successfully launched
-  var pid = '' + process.pid;
   gSocket.write(pid);
+}
+
+function onAppCommandReceived(data) {
+  var message = data.toString();
+  if (message.indexOf('Terminate') >= 0) {
+    // Terminate-app command
+    console.log('Received app terminatation command.');
+    var app = ant.runtime.getCurrentApp();
+    app.stop();
+
+    console.log('App terminated successfully!');
+    gSocket.close();
+  }
 }
 
 mainLoop();
