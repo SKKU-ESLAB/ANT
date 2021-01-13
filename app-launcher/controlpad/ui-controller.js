@@ -74,7 +74,6 @@ function refreshAppList(onFinish) {
 }
 
 function selectApp(appName) {
-  console.log('on select app: ' + appName);
   gContext.currentAppName = appName;
 
   // Update app selector label
@@ -117,11 +116,8 @@ function _addAppFromUI(appName) {
 function refreshCodeEditor() {
   if (gContext.currentNavItem.getId() === 'navitem-codeeditor') {
     var appName = gContext.currentAppName;
-    console.log('current app name: ' + appName);
     if (appName !== undefined) {
-      console.log('getAppCode request ' + appName);
       gANTClient.getAppCode(appName, function (isSuccess, appCode) {
-        console.log('getAppCode for ' + appName + 'result: ' + appCode);
         if (isSuccess) {
           gCodeEditor.setAppCode(appCode);
         } else {
@@ -140,7 +136,6 @@ function updateCurrentAppCode(appCode) {
   gANTClient.installApp(appName, appCode, function (isSuccess, text) {
     if (isSuccess) {
       // TODO: toast UI
-      alert(text);
     } else {
       alert(text);
     }
@@ -153,7 +148,6 @@ function launchCurrentApp() {
   gANTClient.launchApp(appName, function (isSuccess, text) {
     if (isSuccess) {
       // TODO: toast UI
-      alert(text);
 
       if (gContext.currentNavItem.getId() === 'navitem-codeeditor') {
         gCodeEditor.setRunButtonMode(false);
@@ -232,12 +226,13 @@ function refreshConsole() {
             var entry = outputs[i];
             if (maxTs < entry.ts) maxTs = entry.ts;
           }
-          if (maxTs < 0) maxTs = undefined;
-          if (
-            gContext.consoleTsPointers[appName] === undefined ||
-            maxTs > gContext.consoleTsPointers[appName]
-          ) {
-            gContext.consoleTsPointers[appName] = maxTs + 1;
+          if (maxTs >= 0) {
+            if (
+              gContext.consoleTsPointers[appName] === undefined ||
+              maxTs > gContext.consoleTsPointers[appName]
+            ) {
+              gContext.consoleTsPointers[appName] = maxTs + 1;
+            }
           }
 
           // Update console

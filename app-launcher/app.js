@@ -85,17 +85,21 @@ App.prototype.launch = function () {
   this.mOutputBuffer.splice(0, this.mOutputBuffer.length);
 
   // Make socket to communicate with child app process
-  this.mSocket = net.createServer();
-  this.mSocket.addListener('data', function (data) {
-    // Handler on app-launched event
-    var pid = parseInt(data);
-    if (pid === NaN) {
-      throw 'Invalid message from child process socket: ' + data;
-    }
-    if (self.mProcess.pid !== pid) {
-      throw 'Pid not match: ' + data + ' !== ' + self.mProcess.pid;
-    }
-    self.setState(AppState.Active);
+  this.mSocket = net.createServer(function (client) {
+    self.mClientSocket = client;
+    client.setTimeout(500);
+    client.on('data', function (data) {
+      console.log('data from app: ' + data);
+      // Handler on app-launched event
+      var pid = parseInt(data);
+      if (pid === NaN) {
+        throw 'Invalid message from child process socket: ' + data;
+      }
+      if (self.mProcess.pid !== pid) {
+        throw 'Pid not match: ' + data + ' !== ' + self.mProcess.pid;
+      }
+      self.setState(AppState.Active);
+    });
   });
   this.mSocket.listen();
 
@@ -177,12 +181,18 @@ App.prototype.terminate = function () {
     );
     return false;
   }
+  if (this.mClientSocket === undefined) {
+    console.error(
+      'Cannot terminate app ' + this.mName + ': client not connected'
+    );
+    return false;
+  }
 
   // Set attributes
   this.setState(AppState.Terminating);
 
   // Send 'terminate' command to the child app process
-  this.mSocket.write('Terminate');
+  this.mClientSocket.write('Terminate');
 };
 
 App.prototype.readCode = function () {

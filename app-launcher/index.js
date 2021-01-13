@@ -355,8 +355,6 @@ var gHTTPServer = undefined;
 var gCompanionAdapter = undefined;
 
 var mainLoop = function () {
-  console.log('ANT app launcher daemon start');
-
   // Initialize app manager and HTTP server
   gHTTPServer = new HTTPServer(
     gInitialHTTPServerEntries,

@@ -39,7 +39,6 @@ function AppManager(onAppAdded, onAppRemoved) {
       this._addApp(appName, filePath);
     }
   }
-  console.log('Apps: ' + JSON.stringify(this.mApps));
 }
 
 AppManager.prototype.getAppList = function () {
