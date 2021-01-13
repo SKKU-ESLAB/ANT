@@ -33,7 +33,7 @@ var RESULT_FAILED = 'Failed';
 
 /* Config START */
 var Config = function () {
-  this.isVerbose = true;
+  this.isVerbose = false;
   this.defaultInterfaceName = 'eth0';
   this.defaultPort = 8001;
 

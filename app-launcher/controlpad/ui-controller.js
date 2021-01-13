@@ -164,7 +164,6 @@ function terminateCurrentApp() {
   gANTClient.terminateApp(appName, function (isSuccess, text) {
     if (isSuccess) {
       // TODO: toast UI
-      alert(text);
 
       if (gContext.currentNavItem.getId() === 'navitem-codeeditor') {
         gCodeEditor.setRunButtonMode(true);

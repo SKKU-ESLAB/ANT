@@ -36,6 +36,7 @@ ANTClient.prototype._sendHTTPRequest = function (
     xhr.send(data);
   } catch (e) {
     // TODO: toast
+    alert(e);
     console.error(e);
   }
 };
