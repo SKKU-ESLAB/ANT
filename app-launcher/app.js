@@ -84,6 +84,10 @@ App.prototype.launch = function () {
   this.setState(AppState.Launching);
   this.mOutputBuffer.splice(0, this.mOutputBuffer.length);
 
+  /*
+   * TODO: replacing local-TCP-socket with dbus-based-IPC is required.
+   * Dbus-based-IPC can be implemented by node-dbus npm package.
+   */
   // Make socket to communicate with child app process
   this.mSocket = net.createServer(function (client) {
     self.mClientSocket = client;
