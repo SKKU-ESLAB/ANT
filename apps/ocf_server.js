@@ -25,7 +25,7 @@ oa.onPrepareEventLoop(function () {
 var gLightState = false;
 oa.onPrepareServer(function () {
   console.log('onPrepareServer()');
-  device = oa.getDevice(0);
+  var device = oa.getDevice(0);
   var lightRes = ocf.createResource(
     device,
     'lightbulb',
