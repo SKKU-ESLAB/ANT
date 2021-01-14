@@ -13,4 +13,39 @@
  * limitations under the License.
  */
 
- // TODO:
+function SnackbarView() {
+  this.mRootDom = document.getElementById('snack-bar');
+  this.SHORT_MS = 3000;
+  this.LONG_MS = 8000;
+}
+
+SnackbarView.prototype.showShort = function (
+  message,
+  handler,
+  actionText = 'Close'
+) {
+  this.show(message, handler, this.SHORT_MS, actionText);
+};
+
+SnackbarView.prototype.showLong = function (
+  message,
+  handler,
+  actionText = 'Close'
+) {
+  this.show(message, handler, this.LONG_MS, actionText);
+};
+
+SnackbarView.prototype.show = function (
+  message,
+  handler,
+  timeoutMS,
+  actionText = 'Close'
+) {
+  var data = {
+    message: message,
+    timeout: timeoutMS,
+    actionHandler: handler,
+    actionText: actionText
+  };
+  this.mRootDom.MaterialSnackbar.showSnackbar(data);
+};

@@ -24,21 +24,15 @@ ANTClient.prototype._sendHTTPRequest = function (
   var xhr = new XMLHttpRequest();
   xhr.open(method, url, true);
   xhr.setRequestHeader('Content-Type', 'application/json');
-  try {
-    xhr.onload = function () {
-      if (responseHandler !== undefined) {
-        responseHandler(this.status, this.responseText);
-      }
-    };
-    if (data === undefined) {
-      data = null;
+  xhr.onload = function () {
+    if (responseHandler !== undefined) {
+      responseHandler(this.status, this.responseText);
     }
-    xhr.send(data);
-  } catch (e) {
-    // TODO: toast
-    alert(e);
-    console.error(e);
+  };
+  if (data === undefined) {
+    data = null;
   }
+  xhr.send(data);
 };
 
 ANTClient.prototype.getAppList = function (handler) {
