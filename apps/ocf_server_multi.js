@@ -61,7 +61,7 @@ function getLightHandler(request) {
 }
 var i = 0;
 function postLightHandler(request) {
-  var requestPayloadString = request.requestPayloadString;
+  var requestPayloadString = request.request_payload_string;
   var requestPayload = JSON.parse(requestPayloadString);
   console.log(
     '(' +
@@ -86,7 +86,7 @@ function getTempHandler(request) {
 }
 var i = 0;
 function postTempHandler(request) {
-  var requestPayloadString = request.requestPayloadString;
+  var requestPayloadString = request.request_payload_string;
   var requestPayload = JSON.parse(requestPayloadString);
   console.log(
     '(' +

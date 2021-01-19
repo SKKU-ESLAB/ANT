@@ -37,7 +37,11 @@ void oa_discovery_event_data_destroyer(void *item) {
 void oa_response_event_data_destroyer(void *item) {
   oa_client_response_event_data_t *event;
   event = (oa_client_response_event_data_t *)item;
-  free(event->payload_string);
+  if (event->is_payload_buffer) {
+    free(event->payload_string);
+  } else {
+    free(event->payload_buffer);
+  }
   free(event);
 }
 void oa_discovery_event_types_destroyer(void *item) { free(item); }

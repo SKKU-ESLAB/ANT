@@ -16,27 +16,34 @@
 #ifndef __OCF_ADAPTER_H__
 #define __OCF_ADAPTER_H__
 
-#include "iotjs_def.h"
-#include "iotjs_uv_request.h"
-#include "ocf_common.h"
+#include <iotjs_def.h>
+#include <iotjs_uv_request.h>
+#include <modules/iotjs_module_buffer.h>
 
 #include "../../common/native/ant_common.h"
+
 #include "./internal/ant_async.h"
 #include "./internal/ll.h"
 #include "./internal/ocf_adapter_internal.h"
+#include "./ocf_common.h"
 #include "./ocf_resource.h"
 
 void ocf_adapter_init(void);
 
 void InitOCFAdapterNative(jerry_value_t ocfNative);
 
+/* (JS) native.ocf_adapter_{optype}()
+ * -> (Native) JS_FUNCTION(type)
+ * -> {optype}_internal() -> Send OCF request */
 #define OCF_REQUEST_JS_FUNCTION(type, is_lock_required)                        \
   JS_FUNCTION(type) {                                                          \
     bool result;                                                               \
     jerry_value_t argRequest;                                                  \
     jerry_value_t argResponseHandler;                                          \
+    bool argIsPayloadBuffer;                                                   \
     argRequest = JS_GET_ARG(0, object);                                        \
     argResponseHandler = JS_GET_ARG(1, function);                              \
+    argIsPayloadBuffer = JS_GET_ARG(2, boolean);                               \
                                                                                \
     jerry_value_t jsRequestId = iotjs_jval_get_property(argRequest, "id");     \
     jerry_value_t jsOCFEndpoint =                                              \
@@ -63,7 +70,7 @@ void InitOCFAdapterNative(jerry_value_t ocfNative);
     }                                                                          \
     result = REGISTER_JS_HANDLER(type, requestId, argResponseHandler);         \
     result = result && type##_internal(requestId, ocf_endpoint_nobject, uri,   \
-                                       query, qos);                            \
+                                       query, qos, argIsPayloadBuffer);        \
                                                                                \
     jerry_release_value(jsRequestId);                                          \
     jerry_release_value(jsOCFEndpoint);                                        \
@@ -76,6 +83,10 @@ void InitOCFAdapterNative(jerry_value_t ocfNative);
     return jerry_create_boolean(result);                                       \
   }
 
+/* Receive OCF response
+ * -> ...
+ * -> (Native) OCF_REQUEST_UV_HANDLER_FUNCTION(optype)
+ * -> (JS) {anonymous_handler}() */
 #define OCF_REQUEST_UV_HANDLER_FUNCTION(type, one_way)                         \
   ANT_UV_HANDLER_FUNCTION(type) {                                              \
     void *e;                                                                   \
@@ -84,21 +95,44 @@ void InitOCFAdapterNative(jerry_value_t ocfNative);
       oa_client_response_event_data_t *event_data =                            \
           (oa_client_response_event_data_t *)event->data;                      \
                                                                                \
-      iotjs_string_t jsstrPayload = iotjs_string_create();                     \
-      iotjs_string_append(&jsstrPayload, event_data->payload_string,           \
-                          strlen(event_data->payload_string));                 \
-                                                                               \
       jerry_value_t jsEndpoint = jerry_create_object();                        \
       jerry_set_object_native_pointer(jsEndpoint, event_data->endpoint,        \
                                       &ocf_endpoint_native_info);              \
       IOTJS_ASSERT(jerry_get_object_native_pointer(                            \
           jsEndpoint, NULL, &ocf_endpoint_native_info));                       \
                                                                                \
+      /* arg0: number requestId */                                             \
       jerry_value_t jsRequestId = jerry_create_number(event_data->request_id); \
+                                                                               \
+      /* arg1: object response */                                              \
       jerry_value_t jsResponse = jerry_create_object();                        \
-      iotjs_jval_set_property_string(jsResponse, "payload", &jsstrPayload);    \
+      /*  - response.isPayloadBuffer */                                        \
+      iotjs_jval_set_property_boolean(jsResponse, "isPayloadBuffer",           \
+                                      event_data->is_payload_buffer);          \
+      /*  - response.payload */                                                \
+      jerry_value_t jsbufferPayload;                                           \
+      iotjs_string_t jsstrPayload;                                             \
+      if (event_data->is_payload_buffer) {                                     \
+        /* TODO: IoT.js Payload object */                                      \
+        jsbufferPayload = iotjs_bufferwrap_create_buffer(                      \
+            (size_t)event_data->payload_buffer_length);                        \
+        iotjs_bufferwrap_t *buffer_wrap =                                      \
+            iotjs_bufferwrap_from_jbuffer(jsbufferPayload);                    \
+        iotjs_bufferwrap_copy(buffer_wrap,                                     \
+                              (const char *)event_data->payload_buffer,        \
+                              (size_t)event_data->payload_buffer_length);      \
+        iotjs_jval_set_property_jval(jsResponse, "payload", jsbufferPayload);  \
+      } else {                                                                 \
+        jsstrPayload = iotjs_string_create();                                  \
+        iotjs_string_append(&jsstrPayload, event_data->payload_string,         \
+                            strlen(event_data->payload_string));               \
+        iotjs_jval_set_property_string(jsResponse, "payload", &jsstrPayload);  \
+      }                                                                        \
+                                                                               \
+      /*  - response.status_code */                                            \
       iotjs_jval_set_property_number(jsResponse, "status_code",                \
                                      (double)event_data->status_code);         \
+      /*  - response.endpoint */                                               \
       iotjs_jval_set_property_jval(jsResponse, "endpoint", jsEndpoint);        \
                                                                                \
       jerry_value_t js_handler =                                               \
@@ -106,7 +140,11 @@ void InitOCFAdapterNative(jerry_value_t ocfNative);
       jerry_value_t js_args[] = {jsRequestId, jsResponse};                     \
       iotjs_invoke_callback(js_handler, jerry_create_undefined(), js_args, 2); \
                                                                                \
-      iotjs_string_destroy(&jsstrPayload);                                     \
+      if (event_data->is_payload_buffer) {                                     \
+        jerry_release_value(jsbufferPayload);                                  \
+      } else {                                                                 \
+        iotjs_string_destroy(&jsstrPayload);                                   \
+      }                                                                        \
       jerry_release_value(jsRequestId);                                        \
       jerry_release_value(jsEndpoint);                                         \
       jerry_release_value(jsResponse);                                         \
