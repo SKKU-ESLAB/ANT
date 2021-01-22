@@ -364,5 +364,50 @@ ANTML.prototype.downloadModel = function (modelUrl, overwriteIfExists) {
   return modelDirectoryPath;
 };
 
+ANTML.prototype.createDFE = function (modelName, numFragments) {
+  if (typeof modelName !== 'string') {
+    throw 'Invalid modelName: ' + modelName;
+  }
+  if (
+    typeof numFragments !== 'number' ||
+    parseInt(numFragments) != numFragments
+  ) {
+    throw 'Invalid numFragments: ' + numFragments;
+  }
+  return new DFE(modelName, numFragments);
+};
+
+/* DFE: DNN Fragment Engine for the deep sensors running on gateway */
+function DFE(modelName, numFragments) {
+  this.modelName = modelName;
+  this.numFragments = numFragments;
+  this.interpreters = undefined;
+}
+
+DFE.prototype.load = function () {
+  this.interpreters = native.ant_ml_dfeLoad(this.modelName, this.numFragments);
+};
+
+DFE.prototype.execute = function (inputBuffer, startLayerNum, endLayerNum) {
+  if (!inputBuffer instanceof Buffer) {
+    throw 'Invalid inputBuffer';
+  }
+  if (
+    typeof startLayerNum !== 'number' ||
+    parseInt(startLayerNum) != startLayerNum
+  ) {
+    throw 'Invalid startLayerNum ' + startLayerNum;
+  }
+  if (typeof endLayerNum !== 'number' || parseInt(endLayerNum) != endLayerNum) {
+    throw 'Invalid endLayerNum ' + endLayerNum;
+  }
+  return native.ant_ml_dfeExecute(
+    this.interpreters,
+    inputBuffer,
+    startLayerNum,
+    endLayerNum
+  );
+};
+
 module.exports = new ANTML();
 module.exports.ANTML = ANTML;
