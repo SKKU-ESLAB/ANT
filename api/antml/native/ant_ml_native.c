@@ -131,10 +131,26 @@ JS_FUNCTION(ant_ml_toFloatArray) {
   return retArray;
 }
 
+JS_FUNCTION(ant_ml_dfeLoad) {
+  iotjs_string_t argModelName;
+  int argNumFragments;
+  DJS_CHECK_ARGS(2, string, number);
+  argModelName = JS_GET_ARG(0, string);
+  argNumFragments = (int)JS_GET_ARG(1, number);
+
+  iotjs_string_destroy(&argModelName);
+
+  return jerry_create_undefined();
+}
+
+JS_FUNCTION(ant_ml_dfeExecute) {}
+
 jerry_value_t InitANTMLNative() {
   jerry_value_t antMLNative = jerry_create_object();
   REGISTER_ANT_API(antMLNative, ant_ml, getMaxOfBuffer);
   REGISTER_ANT_API(antMLNative, ant_ml, toFloatArray);
+  REGISTER_ANT_API(antMLNative, ant_ml, dfeLoad);
+  REGISTER_ANT_API(antMLNative, ant_ml, dfeExecute);
 
   initANTML();
 
