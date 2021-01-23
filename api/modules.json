@@ -37,10 +37,11 @@
     "antml": {
       "js_file": "antml/js/antml.js",
       "native_files": [
-        "antml/native/ant_ml_native.c"
+        "antml/native/ant_ml.c",
+        "antml/native/ant_ml_dfe.c"
       ],
-      "init": "InitANTMLNative",
-      "cmakefile": "antml/native/ant_ml_native.cmake",
+      "init": "InitANTML",
+      "cmakefile": "antml/native/ant_ml.cmake",
       "require": [
         "buffer",
         "console"

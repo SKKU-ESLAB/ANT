@@ -4,4 +4,4 @@ set(MODULE_NAME "antml")
 
 add_subdirectory(${MODULE_DIR}/internal/ ${CMAKE_BINARY_DIR}/out/antml/)
 
-list(APPEND EXTERNAL_LIBS ant_ml_native)
+list(APPEND EXTERNAL_LIBS ant_ml_internal)

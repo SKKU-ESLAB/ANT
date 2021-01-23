@@ -138,7 +138,3 @@ void ocf_resource_handler(oc_request_t *request,
   EMIT_ANT_ASYNC_EVENT(ocf_resource_setHandler, handler_id, (void *)event_data,
                        true);
 }
-
-void initOCFResource(void) {
-  // Empty function
-}

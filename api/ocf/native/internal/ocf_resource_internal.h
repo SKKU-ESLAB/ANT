@@ -61,6 +61,4 @@ ANT_ASYNC_DECL_IN_HEADER(ocf_resource_setHandler);
 void ocf_resource_setHandler_internal(void *ocf_resource_nobject,
                                       int handler_id, int method);
 
-void initOCFResource(void);
-
 #endif /* !defined(__OCF_RESOURCE_INTERNAL_H__) */
