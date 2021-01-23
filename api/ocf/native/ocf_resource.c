@@ -293,7 +293,4 @@ void InitOCFResourceNative(jerry_value_t ocfNative) {
   REGISTER_ANT_API(ocfNative, ocf_resource, setDiscoverable);
   REGISTER_ANT_API(ocfNative, ocf_resource, setPeriodicObservable);
   REGISTER_ANT_API(ocfNative, ocf_resource, setHandler);
-
-  // Initialize IoTivity Lite
-  // initOCFResource();
 }

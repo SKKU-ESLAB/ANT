@@ -1,4 +1,4 @@
-/* Copyright (c) 2017-2020 SKKU ESLAB, and contributors. All rights reserved.
+/* Copyright (c) 2017-2021 SKKU ESLAB, and contributors. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,7 +24,8 @@
 #include <modules/iotjs_module_buffer.h>
 
 #include "../../common/native/ant_common.h"
-#include "./internal/ant_ml_native_internal.h"
+#include "./ant_ml_dfe.h"
+#include "./internal/ant_ml_internal.h"
 
 JS_FUNCTION(ant_ml_getMaxOfBuffer) {
   jerry_value_t argBuffer;
@@ -131,28 +132,12 @@ JS_FUNCTION(ant_ml_toFloatArray) {
   return retArray;
 }
 
-JS_FUNCTION(ant_ml_dfeLoad) {
-  iotjs_string_t argModelName;
-  int argNumFragments;
-  DJS_CHECK_ARGS(2, string, number);
-  argModelName = JS_GET_ARG(0, string);
-  argNumFragments = (int)JS_GET_ARG(1, number);
+jerry_value_t InitANTML() {
+  jerry_value_t nativeObj = jerry_create_object();
+  REGISTER_ANT_API(nativeObj, ant_ml, getMaxOfBuffer);
+  REGISTER_ANT_API(nativeObj, ant_ml, toFloatArray);
 
-  iotjs_string_destroy(&argModelName);
+  InitANTMLDFE(nativeObj);
 
-  return jerry_create_undefined();
-}
-
-JS_FUNCTION(ant_ml_dfeExecute) {}
-
-jerry_value_t InitANTMLNative() {
-  jerry_value_t antMLNative = jerry_create_object();
-  REGISTER_ANT_API(antMLNative, ant_ml, getMaxOfBuffer);
-  REGISTER_ANT_API(antMLNative, ant_ml, toFloatArray);
-  REGISTER_ANT_API(antMLNative, ant_ml, dfeLoad);
-  REGISTER_ANT_API(antMLNative, ant_ml, dfeExecute);
-
-  initANTML();
-
-  return antMLNative;
+  return nativeObj;
 }
