@@ -24,8 +24,13 @@
 #include <modules/iotjs_module_buffer.h>
 
 #include "../../common/native/ant_common.h"
+#include "./ant_ml_common.h"
 #include "./ant_ml_dfe.h"
 #include "./internal/ant_ml_dfe_internal.h"
+
+const jerry_object_native_info_t interpreters_native_info = {
+    .free_cb = (jerry_object_native_free_callback_t)interpreters_destroy,
+};
 
 JS_FUNCTION(ant_ml_dfeLoad) {
   iotjs_string_t argModelName;
@@ -33,17 +38,22 @@ JS_FUNCTION(ant_ml_dfeLoad) {
   DJS_CHECK_ARGS(2, string, number);
   argModelName = JS_GET_ARG(0, string);
   argNumFragments = (int)JS_GET_ARG(1, number);
+  const char *modelName = iotjs_string_data(&argModelName);
 
-  // TODO: call internal function
-  ant_ml_dfeLoad_internal();
+  void *native_interpreters =
+      ant_ml_dfeLoad_internal(modelName, argNumFragments);
+  jerry_value_t js_interpreters = jerry_create_object();
+  jerry_set_object_native_pointer(js_interpreters, native_interpreters,
+                                  interpreters_native_info);
+  IOTJS_ASSERT(jerry_get_object_native_pointer(js_interpreters, NULL,
+                                               &interpreters_native_info));
 
   iotjs_string_destroy(&argModelName);
-
-  return jerry_create_undefined();
+  return js_interpreters;
 }
 
 JS_FUNCTION(ant_ml_dfeExecute) {
-  jerry_value_t argInterpreters;
+  jerry_value_t argInterpreters; // TODO: refcount
   jerry_value_t argInputTensor;
   int argStartLayerNum;
   int argEndLayerNum;
@@ -53,10 +63,26 @@ JS_FUNCTION(ant_ml_dfeExecute) {
   argStartLayerNum = (int)JS_GET_ARG(2, number);
   argEndLayerNum = (int)JS_GET_ARG(3, number);
 
-  // TODO: call internal function
-  ant_ml_dfeExecute_internal();
+  JS_DECLARE_PTR2(argInterpreters, void, interpreters_nobject, interpreters);
+  iotjs_bufferwrap_t *inputTensorBuffer =
+      iotjs_bufferwrap_from_jbuffer(argInputTensor);
+  const char *inputTensor = (const char *)inputTensorBuffer->buffer;
+  size_t inputTensorLength = iotjs_bufferwrap_length(inputTensorBuffer);
 
-  return jerry_create_undefined();
+  // TODO: call internal function
+  size_t outputTensorLength;
+  void *outputTensor = ant_ml_dfeExecute_internal(
+      interpreters_nobject, inputTensor, inputTensorLength, argStartLayerNum,
+      argEndLayerNum, &outputTensorLength);
+
+  jeerry_value_t js_outputTensor =
+      iotjs_bufferwrap_create_buffer(outputTensorLength);
+  iotjs_bufferwrap_t *outputTensorBuffer =
+      iotjs_bufferwrap_from_jbuffer(js_outputTensor);
+  iotjs_bufferwrap_copy(outputTensorBuffer, (const char *)outputTensor,
+                        outputTensorLength);
+
+  return js_outputTensor;
 }
 
 void InitANTMLDFE(jerry_value_t nativeObj) {

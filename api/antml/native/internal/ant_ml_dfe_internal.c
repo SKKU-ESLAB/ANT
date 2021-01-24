@@ -24,6 +24,12 @@
 #include "../../../common/native/ant_common.h"
 #include "./ant_ml_dfe_internal.h"
 
+void interpreters_destroy(void *handle) {
+  // TODO: python-object intrepreters destroy (ref-count decrease)
+  // oc_endpoint_t *endpoint = (oc_endpoint_t *)handle;
+  // free(endpoint);
+}
+
 void *ant_ml_dfeLoad_internal(const char *modelName, int numFragments) {
   // TODO: return python-object interpreters
   PyObject *pName = PyUnicode_FromString("antml_dfe");
@@ -49,7 +55,8 @@ void *ant_ml_dfeLoad_internal(const char *modelName, int numFragments) {
 }
 
 void *ant_ml_dfeExecute_internal(void *interpreters, void *inputTensor,
-                                 int startLayerNum, int endLayerNum) {
+                                 size_t inputTensorLength, int startLayerNum,
+                                 int endLayerNum, size_t *pOutputTensorLength) {
   // TODO:
 }
 

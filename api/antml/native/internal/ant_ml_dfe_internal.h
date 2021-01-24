@@ -16,9 +16,12 @@
 #ifndef __ANT_ML_DFE_INTERNAL_H__
 #define __ANT_ML_DFE_INTERNAL_H__
 
+void interpreters_destroy(void *handle);
+
 void *ant_ml_dfeLoad_internal(const char *modelName, int numFragments);
 void *ant_ml_dfeExecute_internal(void *interpreters, void *inputTensor,
-                                 int startLayerNum, int endLayerNum);
+                                 size_t inputTensorLength, int startLayerNum,
+                                 int endLayerNum, size_t *pOutputTensorLength);
 
 void initANTMLDFEInternal(void);
 
