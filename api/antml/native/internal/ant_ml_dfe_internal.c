@@ -31,12 +31,18 @@ void interpreters_destroy(void *interpreters) {
 
 PyObject *gPyModule = NULL;
 
-void *ant_ml_dfeLoad_internal(const char *modelName, int numFragments) {
+void ant_ml_dfe_initOnce(void) {
+  // Initialize Python interpreter
   if (gPyModule == NULL) {
+    Py_Initialize();
     PyObject *pyModuleName = PyUnicode_FromString("ant_ml_dfe");
     gPyModule = PyImport_Import(pyModuleName);
     Py_DECREF(pyModuleName);
   }
+}
+
+void *ant_ml_dfeLoad_internal(const char *modelName, int numFragments) {
+  ant_ml_dfe_initOnce();
 
   if (gPyModule == NULL) {
     fprintf(stderr, "ERROR: ant_ml_dfeLoad_internal - Module not imported\n");
@@ -83,11 +89,7 @@ void *ant_ml_dfeLoad_internal(const char *modelName, int numFragments) {
 void *ant_ml_dfeExecute_internal(void *interpreters, void *inputTensor,
                                  size_t inputTensorLength, int startLayerNum,
                                  int endLayerNum) {
-  if (gPyModule == NULL) {
-    PyObject *pyModuleName = PyUnicode_FromString("ant_ml_dfe");
-    gPyModule = PyImport_Import(pyModuleName);
-    Py_DECREF(pyModuleName);
-  }
+  ant_ml_dfe_initOnce();
 
   if (gPyModule == NULL) {
     fprintf(stderr,
@@ -157,9 +159,4 @@ void *ant_ml_dfeExecute_getOutputBufferWithLength(void *outputTensor,
 void ant_ml_dfeExecute_releaseOutput(void *outputTensor) {
   PyObject *pyOutputTensor = (PyObject *)outputTensor;
   Py_DECREF(pyOutputTensor);
-}
-
-void initANTMLDFEInternal(void) {
-  // Initialize Python interpreter
-  Py_Initialize();
 }

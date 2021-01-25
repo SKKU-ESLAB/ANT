@@ -26,6 +26,4 @@ void *ant_ml_dfeExecute_getOutputBufferWithLength(void *outputTensor,
                                                   size_t *pOutputTensorLength);
 void ant_ml_dfeExecute_releaseOutput(void *outputTensor);
 
-void initANTMLDFEInternal(void);
-
 #endif /* !defined(__ANT_ML_DFE_INTERNAL_H__) */
