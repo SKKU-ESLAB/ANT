@@ -44,7 +44,7 @@ JS_FUNCTION(ant_ml_dfeLoad) {
       ant_ml_dfeLoad_internal(modelName, argNumFragments);
   jerry_value_t js_interpreters = jerry_create_object();
   jerry_set_object_native_pointer(js_interpreters, native_interpreters,
-                                  interpreters_native_info);
+                                  &interpreters_native_info);
   IOTJS_ASSERT(jerry_get_object_native_pointer(js_interpreters, NULL,
                                                &interpreters_native_info));
 
@@ -53,7 +53,7 @@ JS_FUNCTION(ant_ml_dfeLoad) {
 }
 
 JS_FUNCTION(ant_ml_dfeExecute) {
-  jerry_value_t argInterpreters; // TODO: refcount
+  jerry_value_t argInterpreters;
   jerry_value_t argInputTensor;
   int argStartLayerNum;
   int argEndLayerNum;
@@ -69,18 +69,22 @@ JS_FUNCTION(ant_ml_dfeExecute) {
   const char *inputTensor = (const char *)inputTensorBuffer->buffer;
   size_t inputTensorLength = iotjs_bufferwrap_length(inputTensorBuffer);
 
-  // TODO: call internal function
-  size_t outputTensorLength;
   void *outputTensor = ant_ml_dfeExecute_internal(
       interpreters_nobject, inputTensor, inputTensorLength, argStartLayerNum,
-      argEndLayerNum, &outputTensorLength);
+      argEndLayerNum);
 
-  jeerry_value_t js_outputTensor =
+  size_t outputTensorLength;
+  void *outputTensorNativeBuffer = ant_ml_dfeExecute_getOutputBufferWithLength(
+      outputTensor, &outputTensorLength);
+
+  jerry_value_t js_outputTensor =
       iotjs_bufferwrap_create_buffer(outputTensorLength);
   iotjs_bufferwrap_t *outputTensorBuffer =
       iotjs_bufferwrap_from_jbuffer(js_outputTensor);
-  iotjs_bufferwrap_copy(outputTensorBuffer, (const char *)outputTensor,
+  iotjs_bufferwrap_copy(outputTensorBuffer,
+                        (const char *)outputTensorNativeBuffer,
                         outputTensorLength);
+  ant_ml_dfeExecute_releaseOutput(outputTensor);
 
   return js_outputTensor;
 }
