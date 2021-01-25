@@ -143,26 +143,18 @@ void *ant_ml_dfeExecute_internal(void *interpreters, void *inputTensor,
   // Return: bytebuffer output_tensor
   void *outputTensor = (void *)pyOutputTensor;
   return outputTensor;
-
-  size_t outputTensorLength = 0;
-  char *outputTensor;
-  ret = PyBytes_AsStringAndSize(pyOutputTensor, &outputTensor,
-                                &outputTensorLength);
-  assert(ret >= 0);
-
-  return (void *)outputTensor;
 }
 
 void *ant_ml_dfeExecute_getOutputBufferWithLength(void *outputTensor,
-                                                  size_t *outputTensorLength) {
+                                                  size_t *pOutputTensorLength) {
   PyObject *pyOutputTensor = (PyObject *)outputTensor;
   char *outputTensorBuffer = NULL;
-  ret = PyBytes_AsStringAndSize(pyOutputTensor, &outputTensorBuffer,
-                                outputTensorLength);
+  int ret = PyBytes_AsStringAndSize(pyOutputTensor, &outputTensorBuffer,
+                                    (Py_ssize_t *)pOutputTensorLength);
   assert(ret >= 0);
   return (void *)outputTensorBuffer;
 }
-void *ant_ml_dfeExecute_releaseOutput(void *outputTensor) {
+void ant_ml_dfeExecute_releaseOutput(void *outputTensor) {
   PyObject *pyOutputTensor = (PyObject *)outputTensor;
   Py_DECREF(pyOutputTensor);
 }

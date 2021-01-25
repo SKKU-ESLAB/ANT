@@ -23,8 +23,8 @@ void *ant_ml_dfeExecute_internal(void *interpreters, void *inputTensor,
                                  size_t inputTensorLength, int startLayerNum,
                                  int endLayerNum);
 void *ant_ml_dfeExecute_getOutputBufferWithLength(void *outputTensor,
-                                                  size_t *outputTensorLength);
-void *ant_ml_dfeExecute_releaseOutput(void *outputTensor);
+                                                  size_t *pOutputTensorLength);
+void ant_ml_dfeExecute_releaseOutput(void *outputTensor);
 
 void initANTMLDFEInternal(void);
 
