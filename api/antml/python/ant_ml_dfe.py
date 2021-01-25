@@ -33,8 +33,9 @@ def dfe_load(model_name, num_fragments):
     return interpreters
 
 def dfe_execute(interpreters, input_tensor, start_layer_num, end_layer_num):
-    # Test the model on random input data.
+    # Input tensor conversion (bytes -> ndarray)
     input_shape = interpreters[start_layer_num].get_input_details()[0]['shape']
+    input_tensor = np.frombuffer(input_tensor, dtype=np.float32)
     input_tensor = input_tensor.reshape(input_shape)
 
     prev_output_tensor = input_tensor.astype(np.float32)
@@ -54,5 +55,6 @@ def dfe_execute(interpreters, input_tensor, start_layer_num, end_layer_num):
         output_data = interpreter.get_tensor(output_details[0]['index'])
         prev_output_tensor = output_data
 
-    output_tensor = prev_output_tensor
+    # Output tensor conversion (ndarray -> bytes)
+    output_tensor = prev_output_tensor.tobytes()
     return output_tensor
