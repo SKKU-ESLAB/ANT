@@ -66,12 +66,12 @@ JS_FUNCTION(ant_ml_dfeExecute) {
   JS_DECLARE_PTR2(argInterpreters, void, interpreters_nobject, interpreters);
   iotjs_bufferwrap_t *inputTensorBuffer =
       iotjs_bufferwrap_from_jbuffer(argInputTensor);
-  const char *inputTensor = (const char *)inputTensorBuffer->buffer;
+  void *inputTensorNativeBuffer = (void *)inputTensorBuffer->buffer;
   size_t inputTensorLength = iotjs_bufferwrap_length(inputTensorBuffer);
 
   void *outputTensor = ant_ml_dfeExecute_internal(
-      interpreters_nobject, inputTensor, inputTensorLength, argStartLayerNum,
-      argEndLayerNum);
+      interpreters_nobject, inputTensorNativeBuffer, inputTensorLength,
+      argStartLayerNum, argEndLayerNum);
 
   size_t outputTensorLength;
   void *outputTensorNativeBuffer = ant_ml_dfeExecute_getOutputBufferWithLength(
@@ -94,6 +94,4 @@ void InitANTMLDFE(jerry_value_t nativeObj) {
   REGISTER_ANT_API(nativeObj, ant_ml, dfeExecute);
 
   initANTMLDFEInternal();
-
-  return nativeObj;
 }
