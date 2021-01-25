@@ -92,6 +92,4 @@ JS_FUNCTION(ant_ml_dfeExecute) {
 void InitANTMLDFE(jerry_value_t nativeObj) {
   REGISTER_ANT_API(nativeObj, ant_ml, dfeLoad);
   REGISTER_ANT_API(nativeObj, ant_ml, dfeExecute);
-
-  initANTMLDFEInternal();
 }
