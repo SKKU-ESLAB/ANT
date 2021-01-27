@@ -236,3 +236,6 @@ _:-ms-input-placeholder,
 .snackbar-error {
   background-color: #cc2400;
 }
+.snackbar-success {
+  background-color: #00a1d0;
+}

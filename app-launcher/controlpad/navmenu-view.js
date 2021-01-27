@@ -32,8 +32,19 @@ NavMenuView.prototype.append = function (childView) {
   }
 };
 
-NavMenuView.prototype.getItem = function (index) {
-  return this.mNavItems[index];
+NavMenuView.prototype.getItem = function (key) {
+  if (typeof key === 'number') {
+    return this.mNavItems[index];
+  } else if (typeof key === 'string') {
+    for (var i in this.mNavItems) {
+      var item = this.mNavItems[i];
+      if (item.getId() === key) {
+        return item;
+      }
+    }
+  } else {
+    return undefined;
+  }
 };
 
 NavMenuView.prototype.selectItem = function (navItemView) {

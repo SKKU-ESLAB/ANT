@@ -18,13 +18,10 @@ function AppSelectorMenuView(onClickAppEntry, onClickCreateAppEntry) {
   this.mOnClickCreateAppEntry = onClickCreateAppEntry;
   this.mRootDom = document.getElementById('app-selector-menu');
 
-  var self = this;
   this.mCreateAppEntry = new AppSelectorMenuEntryView(
     'add',
     'Create new app',
-    function () {
-      self.mOnClickCreateAppEntry();
-    }
+    onClickAppSelectorMenuCreateAppEntry
   );
   this.append(this.mCreateAppEntry);
 }
@@ -79,11 +76,11 @@ AppSelectorMenuView.prototype.addApp = function (appName) {
   }
 
   // Make and insert new entry
-  var entry = new AppSelectorMenuEntryView(undefined, appName, function (e) {
-    var id = e.target.id;
-    var appName = id.substring('app-selector-menu-entry-'.length);
-    self.mOnClickAppEntry(appName);
-  });
+  var entry = new AppSelectorMenuEntryView(
+    undefined,
+    appName,
+    onClickAppSelectorMenuAppEntry
+  );
   this.insertBefore(entry, this.mCreateAppEntry);
 };
 
@@ -96,6 +93,32 @@ AppSelectorMenuView.prototype.removeApp = function (appName) {
     }
   }
 };
+
+AppSelectorMenuView.prototype.show = function () {
+  if (this.mRootDom.MaterialMenu !== undefined) {
+    this.mRootDom.MaterialMenu.show();
+  }
+};
+
+AppSelectorMenuView.prototype.hide = function () {
+  if (this.mRootDom.MaterialMenu !== undefined) {
+    this.mRootDom.MaterialMenu.hide();
+  }
+};
+
+function onClickAppSelectorMenuAppEntry(e) {
+  var id = e.target.id;
+  var appName = id.substring('app-selector-menu-entry-'.length);
+  gUIController.mAppSelectorMenu.mOnClickAppEntry(appName);
+
+  gUIController.mAppSelectorMenu.hide();
+}
+
+function onClickAppSelectorMenuCreateAppEntry(e) {
+  gUIController.mAppSelectorMenu.mOnClickCreateAppEntry();
+
+  gUIController.mAppSelectorMenu.hide();
+}
 
 function AppSelectorMenuEntryView(iconType, title, onClickHandler) {
   this.mIconType = iconType;

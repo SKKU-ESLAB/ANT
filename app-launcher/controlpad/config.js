@@ -13,7 +13,9 @@
  * limitations under the License.
  */
 
-var initialCode = 'var ant = require("ant"); \n\
+var initialCode =
+  '/* App {APP_NAME} */ \n\
+var ant = require("ant"); \n\
 var console = require("console"); \n\
 \n\
 var onInitialize = function () {\n\
@@ -30,6 +32,6 @@ var onStop = function () {\n\
 \n\
 ant.runtime.setCurrentApp(onInitialize, onStart, onStop);\n';
 
-function config() {
-  this.initialCode = initialCode;
-}
+var Config = {
+  initialCode: initialCode
+};
