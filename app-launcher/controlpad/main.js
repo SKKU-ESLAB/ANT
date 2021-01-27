@@ -13,10 +13,24 @@
  * limitations under the License.
  */
 
-function CreateAppFabButtonView() {
-  this.mRootDom = document.getElementById('createapp-fabbutton');
+var gANTClient = undefined;
+var gUIController = undefined;
+var gAppController = undefined;
+
+var gContext = {
+  currentAppName: undefined,
+  currentNavItem: undefined,
+  currentConsoleAppName: undefined,
+  consoleTsPointers: []
+};
+
+function onReadyControlpad() {
+  gANTClient = new ANTClient();
+  gAppController = new AppController(gContext, gANTClient);
+  gUIController = new UIController(gContext, gANTClient);
+  gUIController.initialize();
 }
 
-CreateAppFabButtonView.prototype.setOnClickHandler = function (handler) {
-  this.mRootDom.onclick = handler;
-};
+$(document).ready(function () {
+  setTimeout(onReadyControlpad, 100);
+});

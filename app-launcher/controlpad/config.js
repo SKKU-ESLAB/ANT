@@ -13,10 +13,23 @@
  * limitations under the License.
  */
 
-function CreateAppFabButtonView() {
-  this.mRootDom = document.getElementById('createapp-fabbutton');
-}
+var initialCode = 'var ant = require("ant"); \n\
+var console = require("console"); \n\
+\n\
+var onInitialize = function () {\n\
+  console.log("onInitialize");\n\
+};\n\
+\n\
+var onStart = function () {\n\
+  console.log("onStart");\n\
+};\n\
+\n\
+var onStop = function () {\n\
+  console.log("onStop");\n\
+};\n\
+\n\
+ant.runtime.setCurrentApp(onInitialize, onStart, onStop);\n';
 
-CreateAppFabButtonView.prototype.setOnClickHandler = function (handler) {
-  this.mRootDom.onclick = handler;
-};
+function config() {
+  this.initialCode = initialCode;
+}

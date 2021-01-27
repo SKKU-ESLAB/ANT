@@ -1,4 +1,4 @@
-/* Copyright (c) 2017-2020 SKKU ESLAB, and contributors. All rights reserved.
+/* Copyright (c) 2017-2021 SKKU ESLAB, and contributors. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,49 +22,33 @@ oa.onPrepareEventLoop(function () {
   oa.addDevice('/oic/d', 'oic.wk.d', 'Client', 'ocf.1.0.0', 'ocf.res.1.0.0');
 });
 
-var gLightState = false;
 oa.onPrepareClient(function () {
-  oa.discovery('oic.r.light', onDiscovery);
+  oa.discovery('oic.r.camera', onDiscovery);
 });
 
-var foundLightUri = undefined;
+var foundUri = undefined;
 
-function onDiscovery(endpoint, uri, types, interfaceMask) {
+function onDiscovery(endpoint, uri, types) {
   var isFound = false;
   for (var i in types) {
-    if (types[i] == 'oic.r.light') {
+    if (types[i] == 'oic.r.camera') {
       isFound = true;
     }
   }
   if (isFound) {
-    foundLightUri = uri;
-
-    oa.observe(endpoint, uri, onObserveLight);
-    interval = setInterval(function () {
-      var res = oa.initPost(endpoint, uri, onPost, '', ocf.OC_LOW_QOS);
-      if (res) {
-        oa.repStartRootObject();
-        oa.repSet('state', gLightState);
-        gLightState = !gLightState;
-        oa.repEndRootObject();
-        oa.post();
-      }
-    }, 1000);
+    foundUri = uri;
+    oa.get(endpoint, uri, onGetCamera, (isPayloadBuffer = true));
+    // oa.observe(endpoint, uri, onGetCamera);
   }
 }
 var interval;
 
-function onObserveLight(response) {
+function onGetCamera(response) {
   var payload = response.payload;
   // var endpoint = response.endpoint;
-  var uri = foundLightUri;
+  var uri = foundUri;
 
   console.log('GET from ' + uri + ': ' + payload);
-}
-
-var i = 0;
-function onPost(response) {
-  console.log('(' + i++ + ') POST request sent!');
 }
 
 oa.start();

@@ -1,4 +1,4 @@
-/* Copyright (c) 2017-2020 SKKU ESLAB, and contributors. All rights reserved.
+/* Copyright (c) 2017-2021 SKKU ESLAB, and contributors. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -118,7 +118,11 @@ function CommandBar(
 
   this.mSaveButton = new ButtonView('save-button', 'save', 'Save');
   this.mSaveButton.setOnClickHandler(function () {
-    self.mOnSaveButton();
+    if (gMonacoEditor === undefined) {
+      showErrorMessage('Code editor not loaded');
+    }
+    var appCode = gMonacoEditor.getValue();
+    self.mOnSaveButton(appCode);
   });
   this.append(this.mSaveButton);
 
