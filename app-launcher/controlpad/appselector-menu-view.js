@@ -1,4 +1,4 @@
-/* Copyright (c) 2017-2020 SKKU ESLAB, and contributors. All rights reserved.
+/* Copyright (c) 2017-2021 SKKU ESLAB, and contributors. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -12,45 +12,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-function AppSelectorMenuEntryView(iconType, title, onClickHandler) {
-  this.mIconType = iconType;
-  this.mTitle = title;
-
-  this.mRootDom = document.createElement('li');
-  this.mRootDom.setAttribute('id', 'app-selector-menu-entry-' + title);
-  this.mRootDom.setAttribute('class', 'mdl-menu__item');
-  this.mRootDom.onclick = onClickHandler;
-
-  if (iconType !== undefined) {
-    var icon = document.createElement('i');
-    icon.setAttribute('class', 'material-icons');
-    icon.setAttribute('style', 'margin-right:5px;');
-    icon.innerHTML = this.mIconType;
-    this.append(icon);
-  }
-  this.append(title);
-}
-
-AppSelectorMenuEntryView.prototype.getDom = function () {
-  return this.mRootDom;
-};
-
-AppSelectorMenuEntryView.prototype.append = function (childView) {
-  if (typeof childView === 'object' && childView.getDom !== undefined) {
-    this.mRootDom.append(childView.getDom());
-  } else {
-    this.mRootDom.append(childView);
-  }
-};
-
-AppSelectorMenuEntryView.prototype.getTitle = function () {
-  return this.mTitle;
-};
-
-AppSelectorMenuEntryView.prototype.getIconType = function () {
-  return this.mIconType;
-};
 
 function AppSelectorMenuView(onClickAppEntry, onClickCreateAppEntry) {
   this.mOnClickAppEntry = onClickAppEntry;
@@ -134,4 +95,43 @@ AppSelectorMenuView.prototype.removeApp = function (appName) {
       return;
     }
   }
+};
+
+function AppSelectorMenuEntryView(iconType, title, onClickHandler) {
+  this.mIconType = iconType;
+  this.mTitle = title;
+
+  this.mRootDom = document.createElement('li');
+  this.mRootDom.setAttribute('id', 'app-selector-menu-entry-' + title);
+  this.mRootDom.setAttribute('class', 'mdl-menu__item');
+  this.mRootDom.onclick = onClickHandler;
+
+  if (iconType !== undefined) {
+    var icon = document.createElement('i');
+    icon.setAttribute('class', 'material-icons');
+    icon.setAttribute('style', 'margin-right:5px;');
+    icon.innerHTML = this.mIconType;
+    this.append(icon);
+  }
+  this.append(title);
+}
+
+AppSelectorMenuEntryView.prototype.getDom = function () {
+  return this.mRootDom;
+};
+
+AppSelectorMenuEntryView.prototype.append = function (childView) {
+  if (typeof childView === 'object' && childView.getDom !== undefined) {
+    this.mRootDom.append(childView.getDom());
+  } else {
+    this.mRootDom.append(childView);
+  }
+};
+
+AppSelectorMenuEntryView.prototype.getTitle = function () {
+  return this.mTitle;
+};
+
+AppSelectorMenuEntryView.prototype.getIconType = function () {
+  return this.mIconType;
 };

@@ -1,4 +1,4 @@
-/* Copyright (c) 2017-2020 SKKU ESLAB, and contributors. All rights reserved.
+/* Copyright (c) 2017-2021 SKKU ESLAB, and contributors. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-function ConsoleView(onRefreshRequired, updatePeriodMS = 1000) {
-  this.mOnRefreshRequired = onRefreshRequired;
+function ConsoleView(onRefresh, updatePeriodMS = 1000) {
+  this.mOnRefresh = onRefresh;
   this.mCachedConsoleData = [];
   this.mCurrentAppName = undefined;
   this.mPeriodicUpdate = undefined;
@@ -47,10 +47,12 @@ ConsoleView.prototype.getDom = function () {
 
 ConsoleView.prototype.onAddedDom = function () {
   var self = this;
-  this.mOnRefreshRequired();
-  this.mPeriodicUpdate = setInterval(function () {
-    self.mOnRefreshRequired();
-  }, this.mUpdatePeriodMS);
+  var isValid = this.mOnRefresh();
+  if (isValid) {
+    this.mPeriodicUpdate = setInterval(function () {
+      isValid = self.mOnRefresh();
+    }, this.mUpdatePeriodMS);
+  }
 };
 
 ConsoleView.prototype.onRemovedDom = function () {

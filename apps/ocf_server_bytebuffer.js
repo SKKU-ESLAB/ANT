@@ -1,4 +1,4 @@
-/* Copyright (c) 2017-2020 SKKU ESLAB, and contributors. All rights reserved.
+/* Copyright (c) 2017-2021 SKKU ESLAB, and contributors. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,54 +14,42 @@
  */
 
 var ocf = require('ocf');
+var Buffer = require('buffer');
 console.log('OCF server example app');
 
 var oa = ocf.getAdapter();
 oa.onPrepareEventLoop(function () {
   oa.setPlatform('ant');
-  oa.addDevice('/oic/d', 'oic.d.light', 'Light', 'ocf.1.0.0', 'ocf.res.1.0.0');
+  oa.addDevice(
+    '/oic/d',
+    'oic.d.camera',
+    'Camera',
+    'ocf.1.0.0',
+    'ocf.res.1.0.0'
+  );
 });
 
-var gLightState = false;
 oa.onPrepareServer(function () {
   console.log('onPrepareServer()');
   var device = oa.getDevice(0);
-  var lightRes = ocf.createResource(
+  var cameraRes = ocf.createResource(
     device,
-    'lightbulb',
-    '/light/1',
-    ['oic.r.light'],
+    'camera',
+    '/camera/1',
+    ['ant.r.camera'],
     [ocf.OC_IF_RW]
   );
-  lightRes.setDiscoverable(true);
-  lightRes.setPeriodicObservable(1);
-  lightRes.setHandler(ocf.OC_GET, getLightHandler);
-  lightRes.setHandler(ocf.OC_POST, postLightHandler);
-  oa.addResource(lightRes);
+  cameraRes.setDiscoverable(true);
+  cameraRes.setPeriodicObservable(1);
+  cameraRes.setHandler(ocf.OC_GET, getCameraHandler);
+  oa.addResource(cameraRes);
 });
 
-function getLightHandler(request) {
+function getCameraHandler(request) {
   oa.repStartRootObject();
-  oa.repSet('state', gLightState);
+  var buffer = new Buffer(1024);
+  oa.repSetByteBuffer(buffer);
   oa.repEndRootObject();
-  oa.sendResponse(request, ocf.OC_STATUS_OK);
-}
-
-var i = 0;
-function postLightHandler(request) {
-  var requestPayloadString = request.request_payload_string;
-  var requestPayload = JSON.parse(requestPayloadString);
-  console.log(
-    '(' +
-      i++ +
-      ') POST Request: state=' +
-      requestPayload.state +
-      ' (present:' +
-      gLightState +
-      ')'
-  );
-
-  gLightState = requestPayload.state;
   oa.sendResponse(request, ocf.OC_STATUS_OK);
 }
 

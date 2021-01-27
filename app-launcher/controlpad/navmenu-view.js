@@ -1,4 +1,4 @@
-/* Copyright (c) 2017-2020 SKKU ESLAB, and contributors. All rights reserved.
+/* Copyright (c) 2017-2021 SKKU ESLAB, and contributors. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -12,50 +12,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-function NavMenuItemView(id, iconType, title, view) {
-  this.mId = id;
-  this.mIconType = iconType;
-  this.mTitle = title;
-  this.mView = view;
-
-  this.mRootDom = document.createElement('a');
-  this.mRootDom.setAttribute('id', this.mId);
-  this.mRootDom.setAttribute('class', 'mdl-navigation__link');
-  this.mRootDom.setAttribute('href', '#');
-  {
-    var icon = document.createElement('i');
-    icon.setAttribute('class', 'mdl-color-text--blue-grey-400 material-icons');
-    icon.setAttribute('role', 'presentation');
-    icon.innerHTML = this.mIconType;
-    this.append(icon);
-    this.append(this.mTitle);
-  }
-}
-
-NavMenuItemView.prototype.getDom = function () {
-  return this.mRootDom;
-};
-
-NavMenuItemView.prototype.append = function (childView) {
-  if (typeof childView === 'object' && childView.getDom !== undefined) {
-    this.mRootDom.append(childView.getDom());
-  } else {
-    this.mRootDom.append(childView);
-  }
-};
-
-NavMenuItemView.prototype.getId = function () {
-  return this.mId;
-};
-
-NavMenuItemView.prototype.getTitle = function () {
-  return this.mTitle;
-};
-
-NavMenuItemView.prototype.getView = function () {
-  return this.mView;
-};
 
 function NavMenuView(context) {
   // Set attributes
@@ -126,4 +82,48 @@ NavMenuView.prototype.addItem = function (id, iconType, title, view) {
 
   // Add to DOM tree
   this.append(navItemView);
+};
+
+function NavMenuItemView(id, iconType, title, view) {
+  this.mId = id;
+  this.mIconType = iconType;
+  this.mTitle = title;
+  this.mView = view;
+
+  this.mRootDom = document.createElement('a');
+  this.mRootDom.setAttribute('id', this.mId);
+  this.mRootDom.setAttribute('class', 'mdl-navigation__link');
+  this.mRootDom.setAttribute('href', '#');
+  {
+    var icon = document.createElement('i');
+    icon.setAttribute('class', 'mdl-color-text--blue-grey-400 material-icons');
+    icon.setAttribute('role', 'presentation');
+    icon.innerHTML = this.mIconType;
+    this.append(icon);
+    this.append(this.mTitle);
+  }
+}
+
+NavMenuItemView.prototype.getDom = function () {
+  return this.mRootDom;
+};
+
+NavMenuItemView.prototype.append = function (childView) {
+  if (typeof childView === 'object' && childView.getDom !== undefined) {
+    this.mRootDom.append(childView.getDom());
+  } else {
+    this.mRootDom.append(childView);
+  }
+};
+
+NavMenuItemView.prototype.getId = function () {
+  return this.mId;
+};
+
+NavMenuItemView.prototype.getTitle = function () {
+  return this.mTitle;
+};
+
+NavMenuItemView.prototype.getView = function () {
+  return this.mView;
 };

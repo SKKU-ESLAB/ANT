@@ -1,3 +1,16 @@
+<!--
+  Copyright (c) 2017-2021 SKKU ESLAB, and contributors. All rights erved.
+  Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at
+   http://www.apache.org/licenses/LICENSE-2.0
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or lied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+-->
+
 <html>
 
 <head>
@@ -33,7 +46,10 @@
   <script type="text/javascript" src="./codeeditor-view.js"></script>
 
   <script type="text/javascript" src="./ant-client.js"></script>
+  <script type="text/javascript" src="./config.js"></script>
+  <script type="text/javascript" src="./app-controller.js"></script>
   <script type="text/javascript" src="./ui-controller.js"></script>
+  <script type="text/javascript" src="./main.js"></script>
 
   <div class="demo-layout mdl-layout mdl-js-layout mdl-layout--fixed-drawer mdl-layout--fixed-header">
     <header class="demo-header mdl-layout__header mdl-color--grey-100 mdl-color-text--grey-600">
@@ -71,7 +87,9 @@
   </div>
 
   <!-- Create app fab button -->
-  <button id="createapp-fabbutton" class="mdl-button mdl-js-button mdl-button--colored mdl-button--fab mdl-js-ripple-effect" style="position: fixed; display: block; right: 0; bottom: 0; margin-right: 40px; margin-bottom: 40px; z-index: 900;">
+  <button id="createapp-fabbutton"
+    class="mdl-button mdl-js-button mdl-button--colored mdl-button--fab mdl-js-ripple-effect"
+    style="position: fixed; display: block; right: 0; bottom: 0; margin-right: 40px; margin-bottom: 40px; z-index: 900;">
     <i class="material-icons">add</i>
   </button>
 
@@ -80,7 +98,7 @@
     <h4 class="mdl-dialog__title">Create app</h4>
     <div class="mdl-dialog__content">
       <p>
-      <form action="#">
+      <form id="create-app-dialog-form">
         <div class="mdl-textfield mdl-js-textfield mdl-textfield--floating-label">
           <input class="mdl-textfield__input" type="text" id="create-app-dialog-appname-textfield">
           <label class="mdl-textfield__label" for="create-app-dialog-appname-textfield">App name</label>
