@@ -32,14 +32,13 @@ function CreateAppDialogView() {
     self.dismiss();
   };
   var dialogForm = document.getElementById('create-app-dialog-form');
-  dialogForm.onsubmit = function () {
+  dialogForm.onsubmit = function (event) {
+    event.preventDefault();
     self.confirm();
   };
 }
 
-CreateAppDialogView.prototype.show = function (onClickConfirm) {
-  this.mOnClickConfirm = onClickConfirm;
-
+CreateAppDialogView.prototype.show = function () {
   var appNameTextField = document.getElementById(
     'create-app-dialog-appname-textfield'
   );
@@ -69,10 +68,23 @@ CreateAppDialogView.prototype.confirm = function () {
     return;
   }
 
-  // Call handler
-  this.mOnClickConfirm(appName);
+  // Create app
+  var self = this;
+  var onSuccess = function (appName) {
+    // Update UI for the new app
+    gUIController.addAppToUI(appName);
+    gUIController.selectApp(appName);
 
-  this.mRootDom.close();
+    self.mRootDom.close();
+
+    gUIController.showSuccessMessage(appName + ': app created and installed.');
+    gUIController.selectNavItem('navitem-codeeditor');
+  };
+  var onFailure = function (text) {
+    gUIController.showErrorMessage(text);
+  };
+
+  gAppController.createApp(appName, onSuccess, onFailure);
 };
 
 CreateAppDialogView.prototype.dismiss = function () {

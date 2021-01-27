@@ -18,59 +18,56 @@ function AppController(context, antClient) {
   this.mANTClient = antClient;
 }
 
-AppController.prototype.createApp = function (appName) {
+AppController.prototype.createApp = function (appName, onSuccess, onFailure) {
   // Send "create app request"
   try {
+    var initialCode = Config.initialCode;
+    initialCode = initialCode.replace('{APP_NAME}', appName);
     this.mANTClient.installApp(
       appName,
       initialCode,
       function (isSuccess, text) {
         if (isSuccess) {
-          gUIController.addAppToUI(appName);
-
-          // Select this app
-          gUIController.selectApp(appName);
+          if (onSuccess !== undefined) onSuccess(appName);
         } else {
-          alert(text);
+          if (onFailure !== undefined) onFailure(text);
         }
       }
     );
   } catch (e) {
-    gUIController.showErrorMessage(e);
+    onFailure(e);
   }
 };
 
-AppController.prototype.updateCurrentAppCode = function (appCode) {
+AppController.prototype.updateCurrentAppCode = function (
+  appCode,
+  onSuccess,
+  onFailure
+) {
   // Send "create app request"
   try {
     var appName = this.mContext.currentAppName;
     this.mANTClient.installApp(appName, appCode, function (isSuccess, text) {
       if (isSuccess) {
-        gUIController.showInfoMessage('App code loaded successfully');
+        if (onSuccess !== undefined) onSuccess(appName);
       } else {
-        gUIController.showErrorMessage(text);
+        if (onFailure !== undefined) onFailure(text);
       }
     });
   } catch (e) {
-    gUIController.showErrorMessage(e);
+    onFailure(e);
   }
 };
 
-AppController.prototype.launchCurrentApp = function () {
+AppController.prototype.launchCurrentApp = function (onSuccess, onFailure) {
   // Send "launch app request"
   try {
     var appName = this.mContext.currentAppName;
     this.mANTClient.launchApp(appName, function (isSuccess, text) {
       if (isSuccess) {
-        gUIController.showInfoMessage(
-          'App ' + appName + ' launched successfully'
-        );
-
-        if (this.mContext.currentNavItem.getId() === 'navitem-codeeditor') {
-          gCodeEditor.setRunButtonMode(false);
-        }
+        if (onSuccess !== undefined) onSuccess(appName);
       } else {
-        gUIController.showErrorMessage(text);
+        if (onFailure !== undefined) onFailure(text);
       }
     });
   } catch (e) {
@@ -78,21 +75,15 @@ AppController.prototype.launchCurrentApp = function () {
   }
 };
 
-AppController.prototype.terminateCurrentApp = function () {
+AppController.prototype.terminateCurrentApp = function (onSuccess, onFailure) {
   // Send "terminate app request"
   try {
     var appName = this.mContext.currentAppName;
     this.mANTClient.terminateApp(appName, function (isSuccess, text) {
       if (isSuccess) {
-        gUIController.showInfoMessage(
-          'App ' + appName + ' terminated successfully'
-        );
-
-        if (this.mContext.currentNavItem.getId() === 'navitem-codeeditor') {
-          gCodeEditor.setRunButtonMode(true);
-        }
+        if (onSuccess !== undefined) onSuccess(appName);
       } else {
-        gUIController.showErrorMessage(text);
+        if (onFailure !== undefined) onFailure(text);
       }
     });
   } catch (e) {
@@ -100,19 +91,15 @@ AppController.prototype.terminateCurrentApp = function () {
   }
 };
 
-AppController.prototype.removeCurrentApp = function () {
+AppController.prototype.removeCurrentApp = function (onSuccess, onFailure) {
   // Send "remove app request"
   try {
     var appName = this.mContext.currentAppName;
     this.mANTClient.removeApp(appName, function (isSuccess, text) {
       if (isSuccess) {
-        gUIController.removeAppFromUI(appName);
-
-        gUIController.showInfoMessage(
-          'App ' + appName + ' removed successfully'
-        );
+        if (onSuccess !== undefined) onSuccess(appName);
       } else {
-        gUIController.showErrorMessage(text);
+        if (onFailure !== undefined) onFailure(text);
       }
     });
   } catch (e) {
