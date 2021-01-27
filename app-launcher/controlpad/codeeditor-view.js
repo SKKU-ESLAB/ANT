@@ -126,10 +126,10 @@ function CommandBar(
   });
   this.append(this.mSaveButton);
 
-  this.mRunButton = new ButtonView('run-button', 'play_arrow', 'Launch');
+  this.mRunButton = new ButtonView('run-button', 'play_arrow', 'Run');
   this.mRunButton.setOnClickHandler(function () {
     var buttonText = self.mRunButton.getText();
-    if (buttonText === 'Launch') {
+    if (buttonText === 'Run') {
       self.mOnLaunchButton();
     } else {
       self.mOnTerminateButton();
@@ -159,9 +159,9 @@ CommandBar.prototype.getDom = function () {
 CommandBar.prototype.setRunButtonMode = function (isLaunchButton) {
   if (isLaunchButton) {
     this.mRunButton.setIconType('play_arrow');
-    this.mRunButton.setText('Launch');
+    this.mRunButton.setText('Run');
   } else {
     this.mRunButton.setIconType('pause');
-    this.mRunButton.setText('Terminate');
+    this.mRunButton.setText('Stop');
   }
 };

@@ -274,12 +274,11 @@ function onSaveButtonCodeEditorView(appCode) {
 }
 
 function onLaunchButtonCodeEditorView() {
-  var self = this;
   var onSuccess = function (appName, text) {
     gUIController.showSuccessMessage(appName + ': launched successfully.');
 
-    if (self.mContext.currentNavItem.getId() === 'navitem-codeeditor') {
-      self.mCodeEditor.setRunButtonMode(false);
+    if (gUIController.mContext.currentNavItem.getId() === 'navitem-codeeditor') {
+      gUIController.mCodeEditor.setRunButtonMode(false);
     }
   };
   var onFailure = function (text) {
@@ -290,12 +289,11 @@ function onLaunchButtonCodeEditorView() {
 }
 
 function onTerminateButtonCodeEditorView() {
-  var self = this;
   var onSuccess = function (appName, text) {
     gUIController.showSuccessMessage(appName + ': terminated successfully.');
 
-    if (self.mContext.currentNavItem.getId() === 'navitem-codeeditor') {
-      self.mCodeEditor.setRunButtonMode(true);
+    if (gUIController.mContext.currentNavItem.getId() === 'navitem-codeeditor') {
+      gUIController.mCodeEditor.setRunButtonMode(true);
     }
   };
   var onFailure = function (text) {
@@ -306,7 +304,6 @@ function onTerminateButtonCodeEditorView() {
 }
 
 function onRemoveButtonCodeEditorView() {
-  var self = this;
   var onSuccess = function (appName, text) {
     gUIController.removeAppFromUI(appName);
 
