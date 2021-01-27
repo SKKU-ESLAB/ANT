@@ -116,7 +116,7 @@ AppManager.prototype.removeApp = function (appName) {
   this.mOnAppRemoved(app);
 
   // Remove app metadata
-  this.mApps.splice(index);
+  this.mApps.splice(index, 1);
 
   // Remove app file
   try {
