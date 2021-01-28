@@ -115,7 +115,8 @@
     "antgateway": {
       "js_file": "antgateway/js/antgateway.js",
       "require": [
-        "console"
+        "console",
+        "ocf"
       ]
     }
   }
