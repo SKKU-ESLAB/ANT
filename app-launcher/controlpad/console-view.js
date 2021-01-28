@@ -50,13 +50,13 @@ ConsoleView.prototype.onAddedDom = function () {
   var isValid = this.mOnRefresh();
   if (isValid) {
     this.mPeriodicUpdate = setInterval(function () {
-      isValid = self.mOnRefresh();
+      self.mOnRefresh();
     }, this.mUpdatePeriodMS);
   }
 };
 
 ConsoleView.prototype.onRemovedDom = function () {
-  clearInterval(this.mPeriodicUpdate);
+  if (this.mPeriodicUpdate !== undefined) clearInterval(this.mPeriodicUpdate);
 };
 
 ConsoleView.prototype.updateOutputs = function (appName, outputBuffers) {
@@ -104,6 +104,7 @@ ConsoleView.prototype.updateOutputs = function (appName, outputBuffers) {
     var command = commands[i];
     if (command.cmdType == 'N') {
       var textLine = document.createElement('div');
+      textLine.setAttribute('class', 'console-text-line');
       textLine.isDisplayed = false;
 
       consoleData.textLines.push(textLine);
@@ -145,9 +146,12 @@ ConsoleView.prototype.updateOutputs = function (appName, outputBuffers) {
 
 ConsoleView.prototype.removeTextLines = function () {
   var childViews = this.mRootDom.children;
-  for (var i = 0; i < childViews.length; i++) {
+  for (var i = childViews.length; i >= 0; i--) {
     var childView = childViews.item(i);
-    if (childView.classList.contains('console-text-line')) {
+    if (
+      childView !== null &&
+      childView.classList.contains('console-text-line')
+    ) {
       childView.isDisplayed = false;
       childView.remove();
     }
