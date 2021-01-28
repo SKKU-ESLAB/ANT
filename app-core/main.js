@@ -47,7 +47,10 @@ function mainLoop() {
 
   // Launch app
   var app = ant.runtime.getCurrentApp();
-  app.name = appName;
+  if(app === undefined) {
+    console.error('Error: no app runtime lifecycle handlers');
+    console.error('- ant.runtime.setCurrentApp() function must be called.');
+  }
   if (app != undefined) {
     resultMessage = app.start();
     if (resultMessage == RESULT_SUCCESS) {
@@ -56,6 +59,7 @@ function mainLoop() {
       console.error('App launch failure');
     }
   }
+  app.name = appName;
 
   // Connect to app launcher
   gSocket = net.connect({port: launcherPort, host: 'localhost'});

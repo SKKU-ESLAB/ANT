@@ -736,7 +736,7 @@ OCFResource.prototype.setPeriodicObservable = function (periodSec) {
 };
 
 var gOCFResourceHandlerId = 0;
-s;
+
 /**
  * OCFResource.setHandler
  * @param {Number} method
