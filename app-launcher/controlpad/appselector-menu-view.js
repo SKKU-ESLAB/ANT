@@ -102,7 +102,16 @@ AppSelectorMenuView.prototype.show = function () {
 
 AppSelectorMenuView.prototype.hide = function () {
   if (this.mRootDom.MaterialMenu !== undefined) {
-    this.mRootDom.MaterialMenu.hide();
+    var self = this;
+    setTimeout(function () {
+      self.mRootDom.MaterialMenu.hide();
+    }, 500);
+  }
+};
+
+AppSelectorMenuView.prototype.toggle = function () {
+  if (this.mRootDom.MaterialMenu !== undefined) {
+    this.mRootDom.MaterialMenu.toggle();
   }
 };
 

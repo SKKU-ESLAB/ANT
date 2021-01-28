@@ -47,11 +47,11 @@ function mainLoop() {
 
   // Launch app
   var app = ant.runtime.getCurrentApp();
+  app.name = appName;
   if (app != undefined) {
     resultMessage = app.start();
     if (resultMessage == RESULT_SUCCESS) {
       gPid = '' + process.pid;
-      console.log('App ' + appName + ' launched! (pid: ' + gPid + ')');
     } else {
       console.error('App launch failure');
     }
@@ -69,11 +69,10 @@ function onAppCommandReceived(data) {
   var message = data.toString();
   if (message.indexOf('Terminate') >= 0) {
     // Terminate-app command
-    console.log('Received app terminatation command.');
     var app = ant.runtime.getCurrentApp();
     app.stop();
 
-    console.log('App terminated successfully!');
+    console.log('App ' + app.name + ' terminated');
     gSocket.destroy();
   }
 }

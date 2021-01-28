@@ -59,6 +59,10 @@ ButtonView.prototype.setText = function (text) {
   this.mTextSpan.innerHTML = text;
 };
 
+ButtonView.prototype.setDisabled = function (isDisabled) {
+  this.mRootDom.disabled = isDisabled;
+};
+
 ButtonView.prototype.append = function (childView) {
   if (childView.getDom !== undefined) {
     this.mRootDom.append(childView.getDom());

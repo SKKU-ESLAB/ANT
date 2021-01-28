@@ -16,15 +16,19 @@
 var gMonacoEditor;
 function CodeEditorView(
   onAppear,
+  onRefresh,
   onSaveButton,
   onLaunchButton,
   onTerminateButton,
-  onRemoveButton
+  onRemoveButton,
+  updatePeriodMS = 1000
 ) {
   // Attributes
   this.mOnAppear = onAppear;
+  this.mOnRefresh = onRefresh;
   this.mCommandBarHeight = 64;
   this.mRootDom = document.createElement('div');
+  this.mUpdatePeriodMS = updatePeriodMS;
 
   // Command bar
   this.mCommandBar = new CommandBar(
@@ -74,10 +78,22 @@ CodeEditorView.prototype.onAddedDom = function () {
         language: 'javascript'
       });
       self.mOnAppear();
+      self.startPeriodicUpdate();
     });
   } else {
     this.mOnAppear();
+    this.startPeriodicUpdate();
   }
+};
+
+CodeEditorView.prototype.startPeriodicUpdate = function () {
+  var self = this;
+  this.mPeriodicUpdate = setInterval(function () {
+    self.mOnRefresh();
+  }, this.mUpdatePeriodMS);
+};
+CodeEditorView.prototype.endPeriodicUpdate = function () {
+  if (this.mPeriodicUpdate !== undefined) clearInterval(this.mPeriodicUpdate);
 };
 
 CodeEditorView.prototype.setAppCode = function (appCode) {
@@ -86,8 +102,8 @@ CodeEditorView.prototype.setAppCode = function (appCode) {
   }
 };
 
-CodeEditorView.prototype.setRunButtonMode = function (isLaunchButton) {
-  this.mCommandBar.setRunButtonMode(isLaunchButton);
+CodeEditorView.prototype.setCurrentAppState = function (state) {
+  this.mCommandBar.setRunButtonState(state);
 };
 
 function CommandBar(
@@ -156,12 +172,24 @@ CommandBar.prototype.getDom = function () {
   return this.mRootDom;
 };
 
-CommandBar.prototype.setRunButtonMode = function (isLaunchButton) {
-  if (isLaunchButton) {
+CommandBar.prototype.setRunButtonState = function (state) {
+  if (state == 'Inactive') {
     this.mRunButton.setIconType('play_arrow');
     this.mRunButton.setText('Run');
-  } else {
+    this.mRunButton.setDisabled(false);
+  } else if (state == 'Active') {
     this.mRunButton.setIconType('pause');
     this.mRunButton.setText('Stop');
+    this.mRunButton.setDisabled(false);
+  } else if (state == 'Launching') {
+    this.mRunButton.setIconType('hourglass_empty');
+    this.mRunButton.setText('Launching');
+    this.mRunButton.setDisabled(true);
+  } else if (state == 'Terminating') {
+    this.mRunButton.setIconType('hourglass_empty');
+    this.mRunButton.setText('Terminating');
+    this.mRunButton.setDisabled(true);
+  } else {
+    gUIController.showErrorMessage('Invalid state: ' + state);
   }
 };

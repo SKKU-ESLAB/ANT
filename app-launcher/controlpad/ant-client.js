@@ -86,6 +86,23 @@ ANTClient.prototype.getAppCode = function (appName, handler) {
   );
 };
 
+ANTClient.prototype.getAppState = function (appName, handler) {
+  var url = 'http://' + this.getTargetUri() + '/apps/' + appName + '/state';
+  this._sendHTTPRequest(
+    url,
+    'GET',
+    undefined,
+    function (responseCode, responseText) {
+      if (responseCode == 200) {
+        var appState = responseText;
+        handler(true, appState);
+      } else {
+        handler(false);
+      }
+    }
+  );
+};
+
 ANTClient.prototype.removeApp = function (appName, handler) {
   var url = 'http://' + this.getTargetUri() + '/apps/' + appName;
   this._sendHTTPRequest(

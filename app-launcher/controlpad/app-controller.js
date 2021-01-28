@@ -106,3 +106,21 @@ AppController.prototype.removeCurrentApp = function (onSuccess, onFailure) {
     gUIController.showErrorMessage(e);
   }
 };
+
+AppController.prototype.getAppState = function (onSuccess, onFailure) {
+  // Send "get app state request"
+  try {
+    var appName = this.mContext.currentAppName;
+    this.mANTClient.getAppState(appName, function (isSuccess, text) {
+      if (isSuccess) {
+        var state = text;
+        if (onSuccess !== undefined) onSuccess(appName, state);
+      } else {
+        if (onFailure !== undefined) onFailure(text);
+      }
+    });
+  } catch (e) {
+    gUIController.showErrorMessage(e);
+  }
+};
+

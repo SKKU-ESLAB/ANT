@@ -13,26 +13,7 @@
  * limitations under the License.
  */
 
-var initialCode =
-  '/* {APP_NAME} */ \n\
-var ant = require("ant"); \n\
-var console = require("console"); \n\
-\n\
-function onInitialize() {\n\
-\t/* Write your initialization code */\n\
-};\n\
-\n\
-function onStart() {\n\
-\t/* Write your app start handler code */\n\
-\tconsole.log(\'Hello ANT!\')\n\
-};\n\
-\n\
-function onStop() {\n\
-\t/* Write your app stop handler code */\n\
-};\n\
-\n\
-ant.runtime.setCurrentApp(onInitialize, onStart, onStop);\n';
-
-var Config = {
-  initialCode: initialCode
-};
+function AppSelectorView(onClick) {
+  this.mRootDom = document.getElementById('app-selector');
+  this.mRootDom.onclick = onClick;
+}

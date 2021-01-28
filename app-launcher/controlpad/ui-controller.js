@@ -25,6 +25,7 @@ function UIController(context, antClient) {
   this.mConsole = undefined;
 
   /* Main UI components */
+  this.mAppSelector = undefined;
   this.mAppSelectorLabel = undefined;
   this.mAppSelectorMenu = undefined;
   this.mNavMenuView = undefined;
@@ -80,7 +81,7 @@ UIController.prototype.selectApp = function (appName) {
   this.mAppSelectorLabel.setText(label);
 
   // Update code editor when code editor is opened
-  this.refreshCodeEditor();
+  this.refreshCodeEditor(true);
 
   // Update console when console is opened
   this.refreshConsole();
@@ -116,22 +117,38 @@ UIController.prototype.removeAppFromUI = function (appName) {
   // TODO: Update app list card when dashboard is opened
 };
 
+/* App selector menu control */
+UIController.prototype.toggleAppSelectorMenu = function () {
+  this.mAppSelectorMenu.toggle();
+};
+
+UIController.prototype.hideAppSelectorMenu = function () {
+  this.mAppSelectorMenu.hide();
+};
+
 /* Refresh content views */
 UIController.prototype.selectNavItem = function (key) {
   this.mNavMenuView.selectItem(this.mNavMenuView.getItem(key));
 };
 
-UIController.prototype.refreshCodeEditor = function () {
+UIController.prototype.refreshCodeEditor = function (isReloadCode) {
   var self = this;
   try {
     if (this.mContext.currentNavItem.getId() === 'navitem-codeeditor') {
       appName = this.mContext.currentAppName;
       if (appName !== undefined) {
-        this.mANTClient.getAppCode(appName, function (isSuccess, appCode) {
+        if (isReloadCode) {
+          this.mANTClient.getAppCode(appName, function (isSuccess, appCode) {
+            if (isSuccess) {
+              self.mCodeEditor.setAppCode(appCode);
+            } else {
+              self.showErrorMessage('Cannot get the code of app ' + appName);
+            }
+          });
+        }
+        this.mANTClient.getAppState(appName, function (isSuccess, appState) {
           if (isSuccess) {
-            self.mCodeEditor.setAppCode(appCode);
-          } else {
-            self.showErrorMessage('Cannot get the code of app ' + appName);
+            self.mCodeEditor.setCurrentAppState(appState);
           }
         });
       } else {
@@ -192,14 +209,16 @@ UIController.prototype.initialize = function () {
   this.mDashboard = new DashboardView();
   this.mCodeEditor = new CodeEditorView(
     onAppearCodeEditorView,
+    onRefreshCodeEditorView,
     onSaveButtonCodeEditorView,
     onLaunchButtonCodeEditorView,
     onTerminateButtonCodeEditorView,
     onRemoveButtonCodeEditorView
   );
-  this.mConsole = new ConsoleView((onRefresh = onRefreshConsoleView));
+  this.mConsole = new ConsoleView(onRefreshConsoleView);
 
   // Initialize main UI components
+  this.mAppSelectorView = new AppSelectorView(onClickAppSelectorView);
   this.mAppSelectorLabel = new AppSelectorLabelView();
   this.mAppSelectorMenu = new AppSelectorMenuView(
     onClickAppEntryAppSelectorMenuView,
@@ -252,11 +271,17 @@ UIController.prototype._initializeCreateAppFabButtonView = function () {
 
 /* Code editor view handlers */
 function onAppearCodeEditorView() {
-  gUIController.refreshCodeEditor();
+  gUIController.refreshCodeEditor(true);
 
   if (gUIController.mContext.currentAppName === undefined) {
     gUIController.showErrorMessage('App is not selected.');
     return;
+  }
+}
+
+function onRefreshCodeEditorView() {
+  if (gUIController.mContext.currentAppName !== undefined) {
+    gUIController.refreshCodeEditor(false);
   }
 }
 
@@ -277,8 +302,10 @@ function onLaunchButtonCodeEditorView() {
   var onSuccess = function (appName, text) {
     gUIController.showSuccessMessage(appName + ': launched successfully.');
 
-    if (gUIController.mContext.currentNavItem.getId() === 'navitem-codeeditor') {
-      gUIController.mCodeEditor.setRunButtonMode(false);
+    if (
+      gUIController.mContext.currentNavItem.getId() === 'navitem-codeeditor'
+    ) {
+      gUIController.mCodeEditor.setCurrentAppState('Launching');
     }
   };
   var onFailure = function (text) {
@@ -292,8 +319,10 @@ function onTerminateButtonCodeEditorView() {
   var onSuccess = function (appName, text) {
     gUIController.showSuccessMessage(appName + ': terminated successfully.');
 
-    if (gUIController.mContext.currentNavItem.getId() === 'navitem-codeeditor') {
-      gUIController.mCodeEditor.setRunButtonMode(true);
+    if (
+      gUIController.mContext.currentNavItem.getId() === 'navitem-codeeditor'
+    ) {
+      gUIController.mCodeEditor.setCurrentAppState('Terminating');
     }
   };
   var onFailure = function (text) {
@@ -328,8 +357,13 @@ function onRefreshConsoleView() {
 }
 
 /* App selector menu view handlers */
+function onClickAppSelectorView() {
+  gUIController.toggleAppSelectorMenu();
+}
 function onClickAppEntryAppSelectorMenuView(appName) {
   gUIController.selectApp(appName);
+  gUIController.hideAppSelectorMenu();
+  
 }
 function onClickCreateAppEntryAppSelectorMenuView() {
   gUIController.showCreateAppDialog();

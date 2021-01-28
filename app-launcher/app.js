@@ -137,7 +137,7 @@ App.prototype.launch = function () {
   });
   this.mProcess.on('close', function (code) {
     // Handler on app-terminated event
-    this.mProcess = undefined;
+    self.mProcess = undefined;
     self.setState(AppState.Inactive);
   });
 };
