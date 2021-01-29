@@ -13,6 +13,7 @@
  * limitations under the License.
  */
 
+/* DashboardView */
 function DashboardView() {
   this.mRootGrid = new CardGrid();
 

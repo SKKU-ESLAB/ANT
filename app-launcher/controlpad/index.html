@@ -40,7 +40,6 @@
 
   <script type="text/javascript" src="./navmenu-view.js"></script>
   <script type="text/javascript" src="./appselector-view.js"></script>
-  <script type="text/javascript" src="./appselector-label-view.js"></script>
   <script type="text/javascript" src="./appselector-menu-view.js"></script>
   <script type="text/javascript" src="./console-view.js"></script>
   <script type="text/javascript" src="./dashboard-view.js"></script>
@@ -64,7 +63,7 @@
         <img src="images/app_icon.png" class="demo-avatar" style="width: 50px" />
         <div id="app-selector" class="demo-avatar-dropdown">
           <span id="app-selector-label"></span>
-          <div class="mdl-layout-spacer"></div>
+          <div id="app-selector-spacer" class="mdl-layout-spacer" style="height:20px;"></div>
           <button id="app-selctor-button" class="mdl-button mdl-js-button mdl-js-ripple-effect mdl-button--icon">
             <i class="material-icons" role="presentation">arrow_drop_down</i>
             <span class="visuallyhidden">Apps</span>
@@ -88,7 +87,7 @@
   </div>
 
   <!-- Create app fab button -->
-  <button id="createapp-fabbutton"
+  <button id="create-app-fabbutton"
     class="mdl-button mdl-js-button mdl-button--colored mdl-button--fab mdl-js-ripple-effect"
     style="position: fixed; display: block; right: 0; bottom: 0; margin-right: 40px; margin-bottom: 40px; z-index: 900;">
     <i class="material-icons">add</i>

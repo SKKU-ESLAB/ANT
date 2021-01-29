@@ -13,13 +13,52 @@
  * limitations under the License.
  */
 
+/* View */
+function View(domId, createElementType) {
+  this.mId = domId;
+  if (createElementType === undefined) {
+    this.mRootDom = document.getElementById(domId);
+  } else {
+    this.mRootDom = document.createElement(createElementType);
+    this.mRootDom.setAttribute('id', this.mId);
+  }
+}
+
+View.prototype.getId = function () {
+  return this.mId;
+};
+
+View.prototype.getDom = function () {
+  return this.mRootDom;
+};
+
+View.prototype.append = function (childView) {
+  if (typeof childView === 'object' && childView.getDom !== undefined) {
+    this.mRootDom.append(childView.getDom());
+  } else {
+    this.mRootDom.append(childView);
+  }
+};
+
+View.prototype.insertBefore = function (childView, beforeView) {
+  if (typeof childView === 'object' && childView.getDom !== undefined) {
+    childView = childView.getDom();
+  }
+  if (typeof beforeView === 'object' && beforeView.getDom !== undefined) {
+    beforeView = beforeView.getDom();
+  }
+  this.mRootDom.insertBefore(childView, beforeView);
+};
+
+/* ButtonView */
 function ButtonView(id, iconType, text) {
+  View.apply(this, [id, 'button']);
+
   // Setting attributes
   this.mId = id;
   this.mIconType = iconType;
   this.mText = text;
 
-  this.mRootDom = document.createElement('button');
   this.mRootDom.setAttribute(
     'class',
     'mdl-button mdl-js-button mdl-button--raised mdl-js-ripple-effect mdl-button--accent'
@@ -36,10 +75,8 @@ function ButtonView(id, iconType, text) {
   this.mTextSpan.innerHTML = text;
   this.mRootDom.append(this.mTextSpan);
 }
-
-ButtonView.prototype.getId = function () {
-  return this.mId;
-};
+ButtonView.prototype = Object.create(View.prototype);
+ButtonView.prototype.constructor = ButtonView;
 
 ButtonView.prototype.getIconType = function () {
   return this.mIconType;
@@ -63,22 +100,11 @@ ButtonView.prototype.setDisabled = function (isDisabled) {
   this.mRootDom.disabled = isDisabled;
 };
 
-ButtonView.prototype.append = function (childView) {
-  if (childView.getDom !== undefined) {
-    this.mRootDom.append(childView.getDom());
-  } else {
-    this.mRootDom.append(childView);
-  }
-};
-
 ButtonView.prototype.setOnClickHandler = function (onClickHandler) {
   this.mRootDom.onclick = onClickHandler;
 };
 
-ButtonView.prototype.getDom = function () {
-  return this.mRootDom;
-};
-
+/* CardView */
 function CardView(
   id,
   titleText,
@@ -93,8 +119,9 @@ function CardView(
     return undefined;
   }
 
+  View.apply(this, [id, 'div']);
+
   // Setting attributes
-  this.mId = id;
   this.mTitleText = titleText;
   this.mWidthColumns = widthColumns;
   this.mContentsBgColor = contentsBgColor;
@@ -102,8 +129,6 @@ function CardView(
   this.mTitleColor = titleColor;
 
   // Initialize root DOM
-  this.mRootDom = document.createElement('div');
-  this.mRootDom.setAttribute('id', this.mId);
   this.mRootDom.setAttribute(
     'class',
     'mdl-card mdl-shadow--2dp mdl-cell ' +
@@ -118,6 +143,8 @@ function CardView(
   }
   this.mListView = undefined;
 }
+CardView.prototype = Object.create(View.prototype);
+CardView.prototype.constructor = CardView;
 
 CardView.prototype._initTitle = function () {
   this.mTitleView = document.createElement('div');
@@ -138,18 +165,6 @@ CardView.prototype._initTitle = function () {
   return this.mTitleView;
 };
 
-CardView.prototype.getDom = function () {
-  return this.mRootDom;
-};
-
-CardView.prototype.append = function (childView) {
-  if (typeof childView === 'object' && childView.getDom !== undefined) {
-    this.mRootDom.append(childView.getDom());
-  } else {
-    this.mRootDom.append(childView);
-  }
-};
-
 CardView.prototype.enableListView = function () {
   this.mListView = document.createElement('ul');
   this.mListView.setAttribute('id', this.mId + '--list');
@@ -157,9 +172,9 @@ CardView.prototype.enableListView = function () {
   this.append(this.mListView);
 };
 
-/* iconType: https://material.io/resources/icons/?style=round */
 var gNextListItemId = 0;
 CardView.prototype.addListItem = function (iconType, text) {
+  /* iconType: https://material.io/resources/icons/?style=round */
   var listItem = document.createElement('li');
   listItem.setAttribute('id', this.mId + '--list-' + gNextListItemId++);
   listItem.setAttribute('class', 'mdl-list__item');
@@ -202,22 +217,14 @@ CardView.prototype._getBgClass = function (bgColor) {
   return 'mdl-color--' + bgColor;
 };
 
+/* CardGrid */
 function CardGrid(maxWidthPx = 1080) {
+  View.apply(this, [undefined, 'div']);
+
   this.mMaxWidthPx = maxWidthPx;
 
-  this.mRootDom = document.createElement('div');
   this.mRootDom.setAttribute('class', 'mdl-grid');
   this.mRootDom.setAttribute('style', 'max-width: ' + this.mMaxWidthPx + 'px;');
 }
-
-CardGrid.prototype.getDom = function () {
-  return this.mRootDom;
-};
-
-CardGrid.prototype.append = function (childView) {
-  if (childView.getDom !== undefined) {
-    this.mRootDom.append(childView.getDom());
-  } else {
-    this.mRootDom.append(childView);
-  }
-};
+CardGrid.prototype = Object.create(View.prototype);
+CardGrid.prototype.constructor = CardGrid;

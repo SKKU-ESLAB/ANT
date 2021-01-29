@@ -14,10 +14,13 @@
  */
 
 function SnackbarView() {
-  this.mRootDom = document.getElementById('snack-bar');
+  View.apply(this, ['snack-bar']);
+
   this.SHORT_MS = 2000;
   this.LONG_MS = 4000;
 }
+SnackbarView.prototype = Object.create(View.prototype);
+SnackbarView.prototype.constructor = SnackbarView;
 
 SnackbarView.prototype.showShort = function (
   message,

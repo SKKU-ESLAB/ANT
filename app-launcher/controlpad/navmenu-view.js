@@ -13,28 +13,20 @@
  * limitations under the License.
  */
 
+/* NavMenuView */
 function NavMenuView(context) {
+  View.apply(this, ['nav-menu']);
+
   // Set attributes
   this.mNavItems = [];
-  this.mRootDom = document.getElementById('nav-menu');
   this.mContext = context;
 }
-
-NavMenuView.prototype.getDom = function () {
-  return this.mRootDom;
-};
-
-NavMenuView.prototype.append = function (childView) {
-  if (childView.getDom !== undefined) {
-    this.mRootDom.append(childView.getDom());
-  } else {
-    this.mRootDom.append(childView);
-  }
-};
+NavMenuView.prototype = Object.create(View.prototype);
+NavMenuView.prototype.constructor = NavMenuView;
 
 NavMenuView.prototype.getItem = function (key) {
   if (typeof key === 'number') {
-    return this.mNavItems[index];
+    return this.mNavItems[key];
   } else if (typeof key === 'string') {
     for (var i in this.mNavItems) {
       var item = this.mNavItems[i];
@@ -95,14 +87,14 @@ NavMenuView.prototype.addItem = function (id, iconType, title, view) {
   this.append(navItemView);
 };
 
+/* NavMenuItemView */
 function NavMenuItemView(id, iconType, title, view) {
-  this.mId = id;
+  View.apply(this, [id, 'a']);
+
   this.mIconType = iconType;
   this.mTitle = title;
   this.mView = view;
 
-  this.mRootDom = document.createElement('a');
-  this.mRootDom.setAttribute('id', this.mId);
   this.mRootDom.setAttribute('class', 'mdl-navigation__link');
   this.mRootDom.setAttribute('href', '#');
   {
@@ -114,18 +106,8 @@ function NavMenuItemView(id, iconType, title, view) {
     this.append(this.mTitle);
   }
 }
-
-NavMenuItemView.prototype.getDom = function () {
-  return this.mRootDom;
-};
-
-NavMenuItemView.prototype.append = function (childView) {
-  if (typeof childView === 'object' && childView.getDom !== undefined) {
-    this.mRootDom.append(childView.getDom());
-  } else {
-    this.mRootDom.append(childView);
-  }
-};
+NavMenuItemView.prototype = Object.create(View.prototype);
+NavMenuItemView.prototype.constructor = NavMenuItemView;
 
 NavMenuItemView.prototype.getId = function () {
   return this.mId;

@@ -13,12 +13,11 @@
  * limitations under the License.
  */
 
+/* CreateAppDialogView */
 function CreateAppDialogView() {
-  // TODO: for older browers, it may require 'dialog-polyfill'.
-  // https://github.com/GoogleChrome/dialog-polyfill
+  View.apply(this, ['create-app-dialog']);
 
   var self = this;
-  this.mRootDom = document.getElementById('create-app-dialog');
   this.mConfirmButton = document.getElementById(
     'create-app-dialog-confirm-button'
   );
@@ -36,7 +35,12 @@ function CreateAppDialogView() {
     event.preventDefault();
     self.confirm();
   };
+  /* TODO: for older browers, it may require 'dialog-polyfill'.
+     https://github.com/GoogleChrome/dialog-polyfill
+   */
 }
+CreateAppDialogView.prototype = Object.create(View.prototype);
+CreateAppDialogView.prototype.constructor = CreateAppDialogView;
 
 CreateAppDialogView.prototype.show = function () {
   var appNameTextField = document.getElementById(

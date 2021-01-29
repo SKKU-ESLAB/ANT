@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 
-var gMonacoEditor;
+/* CodeEditorView */
 function CodeEditorView(
   onAppear,
   onRefresh,
@@ -23,16 +23,18 @@ function CodeEditorView(
   onRemoveButton,
   updatePeriodMS = 1000
 ) {
+  View.apply(this, ['code-editor-wrapper', 'div']);
+
   // Attributes
   this.mOnAppear = onAppear;
   this.mOnRefresh = onRefresh;
   this.mCommandBarHeight = 64;
-  this.mRootDom = document.createElement('div');
   this.mUpdatePeriodMS = updatePeriodMS;
 
   // Command bar
   this.mCommandBar = new CommandBar(
     'command-bar',
+    this,
     this.mCommandBarHeight,
     10,
     onSaveButton,
@@ -44,21 +46,13 @@ function CodeEditorView(
 
   // Code Editor
   this.mCodeEditor = document.createElement('div');
-  this.mCodeEditor.setAttribute('id', 'code_editor');
+  this.mCodeEditor.setAttribute('id', 'code-editor');
   this.append(this.mCodeEditor);
+
+  this.mMonacoEditor = undefined;
 }
-
-CodeEditorView.prototype.append = function (childView) {
-  if (childView.getDom !== undefined) {
-    this.mRootDom.append(childView.getDom());
-  } else {
-    this.mRootDom.append(childView);
-  }
-};
-
-CodeEditorView.prototype.getDom = function () {
-  return this.mRootDom;
-};
+CodeEditorView.prototype = Object.create(View.prototype);
+CodeEditorView.prototype.constructor = CodeEditorView;
 
 CodeEditorView.prototype.onAddedDom = function () {
   // Initialize code editor on added the DOM element is added to root
@@ -70,10 +64,10 @@ CodeEditorView.prototype.onAddedDom = function () {
       this.mCommandBarHeight +
       'px); border: 1px solid grey'
   );
-  if (gMonacoEditor === undefined) {
+  if (this.mMonacoEditor === undefined) {
     require.config({paths: {vs: './vs'}});
     require(['vs/editor/editor.main'], function () {
-      gMonacoEditor = monaco.editor.create(codeEditor, {
+      self.mMonacoEditor = monaco.editor.create(codeEditor, {
         value: '\n',
         language: 'javascript'
       });
@@ -97,8 +91,8 @@ CodeEditorView.prototype.endPeriodicUpdate = function () {
 };
 
 CodeEditorView.prototype.setAppCode = function (appCode) {
-  if (gMonacoEditor !== undefined) {
-    gMonacoEditor.setValue(appCode);
+  if (this.mMonacoEditor !== undefined) {
+    this.mMonacoEditor.setValue(appCode);
   }
 };
 
@@ -106,8 +100,22 @@ CodeEditorView.prototype.setCurrentAppState = function (state) {
   this.mCommandBar.setRunButtonState(state);
 };
 
+CodeEditorView.prototype.saveAppCode = function () {
+  this.mCommandBar.saveAppCode();
+};
+
+CodeEditorView.prototype.toggleRunApp = function () {
+  this.mCommandBar.toggleRunApp();
+};
+
+CodeEditorView.prototype.removeApp = function () {
+  this.mCommandBar.removeApp();
+};
+
+/* CommandBar */
 function CommandBar(
   id,
+  mother,
   height,
   margin,
   onSaveButton,
@@ -115,8 +123,10 @@ function CommandBar(
   onTerminateButton,
   onRemoveButton
 ) {
+  View.apply(this, [id, 'div']);
+
   var self = this;
-  this.mId = id;
+  this.mMother = mother;
   this.mMargin = margin;
   this.mHeight = height - margin * 2;
 
@@ -125,8 +135,6 @@ function CommandBar(
   this.mOnTerminateButton = onTerminateButton;
   this.mOnRemoveButton = onRemoveButton;
 
-  this.mRootDom = document.createElement('div');
-  this.mRootDom.setAttribute('id', this.mId);
   this.mRootDom.setAttribute(
     'style',
     'height: ' + this.mHeight + 'px;' + ' margin: ' + this.mMargin + 'px;'
@@ -134,42 +142,45 @@ function CommandBar(
 
   this.mSaveButton = new ButtonView('save-button', 'save', 'Save');
   this.mSaveButton.setOnClickHandler(function () {
-    if (gMonacoEditor === undefined) {
-      showErrorMessage('Code editor not loaded');
-    }
-    var appCode = gMonacoEditor.getValue();
-    self.mOnSaveButton(appCode);
+    self.saveAppCode();
   });
   this.append(this.mSaveButton);
 
   this.mRunButton = new ButtonView('run-button', 'play_arrow', 'Run');
   this.mRunButton.setOnClickHandler(function () {
-    var buttonText = self.mRunButton.getText();
-    if (buttonText === 'Run') {
-      self.mOnLaunchButton();
-    } else {
-      self.mOnTerminateButton();
-    }
+    self.toggleRunApp();
   });
   this.append(this.mRunButton);
 
   this.mRemoveButton = new ButtonView('remove-button', 'delete', 'Remove');
   this.mRemoveButton.setOnClickHandler(function () {
-    self.mOnRemoveButton();
+    self.removeApp();
   });
   this.append(this.mRemoveButton);
 }
+CommandBar.prototype = Object.create(View.prototype);
+CommandBar.prototype.constructor = CommandBar;
 
-CommandBar.prototype.append = function (childView) {
-  if (childView.getDom !== undefined) {
-    this.mRootDom.append(childView.getDom());
+CommandBar.prototype.saveAppCode = function () {
+  if (this.mMother.mMonacoEditor === undefined) {
+    gUIController.showErrorMessage('Code editor not loaded');
+  }
+  var appCode = this.mMother.mMonacoEditor.getValue();
+  this.mOnSaveButton(appCode);
+};
+
+CommandBar.prototype.toggleRunApp = function () {
+  var buttonText = this.mRunButton.getText();
+  if (buttonText === 'Run') {
+    var appCode = this.mMother.mMonacoEditor.getValue();
+    this.mOnLaunchButton(appCode);
   } else {
-    this.mRootDom.append(childView);
+    this.mOnTerminateButton();
   }
 };
 
-CommandBar.prototype.getDom = function () {
-  return this.mRootDom;
+CommandBar.prototype.removeApp = function () {
+  this.mOnRemoveButton();
 };
 
 CommandBar.prototype.setRunButtonState = function (state) {
