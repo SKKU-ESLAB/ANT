@@ -13,10 +13,11 @@
  * limitations under the License.
  */
 
+/* AppSelectorMenuView */
 function AppSelectorMenuView(onClickAppEntry, onClickCreateAppEntry) {
+  View.apply(this, ['app-selector-menu']);
   this.mOnClickAppEntry = onClickAppEntry;
   this.mOnClickCreateAppEntry = onClickCreateAppEntry;
-  this.mRootDom = document.getElementById('app-selector-menu');
 
   this.mCreateAppEntry = new AppSelectorMenuEntryView(
     'add',
@@ -25,24 +26,8 @@ function AppSelectorMenuView(onClickAppEntry, onClickCreateAppEntry) {
   );
   this.append(this.mCreateAppEntry);
 }
-
-AppSelectorMenuView.prototype.append = function (childView) {
-  if (typeof childView === 'object' && childView.getDom !== undefined) {
-    this.mRootDom.append(childView.getDom());
-  } else {
-    this.mRootDom.append(childView);
-  }
-};
-
-AppSelectorMenuView.prototype.insertBefore = function (childView, beforeView) {
-  if (typeof childView === 'object' && childView.getDom !== undefined) {
-    childView = childView.getDom();
-  }
-  if (typeof beforeView === 'object' && beforeView.getDom !== undefined) {
-    beforeView = beforeView.getDom();
-  }
-  this.mRootDom.insertBefore(childView, beforeView);
-};
+AppSelectorMenuView.prototype = Object.create(View.prototype);
+AppSelectorMenuView.prototype.constructor = AppSelectorMenuView;
 
 AppSelectorMenuView.prototype.getIndex = function (appName) {
   for (var i in this.mRootDom.children) {
@@ -129,12 +114,13 @@ function onClickAppSelectorMenuCreateAppEntry(e) {
   gUIController.mAppSelectorMenu.hide();
 }
 
+/* AppSelectorMenuEntryView */
 function AppSelectorMenuEntryView(iconType, title, onClickHandler) {
+  View.apply(this, ['app-selector-menu-entry-' + title, 'li']);
+
   this.mIconType = iconType;
   this.mTitle = title;
 
-  this.mRootDom = document.createElement('li');
-  this.mRootDom.setAttribute('id', 'app-selector-menu-entry-' + title);
   this.mRootDom.setAttribute('class', 'mdl-menu__item');
   this.mRootDom.onclick = onClickHandler;
 
@@ -147,18 +133,8 @@ function AppSelectorMenuEntryView(iconType, title, onClickHandler) {
   }
   this.append(title);
 }
-
-AppSelectorMenuEntryView.prototype.getDom = function () {
-  return this.mRootDom;
-};
-
-AppSelectorMenuEntryView.prototype.append = function (childView) {
-  if (typeof childView === 'object' && childView.getDom !== undefined) {
-    this.mRootDom.append(childView.getDom());
-  } else {
-    this.mRootDom.append(childView);
-  }
-};
+AppSelectorMenuEntryView.prototype = Object.create(View.prototype);
+AppSelectorMenuEntryView.prototype.constructor = AppSelectorMenuEntryView;
 
 AppSelectorMenuEntryView.prototype.getTitle = function () {
   return this.mTitle;

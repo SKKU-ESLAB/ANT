@@ -13,9 +13,12 @@
  * limitations under the License.
  */
 
+/* CreateAppFabButtonView */
 function CreateAppFabButtonView() {
-  this.mRootDom = document.getElementById('createapp-fabbutton');
+  View.apply(this, ['create-app-fabbutton']);
 }
+CreateAppFabButtonView.prototype = Object.create(View.prototype);
+CreateAppFabButtonView.prototype.constructor = CreateAppFabButtonView;
 
 CreateAppFabButtonView.prototype.setOnClickHandler = function (handler) {
   this.mRootDom.onclick = handler;

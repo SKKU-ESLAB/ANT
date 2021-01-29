@@ -13,7 +13,36 @@
  * limitations under the License.
  */
 
+/* AppSelectorView */
 function AppSelectorView(onClick) {
-  this.mRootDom = document.getElementById('app-selector');
+  View.apply(this, ['app-selector']);
+  this.mLabel = new AppSelectorLabelView(onClick);
+  this.mSpacer = new AppSelectorSpacerView(onClick);
+}
+
+AppSelectorView.prototype = Object.create(View.prototype);
+AppSelectorView.prototype.constructor = AppSelectorView;
+
+AppSelectorView.prototype.setLabelText = function (text) {
+  this.mLabel.setText(text);
+};
+
+/* AppSelectorLabelView */
+function AppSelectorLabelView(onClick) {
+  View.apply(this, ['app-selector-label']);
   this.mRootDom.onclick = onClick;
 }
+AppSelectorLabelView.prototype = Object.create(View.prototype);
+AppSelectorLabelView.prototype.constructor = AppSelectorLabelView;
+
+AppSelectorLabelView.prototype.setText = function (text) {
+  this.mRootDom.innerHTML = text;
+};
+
+/* AppSelectorSpacerView */
+function AppSelectorSpacerView(onClick) {
+  View.apply(this, ['app-selector-spacer']);
+  this.mRootDom.onclick = onClick;
+}
+AppSelectorSpacerView.prototype = Object.create(View.prototype);
+AppSelectorSpacerView.prototype.constructor = AppSelectorSpacerView;

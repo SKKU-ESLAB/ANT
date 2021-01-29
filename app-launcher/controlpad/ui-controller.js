@@ -26,13 +26,80 @@ function UIController(context, antClient) {
 
   /* Main UI components */
   this.mAppSelector = undefined;
-  this.mAppSelectorLabel = undefined;
   this.mAppSelectorMenu = undefined;
   this.mNavMenuView = undefined;
   this.mCreateAppDialog = undefined;
   this.mCreateAppFabButton = undefined;
   this.mSnackbar = undefined;
 }
+
+/* Initializers */
+UIController.prototype.initialize = function () {
+  // Initialize content views
+  this.mDashboard = new DashboardView();
+  this.mCodeEditor = new CodeEditorView(
+    onAppearCodeEditorView,
+    onRefreshCodeEditorView,
+    onSaveButtonCodeEditorView,
+    onLaunchButtonCodeEditorView,
+    onTerminateButtonCodeEditorView,
+    onRemoveButtonCodeEditorView
+  );
+  this.mConsole = new ConsoleView(onRefreshConsoleView);
+
+  // Initialize main UI components
+  this.mAppSelector = new AppSelectorView(onClickAppSelectorView);
+  this.mAppSelectorMenu = new AppSelectorMenuView(
+    onClickAppEntryAppSelectorMenuView,
+    onClickCreateAppEntryAppSelectorMenuView
+  );
+  this.mNavMenuView = new NavMenuView(this.mContext);
+  this.mCreateAppDialog = new CreateAppDialogView();
+  this.mCreateAppFabButton = new CreateAppFabButtonView();
+  this.mSnackbar = new SnackbarView();
+  this._initializeNavMenuView();
+  this._initializeCreateAppFabButtonView();
+
+  // Periodic app-list refresh
+  var self = this;
+  this.refreshAppList(function (appList) {
+    if (appList.length > 0) self.selectApp(appList[0].name);
+    else self.selectApp(undefined);
+  });
+
+  // Initialize event handlers
+  window.onkeydown = onKeyDown;
+};
+
+UIController.prototype._initializeNavMenuView = function () {
+  this.mNavMenuView.addItem(
+    'navitem-dashboard',
+    'home',
+    'Dashboard',
+    this.mDashboard
+  );
+  this.mNavMenuView.addItem(
+    'navitem-codeeditor',
+    'inbox',
+    'Code Editor',
+    this.mCodeEditor
+  );
+  this.mNavMenuView.addItem(
+    'navitem-console',
+    'wysiwyg',
+    'Console',
+    this.mConsole
+  );
+
+  this.selectNavItem('navitem-dashboard');
+};
+
+UIController.prototype._initializeCreateAppFabButtonView = function () {
+  var self = this;
+  this.mCreateAppFabButton.setOnClickHandler(function () {
+    self.showCreateAppDialog();
+  });
+};
 
 /* Message display functions */
 UIController.prototype.showInfoMessage = function (text, useSnackbar = true) {
@@ -78,7 +145,7 @@ UIController.prototype.selectApp = function (appName) {
 
   // Update app selector label
   var label = appName !== undefined ? appName : 'No app selected';
-  this.mAppSelectorLabel.setText(label);
+  this.mAppSelector.setLabelText(label);
 
   // Update code editor when code editor is opened
   this.refreshCodeEditor(true);
@@ -203,71 +270,42 @@ UIController.prototype.refreshConsole = function () {
   }
 };
 
-/* Initializers */
-UIController.prototype.initialize = function () {
-  // Initialize content views
-  this.mDashboard = new DashboardView();
-  this.mCodeEditor = new CodeEditorView(
-    onAppearCodeEditorView,
-    onRefreshCodeEditorView,
-    onSaveButtonCodeEditorView,
-    onLaunchButtonCodeEditorView,
-    onTerminateButtonCodeEditorView,
-    onRemoveButtonCodeEditorView
-  );
-  this.mConsole = new ConsoleView(onRefreshConsoleView);
-
-  // Initialize main UI components
-  this.mAppSelectorView = new AppSelectorView(onClickAppSelectorView);
-  this.mAppSelectorLabel = new AppSelectorLabelView();
-  this.mAppSelectorMenu = new AppSelectorMenuView(
-    onClickAppEntryAppSelectorMenuView,
-    onClickCreateAppEntryAppSelectorMenuView
-  );
-  this.mNavMenuView = new NavMenuView(this.mContext);
-  this.mCreateAppDialog = new CreateAppDialogView();
-  this.mCreateAppFabButton = new CreateAppFabButtonView();
-  this.mSnackbar = new SnackbarView();
-  this._initializeNavMenuView();
-  this._initializeCreateAppFabButtonView();
-
-  // Periodic app-list refresh
-  var self = this;
-  this.refreshAppList(function (appList) {
-    if (appList.length > 0) self.selectApp(appList[0].name);
-    else self.selectApp(undefined);
-  });
-};
-
-UIController.prototype._initializeNavMenuView = function () {
-  this.mNavMenuView.addItem(
-    'navitem-dashboard',
-    'home',
-    'Dashboard',
-    this.mDashboard
-  );
-  this.mNavMenuView.addItem(
-    'navitem-codeeditor',
-    'inbox',
-    'Code Editor',
-    this.mCodeEditor
-  );
-  this.mNavMenuView.addItem(
-    'navitem-console',
-    'wysiwyg',
-    'Console',
-    this.mConsole
-  );
-
-  this.selectNavItem('navitem-dashboard');
-};
-
-UIController.prototype._initializeCreateAppFabButtonView = function () {
-  var self = this;
-  this.mCreateAppFabButton.setOnClickHandler(function () {
-    self.showCreateAppDialog();
-  });
-};
+/* Key event handler */
+function onKeyDown(event) {
+  console.log(event);
+  if ((event.metaKey || event.ctrlKey) && event.key == 's') {
+    // Save app key
+    if (
+      gUIController.mContext.currentNavItem.getId() === 'navitem-codeeditor'
+    ) {
+      gUIController.mCodeEditor.saveAppCode();
+      event.preventDefault();
+    }
+  } else if ((event.metaKey || event.ctrlKey) && event.key == 'r') {
+    // Run app key
+    if (
+      gUIController.mContext.currentNavItem.getId() === 'navitem-codeeditor'
+    ) {
+      gUIController.mCodeEditor.toggleRunApp();
+      event.preventDefault();
+    }
+  } else if ((event.metaKey || event.ctrlKey) && event.key == '1') {
+    gUIController.mNavMenuView.selectItem(
+      gUIController.mNavMenuView.getItem(0)
+    );
+    event.preventDefault();
+  } else if ((event.metaKey || event.ctrlKey) && event.key == '2') {
+    gUIController.mNavMenuView.selectItem(
+      gUIController.mNavMenuView.getItem(1)
+    );
+    event.preventDefault();
+  } else if ((event.metaKey || event.ctrlKey) && event.key == '3') {
+    gUIController.mNavMenuView.selectItem(
+      gUIController.mNavMenuView.getItem(2)
+    );
+    event.preventDefault();
+  }
+}
 
 /* Code editor view handlers */
 function onAppearCodeEditorView() {
@@ -298,7 +336,22 @@ function onSaveButtonCodeEditorView(appCode) {
   gAppController.updateCurrentAppCode(appCode, onSuccess, onFailure);
 }
 
-function onLaunchButtonCodeEditorView() {
+function onLaunchButtonCodeEditorView(appCode) {
+  var onSuccess = function (appName, text) {
+    gUIController.showSuccessMessage(
+      appName + ': app code saved successfully.'
+    );
+    launchCurrentAppAfterSave();
+  };
+  var onFailure = function (text) {
+    gUIController.showErrorMessage(text);
+  };
+
+  gAppController.updateCurrentAppCode(appCode, onSuccess, onFailure);
+}
+
+function launchCurrentAppAfterSave() {
+  /* Successor of onLaunchButtonCodeEditorView */
   var onSuccess = function (appName, text) {
     gUIController.showSuccessMessage(appName + ': launched successfully.');
 
@@ -363,7 +416,6 @@ function onClickAppSelectorView() {
 function onClickAppEntryAppSelectorMenuView(appName) {
   gUIController.selectApp(appName);
   gUIController.hideAppSelectorMenu();
-  
 }
 function onClickCreateAppEntryAppSelectorMenuView() {
   gUIController.showCreateAppDialog();

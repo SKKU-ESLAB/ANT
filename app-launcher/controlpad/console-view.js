@@ -13,37 +13,20 @@
  * limitations under the License.
  */
 
+/* ConsoleView */
 function ConsoleView(onRefresh, updatePeriodMS = 1000) {
+  View.apply(this, [undefined, 'div']);
+
   this.mOnRefresh = onRefresh;
   this.mCachedConsoleData = [];
   this.mCurrentAppName = undefined;
   this.mPeriodicUpdate = undefined;
   this.mUpdatePeriodMS = updatePeriodMS;
 
-  this.mRootDom = document.createElement('div');
   this.mRootDom.setAttribute('class', 'console-text');
-  // {
-  //   this.mInfoCard = new CardView(
-  //     'console-view-info-card',
-  //     'Console output',
-  //     12
-  //   );
-  //   this.mInfoCard.enableListView();
-  //   this.append(this.mInfoCard);
-  // }
 }
-
-ConsoleView.prototype.append = function (childView) {
-  if (typeof childView === 'object' && childView.getDom !== undefined) {
-    this.mRootDom.append(childView.getDom());
-  } else {
-    this.mRootDom.append(childView);
-  }
-};
-
-ConsoleView.prototype.getDom = function () {
-  return this.mRootDom;
-};
+ConsoleView.prototype = Object.create(View.prototype);
+ConsoleView.prototype.constructor = ConsoleView;
 
 ConsoleView.prototype.onAddedDom = function () {
   var self = this;
