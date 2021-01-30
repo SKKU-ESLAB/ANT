@@ -80,6 +80,10 @@ CodeEditorView.prototype.onAddedDom = function () {
   }
 };
 
+CodeEditorView.prototype.onRemovedDom = function () {
+  this.saveAppCode();
+};
+
 CodeEditorView.prototype.startPeriodicUpdate = function () {
   var self = this;
   this.mPeriodicUpdate = setInterval(function () {
@@ -100,8 +104,13 @@ CodeEditorView.prototype.setCurrentAppState = function (state) {
   this.mCommandBar.setRunButtonState(state);
 };
 
-CodeEditorView.prototype.saveAppCode = function () {
+CodeEditorView.prototype.saveAppCode = function (
+  afterSaveAppCodeHandler,
+  afterSaveAppCodeHandlerArgs
+) {
   this.mCommandBar.saveAppCode();
+  if (afterSaveAppCodeHandler !== undefined)
+    afterSaveAppCodeHandler(afterSaveAppCodeHandlerArgs);
 };
 
 CodeEditorView.prototype.toggleRunApp = function () {
