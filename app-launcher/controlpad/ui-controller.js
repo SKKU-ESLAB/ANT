@@ -141,17 +141,61 @@ UIController.prototype.refreshAppList = function (onFinish) {
 };
 
 UIController.prototype.selectApp = function (appName) {
-  this.mContext.currentAppName = appName;
+  // It will be handled after app save
+  var self = this;
+  function internalHandler(appName) {
+    // Update current app name
+    self.mContext.currentAppName = appName;
 
-  // Update app selector label
-  var label = appName !== undefined ? appName : 'No app selected';
-  this.mAppSelector.setLabelText(label);
+    // Update app selector label
+    var label = appName !== undefined ? appName : 'No app selected';
+    self.mAppSelector.setLabelText(label);
 
-  // Update code editor when code editor is opened
-  this.refreshCodeEditor(true);
+    // Update code editor when code editor is opened
+    self.refreshCodeEditor(true);
 
-  // Update console when console is opened
-  this.refreshConsole();
+    // Update console when console is opened
+    self.refreshConsole();
+  }
+
+  // Save app before app is changed
+  var prevAppName = this.mContext.currentAppName;
+  if (prevAppName !== undefined) {
+    if (this.mContext.currentNavItem.getId() === 'navitem-codeeditor') {
+      this.mCodeEditor.saveAppCode(internalHandler, appName);
+    } else {
+      internalHandler(appName);
+    }
+  } else {
+    internalHandler(appName);
+  }
+};
+
+UIController.prototype.onSelectPrevApp = function () {
+  var currentAppName = this.mContext.currentAppName;
+  var index = this.mAppSelectorMenu.getIndex(currentAppName);
+
+  if (index <= 0) {
+    return;
+  } else {
+    index--;
+    var nextAppName = this.mAppSelectorMenu.getAppNameAt(index);
+    this.selectApp(nextAppName);
+  }
+};
+
+UIController.prototype.onSelectNextApp = function () {
+  var currentAppName = this.mContext.currentAppName;
+  var appsCount = this.mAppSelectorMenu.getCount();
+  var index = this.mAppSelectorMenu.getIndex(currentAppName);
+
+  if (index >= appsCount - 1) {
+    return;
+  } else {
+    index++;
+    var nextAppName = this.mAppSelectorMenu.getAppNameAt(index);
+    this.selectApp(nextAppName);
+  }
 };
 
 UIController.prototype.showCreateAppDialog = function () {
@@ -272,7 +316,6 @@ UIController.prototype.refreshConsole = function () {
 
 /* Key event handler */
 function onKeyDown(event) {
-  console.log(event);
   if ((event.metaKey || event.ctrlKey) && event.key == 's') {
     // Save app key
     if (
@@ -303,6 +346,14 @@ function onKeyDown(event) {
     gUIController.mNavMenuView.selectItem(
       gUIController.mNavMenuView.getItem(2)
     );
+    event.preventDefault();
+  } else if ((event.metaKey || event.ctrlKey) && event.key == ';') {
+    console.log('prev app');
+    gUIController.onSelectPrevApp();
+    event.preventDefault();
+  } else if ((event.metaKey || event.ctrlKey) && event.key == "'") {
+    console.log('next app');
+    gUIController.onSelectNextApp();
     event.preventDefault();
   }
 }

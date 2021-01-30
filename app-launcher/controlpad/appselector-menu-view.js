@@ -21,6 +21,7 @@ function AppSelectorMenuView(onClickAppEntry, onClickCreateAppEntry) {
 
   this.mCreateAppEntry = new AppSelectorMenuEntryView(
     'add',
+    'app-selector-menu-entry-add-app',
     'Create new app',
     onClickAppSelectorMenuCreateAppEntry
   );
@@ -29,20 +30,42 @@ function AppSelectorMenuView(onClickAppEntry, onClickCreateAppEntry) {
 AppSelectorMenuView.prototype = Object.create(View.prototype);
 AppSelectorMenuView.prototype.constructor = AppSelectorMenuView;
 
+function getAppSelectorId(appName) {
+  return 'app-selector-menu-entry-app-' + appName;
+}
+
+function getAppNameFromId(id) {
+  return id.substring('app-selector-menu-entry-app-'.length);
+}
+
 AppSelectorMenuView.prototype.getIndex = function (appName) {
   for (var i in this.mRootDom.children) {
     var childView = this.mRootDom.children[i];
-    if (childView.id == 'app-selector-menu-entry-' + appName) {
+    if (childView.id == getAppSelectorId(appName)) {
       return i;
     }
   }
   return -1;
 };
 
+AppSelectorMenuView.prototype.getCount = function (appName) {
+  var count = 0;
+  for (var i in this.mRootDom.children) {
+    var childView = this.mRootDom.children[i];
+    if (
+      childView.id !== undefined &&
+      childView.id.indexOf('app-selector-menu-entry-app-') >= 0
+    ) {
+      count++;
+    }
+  }
+  return count;
+};
+
 AppSelectorMenuView.prototype.getAppNameAt = function (index) {
   if (index < 0) return undefined;
   var childView = this.mRootDom.children[index];
-  var appName = childView.id.substring('app-selector-menu-entry-'.length);
+  var appName = getAppNameFromId(childView.id);
   return appName;
 };
 
@@ -55,7 +78,7 @@ AppSelectorMenuView.prototype.addApp = function (appName) {
   // Check duplicated entry
   for (var i in this.mRootDom.children) {
     var childView = this.mRootDom.children[i];
-    if (childView.id == 'app-selector-menu-entry-' + appName) {
+    if (childView.id == getAppSelectorId(appName)) {
       return;
     }
   }
@@ -63,6 +86,7 @@ AppSelectorMenuView.prototype.addApp = function (appName) {
   // Make and insert new entry
   var entry = new AppSelectorMenuEntryView(
     undefined,
+    getAppSelectorId(appName),
     appName,
     onClickAppSelectorMenuAppEntry
   );
@@ -72,7 +96,7 @@ AppSelectorMenuView.prototype.addApp = function (appName) {
 AppSelectorMenuView.prototype.removeApp = function (appName) {
   for (var i in this.mRootDom.children) {
     var childView = this.mRootDom.children[i];
-    if (childView.id == 'app-selector-menu-entry-' + appName) {
+    if (childView.id == getAppSelectorId(appName)) {
       childView.remove();
       return;
     }
@@ -102,7 +126,7 @@ AppSelectorMenuView.prototype.toggle = function () {
 
 function onClickAppSelectorMenuAppEntry(e) {
   var id = e.target.id;
-  var appName = id.substring('app-selector-menu-entry-'.length);
+  var appName = getAppNameFromId(childView.id);
   gUIController.mAppSelectorMenu.mOnClickAppEntry(appName);
 
   gUIController.mAppSelectorMenu.hide();
@@ -115,8 +139,8 @@ function onClickAppSelectorMenuCreateAppEntry(e) {
 }
 
 /* AppSelectorMenuEntryView */
-function AppSelectorMenuEntryView(iconType, title, onClickHandler) {
-  View.apply(this, ['app-selector-menu-entry-' + title, 'li']);
+function AppSelectorMenuEntryView(iconType, id, title, onClickHandler) {
+  View.apply(this, [id, 'li']);
 
   this.mIconType = iconType;
   this.mTitle = title;
