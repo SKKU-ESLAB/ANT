@@ -34,7 +34,7 @@ settings.videoSinkSync = false;
 settings.myIpAddress = ant.companion.getMyIPAddress('eth0');
 settings.myPort = 5000;
 
-var onInitialize = function () {
+function onInitialize() {
   console.log('onInitialize');
   var modelUrl =
     'https://github.com/SKKU-ESLAB/ant-sample-ml-models/blob/master/xu4_efficientdetd0/efficientdet-d0.tar';
@@ -42,16 +42,16 @@ var onInitialize = function () {
   if (settings.ml.modelPath === undefined) {
     console.log('Error on downloading model ' + modelUrl);
   }
-};
+}
 
-var prepareLabel = function (labelFilepath) {
+function prepareLabel(labelFilepath) {
   var fs = require('fs');
   var fileContents = fs.readFileSync(labelFilepath).toString();
   var labels = JSON.parse(fileContents);
   return labels;
-};
+}
 
-var onStart = function () {
+function onStart() {
   console.log('onStart');
 
   if (settings.ml.modelPath === undefined) {
@@ -262,12 +262,12 @@ var onStart = function () {
     ant.remoteui.setStreamingViewPipeline(remotePipeline);
     ant.remoteui.setStreamingViewLabelText('Waiting for Inference...');
   }, 5000);
-};
+}
 
-var onStop = function () {
+function onStop() {
   console.log('onStop');
   ant.stream.finalize();
   ant.remoteui.setStreamingViewLabelText('-');
-};
+}
 
 ant.runtime.setCurrentApp(onInitialize, onStart, onStop);

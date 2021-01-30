@@ -19,16 +19,16 @@
 var ant = require('ant');
 var console = require('console');
 
-var onInitialize = function () {
+function onInitialize() {
   console.log('onInitialize');
-};
+}
 
-var onStart = function () {
+function onStart() {
   console.log('onStart');
-};
+}
 
-var onStop = function () {
+function onStop() {
   console.log('onStop');
-};
+}
 
 ant.runtime.setCurrentApp(onInitialize, onStart, onStop);

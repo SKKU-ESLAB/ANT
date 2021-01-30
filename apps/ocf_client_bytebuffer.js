@@ -13,21 +13,15 @@
  * limitations under the License.
  */
 
+var ant = require('ant');
 var ocf = require('ocf');
-console.log('OCF client example app');
+var console = require('console');
 
-var oa = ocf.getAdapter();
-oa.onPrepareEventLoop(function () {
-  oa.setPlatform('ant');
-  oa.addDevice('/oic/d', 'oic.wk.d', 'Client', 'ocf.1.0.0', 'ocf.res.1.0.0');
-});
+var gOA = undefined;
+var gIntervalLight;
+var gFoundURI = undefined;
 
-oa.onPrepareClient(function () {
-  oa.discovery('oic.r.camera', onDiscovery);
-});
-
-var foundUri = undefined;
-
+/* OCF response handlers */
 function onDiscovery(endpoint, uri, types) {
   var isFound = false;
   for (var i in types) {
@@ -36,25 +30,41 @@ function onDiscovery(endpoint, uri, types) {
     }
   }
   if (isFound) {
-    foundUri = uri;
-    oa.get(endpoint, uri, onGetCamera, (isPayloadBuffer = true));
-    // oa.observe(endpoint, uri, onGetCamera);
+    gFoundURI = uri;
+    gOA.get(endpoint, uri, onGetCamera, (isPayloadBuffer = true));
   }
 }
-var interval;
 
 function onGetCamera(response) {
   var payload = response.payload;
-  // var endpoint = response.endpoint;
-  var uri = foundUri;
+  var uri = gFoundURI;
 
   console.log('GET from ' + uri + ': ' + payload);
 }
 
-oa.start();
-setTimeout(function () {
-  console.log('150s elapsed');
-  oa.stop();
-  oa.deinitialize();
-  clearInterval(interval);
-}, 150000);
+/* ANT Lifecycle handlers */
+function onInitialize() {
+  console.log('OCF client example app initialized');
+
+  gOA = ocf.getAdapter();
+  gOA.onPrepareEventLoop(function () {
+    gOA.setPlatform('ant');
+    gOA.addDevice('/oic/d', 'oic.wk.d', 'Client', 'ocf.1.0.0', 'ocf.res.1.0.0');
+  });
+
+  gOA.onPrepareClient(function () {
+    gOA.discovery('oic.r.camera', onDiscovery);
+  });
+}
+
+function onStart() {
+  gOA.start();
+}
+
+function onStop() {
+  gOA.stop();
+  gOA.deinitialize();
+  clearInterval(gIntervalLight);
+}
+
+ant.runtime.setCurrentApp(onInitialize, onStart, onStop);

@@ -17,45 +17,56 @@ var ocf = require('ocf');
 var Buffer = require('buffer');
 console.log('OCF server example app');
 
-var oa = ocf.getAdapter();
-oa.onPrepareEventLoop(function () {
-  oa.setPlatform('ant');
-  oa.addDevice(
-    '/oic/d',
-    'oic.d.camera',
-    'Camera',
-    'ocf.1.0.0',
-    'ocf.res.1.0.0'
-  );
-});
+var gOA = undefined;
 
-oa.onPrepareServer(function () {
-  console.log('onPrepareServer()');
-  var device = oa.getDevice(0);
-  var cameraRes = ocf.createResource(
-    device,
-    'camera',
-    '/camera/1',
-    ['ant.r.camera'],
-    [ocf.OC_IF_RW]
-  );
-  cameraRes.setDiscoverable(true);
-  cameraRes.setPeriodicObservable(1);
-  cameraRes.setHandler(ocf.OC_GET, getCameraHandler);
-  oa.addResource(cameraRes);
-});
-
+/* OCF response handlers */
 function getCameraHandler(request) {
-  oa.repStartRootObject();
+  gOA.repStartRootObject();
   var buffer = new Buffer(1024);
-  oa.repSetByteBuffer(buffer);
-  oa.repEndRootObject();
-  oa.sendResponse(request, ocf.OC_STATUS_OK);
+  gOA.repSetByteBuffer(buffer);
+  gOA.repEndRootObject();
+  gOA.sendResponse(request, ocf.OC_STATUS_OK);
 }
 
-oa.start();
-setTimeout(function () {
+/* ANT Lifecycle Handlers */
+function onInitialize() {
+  gOA = ocf.getAdapter();
+  gOA.onPrepareEventLoop(function () {
+    gOA.setPlatform('ant');
+    gOA.addDevice(
+      '/oic/d',
+      'oic.d.camera',
+      'Camera',
+      'ocf.1.0.0',
+      'ocf.res.1.0.0'
+    );
+  });
+
+  gOA.onPrepareServer(function () {
+    console.log('onPrepareServer()');
+    var device = gOA.getDevice(0);
+    var cameraRes = ocf.createResource(
+      device,
+      'camera',
+      '/camera/1',
+      ['ant.r.camera'],
+      [ocf.OC_IF_RW]
+    );
+    cameraRes.setDiscoverable(true);
+    cameraRes.setPeriodicObservable(1);
+    cameraRes.setHandler(ocf.OC_GET, getCameraHandler);
+    gOA.addResource(cameraRes);
+  });
+}
+
+function onStart() {
+  gOA.start();
+}
+
+function onStop() {
   console.log('150s elapsed');
-  oa.stop();
-  oa.deinitialize();
-}, 150000);
+  gOA.stop();
+  gOA.deinitialize();
+}
+
+ant.runtime.setCurrentApp(onInitialize, onStart, onStop);
