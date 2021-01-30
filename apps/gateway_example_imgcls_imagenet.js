@@ -36,7 +36,7 @@ settings.videoSinkSync = false;
 settings.myIpAddress = ant.companion.getMyIPAddress('eth0');
 settings.myPort = 5000;
 
-var onInitialize = function () {
+function onInitialize() {
   console.log('onInitialize');
   var modelUrl =
     'http://115.145.178.78:8001/downloads/gateway/mobilenetv1-gateway.tar';
@@ -44,9 +44,9 @@ var onInitialize = function () {
   if (settings.ml.modelPath === undefined) {
     console.log('Error on downloading model ' + modelUrl);
   }
-};
+}
 
-var onStart = function () {
+function onStart() {
   console.log('onStart');
 
   if (settings.ml.modelPath === undefined) {
@@ -208,12 +208,12 @@ var onStart = function () {
     ant.remoteui.setStreamingViewPipeline(remotePipeline);
     ant.remoteui.setStreamingViewLabelText('Waiting for Inference...');
   }, 5000);
-};
+}
 
-var onStop = function () {
+function onStop() {
   console.log('onStop');
   ant.stream.finalize();
   ant.remoteui.setStreamingViewLabelText('-');
-};
+}
 
 ant.runtime.setCurrentApp(onInitialize, onStart, onStop);

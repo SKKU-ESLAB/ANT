@@ -13,89 +13,96 @@
  * limitations under the License.
  */
 
+var ant = require('ant');
 var ocf = require('ocf');
-console.log('OCF client example app');
+var console = require('console');
 
-var oa = ocf.getAdapter();
-oa.onPrepareEventLoop(function () {
-  oa.setPlatform('ant');
-  oa.addDevice('/oic/d', 'oic.wk.d', 'Client', 'ocf.1.0.0', 'ocf.res.1.0.0');
-});
-
+var gOA = undefined;
+var gIntervalLight;
+var gIntervalTemp;
+var gFoundLightUri = undefined;
+var gFoundTempUri = undefined;
 var gLightState = false;
 var gTempState = 15;
-oa.onPrepareClient(function () {
-  oa.discoveryAll(onDiscovery);
-});
 
-var foundLightUri = undefined;
-var foundTempUri = undefined;
-
+/* OCF response handlers */
 function onDiscovery(endpoint, uri, types, interfaceMask) {
   console.log('Discovered ' + uri);
   for (var i = 0; i < types.length; i++) {
     console.log('* type ' + i + ': ' + types[i]);
     if (types[i] == 'oic.r.light') {
       console.log('* Light resource => OBSERVE start');
-      foundLightUri = uri;
-      oa.observe(endpoint, uri, onObserveLight);
-      interval = setInterval(function () {
-        var res = oa.initPost(endpoint, uri, onPost, '', ocf.OC_LOW_QOS);
+      gFoundLightUri = uri;
+      gOA.observe(endpoint, uri, onObserveLight);
+      gIntervalLight = setInterval(function () {
+        var res = gOA.initPost(endpoint, uri, onPost, '', ocf.OC_LOW_QOS);
         if (res) {
-          oa.repStartRootObject();
-          oa.repSet('state', gLightState);
+          gOA.repStartRootObject();
+          gOA.repSet('state', gLightState);
           gLightState = !gLightState;
-          oa.repEndRootObject();
-          oa.post();
+          gOA.repEndRootObject();
+          gOA.post();
         }
       }, 1000);
     } else if (types[i] == 'oic.r.temperature') {
       console.log('* Temperature resource => OBSERVE start');
-      foundTempUri = uri;
-      oa.observe(endpoint, uri, onObserveTemp);
-      interval2 = setInterval(function () {
-        var res = oa.initPost(endpoint, uri, onPost, '', ocf.OC_LOW_QOS);
+      gFoundTempUri = uri;
+      gOA.observe(endpoint, uri, onObserveTemp);
+      gIntervalTemp = setInterval(function () {
+        var res = gOA.initPost(endpoint, uri, onPost, '', ocf.OC_LOW_QOS);
         if (res) {
-          oa.repStartRootObject();
-          oa.repSet('state', gTempState);
+          gOA.repStartRootObject();
+          gOA.repSet('state', gTempState);
           gTempState = (gTempState + 1) % 30;
-          oa.repEndRootObject();
-          oa.post();
+          gOA.repEndRootObject();
+          gOA.post();
         }
       }, 2000);
     }
   }
   console.log(' ');
 }
-var interval;
-var interval2;
 
 function onObserveLight(response) {
-  // var payload = response.payload;
-  // var endpoint = response.endpoint;
-  var uri = foundLightUri;
-
+  var uri = gFoundLightUri;
   console.log('GET from ' + uri);
 }
 
 function onObserveTemp(response) {
-  // var payload = response.payload;
-  // var endpoint = response.endpoint;
-  var uri = foundTempUri;
-
+  var uri = gFoundTempUri;
   console.log('GET from ' + uri);
 }
 
-var i = 0;
 function onPost(response) {
-  console.log('(' + i++ + ') POST request sent!');
+  console.log('POST request sent!');
 }
 
-oa.start();
-setTimeout(function () {
+/* Lifecycle handlers */
+function onInitialize() {
+  console.log('OCF client example app initialized');
+
+  gOA = ocf.getAdapter();
+  gOA.onPrepareEventLoop(function () {
+    gOA.setPlatform('ant');
+    gOA.addDevice('/oic/d', 'oic.wk.d', 'Client', 'ocf.1.0.0', 'ocf.res.1.0.0');
+  });
+
+  gOA.onPrepareClient(function () {
+    gOA.discoveryAll(onDiscovery);
+  });
+}
+
+function onStart() {
+  gOA.start();
+}
+
+function onStop() {
   console.log('150s elapsed');
-  oa.stop();
-  oa.deinitialize();
-  clearInterval(interval);
-  clearInterval(interval2);
-}, 150000);
+  gOA.stop();
+  gOA.deinitialize();
+  clearInterval(gIntervalLight);
+  clearInterval(gIntervalTemp);
+}
+
+/* Setting lifecycle handlers */
+ant.runtime.setCurrentApp(onInitialize, onStart, onStop);
