@@ -14,13 +14,13 @@
  */
 
 var ocf = require('ocf');
+
 var Buffer = require('buffer');
-console.log('OCF server example app');
 
 var gOA = undefined;
 
 /* OCF response handlers */
-function getCameraHandler(request) {
+function onGetCamera(request) {
   gOA.repStartRootObject();
   var buffer = new Buffer(1024);
   gOA.repSetByteBuffer(buffer);
@@ -28,35 +28,40 @@ function getCameraHandler(request) {
   gOA.sendResponse(request, ocf.OC_STATUS_OK);
 }
 
-/* ANT Lifecycle Handlers */
+/* OCF lifecycle handlers */
+function onPrepareOCFEventLoop() {
+  gOA.setPlatform('ant');
+  gOA.addDevice(
+    '/oic/d',
+    'ant.d.camera',
+    'Camera',
+    'ocf.1.0.0',
+    'ocf.res.1.0.0'
+  );
+}
+
+function onPrepareOCFServer() {
+  console.log('onPrepareServer()');
+  var device = gOA.getDevice(0);
+  var cameraRes = ocf.createResource(
+    device,
+    'camera',
+    '/camera/1',
+    ['ant.r.camera'],
+    [ocf.OC_IF_RW]
+  );
+  cameraRes.setDiscoverable(true);
+  cameraRes.setPeriodicObservable(1);
+  cameraRes.setHandler(ocf.OC_GET, onGetCamera);
+  gOA.addResource(cameraRes);
+}
+
+/* ANT lifecycle handlers */
 function onInitialize() {
   gOA = ocf.getAdapter();
-  gOA.onPrepareEventLoop(function () {
-    gOA.setPlatform('ant');
-    gOA.addDevice(
-      '/oic/d',
-      'oic.d.camera',
-      'Camera',
-      'ocf.1.0.0',
-      'ocf.res.1.0.0'
-    );
-  });
-
-  gOA.onPrepareServer(function () {
-    console.log('onPrepareServer()');
-    var device = gOA.getDevice(0);
-    var cameraRes = ocf.createResource(
-      device,
-      'camera',
-      '/camera/1',
-      ['ant.r.camera'],
-      [ocf.OC_IF_RW]
-    );
-    cameraRes.setDiscoverable(true);
-    cameraRes.setPeriodicObservable(1);
-    cameraRes.setHandler(ocf.OC_GET, getCameraHandler);
-    gOA.addResource(cameraRes);
-  });
+  gOA.onPrepareEventLoop(onPrepareOCFEventLoop);
+  gOA.onPrepareServer(onPrepareOCFServer);
+  console.log('OCF server example app initialized');
 }
 
 function onStart() {
@@ -64,7 +69,6 @@ function onStart() {
 }
 
 function onStop() {
-  console.log('150s elapsed');
   gOA.stop();
   gOA.deinitialize();
 }

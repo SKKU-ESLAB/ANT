@@ -13,17 +13,15 @@
  * limitations under the License.
  */
 
-var ant = require('ant');
 var ocf = require('ocf');
-var console = require('console');
 
 var gOA = undefined;
-var gIntervalLight;
-var gIntervalTemp;
 var gFoundLightUri = undefined;
 var gFoundTempUri = undefined;
 var gLightState = false;
 var gTempState = 15;
+var gPeriodicLightSampler;
+var gPeriodicTempSampler;
 
 /* OCF response handlers */
 function onDiscovery(endpoint, uri, types, interfaceMask) {
@@ -34,33 +32,37 @@ function onDiscovery(endpoint, uri, types, interfaceMask) {
       console.log('* Light resource => OBSERVE start');
       gFoundLightUri = uri;
       gOA.observe(endpoint, uri, onObserveLight);
-      gIntervalLight = setInterval(function () {
-        var res = gOA.initPost(endpoint, uri, onPost, '', ocf.OC_LOW_QOS);
-        if (res) {
-          gOA.repStartRootObject();
-          gOA.repSet('state', gLightState);
-          gLightState = !gLightState;
-          gOA.repEndRootObject();
-          gOA.post();
-        }
-      }, 1000);
+      gPeriodicLightSampler = setInterval(periodicPostLight, 1000);
     } else if (types[i] == 'oic.r.temperature') {
       console.log('* Temperature resource => OBSERVE start');
       gFoundTempUri = uri;
       gOA.observe(endpoint, uri, onObserveTemp);
-      gIntervalTemp = setInterval(function () {
-        var res = gOA.initPost(endpoint, uri, onPost, '', ocf.OC_LOW_QOS);
-        if (res) {
-          gOA.repStartRootObject();
-          gOA.repSet('state', gTempState);
-          gTempState = (gTempState + 1) % 30;
-          gOA.repEndRootObject();
-          gOA.post();
-        }
-      }, 2000);
+      gPeriodicTempSampler = setInterval(periodicPostTemp, 2000);
     }
   }
   console.log(' ');
+}
+
+function periodicPostLight() {
+  var res = gOA.initPost(endpoint, uri, onPost, '', ocf.OC_LOW_QOS);
+  if (res) {
+    gOA.repStartRootObject();
+    gOA.repSet('state', gLightState);
+    gLightState = !gLightState;
+    gOA.repEndRootObject();
+    gOA.post();
+  }
+}
+
+function periodicPostTemp() {
+  var res = gOA.initPost(endpoint, uri, onPost, '', ocf.OC_LOW_QOS);
+  if (res) {
+    gOA.repStartRootObject();
+    gOA.repSet('state', gTempState);
+    gTempState = (gTempState + 1) % 30;
+    gOA.repEndRootObject();
+    gOA.post();
+  }
 }
 
 function onObserveLight(response) {
@@ -77,19 +79,22 @@ function onPost(response) {
   console.log('POST request sent!');
 }
 
-/* Lifecycle handlers */
+/* OCF Lifecycle handlers */
+function onPrepareOCFEventLoop() {
+  gOA.setPlatform('ant');
+  gOA.addDevice('/oic/d', 'oic.wk.d', 'Client', 'ocf.1.0.0', 'ocf.res.1.0.0');
+}
+
+function onPrepareOCFClient() {
+  gOA.discoveryAll(onDiscovery);
+}
+
+/* ANT Lifecycle handlers */
 function onInitialize() {
-  console.log('OCF client example app initialized');
-
   gOA = ocf.getAdapter();
-  gOA.onPrepareEventLoop(function () {
-    gOA.setPlatform('ant');
-    gOA.addDevice('/oic/d', 'oic.wk.d', 'Client', 'ocf.1.0.0', 'ocf.res.1.0.0');
-  });
-
-  gOA.onPrepareClient(function () {
-    gOA.discoveryAll(onDiscovery);
-  });
+  gOA.onPrepareEventLoop(onPrepareOCFEventLoop);
+  gOA.onPrepareClient(onPrepareOCFClient);
+  console.log('OCF client example app initialized');
 }
 
 function onStart() {
@@ -97,12 +102,10 @@ function onStart() {
 }
 
 function onStop() {
-  console.log('150s elapsed');
   gOA.stop();
   gOA.deinitialize();
-  clearInterval(gIntervalLight);
-  clearInterval(gIntervalTemp);
+  clearInterval(gPeriodicLightSampler);
+  clearInterval(gPeriodicTempSampler);
 }
 
-/* Setting lifecycle handlers */
 ant.runtime.setCurrentApp(onInitialize, onStart, onStop);

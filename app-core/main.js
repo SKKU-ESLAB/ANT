@@ -18,7 +18,6 @@
 
 var console = require('console');
 var net = require('net');
-
 var ant = require('ant');
 
 var RESULT_SUCCESS = 'Success';
