@@ -38,9 +38,9 @@ void oa_response_event_data_destroyer(void *item) {
   oa_client_response_event_data_t *event;
   event = (oa_client_response_event_data_t *)item;
   if (event->is_payload_buffer) {
-    free(event->payload_string);
-  } else {
     free(event->payload_buffer);
+  } else {
+    free(event->payload_string);
   }
   free(event);
 }

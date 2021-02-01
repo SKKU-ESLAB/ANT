@@ -63,9 +63,9 @@ JS_FUNCTION(ocf_resource_constructor) {
   jerry_value_t jsTypes =
       iotjs_jval_as_array(iotjs_jval_get_property(argSelf, "types"));
   jerry_value_t jsInterfaceMask =
-      iotjs_jval_get_property(argSelf, "interface_mask");
+      iotjs_jval_get_property(argSelf, "interfaceMask");
   jerry_value_t jsDefaultInterfaceMask =
-      iotjs_jval_get_property(argSelf, "default_interface_mask");
+      iotjs_jval_get_property(argSelf, "defaultInterfaceMask");
   jerry_value_t jsDevice = iotjs_jval_get_property(argSelf, "device");
   jerry_value_t jsDeviceId = iotjs_jval_get_property(jsDevice, "id");
 

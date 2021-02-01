@@ -29,6 +29,7 @@ var RESULT_FAILED = 'Failed';
 var gAppObject = undefined;
 var gSocket = undefined;
 var gPid = undefined;
+var gIsUseAppLauncher = false;
 function mainLoop() {
   ant.runtime.disableStdoutBuffering();
 
@@ -40,13 +41,14 @@ function mainLoop() {
   var appName = process.argv[2];
   var appFilePath = process.argv[3];
   var launcherPort = parseInt(process.argv[4]);
+  gIsUseAppLauncher = launcherPort ? true : false;
 
   // Load app code
   this.gAppObject = require(appFilePath);
 
   // Launch app
   var app = ant.runtime.getCurrentApp();
-  if(app === undefined) {
+  if (app === undefined) {
     console.error('Error: no app runtime lifecycle handlers');
     console.error('- ant.runtime.setCurrentApp() function must be called.');
   }
@@ -60,12 +62,14 @@ function mainLoop() {
   }
   app.name = appName;
 
-  // Connect to app launcher
-  gSocket = net.connect({port: launcherPort, host: 'localhost'});
-  gSocket.on('data', onAppCommandReceived);
+  if (gIsUseAppLauncher) {
+    // Connect to app launcher
+    gSocket = net.connect({port: launcherPort, host: 'localhost'});
+    gSocket.on('data', onAppCommandReceived);
 
-  // Notify that the application is successfully launched
-  gSocket.write(gPid);
+    // Notify that the application is successfully launched
+    gSocket.write(gPid);
+  }
 }
 
 function onAppCommandReceived(data) {
@@ -76,7 +80,9 @@ function onAppCommandReceived(data) {
     app.stop();
 
     console.log('App ' + app.name + ' terminated');
-    gSocket.destroy();
+    if (gIsUseAppLauncher) {
+      gSocket.destroy();
+    }
   }
 }
 
