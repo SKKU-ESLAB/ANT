@@ -30,7 +30,7 @@ function onDiscovery(endpoint, uri, types) {
   }
   if (isFound) {
     gFoundURI = uri;
-    gOA.get(endpoint, uri, onGetCamera, (isPayloadBuffer = true));
+    gOA.observe(endpoint, uri, onGetCamera, undefined, undefined, true);
   }
 }
 
@@ -38,7 +38,7 @@ function onGetCamera(response) {
   var payload = response.payload;
   var uri = gFoundURI;
 
-  console.log('GET from ' + uri + ': ' + payload);
+  console.log('GET from ' + uri + ': buffer length=' + payload.length);
 }
 
 /* OCF lifecycle handlers */

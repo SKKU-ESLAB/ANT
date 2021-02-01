@@ -126,7 +126,7 @@ AppSelectorMenuView.prototype.toggle = function () {
 
 function onClickAppSelectorMenuAppEntry(e) {
   var id = e.target.id;
-  var appName = getAppNameFromId(childView.id);
+  var appName = getAppNameFromId(id);
   gUIController.mAppSelectorMenu.mOnClickAppEntry(appName);
 
   gUIController.mAppSelectorMenu.hide();
