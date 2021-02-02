@@ -58,6 +58,19 @@ ANTGateway.prototype.getAdapter = function () {
   return gGatewayAdapter;
 };
 
+ANTGateway.prototype.createDFE = function (modelName, numFragments) {
+  if (typeof modelName !== 'string') {
+    throw 'Invalid modelName: ' + modelName;
+  }
+  if (
+    typeof numFragments !== 'number' ||
+    parseInt(numFragments) != numFragments
+  ) {
+    throw 'Invalid numFragments: ' + numFragments;
+  }
+  return new DFE(modelName, numFragments);
+};
+
 function GatewayAdapter() {
   var self = this;
   this.mOCFAdapter = OCFAPI.getAdapter();
@@ -77,10 +90,14 @@ function GatewayAdapter() {
 
 GatewayAdapter.prototype.addVirtualSensor = function (
   name,
-  inletHandler,
-  outletHandler
+  observerHandler,
+  inferenceHandler
 ) {
-  var virtualSensor = new VirtualSensor(name, inletHandler, outletHandler);
+  var virtualSensor = new VirtualSensor(
+    name,
+    observerHandler,
+    inferenceHandler
+  );
   this.mVirtualSensors.push(virtualSensor);
   this.mResources.push(virtualSensor.getInletResource());
   this.mResources.push(virtualSensor.getOutletResource());
@@ -135,12 +152,13 @@ GatewayAdapter.prototype.stop = function () {
   this.mOCFAdapter.deinitialize();
 };
 
-function VirtualSensor(name, inletHandler, outletHandler) {
+function VirtualSensor(name, observerHandler, inferenceHandler) {
   this.mName = name;
-  this.mInletHandler = inletHandler;
-  this.mOutletHandler = outletHandler;
+  this.mObserverHandler = observerHandler;
+  this.mInferenceHandler = inferenceHandler;
   this.mInletResource = undefined;
   this.mOutletResource = undefined;
+  this.mControletResource = undefined;
 }
 VirtualSensor.prototype.getName = function () {
   return this.mName;
@@ -155,7 +173,7 @@ VirtualSensor.prototype.getOutletResource = function () {
 
 VirtualSensor.prototype._sample = function () {
   // TODO: implement sampling handler
-  // TODO: call mInletHandler in sampling handlers
+  // TODO: call mObserverHandler in sampling handlers
 };
 
 VirtualSensor.prototype.associateInlet = function (outletUri) {
@@ -172,7 +190,7 @@ function onPostInlet(request) {
 function onGetOutlet(request) {
   // Get output sensor data
   var virtualSensor = gGatewayAdapter.findVirtualSensorByUri(request.dest_uri);
-  virtualSensor.mOutletHandler(); // TODO: process virtual sensor and get output
+  virtualSensor.mInferenceHandler(); // TODO: process virtual sensor and get output
   // TODO: make OCF response
 }
 
@@ -209,6 +227,38 @@ VirtualSensor.prototype.setupOutlet = function (gatewayAdapter) {
   this.mOutletResource.setHandler(OCFAPI.OC_GET, onGetOutlet);
   oa.addResource(this.mOutletResource);
   return this.mOutletResource;
+};
+
+/* DFE: DNN Fragment Engine for the deep sensors running on gateway */
+function DFE(modelName, numFragments) {
+  this.modelName = modelName;
+  this.numFragments = numFragments;
+  this.interpreters = undefined;
+}
+
+DFE.prototype.load = function () {
+  this.interpreters = native.ant_ml_dfeLoad(this.modelName, this.numFragments);
+};
+
+DFE.prototype.execute = function (inputBuffer, startLayerNum, endLayerNum) {
+  if (!inputBuffer instanceof Buffer) {
+    throw 'Invalid inputBuffer';
+  }
+  if (
+    typeof startLayerNum !== 'number' ||
+    parseInt(startLayerNum) != startLayerNum
+  ) {
+    throw 'Invalid startLayerNum ' + startLayerNum;
+  }
+  if (typeof endLayerNum !== 'number' || parseInt(endLayerNum) != endLayerNum) {
+    throw 'Invalid endLayerNum ' + endLayerNum;
+  }
+  return native.ant_ml_dfeExecute(
+    this.interpreters,
+    inputBuffer,
+    startLayerNum,
+    endLayerNum
+  );
 };
 
 module.exports = new ANTGateway();

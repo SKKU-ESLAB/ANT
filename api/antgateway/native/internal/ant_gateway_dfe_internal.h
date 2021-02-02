@@ -13,17 +13,18 @@
  * limitations under the License.
  */
 
-#ifndef __ANT_ML_DFE_INTERNAL_H__
-#define __ANT_ML_DFE_INTERNAL_H__
+#ifndef __ANT_GATEWAY_DFE_INTERNAL_H__
+#define __ANT_GATEWAY_DFE_INTERNAL_H__
 
 void interpreters_destroy(void *interpreters);
 
-void *ant_ml_dfeLoad_internal(const char *modelName, int numFragments);
-void *ant_ml_dfeExecute_internal(void *interpreters, void *inputTensor,
-                                 size_t inputTensorLength, int startLayerNum,
-                                 int endLayerNum);
-void *ant_ml_dfeExecute_getOutputBufferWithLength(void *outputTensor,
-                                                  size_t *pOutputTensorLength);
-void ant_ml_dfeExecute_releaseOutput(void *outputTensor);
+void *ant_gateway_dfeLoad_internal(const char *modelName, int numFragments);
+void *ant_gateway_dfeExecute_internal(void *interpreters, void *inputTensor,
+                                      size_t inputTensorLength,
+                                      int startLayerNum, int endLayerNum);
+void *
+ant_gateway_dfeExecute_getOutputBufferWithLength(void *outputTensor,
+                                                 size_t *pOutputTensorLength);
+void ant_gateway_dfeExecute_releaseOutput(void *outputTensor);
 
-#endif /* !defined(__ANT_ML_DFE_INTERNAL_H__) */
+#endif /* !defined(__ANT_GATEWAY_DFE_INTERNAL_H__) */

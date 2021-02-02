@@ -13,13 +13,13 @@
  * limitations under the License.
  */
 
-#ifndef __ANT_ML_DFE_H__
-#define __ANT_ML_DFE_H__
+#ifndef __ANT_GATEWAY_DFE_H__
+#define __ANT_GATEWAY_DFE_H__
 
 #include <iotjs_def.h>
 #include <iotjs_uv_request.h>
 #include <modules/iotjs_module_buffer.h>
 
-void InitANTMLDFE(jerry_value_t nativeObj);
+void InitANTGatewayDFE(jerry_value_t nativeObj);
 
-#endif /* !defined(__ANT_ML_DFE_H__) */
+#endif /* !defined(__ANT_GATEWAY_DFE_H__) */
