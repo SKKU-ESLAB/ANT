@@ -22,7 +22,7 @@
 #include <python3.6m/Python.h>
 
 #include "../../../common/native/ant_common.h"
-#include "./ant_ml_dfe_internal.h"
+#include "./ant_gateway_dfe_internal.h"
 
 void interpreters_destroy(void *interpreters) {
   PyObject *pyInterpreters = (PyObject *)interpreters;
@@ -31,30 +31,32 @@ void interpreters_destroy(void *interpreters) {
 
 PyObject *gPyModule = NULL;
 
-void ant_ml_dfe_initOnce(void) {
+void ant_gateway_dfe_initOnce(void) {
   // Initialize Python interpreter
   if (gPyModule == NULL) {
     Py_Initialize();
-    PyObject *pyModuleName = PyUnicode_FromString("ant_ml_dfe");
+    PyObject *pyModuleName = PyUnicode_FromString("ant_gateway_dfe");
     gPyModule = PyImport_Import(pyModuleName);
     Py_DECREF(pyModuleName);
   }
 }
 
-void *ant_ml_dfeLoad_internal(const char *modelName, int numFragments) {
-  ant_ml_dfe_initOnce();
+void *ant_gateway_dfeLoad_internal(const char *modelName, int numFragments) {
+  ant_gateway_dfe_initOnce();
 
   if (gPyModule == NULL) {
-    fprintf(stderr, "ERROR: ant_ml_dfeLoad_internal - Module not imported\n");
+    fprintf(stderr,
+            "ERROR: ant_gateway_dfeLoad_internal - Module not imported\n");
     return NULL;
   }
 
   PyObject *pyFunc = PyObject_GetAttrString(gPyModule, "dfe_load");
   if (pyFunc == NULL) {
-    fprintf(stderr, "ERROR: ant_ml_dfeLoad_internal - Null function\n");
+    fprintf(stderr, "ERROR: ant_gateway_dfeLoad_internal - Null function\n");
     return NULL;
   } else if (!PyCallable_Check(pyFunc)) {
-    fprintf(stderr, "ERROR: ant_ml_dfeLoad_internal - Function not callable\n");
+    fprintf(stderr,
+            "ERROR: ant_gateway_dfeLoad_internal - Function not callable\n");
     Py_DECREF(pyFunc);
     return NULL;
   }
@@ -86,24 +88,24 @@ void *ant_ml_dfeLoad_internal(const char *modelName, int numFragments) {
   return interpreters;
 }
 
-void *ant_ml_dfeExecute_internal(void *interpreters, void *inputTensor,
-                                 size_t inputTensorLength, int startLayerNum,
-                                 int endLayerNum) {
-  ant_ml_dfe_initOnce();
+void *ant_gateway_dfeExecute_internal(void *interpreters, void *inputTensor,
+                                      size_t inputTensorLength,
+                                      int startLayerNum, int endLayerNum) {
+  ant_gateway_dfe_initOnce();
 
   if (gPyModule == NULL) {
     fprintf(stderr,
-            "ERROR: ant_ml_dfeExecute_internal - Module not imported\n");
+            "ERROR: ant_gateway_dfeExecute_internal - Module not imported\n");
     return NULL;
   }
 
   PyObject *pyFunc = PyObject_GetAttrString(gPyModule, "dfe_execute");
   if (pyFunc == NULL) {
-    fprintf(stderr, "ERROR: ant_ml_dfeExecute_internal - Null function\n");
+    fprintf(stderr, "ERROR: ant_gateway_dfeExecute_internal - Null function\n");
     return NULL;
   } else if (!PyCallable_Check(pyFunc)) {
     fprintf(stderr,
-            "ERROR: ant_ml_dfeExecute_internal - Function not callable\n");
+            "ERROR: ant_gateway_dfeExecute_internal - Function not callable\n");
     Py_DECREF(pyFunc);
     return NULL;
   }
@@ -147,8 +149,9 @@ void *ant_ml_dfeExecute_internal(void *interpreters, void *inputTensor,
   return outputTensor;
 }
 
-void *ant_ml_dfeExecute_getOutputBufferWithLength(void *outputTensor,
-                                                  size_t *pOutputTensorLength) {
+void *
+ant_gateway_dfeExecute_getOutputBufferWithLength(void *outputTensor,
+                                                 size_t *pOutputTensorLength) {
   PyObject *pyOutputTensor = (PyObject *)outputTensor;
   char *outputTensorBuffer = NULL;
   int ret = PyBytes_AsStringAndSize(pyOutputTensor, &outputTensorBuffer,
@@ -156,7 +159,7 @@ void *ant_ml_dfeExecute_getOutputBufferWithLength(void *outputTensor,
   assert(ret >= 0);
   return (void *)outputTensorBuffer;
 }
-void ant_ml_dfeExecute_releaseOutput(void *outputTensor) {
+void ant_gateway_dfeExecute_releaseOutput(void *outputTensor) {
   PyObject *pyOutputTensor = (PyObject *)outputTensor;
   Py_DECREF(pyOutputTensor);
 }

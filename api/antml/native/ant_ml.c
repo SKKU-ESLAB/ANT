@@ -24,7 +24,6 @@
 #include <modules/iotjs_module_buffer.h>
 
 #include "../../common/native/ant_common.h"
-#include "./ant_ml_dfe.h"
 #include "./internal/ant_ml_internal.h"
 
 JS_FUNCTION(ant_ml_getMaxOfBuffer) {
@@ -136,8 +135,6 @@ jerry_value_t InitANTML() {
   jerry_value_t nativeObj = jerry_create_object();
   REGISTER_ANT_API(nativeObj, ant_ml, getMaxOfBuffer);
   REGISTER_ANT_API(nativeObj, ant_ml, toFloatArray);
-
-  InitANTMLDFE(nativeObj);
 
   return nativeObj;
 }

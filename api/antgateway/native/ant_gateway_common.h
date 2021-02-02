@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef __ANT_ML_COMMON_H__
-#define __ANT_ML_COMMON_H__
+#ifndef __ANT_GATEWAY_COMMON_H__
+#define __ANT_GATEWAY_COMMON_H__
 
 #define JS_DECLARE_PTR2(JOBJ, TYPE, NAME, TYPE2)                               \
   TYPE *NAME = NULL;                                                           \
@@ -25,4 +25,4 @@
     }                                                                          \
   } while (0)
 
-#endif /* !defined(__ANT_ML_COMMON_H__) */
+#endif /* !defined(__ANT_GATEWAY_COMMON_H__) */

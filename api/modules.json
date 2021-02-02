@@ -37,8 +37,7 @@
     "antml": {
       "js_file": "antml/js/antml.js",
       "native_files": [
-        "antml/native/ant_ml.c",
-        "antml/native/ant_ml_dfe.c"
+        "antml/native/ant_ml.c"
       ],
       "init": "InitANTML",
       "cmakefile": "antml/native/ant_ml.cmake",
@@ -114,6 +113,12 @@
     },
     "antgateway": {
       "js_file": "antgateway/js/antgateway.js",
+      "native_files": [
+        "antgateway/native/ant_gateway.c",
+        "antgateway/native/ant_gateway_dfe.c"
+      ],
+      "init": "InitANTGateway",
+      "cmakefile": "antgateway/native/ant_gateway.cmake",
       "require": [
         "console",
         "ocf"
