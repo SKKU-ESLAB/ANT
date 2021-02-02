@@ -31,9 +31,10 @@ try {
  * ANT Gateway API
  */
 
-var gGatewayAdapter = undefined;
+var gVirtualSensorAdapter = undefined;
 function ANTGateway() {}
 
+/* Gateway API 1: ML Fragment Element */
 ANTGateway.prototype.createImgClsImagenetElement = function (
   modelPath,
   numFragments,
@@ -51,11 +52,12 @@ ANTGateway.prototype.createImgClsImagenetElement = function (
   return mlFragmentElement;
 };
 
-ANTGateway.prototype.getAdapter = function () {
-  if (gGatewayAdapter === undefined) {
-    gGatewayAdapter = new GatewayAdapter();
+/* Gateway API 2: Virtual Sensor Adapter and DFE */
+ANTGateway.prototype.getVSAdapter = function () {
+  if (gVirtualSensorAdapter === undefined) {
+    gVirtualSensorAdapter = new VirtualSensorAdapter();
   }
-  return gGatewayAdapter;
+  return gVirtualSensorAdapter;
 };
 
 ANTGateway.prototype.createDFE = function (modelName, numFragments) {
@@ -71,24 +73,55 @@ ANTGateway.prototype.createDFE = function (modelName, numFragments) {
   return new DFE(modelName, numFragments);
 };
 
-function GatewayAdapter() {
+/* Gateway API 2-1: Virtual Sensor Adapter */
+function VirtualSensorAdapter() {
   var self = this;
+  /* Attributes */
   this.mOCFAdapter = OCFAPI.getAdapter();
-  this.mOCFAdapter.onPrepareEventLoop(function () {
-    self.setPlatform('ant');
-    self.addDevice(
+  this.mVirtualSensors = [];
+  this.mResources = [];
+
+  /* OCF lifecycle handlers */
+  function onPrepareOCFEventLoop() {
+    self.mOCFAdapter.setPlatform('ant');
+    self.mOCFAdapter.addDevice(
       '/gateway',
       'ant.d.gateway',
       'Gateway',
       'ant.1.0.0',
       'ant.res.1.0.0'
     );
-  });
-  this.mVirtualSensors = [];
-  this.mResources = [];
+  }
+
+  function onPrepareOCFClient() {}
+
+  function onPrepareOCFServer() {
+    // Add all the virtual sensors
+    for (var i in self.mVirtualSensors) {
+      var virtualSensor = self.mVirtualSensors[i];
+      var rInlet = virtualSensor.setupInlet(self);
+      var rOutlet = virtualSensor.setupOutlet(self);
+    }
+  }
+
+  /* Set OCF lifecycle handlers */
+  this.mOCFAdapter.onPrepareEventLoop(onPrepareOCFEventLoop);
+  this.mOCFAdapter.onPrepareClient(onPrepareOCFClient);
+  this.mOCFAdapter.onPrepareServer(onPrepareOCFServer);
 }
 
-GatewayAdapter.prototype.addVirtualSensor = function (
+/* Virtual sensor adapter lifecycle handlers */
+VirtualSensorAdapter.prototype.start = function () {
+  this.mOCFAdapter.start();
+};
+
+VirtualSensorAdapter.prototype.stop = function () {
+  this.mOCFAdapter.stop();
+  this.mOCFAdapter.deinitialize();
+};
+
+/* Virtual sensor handling methods */
+VirtualSensorAdapter.prototype.addVirtualSensor = function (
   name,
   observerHandler,
   inferenceHandler
@@ -103,7 +136,7 @@ GatewayAdapter.prototype.addVirtualSensor = function (
   this.mResources.push(virtualSensor.getOutletResource());
 };
 
-GatewayAdapter.prototype.findVirtualSensor = function (name) {
+VirtualSensorAdapter.prototype.findVirtualSensor = function (name) {
   for (var i in this.mVirtualSensors) {
     var virtualSensor = this.mVirtualSensors[i];
     if (virtualSensor.getName() === name) {
@@ -113,7 +146,7 @@ GatewayAdapter.prototype.findVirtualSensor = function (name) {
   return undefined;
 };
 
-GatewayAdapter.prototype.findVirtualSensorByUri = function (uri) {
+VirtualSensorAdapter.prototype.findVirtualSensorByUri = function (uri) {
   var nameFrom = uri.indexOf('/', 1) + 1;
   var nameLength = uri.indexOf('/', nameFrom) - nameFrom;
   if (nameFrom < 0 || nameLength < 0) return undefined;
@@ -124,7 +157,7 @@ GatewayAdapter.prototype.findVirtualSensorByUri = function (uri) {
   return this.findVirtualSensor(name);
 };
 
-GatewayAdapter.prototype.findResource = function (uri) {
+VirtualSensorAdapter.prototype.findResource = function (uri) {
   for (var i in this.mResources) {
     var resource = this.mResources[i];
     if (resource.uri() === uri) {
@@ -134,24 +167,7 @@ GatewayAdapter.prototype.findResource = function (uri) {
   return undefined;
 };
 
-GatewayAdapter.prototype.start = function () {
-  var self = this;
-  this.mOCFAdapter.onPrepareServer(function () {
-    // Add all the virtual sensors
-    for (var i in self.mVirtualSensors) {
-      var virtualSensor = self.mVirtualSensors[i];
-      virtualSensor.setupInlet(self);
-      virtualSensor.setupOutlet(self);
-    }
-  });
-  this.mOCFAdapter.start();
-};
-
-GatewayAdapter.prototype.stop = function () {
-  this.mOCFAdapter.stop();
-  this.mOCFAdapter.deinitialize();
-};
-
+/* Gateway API 2-1-1: Virtual Sensor */
 function VirtualSensor(name, observerHandler, inferenceHandler) {
   this.mName = name;
   this.mObserverHandler = observerHandler;
@@ -160,44 +176,12 @@ function VirtualSensor(name, observerHandler, inferenceHandler) {
   this.mOutletResource = undefined;
   this.mControletResource = undefined;
 }
-VirtualSensor.prototype.getName = function () {
-  return this.mName;
-};
 
-VirtualSensor.prototype.getInletResource = function () {
-  return this.mInletResource;
-};
-VirtualSensor.prototype.getOutletResource = function () {
-  return this.mOutletResource;
-};
-
-VirtualSensor.prototype._sample = function () {
-  // TODO: implement sampling handler
-  // TODO: call mObserverHandler in sampling handlers
-};
-
-VirtualSensor.prototype.associateInlet = function (outletUri) {
-  // TODO: associate inlet
-};
-
-function onPostInlet(request) {
-  // Associate inlet with an outlet
-  var virtualSensor = gGatewayAdapter.findVirtualSensorByUri(request.dest_uri);
-  // TODO: parse inlet POST request
-  virtualSensor.associateInlet(); // TODO: associate with target outlet
-  // TODO: make OCF response
-}
-function onGetOutlet(request) {
-  // Get output sensor data
-  var virtualSensor = gGatewayAdapter.findVirtualSensorByUri(request.dest_uri);
-  virtualSensor.mInferenceHandler(); // TODO: process virtual sensor and get output
-  // TODO: make OCF response
-}
-
+/* OCF resource setting handlers */
 VirtualSensor.prototype.setupInlet = function (gatewayAdapter) {
   var oa = gatewayAdapter.mOCFAdapter;
   var device = oa.getDevice(0);
-  var uri = '/gateway/' + this.mName + '/inlet';
+  var uri = this.getUri() + '/inlet';
   this.mInletResource = OCFAPI.createResource(
     device,
     this.mName,
@@ -229,7 +213,55 @@ VirtualSensor.prototype.setupOutlet = function (gatewayAdapter) {
   return this.mOutletResource;
 };
 
-/* DFE: DNN Fragment Engine for the deep sensors running on gateway */
+VirtualSensor.prototype._sample = function () {
+  // TODO: implement sampling handler
+  // TODO: call mObserverHandler in sampling handlers
+};
+
+VirtualSensor.prototype.associateInlet = function (outletUri) {
+  // TODO: associate inlet
+};
+
+/* Getters/setters */
+VirtualSensor.prototype.getName = function () {
+  return this.mName;
+};
+
+VirtualSensor.prototype.getUri = function () {
+  return '/gateway/' + this.mName;
+};
+
+VirtualSensor.prototype.getInletResource = function () {
+  return this.mInletResource;
+};
+VirtualSensor.prototype.getOutletResource = function () {
+  return this.mOutletResource;
+};
+
+/* OCF handlers */
+function onPostInlet(request) {
+  // Associate inlet with an outlet
+  var virtualSensor = gVirtualSensorAdapter.findVirtualSensorByUri(
+    request.dest_uri
+  );
+  // TODO: parse inlet POST request
+  virtualSensor.associateInlet(); // TODO: associate with target outlet
+  // TODO: make OCF response
+}
+
+function onGetOutlet(request) {
+  // Get output sensor data
+  var virtualSensor = gVirtualSensorAdapter.findVirtualSensorByUri(
+    request.dest_uri
+  );
+  virtualSensor.mInferenceHandler(); // TODO: process virtual sensor and get output
+  // TODO: make OCF response
+}
+
+/*
+ * Gateway API 2-2: DFE
+ * DFE: DNN Fragment Engine for the deep sensors running on gateway
+ */
 function DFE(modelName, numFragments) {
   this.modelName = modelName;
   this.numFragments = numFragments;
