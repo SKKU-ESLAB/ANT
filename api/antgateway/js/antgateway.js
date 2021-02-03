@@ -31,7 +31,7 @@ try {
  * ANT Gateway API
  */
 
-var gVirtualSensorAdapter = undefined;
+var gVSAdapter = undefined;
 function ANTGateway() {}
 
 /* Gateway API 1: ML Fragment Element */
@@ -54,10 +54,10 @@ ANTGateway.prototype.createImgClsImagenetElement = function (
 
 /* Gateway API 2: Virtual Sensor Adapter and DFE */
 ANTGateway.prototype.getVSAdapter = function () {
-  if (gVirtualSensorAdapter === undefined) {
-    gVirtualSensorAdapter = new VirtualSensorAdapter();
+  if (gVSAdapter === undefined) {
+    gVSAdapter = new VirtualSensorAdapter();
   }
-  return gVirtualSensorAdapter;
+  return gVSAdapter;
 };
 
 ANTGateway.prototype.createDFE = function (modelName, numFragments) {
@@ -96,11 +96,14 @@ function VirtualSensorAdapter() {
   function onPrepareOCFClient() {}
 
   function onPrepareOCFServer() {
+    self.mResources = [];
     // Add all the virtual sensors
     for (var i in self.mVirtualSensors) {
       var virtualSensor = self.mVirtualSensors[i];
       var rInlet = virtualSensor.setupInlet(self);
+      self.mResources.push(rInlet);
       var rOutlet = virtualSensor.setupOutlet(self);
+      self.mResources.push(rOutlet);
     }
   }
 
@@ -121,22 +124,25 @@ VirtualSensorAdapter.prototype.stop = function () {
 };
 
 /* Virtual sensor handling methods */
-VirtualSensorAdapter.prototype.addVirtualSensor = function (
+VirtualSensorAdapter.prototype.createSensor = function (
   name,
   observerHandler,
-  inferenceHandler
+  inferenceHandler,
+  isInputByteBuffer,
+  isOutputByteBuffer
 ) {
   var virtualSensor = new VirtualSensor(
     name,
     observerHandler,
-    inferenceHandler
+    inferenceHandler,
+    isInputByteBuffer,
+    isOutputByteBuffer
   );
   this.mVirtualSensors.push(virtualSensor);
-  this.mResources.push(virtualSensor.getInletResource());
-  this.mResources.push(virtualSensor.getOutletResource());
+  return virtualSensor;
 };
 
-VirtualSensorAdapter.prototype.findVirtualSensor = function (name) {
+VirtualSensorAdapter.prototype.findSensorByName = function (name) {
   for (var i in this.mVirtualSensors) {
     var virtualSensor = this.mVirtualSensors[i];
     if (virtualSensor.getName() === name) {
@@ -146,18 +152,18 @@ VirtualSensorAdapter.prototype.findVirtualSensor = function (name) {
   return undefined;
 };
 
-VirtualSensorAdapter.prototype.findVirtualSensorByUri = function (uri) {
-  var nameFrom = uri.indexOf('/', 1) + 1;
-  var nameLength = uri.indexOf('/', nameFrom) - nameFrom;
+VirtualSensorAdapter.prototype.findSensorByUri = function (uri) {
+  var nameFrom = uri.indexOf('/', 1) + 1; // offset of the tail of '/gateway/'
+  var nameLength = uri.indexOf('/', nameFrom) - nameFrom; // offset of the tail of virtual sensor name
   if (nameFrom < 0 || nameLength < 0) return undefined;
 
   var name = uri.substring(nameFrom, nameLength);
   if (name === undefined || name.length == 0) return undefined;
 
-  return this.findVirtualSensor(name);
+  return this.findSensorByName(name);
 };
 
-VirtualSensorAdapter.prototype.findResource = function (uri) {
+VirtualSensorAdapter.prototype.getResource = function (uri) {
   for (var i in this.mResources) {
     var resource = this.mResources[i];
     if (resource.uri() === uri) {
@@ -168,16 +174,29 @@ VirtualSensorAdapter.prototype.findResource = function (uri) {
 };
 
 /* Gateway API 2-1-1: Virtual Sensor */
-function VirtualSensor(name, observerHandler, inferenceHandler) {
+function VirtualSensor(
+  name,
+  observerHandler,
+  inferenceHandler,
+  isInputByteBuffer,
+  isOutputByteBuffer
+) {
   this.mName = name;
   this.mObserverHandler = observerHandler;
   this.mInferenceHandler = inferenceHandler;
   this.mInletResource = undefined;
   this.mOutletResource = undefined;
   this.mControletResource = undefined;
+  this.mIsInputByteBuffer = isInputByteBuffer;
+  this.mIsOutputByteBuffer = isOutputByteBuffer;
+
+  this.mObservers = [];
 }
 
-/* OCF resource setting handlers */
+/*
+ * OCF resource setting handlers
+ * These handlers are called after OCF
+ */
 VirtualSensor.prototype.setupInlet = function (gatewayAdapter) {
   var oa = gatewayAdapter.mOCFAdapter;
   var device = oa.getDevice(0);
@@ -191,6 +210,7 @@ VirtualSensor.prototype.setupInlet = function (gatewayAdapter) {
   );
   this.mInletResource.setDiscoverable(true);
   this.mInletResource.setHandler(OCFAPI.OC_POST, onPostInlet);
+  this.mInletResource.setHandler(OCFAPI.OC_GET, onGetInlet);
   oa.addResource(this.mInletResource);
   return this.mInletResource;
 };
@@ -213,13 +233,67 @@ VirtualSensor.prototype.setupOutlet = function (gatewayAdapter) {
   return this.mOutletResource;
 };
 
-VirtualSensor.prototype._sample = function () {
-  // TODO: implement sampling handler
-  // TODO: call mObserverHandler in sampling handlers
+VirtualSensor.prototype.addObserver = function (
+  sensorType,
+  deviceType,
+  endpoint,
+  uri,
+  intervalMS
+) {
+  var self = this;
+  var oa = gVSAdapter.mOCFAdapter;
+  function onIncomingInletData(response) {
+    var payload = response.payload;
+    if (!self.mIsInputByteBuffer) {
+      payload = JSON.stringify(payload);
+    }
+
+    // Call custom observer handler
+    self.mObserverHandler(payload);
+  }
+
+  // Start observer
+  var intervalDesc = setInterval(function () {
+    oa.get(
+      endpoint,
+      uri,
+      onIncomingInletData,
+      undefined,
+      undefined,
+      self.mIsInputByteBuffer
+    );
+  }, intervalMS);
+
+  // Add observer to the virtual sensor's observer list
+  var observer = {
+    sensorType: sensorType,
+    deviceType: deviceType,
+    intervalDesc: intervalDesc
+  };
+  this.mObservers.push(observer);
 };
 
-VirtualSensor.prototype.associateInlet = function (outletUri) {
-  // TODO: associate inlet
+VirtualSensor.prototype.removeObserver = function (sensorType, deviceType) {
+  // Find observer for the given sensor/device type
+  var foundObserver = undefined;
+  var foundObserverIndex = -1;
+  for (var i in this.mObservers) {
+    var observer = this.mObservers[i];
+    if (
+      observer.sensorType == sensorType &&
+      observer.deviceType == deviceType
+    ) {
+      foundObserver = observer;
+      foundObserverIndex = i;
+      break;
+    }
+  }
+
+  // Stop observer
+  if (foundObserver !== undefined && foundObserverIndex >= 0) {
+    clearInterval(foundObserver.intervalDesc);
+    this.mObservers.splice(foundObserverIndex, 1);
+  }
 };
 
 /* Getters/setters */
@@ -240,20 +314,114 @@ VirtualSensor.prototype.getOutletResource = function () {
 
 /* OCF handlers */
 function onPostInlet(request) {
-  // Associate inlet with an outlet
-  var virtualSensor = gVirtualSensorAdapter.findVirtualSensorByUri(
-    request.dest_uri
-  );
-  // TODO: parse inlet POST request
-  virtualSensor.associateInlet(); // TODO: associate with target outlet
-  // TODO: make OCF response
+  // POST inlet: Add observer
+  var virtualSensor = gVSAdapter.findSensorByUri(request.dest_uri);
+
+  // Parse OCF request
+  var requestPayloadString = request.request_payload_string;
+  var requestPayload = JSON.parse(requestPayloadString);
+  var commandType = requestPayload.commandType; // command's type (add or remove)
+  var sensorType = requestPayload.sensorType; // sensor's type (OCF resource type)
+  var deviceType = requestPayload.deviceType; // device's type (OCF resource type)
+  var intervalMS = requestPayload.intervalMS; // observation interval (milliseconds)
+  var defaultIntervalMS = 1000; // default observation interval: 1 sec
+
+  var response = {result: 'None', reason: 'None'};
+  if (commandType === undefined || typeof commandType !== 'string')
+    response = {
+      result: 'Failure',
+      reason: 'Invalid commandType (' + commandType + ')'
+    };
+  if (sensorType === undefined || typeof sensorType !== 'string')
+    response = {
+      result: 'Failure',
+      reason: 'Invalid sensorType (' + sensorType + ')'
+    };
+  if (deviceType === undefined || typeof deviceType !== 'string')
+    response = {
+      result: 'Failure',
+      reason: 'Invalid deviceType (' + deviceType + ')'
+    };
+  if (sensorType == deviceType)
+    response = {
+      result: 'Failure',
+      reason: 'sensorType == deviceType (' + sensorType + ')'
+    };
+  if (intervalMS === undefined) intervalMS = defaultIntervalMS;
+  else if (typeof intervalMS !== 'number')
+    response = {
+      result: 'Failure',
+      reason: 'Invalid intervalMS (' + intervalMS + ')'
+    };
+
+  if (commandType !== 'add' && commandType !== 'remove')
+    response = {
+      result: 'Failure',
+      reason: 'Invalid commandType (' + commandType + ')'
+    };
+
+  if (response.result !== 'Failure')
+    response = _onPostInlet_internal(
+      commandType,
+      sensorType,
+      deviceType,
+      intervalMS
+    );
+
+  gOA.repStartRootObject();
+  gOA.repSet('result', response.result);
+  gOA.repSet('reason', response.reason);
+  gOA.repEndRootObject();
+  gOA.sendResponse(request, ocf.OC_STATUS_OK);
+}
+
+function _onPostInlet_internal(
+  commandType,
+  sensorType,
+  deviceType,
+  intervalMS
+) {
+  // Step 1. Discover outlet resource
+  var oa = gVSAdapter.mOCFAdapter;
+  function onDiscoveryAfterPostInlet(endpoint, uri, types, interfaceMask) {
+    // Step 2. On discover outlet resource
+    var isFoundSensorType = false;
+    var isFoundDeviceType = false;
+    for (var i in types) {
+      if (types[i] == sensorType) {
+        isFoundSensorType = true;
+      } else if (types[i] == deviceType) {
+        isFoundDeviceType = true;
+      }
+    }
+    if (isFoundSensorType && isFoundDeviceType) {
+      if (commandType == 'add') {
+        // Add observer for the discovered outlet resource
+        virtualSensor.addObserver(
+          sensorType,
+          deviceType,
+          endpoint,
+          uri,
+          intervalMS
+        );
+      } else if (commandType == 'remove') {
+        // Remove observer
+        virtualSensor.removeObserver(sensorType, deviceType);
+      }
+    }
+  }
+
+  oa.discovery('ant.r.outlet', onDiscoveryAfterPostInlet);
+  return {result: 'Success', reason: 'None'};
+}
+
+function onGetInlet(request) {
+  // TODO: get observers
 }
 
 function onGetOutlet(request) {
-  // Get output sensor data
-  var virtualSensor = gVirtualSensorAdapter.findVirtualSensorByUri(
-    request.dest_uri
-  );
+  // GET outlet: Get DFE message
+  var virtualSensor = gVSAdapter.findSensorByUri(request.dest_uri);
   virtualSensor.mInferenceHandler(); // TODO: process virtual sensor and get output
   // TODO: make OCF response
 }
