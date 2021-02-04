@@ -113,7 +113,6 @@ void InitOCFAdapterNative(jerry_value_t ocfNative);
       jerry_value_t jsbufferPayload;                                           \
       iotjs_string_t jsstrPayload;                                             \
       if (event_data->is_payload_buffer) {                                     \
-        /* TODO: IoT.js Payload object */                                      \
         jsbufferPayload = iotjs_bufferwrap_create_buffer(                      \
             (size_t)event_data->payload_buffer_length);                        \
         iotjs_bufferwrap_t *buffer_wrap =                                      \
@@ -121,7 +120,14 @@ void InitOCFAdapterNative(jerry_value_t ocfNative);
         iotjs_bufferwrap_copy(buffer_wrap,                                     \
                               (const char *)event_data->payload_buffer,        \
                               (size_t)event_data->payload_buffer_length);      \
-        iotjs_jval_set_property_jval(jsResponse, "payload", jsbufferPayload);  \
+        iotjs_jval_set_property_jval(jsResponse, "payloadBuffer",              \
+                                     jsbufferPayload);                         \
+                                                                               \
+        jsstrPayload = iotjs_string_create();                                  \
+        iotjs_string_append(&jsstrPayload, event_data->payload_string,         \
+                            strlen(event_data->payload_string));               \
+        iotjs_jval_set_property_string(jsResponse, "payloadString",            \
+                                       &jsstrPayload);                         \
       } else {                                                                 \
         jsstrPayload = iotjs_string_create();                                  \
         iotjs_string_append(&jsstrPayload, event_data->payload_string,         \
@@ -142,6 +148,7 @@ void InitOCFAdapterNative(jerry_value_t ocfNative);
                                                                                \
       if (event_data->is_payload_buffer) {                                     \
         jerry_release_value(jsbufferPayload);                                  \
+        iotjs_string_destroy(&jsstrPayload);                                   \
       } else {                                                                 \
         iotjs_string_destroy(&jsstrPayload);                                   \
       }                                                                        \

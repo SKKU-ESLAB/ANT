@@ -85,9 +85,9 @@ function VirtualSensorAdapter() {
   function onPrepareOCFEventLoop() {
     self.mOCFAdapter.setPlatform('ant');
     self.mOCFAdapter.addDevice(
-      '/gateway',
-      'ant.d.gateway',
-      'Gateway',
+      '/vs',
+      'ant.d.virtualsensor',
+      'VirtualSensor',
       'ant.1.0.0',
       'ant.res.1.0.0'
     );
@@ -104,6 +104,8 @@ function VirtualSensorAdapter() {
       self.mResources.push(rInlet);
       var rOutlet = virtualSensor.setupOutlet(self);
       self.mResources.push(rOutlet);
+      var rDFE = virtualSensor.setupDFE(self);
+      self.mResources.push(rDFE);
     }
   }
 
@@ -127,16 +129,12 @@ VirtualSensorAdapter.prototype.stop = function () {
 VirtualSensorAdapter.prototype.createSensor = function (
   name,
   observerHandler,
-  inferenceHandler,
-  isInputByteBuffer,
-  isOutputByteBuffer
+  inferenceHandler
 ) {
   var virtualSensor = new VirtualSensor(
     name,
     observerHandler,
-    inferenceHandler,
-    isInputByteBuffer,
-    isOutputByteBuffer
+    inferenceHandler
   );
   this.mVirtualSensors.push(virtualSensor);
   return virtualSensor;
@@ -153,7 +151,7 @@ VirtualSensorAdapter.prototype.findSensorByName = function (name) {
 };
 
 VirtualSensorAdapter.prototype.findSensorByUri = function (uri) {
-  var nameFrom = uri.indexOf('/', 1) + 1; // offset of the tail of '/gateway/'
+  var nameFrom = uri.indexOf('/', 1) + 1; // offset of the tail of '/vs/'
   var nameLength = uri.indexOf('/', nameFrom) - nameFrom; // offset of the tail of virtual sensor name
   if (nameFrom < 0 || nameLength < 0) return undefined;
 
@@ -174,28 +172,20 @@ VirtualSensorAdapter.prototype.getResource = function (uri) {
 };
 
 /* Gateway API 2-1-1: Virtual Sensor */
-function VirtualSensor(
-  name,
-  observerHandler,
-  inferenceHandler,
-  isInputByteBuffer,
-  isOutputByteBuffer
-) {
+function VirtualSensor(name, observerHandler, inferenceHandler) {
   this.mName = name;
   this.mObserverHandler = observerHandler;
   this.mInferenceHandler = inferenceHandler;
   this.mInletResource = undefined;
   this.mOutletResource = undefined;
-  this.mControletResource = undefined;
-  this.mIsInputByteBuffer = isInputByteBuffer;
-  this.mIsOutputByteBuffer = isOutputByteBuffer;
-
+  this.mDFEResource = undefined;
   this.mObservers = [];
 }
 
 /*
  * OCF resource setting handlers
- * These handlers are called after OCF
+ * These handlers must be called after OCF server is prepared.
+ * Therefore, calling the handlers are postponed.
  */
 VirtualSensor.prototype.setupInlet = function (gatewayAdapter) {
   var oa = gatewayAdapter.mOCFAdapter;
@@ -218,7 +208,7 @@ VirtualSensor.prototype.setupInlet = function (gatewayAdapter) {
 VirtualSensor.prototype.setupOutlet = function (gatewayAdapter) {
   var oa = gatewayAdapter.mOCFAdapter;
   var device = oa.getDevice(0);
-  var uri = '/gateway/' + this.mName + '/outlet';
+  var uri = '/vs/' + this.mName + '/outlet';
   this.mOutletResource = OCFAPI.createResource(
     device,
     this.mName,
@@ -233,6 +223,23 @@ VirtualSensor.prototype.setupOutlet = function (gatewayAdapter) {
   return this.mOutletResource;
 };
 
+VirtualSensor.prototype.setupDFE = function (gatewayAdapter) {
+  var oa = gatewayAdapter.mOCFAdapter;
+  var device = oa.getDevice(0);
+  var uri = '/vs/' + this.mName + '/dfe';
+  this.mDFEResource = OCFAPI.createResource(
+    device,
+    this.mName,
+    uri,
+    ['ant.r.dfe'],
+    [OCFAPI.OC_IF_RW]
+  );
+  this.mDFEResource.setDiscoverable(true);
+  this.mDFEResource.setHandler(OCFAPI.OC_GET, onGetOutlet);
+  oa.addResource(this.mDFEResource);
+  return this.mDFEResource;
+};
+
 VirtualSensor.prototype.addObserver = function (
   sensorType,
   deviceType,
@@ -244,9 +251,6 @@ VirtualSensor.prototype.addObserver = function (
   var oa = gVSAdapter.mOCFAdapter;
   function onIncomingInletData(response) {
     var payload = response.payload;
-    if (!self.isInputByteBuffer()) {
-      payload = JSON.stringify(payload);
-    }
 
     // Call custom observer handler
     self.mObserverHandler(payload);
@@ -254,14 +258,7 @@ VirtualSensor.prototype.addObserver = function (
 
   // Start observer
   var intervalDesc = setInterval(function () {
-    oa.get(
-      endpoint,
-      uri,
-      onIncomingInletData,
-      undefined,
-      undefined,
-      self.isInputByteBuffer()
-    );
+    oa.get(endpoint, uri, onIncomingInletData, undefined, undefined, true);
   }, intervalMS);
 
   // Add observer to the virtual sensor's observer list
@@ -302,7 +299,7 @@ VirtualSensor.prototype.getName = function () {
 };
 
 VirtualSensor.prototype.getUri = function () {
-  return '/gateway/' + this.mName;
+  return '/vs/' + this.mName;
 };
 
 VirtualSensor.prototype.getInletResource = function () {
@@ -314,14 +311,6 @@ VirtualSensor.prototype.getOutletResource = function () {
 
 VirtualSensor.prototype.getObservers = function () {
   return this.mObservers;
-};
-
-VirtualSensor.prototype.isInputByteBuffer = function() {
-  return this.mIsInputByteBuffer;
-};
-
-VirtualSensor.prototype.isOutputByteBuffer = function() {
-  return this.mIsOutputByteBuffer;
 };
 
 /* OCF handlers */
@@ -453,16 +442,9 @@ function onGetOutlet(request) {
 
   // Check result
   var isFailed = false;
-  if (virtualSensor.isOutputByteBuffer()) {
-    if (typeof result !== 'object' || result instanceof Buffer) {
-      console.error('Invalid result: not buffer');
-      isFailed = true;
-    }
-  } else {
-    if (typeof result !== 'object') {
-      console.error('Invalid result: not object');
-      isFailed = true;
-    }
+  if (typeof result !== 'object' || result instanceof Buffer) {
+    console.error('Invalid result: not buffer');
+    isFailed = true;
   }
 
   // Send response
@@ -470,11 +452,8 @@ function onGetOutlet(request) {
     // Data
     var oa = gVSAdapter.mOCFAdapter;
     oa.repStartRootObject();
-    if (virtualSensor.isOutputByteBuffer()) {
-      oa.repSetByteBuffer(result);
-    } else {
-      oa.repSet('outputData', JSON.stringify(result));
-    }
+    // TODO:
+    oa.repSetBufferAndString(result.byteValue, result.stringValue);
     oa.repEndRootObject();
     oa.sendResponse(request, ocf.OC_STATUS_OK);
   }
