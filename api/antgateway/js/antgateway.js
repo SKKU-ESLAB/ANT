@@ -235,7 +235,7 @@ VirtualSensor.prototype.setupDFE = function (gatewayAdapter) {
     [OCFAPI.OC_IF_RW]
   );
   this.mDFEResource.setDiscoverable(true);
-  this.mDFEResource.setHandler(OCFAPI.OC_GET, onGetOutlet);
+  this.mDFEResource.setHandler(OCFAPI.OC_POST, onPostDFE);
   oa.addResource(this.mDFEResource);
   return this.mDFEResource;
 };
@@ -449,14 +449,16 @@ function onGetOutlet(request) {
 
   // Send response
   if (!isFailed) {
-    // Data
     var oa = gVSAdapter.mOCFAdapter;
     oa.repStartRootObject();
-    // TODO:
     oa.repSetBufferAndString(result.byteValue, result.stringValue);
     oa.repEndRootObject();
     oa.sendResponse(request, ocf.OC_STATUS_OK);
   }
+}
+
+function onPostDFE(request) {
+  // TODO:
 }
 
 /*
