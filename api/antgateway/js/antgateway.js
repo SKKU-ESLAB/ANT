@@ -244,7 +244,7 @@ VirtualSensor.prototype.addObserver = function (
   var oa = gVSAdapter.mOCFAdapter;
   function onIncomingInletData(response) {
     var payload = response.payload;
-    if (!self.mIsInputByteBuffer) {
+    if (!self.isInputByteBuffer()) {
       payload = JSON.stringify(payload);
     }
 
@@ -260,7 +260,7 @@ VirtualSensor.prototype.addObserver = function (
       onIncomingInletData,
       undefined,
       undefined,
-      self.mIsInputByteBuffer
+      self.isInputByteBuffer()
     );
   }, intervalMS);
 
@@ -314,6 +314,14 @@ VirtualSensor.prototype.getOutletResource = function () {
 
 VirtualSensor.prototype.getObservers = function () {
   return this.mObservers;
+};
+
+VirtualSensor.prototype.isInputByteBuffer = function() {
+  return this.mIsInputByteBuffer;
+};
+
+VirtualSensor.prototype.isOutputByteBuffer = function() {
+  return this.mIsOutputByteBuffer;
 };
 
 /* OCF handlers */
@@ -372,6 +380,7 @@ function onPostInlet(request) {
       intervalMS
     );
 
+  // Send response
   var oa = gVSAdapter.mOCFAdapter;
   oa.repStartRootObject();
   oa.repSet('result', response.result);
@@ -424,10 +433,13 @@ function onGetInlet(request) {
   // GET inlet: Get observers list
   var virtualSensor = gVSAdapter.findSensorByUri(request.dest_uri);
 
+  // Get observers list
+  var observers = virtualSensor.getObservers();
+
+  // Send response
   var oa = gVSAdapter.mOCFAdapter;
   oa.repStartRootObject();
-  var observersJSON = JSON.stringify(virtualSensor.getObservers());
-  oa.repSet('observersJSON', observersJSON);
+  oa.repSet('observersJSON', JSON.stringify(observers));
   oa.repEndRootObject();
   oa.sendResponse(request, ocf.OC_STATUS_OK);
 }
@@ -435,8 +447,37 @@ function onGetInlet(request) {
 function onGetOutlet(request) {
   // GET outlet: Get DFE message
   var virtualSensor = gVSAdapter.findSensorByUri(request.dest_uri);
-  virtualSensor.mInferenceHandler(); // TODO: process virtual sensor and get output
-  // TODO: make OCF response
+
+  // Call custom inference handler
+  var result = virtualSensor.mInferenceHandler();
+
+  // Check result
+  var isFailed = false;
+  if (virtualSensor.isOutputByteBuffer()) {
+    if (typeof result !== 'object' || result instanceof Buffer) {
+      console.error('Invalid result: not buffer');
+      isFailed = true;
+    }
+  } else {
+    if (typeof result !== 'object') {
+      console.error('Invalid result: not object');
+      isFailed = true;
+    }
+  }
+
+  // Send response
+  if (!isFailed) {
+    // Data
+    var oa = gVSAdapter.mOCFAdapter;
+    oa.repStartRootObject();
+    if (virtualSensor.isOutputByteBuffer()) {
+      oa.repSetByteBuffer(result);
+    } else {
+      oa.repSet('outputData', JSON.stringify(result));
+    }
+    oa.repEndRootObject();
+    oa.sendResponse(request, ocf.OC_STATUS_OK);
+  }
 }
 
 /*
