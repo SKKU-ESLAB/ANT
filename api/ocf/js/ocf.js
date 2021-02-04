@@ -285,18 +285,20 @@ OCFAdapter.prototype.repSet = function (key, value) {
 };
 
 /**
- * OCFAdapter.repSetByteBuffer
+ * OCFAdapter.repSetBufferAndString
  * @param {Object} value
- * The value is stored in a specific key among OCRepresentations being created by OCF thread.
- * In this function, only byte-buffer (Buffer object) can be used for data.
+ * The special case of repSet() method.
+ * The data can include both byte buffer and string.
  */
-OCFAdapter.prototype.repSetByteBuffer = function (value) {
-  if (typeof value !== 'object' || !(value instanceof Buffer)) {
-    console.log('repSet(): Not supported type (' + typeof value + ')');
+OCFAdapter.prototype.repSetBufferAndString = function (bufferValue, stringValue) {
+  if (typeof bufferValue !== 'object' || !(bufferValue instanceof Buffer)) {
+    console.log('repSet(): Not supported type (' + typeof bufferValue + ')');
   }
 
-  var KEY_BYTE_BUFFER = 'byteBuffer';
-  native.ocf_adapter_repSetByteArray(KEY_BYTE_BUFFER, value);
+  var KEY_BUFFER_VALUE = 'bufferValue';
+  var KEY_STRING_VALUE = 'stringValue';
+  native.ocf_adapter_repSetByteArray(KEY_BUFFER_VALUE, bufferValue);
+  native.ocf_adapter_repSet(KEY_STRING_VALUE, stringValue);
 };
 
 /**

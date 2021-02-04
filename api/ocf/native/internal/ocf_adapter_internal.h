@@ -99,7 +99,8 @@ void initOCFAdapter(void);
 void lock_ocf_thread(void);
 void unlock_ocf_thread(void);
 
-#define KEY_BYTE_BUFFER "byteBuffer"
+#define KEY_BYTE_VALUE "byteValue"
+#define KEY_STRING_VALUE "stringValue"
 
 /* (Native) JS_FUNCTION(type)
  * -> {optype}_internal() -> Send OCF request */
@@ -141,12 +142,20 @@ void unlock_ocf_thread(void);
     if (event_data->is_payload_buffer) {                                       \
       char *payload_buffer;                                                    \
       size_t payload_buffer_length;                                            \
-      oc_rep_get_byte_string(data->payload, KEY_BYTE_BUFFER, &payload_buffer,  \
+      oc_rep_get_byte_string(data->payload, KEY_BYTE_VALUE, &payload_buffer,   \
                              &payload_buffer_length);                          \
       event_data->payload_buffer = (char *)malloc(payload_buffer_length);      \
       memcpy(event_data->payload_buffer, payload_buffer,                       \
              payload_buffer_length);                                           \
       event_data->payload_buffer_length = payload_buffer_length;               \
+                                                                               \
+      char *payload_string;                                                    \
+      size_t payload_string_length;                                            \
+      oc_rep_get_string(data->payload, KEY_STRING_VALUE, &payload_string,      \
+                        payload_string_length);                                \
+      event_data->payload_string = (char *)malloc(payload_string_length + 1);  \
+      memcpy(event_data->payload_string, payload_string,                       \
+             payload_string_length);                                           \
     } else {                                                                   \
       event_data->payload_string_length =                                      \
           oc_rep_to_json(data->payload, NULL, 0, true);                        \
