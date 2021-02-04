@@ -312,6 +312,10 @@ VirtualSensor.prototype.getOutletResource = function () {
   return this.mOutletResource;
 };
 
+VirtualSensor.prototype.getObservers = function () {
+  return this.mObservers;
+};
+
 /* OCF handlers */
 function onPostInlet(request) {
   // POST inlet: Add observer
@@ -368,11 +372,12 @@ function onPostInlet(request) {
       intervalMS
     );
 
-  gOA.repStartRootObject();
-  gOA.repSet('result', response.result);
-  gOA.repSet('reason', response.reason);
-  gOA.repEndRootObject();
-  gOA.sendResponse(request, ocf.OC_STATUS_OK);
+  var oa = gVSAdapter.mOCFAdapter;
+  oa.repStartRootObject();
+  oa.repSet('result', response.result);
+  oa.repSet('reason', response.reason);
+  oa.repEndRootObject();
+  oa.sendResponse(request, ocf.OC_STATUS_OK);
 }
 
 function _onPostInlet_internal(
@@ -416,7 +421,15 @@ function _onPostInlet_internal(
 }
 
 function onGetInlet(request) {
-  // TODO: get observers
+  // GET inlet: Get observers list
+  var virtualSensor = gVSAdapter.findSensorByUri(request.dest_uri);
+
+  var oa = gVSAdapter.mOCFAdapter;
+  oa.repStartRootObject();
+  var observersJSON = JSON.stringify(virtualSensor.getObservers());
+  oa.repSet('observersJSON', observersJSON);
+  oa.repEndRootObject();
+  oa.sendResponse(request, ocf.OC_STATUS_OK);
 }
 
 function onGetOutlet(request) {
