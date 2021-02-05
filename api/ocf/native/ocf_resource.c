@@ -230,24 +230,24 @@ ANT_UV_HANDLER_FUNCTION(ocf_resource_setHandler) {
     iotjs_string_t origin_addr_jsstr = iotjs_string_create();
     iotjs_string_t dest_uri_jsstr = iotjs_string_create();
     iotjs_string_t query_jsstr = iotjs_string_create();
-    iotjs_string_t request_payload_string_jsstr = iotjs_string_create();
+    iotjs_string_t payload_string_jsstr = iotjs_string_create();
     iotjs_string_append(&origin_addr_jsstr, event_data->origin_addr,
                         strlen(event_data->origin_addr));
     iotjs_string_append(&dest_uri_jsstr, event_data->dest_uri,
                         strlen(event_data->dest_uri));
     iotjs_string_append(&query_jsstr, event_data->query,
                         strlen(event_data->query));
-    iotjs_string_append(&request_payload_string_jsstr,
-                        event_data->request_payload_string,
-                        strlen(event_data->request_payload_string));
+    iotjs_string_append(&payload_string_jsstr,
+                        event_data->payload_string,
+                        strlen(event_data->payload_string));
     iotjs_jval_set_property_string(js_ocf_request, "origin_addr",
                                    &origin_addr_jsstr);
     iotjs_jval_set_property_number(js_ocf_request, "dest_device_id",
                                    (int)event_data->dest_device_id);
     iotjs_jval_set_property_string(js_ocf_request, "dest_uri", &dest_uri_jsstr);
     iotjs_jval_set_property_string(js_ocf_request, "query", &query_jsstr);
-    iotjs_jval_set_property_string(js_ocf_request, "request_payload_string",
-                                   &request_payload_string_jsstr);
+    iotjs_jval_set_property_string(js_ocf_request, "payload_string",
+                                   &payload_string_jsstr);
 
     // set native pointer of OCFRequest with oc_request_t
     jerry_set_object_native_pointer(js_ocf_request, event_data->request,
@@ -271,7 +271,7 @@ ANT_UV_HANDLER_FUNCTION(ocf_resource_setHandler) {
     iotjs_string_destroy(&origin_addr_jsstr);
     iotjs_string_destroy(&dest_uri_jsstr);
     iotjs_string_destroy(&query_jsstr);
-    iotjs_string_destroy(&request_payload_string_jsstr);
+    iotjs_string_destroy(&payload_string_jsstr);
     jerry_release_value(js_ocf_request);
 
     // wake up OCF thread

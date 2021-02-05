@@ -104,8 +104,8 @@ function VirtualSensorAdapter() {
       self.mResources.push(rInlet);
       var rOutlet = virtualSensor.setupOutlet(self);
       self.mResources.push(rOutlet);
-      var rDFE = virtualSensor.setupDFE(self);
-      self.mResources.push(rDFE);
+      var rSetting = virtualSensor.setupSetting(self);
+      self.mResources.push(rSetting);
     }
   }
 
@@ -129,12 +129,12 @@ VirtualSensorAdapter.prototype.stop = function () {
 VirtualSensorAdapter.prototype.createSensor = function (
   name,
   observerHandler,
-  inferenceHandler
+  generatorHandler
 ) {
   var virtualSensor = new VirtualSensor(
     name,
     observerHandler,
-    inferenceHandler
+    generatorHandler
   );
   this.mVirtualSensors.push(virtualSensor);
   return virtualSensor;
@@ -172,14 +172,21 @@ VirtualSensorAdapter.prototype.getResource = function (uri) {
 };
 
 /* Gateway API 2-1-1: Virtual Sensor */
-function VirtualSensor(name, observerHandler, inferenceHandler) {
+function VirtualSensor(
+  name,
+  observerHandler,
+  generatorHandler,
+  settingHandler
+) {
   this.mName = name;
   this.mObserverHandler = observerHandler;
-  this.mInferenceHandler = inferenceHandler;
+  this.mGeneratorHandler = generatorHandler;
+  this.mSettingHandler = settingHandler;
   this.mInletResource = undefined;
   this.mOutletResource = undefined;
-  this.mDFEResource = undefined;
+  this.mSettingResource = undefined;
   this.mObservers = [];
+  this.mDFE = undefined;
 }
 
 /*
@@ -223,21 +230,21 @@ VirtualSensor.prototype.setupOutlet = function (gatewayAdapter) {
   return this.mOutletResource;
 };
 
-VirtualSensor.prototype.setupDFE = function (gatewayAdapter) {
+VirtualSensor.prototype.setupSetting = function (gatewayAdapter) {
   var oa = gatewayAdapter.mOCFAdapter;
   var device = oa.getDevice(0);
   var uri = '/vs/' + this.mName + '/dfe';
-  this.mDFEResource = OCFAPI.createResource(
+  this.mSettingResource = OCFAPI.createResource(
     device,
     this.mName,
     uri,
-    ['ant.r.dfe'],
+    ['ant.r.setting'],
     [OCFAPI.OC_IF_RW]
   );
-  this.mDFEResource.setDiscoverable(true);
-  this.mDFEResource.setHandler(OCFAPI.OC_POST, onPostDFE);
-  oa.addResource(this.mDFEResource);
-  return this.mDFEResource;
+  this.mSettingResource.setDiscoverable(true);
+  this.mSettingResource.setHandler(OCFAPI.OC_POST, onPostSetting);
+  oa.addResource(this.mSettingResource);
+  return this.mSettingResource;
 };
 
 VirtualSensor.prototype.addObserver = function (
@@ -319,7 +326,7 @@ function onPostInlet(request) {
   var virtualSensor = gVSAdapter.findSensorByUri(request.dest_uri);
 
   // Parse OCF request
-  var requestPayloadString = request.request_payload_string;
+  var requestPayloadString = request.payload_string;
   var requestPayload = JSON.parse(requestPayloadString);
   var commandType = requestPayload.commandType; // command's type (add or remove)
   var sensorType = requestPayload.sensorType; // sensor's type (OCF resource type)
@@ -438,7 +445,7 @@ function onGetOutlet(request) {
   var virtualSensor = gVSAdapter.findSensorByUri(request.dest_uri);
 
   // Call custom inference handler
-  var result = virtualSensor.mInferenceHandler();
+  var result = virtualSensor.mGeneratorHandler();
 
   // Check result
   var isFailed = false;
@@ -457,8 +464,16 @@ function onGetOutlet(request) {
   }
 }
 
-function onPostDFE(request) {
-  // TODO:
+function onPostSetting(request) {
+  // POST dfe: control DFE's fragment number and get it's computing status
+  var virtualSensor = gVSAdapter.findSensorByUri(request.dest_uri);
+
+  // Parse OCF request
+  var requestPayloadString = request.payload_string;
+  var requestPayload = JSON.parse(requestPayloadString);
+  var fragNum = requestPayload.fragNum; // fragment number
+
+  // Fragment number setting
 }
 
 /*
@@ -494,6 +509,14 @@ DFE.prototype.execute = function (inputBuffer, startLayerNum, endLayerNum) {
     startLayerNum,
     endLayerNum
   );
+};
+
+DFE.prototype.getSettingHandler = function () {
+  // TODO:
+};
+
+DFE.prototype.getGeneratorHandler = function () {
+  // TODO:
 };
 
 module.exports = new ANTGateway();

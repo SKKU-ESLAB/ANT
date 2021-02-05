@@ -121,12 +121,12 @@ void ocf_resource_handler(oc_request_t *request,
     event_data->query_len = 0;
   }
 
-  event_data->request_payload_string_len =
+  event_data->payload_string_len =
       oc_rep_to_json(request->request_payload, NULL, 0, true);
-  event_data->request_payload_string =
-      (char *)malloc(event_data->request_payload_string_len + 1);
-  oc_rep_to_json(request->request_payload, event_data->request_payload_string,
-                 event_data->request_payload_string_len + 1, true);
+  event_data->payload_string =
+      (char *)malloc(event_data->payload_string_len + 1);
+  oc_rep_to_json(request->request_payload, event_data->payload_string,
+                 event_data->payload_string_len + 1, true);
 
   event_data->interface_mask = (int)interface_mask;
 
