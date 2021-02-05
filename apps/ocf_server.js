@@ -28,7 +28,7 @@ function onGetLight(request) {
 }
 
 function onPostLight(request) {
-  var requestPayloadString = request.request_payload_string;
+  var requestPayloadString = request.payload_string;
   var requestPayload = JSON.parse(requestPayloadString);
   console.log('POST Request: state=' + requestPayload.state);
 

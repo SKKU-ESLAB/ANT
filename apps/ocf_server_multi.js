@@ -28,7 +28,7 @@ function onGetLight(request) {
   gOA.sendResponse(request, ocf.OC_STATUS_OK);
 }
 function onPostLight(request) {
-  var requestPayloadString = request.request_payload_string;
+  var requestPayloadString = request.payload_string;
   var requestPayload = JSON.parse(requestPayloadString);
   console.log('POST Light Request: state=' + requestPayload.state);
 
@@ -44,7 +44,7 @@ function onGetTemp(request) {
 }
 
 function onPostTemp(request) {
-  var requestPayloadString = request.request_payload_string;
+  var requestPayloadString = request.payload_string;
   var requestPayload = JSON.parse(requestPayloadString);
   console.log('POST Temp Request: state=' + requestPayload.state);
   gTempState = requestPayload.state;

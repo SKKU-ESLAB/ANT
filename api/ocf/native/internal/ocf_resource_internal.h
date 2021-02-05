@@ -29,8 +29,8 @@ struct or_setHandler_event_data_s {
   char *dest_uri;
   char *query;
   size_t query_len;
-  char *request_payload_string;
-  size_t request_payload_string_len;
+  char *payload_string;
+  size_t payload_string_len;
   int interface_mask;
   int handler_id;
 };
@@ -41,7 +41,7 @@ void or_setHandler_event_data_destroyer(void *item) {
   free(event->origin_addr);
   free(event->dest_uri);
   free(event->query);
-  free(event->request_payload_string);
+  free(event->payload_string);
   free(event);
 }
 
