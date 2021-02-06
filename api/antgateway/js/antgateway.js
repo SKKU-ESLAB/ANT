@@ -27,6 +27,22 @@ try {
   throw new Error('Gateway API Dependency Error: not found OCF API');
 }
 
+/* OCF Resource Types of Virtual Sensor Resources */
+var ORType_VSInlet = 'ant.r.vs.inlet';
+var ORType_VSOutlet = 'ant.r.vs.outlet';
+var ORType_VSSetting = 'ant.r.vs.setting';
+
+/* URIs of Virtual Sensor Resources */
+function ORURI_VSInlet(name) {
+  return '/vs/' + name + '/inlet';
+}
+function ORURI_VSOutlet(name) {
+  return '/vs/' + name + '/outlet';
+}
+function ORURI_VSSetting(name) {
+  return '/vs/' + name + '/setting';
+}
+
 /**
  * ANT Gateway API
  */
@@ -52,25 +68,12 @@ ANTGateway.prototype.createImgClsImagenetElement = function (
   return mlFragmentElement;
 };
 
-/* Gateway API 2: Virtual Sensor Adapter and DFE */
+/* Gateway API 2: Virtual Sensor Adapter */
 ANTGateway.prototype.getVSAdapter = function () {
   if (gVSAdapter === undefined) {
     gVSAdapter = new VirtualSensorAdapter();
   }
   return gVSAdapter;
-};
-
-ANTGateway.prototype.createDFE = function (modelName, numFragments) {
-  if (typeof modelName !== 'string') {
-    throw 'Invalid modelName: ' + modelName;
-  }
-  if (
-    typeof numFragments !== 'number' ||
-    parseInt(numFragments) != numFragments
-  ) {
-    throw 'Invalid numFragments: ' + numFragments;
-  }
-  return new DFE(modelName, numFragments);
 };
 
 /* Gateway API 2-1: Virtual Sensor Adapter */
@@ -125,21 +128,50 @@ VirtualSensorAdapter.prototype.stop = function () {
   this.mOCFAdapter.deinitialize();
 };
 
-/* Virtual sensor handling methods */
+/* Create a new virtual sensor */
 VirtualSensorAdapter.prototype.createSensor = function (
-  name,
-  observerHandler,
-  generatorHandler
+  sensorName,
+  hObserver,
+  hGenerator,
+  hSetting
 ) {
   var virtualSensor = new VirtualSensor(
-    name,
-    observerHandler,
-    generatorHandler
+    sensorName,
+    hObserver,
+    hGenerator,
+    hSetting
   );
   this.mVirtualSensors.push(virtualSensor);
   return virtualSensor;
 };
 
+/* Create a new deep sensor */
+VirtualSensorAdapter.prototype.createDeepSensor = function (
+  sensorName,
+  modelName,
+  numFragments
+) {
+  var dfe = this.createDFE(modelName, numFragments);
+  var hObserver = dfe.getObserverHandler();
+  var hGenerator = dfe.getGeneratorHandler();
+  var hSetting = dfe.getSettingHandler();
+  return this.createSensor(sensorName, hObserver, hGenerator, hSetting);
+};
+
+VirtualSensorAdapter.prototype.createDFE = function (modelName, numFragments) {
+  if (typeof modelName !== 'string') {
+    throw 'Invalid modelName: ' + modelName;
+  }
+  if (
+    typeof numFragments !== 'number' ||
+    parseInt(numFragments) != numFragments
+  ) {
+    throw 'Invalid numFragments: ' + numFragments;
+  }
+  return new DFE(modelName, numFragments);
+};
+
+/* Virtual sensor handling methods */
 VirtualSensorAdapter.prototype.findSensorByName = function (name) {
   for (var i in this.mVirtualSensors) {
     var virtualSensor = this.mVirtualSensors[i];
@@ -197,12 +229,12 @@ function VirtualSensor(
 VirtualSensor.prototype.setupInlet = function (gatewayAdapter) {
   var oa = gatewayAdapter.mOCFAdapter;
   var device = oa.getDevice(0);
-  var uri = this.getUri() + '/inlet';
+  var uri = ORURI_VSInlet(this.mName);
   this.mInletResource = OCFAPI.createResource(
     device,
     this.mName,
     uri,
-    ['ant.r.inlet'],
+    [ORType_VSInlet],
     [OCFAPI.OC_IF_RW]
   );
   this.mInletResource.setDiscoverable(true);
@@ -215,12 +247,12 @@ VirtualSensor.prototype.setupInlet = function (gatewayAdapter) {
 VirtualSensor.prototype.setupOutlet = function (gatewayAdapter) {
   var oa = gatewayAdapter.mOCFAdapter;
   var device = oa.getDevice(0);
-  var uri = '/vs/' + this.mName + '/outlet';
+  var uri = ORURI_VSOutlet(this.mName);
   this.mOutletResource = OCFAPI.createResource(
     device,
     this.mName,
     uri,
-    ['ant.r.outlet'],
+    [ORType_VSOutlet],
     [OCFAPI.OC_IF_RW]
   );
   this.mOutletResource.setDiscoverable(true);
@@ -233,12 +265,12 @@ VirtualSensor.prototype.setupOutlet = function (gatewayAdapter) {
 VirtualSensor.prototype.setupSetting = function (gatewayAdapter) {
   var oa = gatewayAdapter.mOCFAdapter;
   var device = oa.getDevice(0);
-  var uri = '/vs/' + this.mName + '/dfe';
+  var uri = ORURI_VSSetting(this.mName);
   this.mSettingResource = OCFAPI.createResource(
     device,
     this.mName,
     uri,
-    ['ant.r.setting'],
+    [ORType_VSSetting],
     [OCFAPI.OC_IF_RW]
   );
   this.mSettingResource.setDiscoverable(true);
@@ -421,7 +453,7 @@ function _onPostInlet_internal(
     }
   }
 
-  oa.discovery('ant.r.outlet', onDiscoveryAfterPostInlet);
+  oa.discovery(ORType_VSOutlet, onDiscoveryAfterPostInlet);
   return {result: 'Success', reason: 'None'};
 }
 
@@ -444,7 +476,7 @@ function onGetOutlet(request) {
   // GET outlet: Get DFE message
   var virtualSensor = gVSAdapter.findSensorByUri(request.dest_uri);
 
-  // Call custom inference handler
+  // Call custom generator handler
   var result = virtualSensor.mGeneratorHandler();
 
   // Check result
@@ -470,10 +502,22 @@ function onPostSetting(request) {
 
   // Parse OCF request
   var requestPayloadString = request.payload_string;
-  var requestPayload = JSON.parse(requestPayloadString);
-  var fragNum = requestPayload.fragNum; // fragment number
+  var setting = JSON.parse(requestPayloadString);
 
-  // Fragment number setting
+  // Call custom setting handler
+  var result = virtualSensor.mSettingHandler(setting);
+  var resultJSONString = JSON.stringify(result);
+
+  // Send response
+  if (!isFailed) {
+    var oa = gVSAdapter.mOCFAdapter;
+    oa.repStartRootObject();
+    oa.repSet('result', resultJSONString);
+    oa.repEndRootObject();
+    oa.sendResponse(request, ocf.OC_STATUS_OK);
+  }
+
+  // TODO: setting command API
 }
 
 /*
@@ -511,13 +555,27 @@ DFE.prototype.execute = function (inputBuffer, startLayerNum, endLayerNum) {
   );
 };
 
-DFE.prototype.getSettingHandler = function () {
+DFE.prototype.getObserverHandler = function () {
   // TODO:
 };
 
 DFE.prototype.getGeneratorHandler = function () {
   // TODO:
+  function dfeGeneratorHandler() {}
+  return dfeGeneratorHandler;
 };
+
+DFE.prototype.getSettingHandler = function () {
+  // TODO:
+  function dfeSettingHandler(setting) {
+    var fragNum = setting.fragNum;
+  }
+  return dfeSettingHandler;
+};
+
+function DFECoordinator() {
+  // TODO: implement DFE coordinator
+}
 
 module.exports = new ANTGateway();
 module.exports.ANTGateway = ANTGateway;
