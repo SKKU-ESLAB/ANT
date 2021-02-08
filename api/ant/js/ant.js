@@ -18,8 +18,6 @@ var console = require('console');
 /** ANT main object start **/
 function ANT() {}
 
-console.log('ANT API checking...');
-
 try {
   ANT.prototype.runtime = require('antruntime');
 } catch (e) {
@@ -28,37 +26,44 @@ try {
 try {
   ANT.prototype.resource = require('antresource');
 } catch (e) {
-  console.log('> Not found Resource API');
+  console.error('> Cannot load Resource API');
+  console.error(e);
 }
 try {
   ANT.prototype.remoteui = require('antremoteui');
 } catch (e) {
-  console.log('> Not found Remote UI API');
+  console.error('> Cannot load Remote UI API');
+  console.error(e);
 }
 try {
   ANT.prototype.stream = require('antstream');
 } catch (e) {
-  console.log('> Not found Stream API');
+  console.error('> Cannot load Stream API');
+  console.error(e);
 }
 try {
   ANT.prototype.ml = require('antml');
 } catch (e) {
-  console.log('> Not found ML API');
+  console.error('> Cannot load ML API');
+  console.error(e);
 }
 try {
   ANT.prototype.companion = require('antcompanion');
 } catch (e) {
-  console.log('> Not found Companion API');
+  console.error('> Cannot load Companion API');
+  console.error(e);
 }
 try {
   ANT.prototype.gateway = require('antgateway');
 } catch (e) {
-  console.log('> Not found Gateway API');
+  console.error('> Cannot load Gateway API');
+  console.error(e);
 }
 try {
   ANT.prototype.camera = require('antcamera');
 } catch (e) {
-  console.log('> Not found Camera API');
+  console.error('> Cannot load Camera API');
+  console.error(e);
 }
 
 /** ANT main object end **/
