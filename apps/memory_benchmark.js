@@ -18,11 +18,11 @@
 var ant = require('ant');
 var console = require('console');
 
-var onInitialize = function () {
+function onInitialize() {
   console.log('onInitialize');
-};
+}
 
-var onStart = function () {
+function onStart() {
   console.log('onStart');
   var totalPss = 0.0;
   var sampleCount = 0;
@@ -40,10 +40,10 @@ var onStart = function () {
     }
   };
   setTimeout(getSample, 1000);
-};
+}
 
-var onStop = function () {
+function onStop() {
   console.log('onStop');
-};
+}
 
 ant.runtime.setCurrentApp(onInitialize, onStart, onStop);

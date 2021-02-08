@@ -82,7 +82,7 @@ OCF.prototype.createResource = function (
   return new OCFResource(device, name, uri, types, interfaceMasks);
 };
 
-var gOCFAdapterRequestId = 0;
+var gOCFAdapterRequestId = 1;
 gObserveRequestList = [];
 gGetRequestList = [];
 gDeleteRequestList = [];
@@ -283,6 +283,24 @@ OCFAdapter.prototype.repSet = function (key, value) {
     console.log('repSet(): Not supported type (' + typeof value + ')');
   }
 };
+
+/**
+ * OCFAdapter.repSetBufferAndString
+ * @param {Object} value
+ * The special case of repSet() method.
+ * The data can include both byte buffer and string.
+ */
+OCFAdapter.prototype.repSetBufferAndString = function (bufferValue, stringValue) {
+  if (typeof bufferValue !== 'object' || !(bufferValue instanceof Buffer)) {
+    console.log('repSet(): Not supported type (' + typeof bufferValue + ')');
+  }
+
+  var KEY_BUFFER_VALUE = 'bufferValue';
+  var KEY_STRING_VALUE = 'stringValue';
+  native.ocf_adapter_repSetByteArray(KEY_BUFFER_VALUE, bufferValue);
+  native.ocf_adapter_repSet(KEY_STRING_VALUE, stringValue);
+};
+
 /**
  * OCFAdapter.repEndRootObject
  * Finish writing OCRepresentation of OCF thread.
@@ -410,6 +428,7 @@ var oaStopRequestListCleaner = function () {
  * @param {Function} userHandler
  * @param {String} query
  * @param {Integer} qos
+ * @param {Boolean} isPayloadBuffer
  * @return {Boolean} isSuccess
  */
 OCFAdapter.prototype.observe = function (
@@ -417,7 +436,8 @@ OCFAdapter.prototype.observe = function (
   uri,
   userHandler,
   query,
-  qos
+  qos,
+  isPayloadBuffer
 ) {
   if (query === undefined) {
     query = '';
@@ -425,11 +445,18 @@ OCFAdapter.prototype.observe = function (
   if (qos == undefined) {
     qos = 0; // HIGH_QOS
   }
+  if (isPayloadBuffer == undefined) {
+    isPayloadBuffer = false; // payload string
+  }
 
   var requestId = gOCFAdapterRequestId++;
   var request = makeRequest(requestId, query, qos, endpoint, uri, userHandler);
 
-  var result = native.ocf_adapter_observe(request, oaObserveResponseHandler);
+  var result = native.ocf_adapter_observe(
+    request,
+    oaObserveResponseHandler,
+    isPayloadBuffer
+  );
   if (result) {
     gObserveRequestList.push(request);
   }
@@ -467,19 +494,34 @@ OCFAdapter.prototype.stopObserve = function (endpoint, uri) {
  * @param {Function} userHandler
  * @param {String} query
  * @param {Integer} qos
+ * @param {Boolean} isPayloadBuffer
  * @returns {Boolean} isSuccess
  */
-OCFAdapter.prototype.get = function (endpoint, uri, userHandler, query, qos) {
+OCFAdapter.prototype.get = function (
+  endpoint,
+  uri,
+  userHandler,
+  query,
+  qos,
+  isPayloadBuffer
+) {
   if (query === undefined) {
     query = '';
   }
   if (qos == undefined) {
     qos = 0; // HIGH_QOS
   }
+  if (isPayloadBuffer == undefined) {
+    isPayloadBuffer = false; // payload string
+  }
 
   var requestId = gOCFAdapterRequestId++;
   var request = makeRequest(requestId, query, qos, endpoint, uri, userHandler);
-  var result = native.ocf_adapter_get(request, oaGetResponseHandler);
+  var result = native.ocf_adapter_get(
+    request,
+    oaGetResponseHandler,
+    isPayloadBuffer
+  );
   if (result) {
     gGetRequestList.push(request);
   }
@@ -492,6 +534,7 @@ OCFAdapter.prototype.get = function (endpoint, uri, userHandler, query, qos) {
  * @param {Function} userHandler
  * @param {String} query
  * @param {Integer} qos
+ * @param {Boolean} isPayloadBuffer
  * @returns {Boolean} isSuccess
  */
 OCFAdapter.prototype.delete = function (
@@ -499,7 +542,8 @@ OCFAdapter.prototype.delete = function (
   uri,
   userHandler,
   query,
-  qos
+  qos,
+  isPayloadBuffer
 ) {
   if (query === undefined) {
     query = '';
@@ -507,10 +551,17 @@ OCFAdapter.prototype.delete = function (
   if (qos == undefined) {
     qos = 0; // HIGH_QOS
   }
+  if (isPayloadBuffer == undefined) {
+    isPayloadBuffer = false; // payload string
+  }
 
   var requestId = gOCFAdapterRequestId++;
   var request = makeRequest(requestId, query, qos, endpoint, uri, userHandler);
-  var result = native.ocf_adapter_delete(request, oaDeleteResponseHandler);
+  var result = native.ocf_adapter_delete(
+    request,
+    oaDeleteResponseHandler,
+    isPayloadBuffer
+  );
   if (result) {
     gDeleteRequestList.push(request);
   }
@@ -523,6 +574,7 @@ OCFAdapter.prototype.delete = function (
  * @param {Function} userHandler
  * @param {String} query
  * @param {Integer} qos
+ * @param {Boolean} isPayloadBuffer
  * @returns {Boolean} isSuccess
  */
 OCFAdapter.prototype.initPost = function (
@@ -530,7 +582,8 @@ OCFAdapter.prototype.initPost = function (
   uri,
   userHandler,
   query,
-  qos
+  qos,
+  isPayloadBuffer
 ) {
   if (query === undefined) {
     query = '';
@@ -538,10 +591,17 @@ OCFAdapter.prototype.initPost = function (
   if (qos == undefined) {
     qos = 0; // HIGH_QOS
   }
+  if (isPayloadBuffer == undefined) {
+    isPayloadBuffer = false; // payload string
+  }
 
   var requestId = gOCFAdapterRequestId++;
   var request = makeRequest(requestId, query, qos, endpoint, uri, userHandler);
-  var result = native.ocf_adapter_initPost(request, oaPostResponseHandler);
+  var result = native.ocf_adapter_initPost(
+    request,
+    oaPostResponseHandler,
+    isPayloadBuffer
+  );
   if (result) {
     gPostRequestList.push(request);
   }
@@ -554,6 +614,7 @@ OCFAdapter.prototype.initPost = function (
  * @param {Function} userHandler
  * @param {String} query
  * @param {Integer} qos
+ * @param {Boolean} isPayloadBuffer
  * @returns {Boolean} isSuccess
  */
 OCFAdapter.prototype.initPut = function (
@@ -561,7 +622,8 @@ OCFAdapter.prototype.initPut = function (
   uri,
   userHandler,
   query,
-  qos
+  qos,
+  isPayloadBuffer
 ) {
   if (query === undefined) {
     query = '';
@@ -569,10 +631,17 @@ OCFAdapter.prototype.initPut = function (
   if (qos == undefined) {
     qos = 0; // HIGH_QOS
   }
+  if (isPayloadBuffer == undefined) {
+    isPayloadBuffer = false; // payload string
+  }
 
   var requestId = gOCFAdapterRequestId++;
   var request = makeRequest(requestId, query, qos, endpoint, uri, userHandler);
-  var result = native.ocf_adapter_initPut(request, oaPutResponseHandler);
+  var result = native.ocf_adapter_initPut(
+    request,
+    oaPutResponseHandler,
+    isPayloadBuffer
+  );
   if (result) {
     gPutRequestList.push(request);
   }
@@ -669,7 +738,7 @@ OCFResource.prototype.setPeriodicObservable = function (periodSec) {
 };
 
 var gOCFResourceHandlerId = 0;
-s;
+
 /**
  * OCFResource.setHandler
  * @param {Number} method

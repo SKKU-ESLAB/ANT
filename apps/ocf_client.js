@@ -13,22 +13,15 @@
  * limitations under the License.
  */
 
+var ant = require('ant');
 var ocf = require('ocf');
-console.log('OCF client example app');
 
-var oa = ocf.getAdapter();
-oa.onPrepareEventLoop(function () {
-  oa.setPlatform('ant');
-  oa.addDevice('/oic/d', 'oic.wk.d', 'Client', 'ocf.1.0.0', 'ocf.res.1.0.0');
-});
-
+var gOA = undefined;
+var gFoundLightURI = undefined;
 var gLightState = false;
-oa.onPrepareClient(function () {
-  oa.discovery('oic.r.light', onDiscovery);
-});
+var gPeriodicLightSampler = undefined;
 
-var foundLightUri = undefined;
-
+/* OCF response handlers */
 function onDiscovery(endpoint, uri, types, interfaceMask) {
   var isFound = false;
   for (var i in types) {
@@ -37,40 +30,61 @@ function onDiscovery(endpoint, uri, types, interfaceMask) {
     }
   }
   if (isFound) {
-    foundLightUri = uri;
+    gFoundLightURI = uri;
 
-    oa.observe(endpoint, uri, onObserveLight);
-    interval = setInterval(function () {
-      var res = oa.initPost(endpoint, uri, onPost, '', ocf.OC_LOW_QOS);
-      if (res) {
-        oa.repStartRootObject();
-        oa.repSet('state', gLightState);
-        gLightState = !gLightState;
-        oa.repEndRootObject();
-        oa.post();
-      }
-    }, 1000);
+    gOA.observe(endpoint, uri, onObserveLight);
+    gPeriodicLightSampler = setInterval(periodicPostLight, 1000);
   }
 }
-var interval;
+
+function periodicPostLight() {
+  var res = gOA.initPost(endpoint, uri, onPost, '', ocf.OC_LOW_QOS);
+  if (res) {
+    gOA.repStartRootObject();
+    gOA.repSet('state', gLightState);
+    gLightState = !gLightState;
+    gOA.repEndRootObject();
+    gOA.post();
+  }
+}
 
 function onObserveLight(response) {
   var payload = response.payload;
-  // var endpoint = response.endpoint;
-  var uri = foundLightUri;
+  var uri = gFoundLightURI;
 
   console.log('GET from ' + uri + ': ' + payload);
 }
 
-var i = 0;
 function onPost(response) {
-  console.log('(' + i++ + ') POST request sent!');
+  console.log('POST request sent!');
 }
 
-oa.start();
-setTimeout(function () {
-  console.log('150s elapsed');
-  oa.stop();
-  oa.deinitialize();
-  clearInterval(interval);
-}, 150000);
+/* OCF lifecycle handlers */
+function onPrepareOCFEventLoop() {
+  gOA.setPlatform('ant');
+  gOA.addDevice('/oic/d', 'oic.wk.d', 'Client', 'ocf.1.0.0', 'ocf.res.1.0.0');
+}
+
+function onPrepareOCFClient() {
+  gOA.discovery('oic.r.light', onDiscovery);
+}
+
+/* ANT lifecycle handlers */
+function onInitialize() {
+  console.log('OCF client example app');
+  gOA = ocf.getAdapter();
+  gOA.onPrepareEventLoop(onPrepareOCFEventLoop);
+  gOA.onPrepareClient(onPrepareOCFClient);
+}
+
+function onStart() {
+  gOA.start();
+}
+
+function onStop() {
+  gOA.stop();
+  gOA.deinitialize();
+  clearInterval(gPeriodicLightSampler);
+}
+
+ant.runtime.setCurrentApp(onInitialize, onStart, onStop);

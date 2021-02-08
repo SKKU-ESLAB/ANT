@@ -13,89 +13,100 @@
  * limitations under the License.
  */
 
+var ant = require('ant');
 var ocf = require('ocf');
-console.log('OCF client example app');
 
-var oa = ocf.getAdapter();
-oa.onPrepareEventLoop(function () {
-  oa.setPlatform('ant');
-  oa.addDevice('/oic/d', 'oic.wk.d', 'Client', 'ocf.1.0.0', 'ocf.res.1.0.0');
-});
-
+var gOA = undefined;
+var gFoundLightUri = undefined;
+var gFoundTempUri = undefined;
 var gLightState = false;
 var gTempState = 15;
-oa.onPrepareClient(function () {
-  oa.discoveryAll(onDiscovery);
-});
+var gPeriodicLightSampler;
+var gPeriodicTempSampler;
 
-var foundLightUri = undefined;
-var foundTempUri = undefined;
-
+/* OCF response handlers */
 function onDiscovery(endpoint, uri, types, interfaceMask) {
   console.log('Discovered ' + uri);
   for (var i = 0; i < types.length; i++) {
     console.log('* type ' + i + ': ' + types[i]);
     if (types[i] == 'oic.r.light') {
       console.log('* Light resource => OBSERVE start');
-      foundLightUri = uri;
-      oa.observe(endpoint, uri, onObserveLight);
-      interval = setInterval(function () {
-        var res = oa.initPost(endpoint, uri, onPost, '', ocf.OC_LOW_QOS);
-        if (res) {
-          oa.repStartRootObject();
-          oa.repSet('state', gLightState);
-          gLightState = !gLightState;
-          oa.repEndRootObject();
-          oa.post();
-        }
-      }, 1000);
+      gFoundLightUri = uri;
+      gOA.observe(endpoint, uri, onObserveLight);
+      gPeriodicLightSampler = setInterval(periodicPostLight, 1000);
     } else if (types[i] == 'oic.r.temperature') {
       console.log('* Temperature resource => OBSERVE start');
-      foundTempUri = uri;
-      oa.observe(endpoint, uri, onObserveTemp);
-      interval2 = setInterval(function () {
-        var res = oa.initPost(endpoint, uri, onPost, '', ocf.OC_LOW_QOS);
-        if (res) {
-          oa.repStartRootObject();
-          oa.repSet('state', gTempState);
-          gTempState = (gTempState + 1) % 30;
-          oa.repEndRootObject();
-          oa.post();
-        }
-      }, 2000);
+      gFoundTempUri = uri;
+      gOA.observe(endpoint, uri, onObserveTemp);
+      gPeriodicTempSampler = setInterval(periodicPostTemp, 2000);
     }
   }
   console.log(' ');
 }
-var interval;
-var interval2;
+
+function periodicPostLight() {
+  var res = gOA.initPost(endpoint, uri, onPost, '', ocf.OC_LOW_QOS);
+  if (res) {
+    gOA.repStartRootObject();
+    gOA.repSet('state', gLightState);
+    gLightState = !gLightState;
+    gOA.repEndRootObject();
+    gOA.post();
+  }
+}
+
+function periodicPostTemp() {
+  var res = gOA.initPost(endpoint, uri, onPost, '', ocf.OC_LOW_QOS);
+  if (res) {
+    gOA.repStartRootObject();
+    gOA.repSet('state', gTempState);
+    gTempState = (gTempState + 1) % 30;
+    gOA.repEndRootObject();
+    gOA.post();
+  }
+}
 
 function onObserveLight(response) {
-  // var payload = response.payload;
-  // var endpoint = response.endpoint;
-  var uri = foundLightUri;
-
+  var uri = gFoundLightUri;
   console.log('GET from ' + uri);
 }
 
 function onObserveTemp(response) {
-  // var payload = response.payload;
-  // var endpoint = response.endpoint;
-  var uri = foundTempUri;
-
+  var uri = gFoundTempUri;
   console.log('GET from ' + uri);
 }
 
-var i = 0;
 function onPost(response) {
-  console.log('(' + i++ + ') POST request sent!');
+  console.log('POST request sent!');
 }
 
-oa.start();
-setTimeout(function () {
-  console.log('150s elapsed');
-  oa.stop();
-  oa.deinitialize();
-  clearInterval(interval);
-  clearInterval(interval2);
-}, 150000);
+/* OCF Lifecycle handlers */
+function onPrepareOCFEventLoop() {
+  gOA.setPlatform('ant');
+  gOA.addDevice('/oic/d', 'oic.wk.d', 'Client', 'ocf.1.0.0', 'ocf.res.1.0.0');
+}
+
+function onPrepareOCFClient() {
+  gOA.discoveryAll(onDiscovery);
+}
+
+/* ANT Lifecycle handlers */
+function onInitialize() {
+  gOA = ocf.getAdapter();
+  gOA.onPrepareEventLoop(onPrepareOCFEventLoop);
+  gOA.onPrepareClient(onPrepareOCFClient);
+  console.log('OCF client example app initialized');
+}
+
+function onStart() {
+  gOA.start();
+}
+
+function onStop() {
+  gOA.stop();
+  gOA.deinitialize();
+  clearInterval(gPeriodicLightSampler);
+  clearInterval(gPeriodicTempSampler);
+}
+
+ant.runtime.setCurrentApp(onInitialize, onStart, onStop);

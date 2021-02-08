@@ -65,10 +65,15 @@ bool ocf_adapter_discovery_internal(const char *resource_type);
 
 struct oa_client_response_event_data_s {
   void *endpoint;
-  char *payload_string;
-  size_t payload_string_length;
   int status_code;
   int request_id;
+  bool is_payload_buffer;
+
+  char *payload_buffer;
+  size_t payload_buffer_length;
+
+  char *payload_string;
+  size_t payload_string_length;
 };
 typedef struct oa_client_response_event_data_s oa_client_response_event_data_t;
 void oa_response_event_data_destroyer(void *item);
@@ -76,7 +81,8 @@ void oa_response_event_data_destroyer(void *item);
 #define DECLARE_OCF_REQUEST_INTERNAL(type)                                     \
   ANT_ASYNC_DECL_IN_HEADER(type);                                              \
   bool type##_internal(int requestId, void *ocf_endpoint_nobject,              \
-                       const char *uri, const char *query, int qos);
+                       const char *uri, const char *query, int qos,            \
+                       bool isPayloadBuffer);
 
 DECLARE_OCF_REQUEST_INTERNAL(ocf_adapter_observe);
 bool ocf_adapter_stopObserve_internal(void *ocf_endpoint_nobject,
@@ -93,6 +99,29 @@ void initOCFAdapter(void);
 void lock_ocf_thread(void);
 void unlock_ocf_thread(void);
 
+#define KEY_BYTE_VALUE "byteValue"
+#define KEY_STRING_VALUE "stringValue"
+
+/* (Native) JS_FUNCTION(type)
+ * -> {optype}_internal() -> Send OCF request */
+#define OCF_REQUEST_INTERNAL(type, ocf_request_function)                       \
+  bool type##_internal(int requestId, void *ocf_endpoint_nobject,              \
+                       const char *uri, const char *query, int qos,            \
+                       bool isPayloadBuffer) {                                 \
+    oc_endpoint_t *endpoint = (oc_endpoint_t *)ocf_endpoint_nobject;           \
+    oc_qos_t oc_qos = (qos == HIGH_QOS) ? HIGH_QOS : LOW_QOS;                  \
+    /* Because multiple responses can occur, user_data must NOT be dynamically \
+     * allocated */                                                            \
+    int user_data = (isPayloadBuffer) ? requestId : -requestId;                \
+    bool res = ocf_request_function(uri, endpoint, query, &type##_handler,     \
+                                    oc_qos, (void *)user_data);                \
+    return res;                                                                \
+  }
+
+/* Receive OCF response
+ * -> (Native) {optype}_handler()
+ * -> ...
+ * -> (JS) {anonymous_handler}() */
 #define OCF_REQUEST_INTERNAL_HANDLER(type)                                     \
   static void type##_handler(oc_client_response_t *data) {                     \
     oa_client_response_event_data_t *event_data;                               \
@@ -102,30 +131,42 @@ void unlock_ocf_thread(void);
     oc_endpoint_t *endpoint = (oc_endpoint_t *)malloc(sizeof(oc_endpoint_t));  \
     memcpy(endpoint, data->endpoint, sizeof(oc_endpoint_t));                   \
     event_data->endpoint = (void *)endpoint;                                   \
-                                                                               \
-    event_data->payload_string_length =                                        \
-        oc_rep_to_json(data->payload, NULL, 0, true);                          \
-    event_data->payload_string =                                               \
-        (char *)malloc(event_data->payload_string_length + 1);                 \
-    oc_rep_to_json(data->payload, event_data->payload_string,                  \
-                   event_data->payload_string_length + 1, true);               \
-                                                                               \
     event_data->status_code = data->code;                                      \
                                                                                \
-    event_data->request_id = (int)data->user_data;                             \
+    int user_data = (int)data->user_data;                                      \
+    int request_id = (user_data > 0) ? user_data : -user_data;                 \
+    bool is_payload_buffer = (user_data > 0);                                  \
+    event_data->request_id = request_id;                                       \
+    event_data->is_payload_buffer = is_payload_buffer;                         \
+                                                                               \
+    if (event_data->is_payload_buffer) {                                       \
+      char *payload_buffer;                                                    \
+      size_t payload_buffer_length;                                            \
+      oc_rep_get_byte_string(data->payload, KEY_BYTE_VALUE, &payload_buffer,   \
+                             &payload_buffer_length);                          \
+      event_data->payload_buffer = (char *)malloc(payload_buffer_length);      \
+      memcpy(event_data->payload_buffer, payload_buffer,                       \
+             payload_buffer_length);                                           \
+      event_data->payload_buffer_length = payload_buffer_length;               \
+                                                                               \
+      char *payload_string;                                                    \
+      size_t payload_string_length;                                            \
+      oc_rep_get_string(data->payload, KEY_STRING_VALUE, &payload_string,      \
+                        payload_string_length);                                \
+      event_data->payload_string = (char *)malloc(payload_string_length + 1);  \
+      memcpy(event_data->payload_string, payload_string,                       \
+             payload_string_length);                                           \
+    } else {                                                                   \
+      event_data->payload_string_length =                                      \
+          oc_rep_to_json(data->payload, NULL, 0, true);                        \
+      event_data->payload_string =                                             \
+          (char *)malloc(event_data->payload_string_length + 1);               \
+      oc_rep_to_json(data->payload, event_data->payload_string,                \
+                     event_data->payload_string_length + 1, true);             \
+    }                                                                          \
                                                                                \
     EMIT_ANT_ASYNC_EVENT(type, event_data->request_id, (void *)event_data,     \
                          false);                                               \
-    return;                                                                    \
-  }
-#define OCF_REQUEST_INTERNAL(type, ocf_request_function)                       \
-  bool type##_internal(int requestId, void *ocf_endpoint_nobject,              \
-                       const char *uri, const char *query, int qos) {          \
-    oc_endpoint_t *endpoint = (oc_endpoint_t *)ocf_endpoint_nobject;           \
-    oc_qos_t oc_qos = (qos == HIGH_QOS) ? HIGH_QOS : LOW_QOS;                  \
-    bool res = ocf_request_function(uri, endpoint, query, &type##_handler,     \
-                                    oc_qos, (void *)requestId);                \
-    return res;                                                                \
   }
 
 #endif /* !defined(__OCF_ADAPTER_INTERNAL_H__) */
