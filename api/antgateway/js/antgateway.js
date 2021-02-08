@@ -103,12 +103,18 @@ function VirtualSensorAdapter() {
     // Add all the virtual sensors
     for (var i in self.mVirtualSensors) {
       var virtualSensor = self.mVirtualSensors[i];
-      var rInlet = virtualSensor.setupInlet(self);
-      self.mResources.push(rInlet);
-      var rOutlet = virtualSensor.setupOutlet(self);
-      self.mResources.push(rOutlet);
-      var rSetting = virtualSensor.setupSetting(self);
-      self.mResources.push(rSetting);
+      if (virtualSensor.getObserverHandler() !== undefined) {
+        var rInlet = virtualSensor.setupInlet(self);
+        self.addResource(rInlet);
+      }
+      if (virtualSensor.getGeneratorHandler() !== undefined) {
+        var rOutlet = virtualSensor.setupOutlet(self);
+        self.addResource(rOutlet);
+      }
+      if (virtualSensor.getSettingHandler() !== undefined) {
+        var rSetting = virtualSensor.setupSetting(self);
+        self.addResource(rSetting);
+      }
     }
   }
 
@@ -168,7 +174,9 @@ VirtualSensorAdapter.prototype.createDFE = function (modelName, numFragments) {
   ) {
     throw 'Invalid numFragments: ' + numFragments;
   }
-  return new DFE(modelName, numFragments);
+  var dfe = new DFE(modelName, numFragments);
+  dfe.load();
+  return dfe;
 };
 
 /* Virtual sensor handling methods */
@@ -201,6 +209,12 @@ VirtualSensorAdapter.prototype.getResource = function (uri) {
     }
   }
   return undefined;
+};
+
+VirtualSensorAdapter.prototype.addResource = function (resource) {
+  if (resource !== undefined) {
+    this.mResources.push(resource);
+  }
 };
 
 /* Gateway API 2-1-1: Virtual Sensor */
@@ -289,10 +303,29 @@ VirtualSensor.prototype.addObserver = function (
   var self = this;
   var oa = gVSAdapter.mOCFAdapter;
   function onIncomingInletData(response) {
-    var payload = response.payload;
+    var inputData = {};
+    if (response.payload !== undefined) {
+      var payloadObj = JSON.parse(response.payload);
+      inputData.jsObject = payloadObj.jsObject;
+    } else {
+      inputData.jsObject = JSON.parse(response.payloadString);
+      inputData.buffer = response.payloadBuffer;
+    }
+    if (inputData.jsObject === undefined) {
+      console.error('inlet error: jsObject is not defined');
+      return;
+    }
+    if (!(inputData.buffer instanceof Buffer)) {
+      console.error('inlet error: invalid buffer');
+      return;
+    }
 
-    // Call custom observer handler
-    self.mObserverHandler(payload);
+    /*
+     * Call custom observer handler
+     * inputData.jsObject: (mandatory) JavaScript object
+     * inputData.buffer: (option) Buffer
+     */
+    self.mObserverHandler(inputData);
   }
 
   // Start observer
@@ -346,6 +379,19 @@ VirtualSensor.prototype.getInletResource = function () {
 };
 VirtualSensor.prototype.getOutletResource = function () {
   return this.mOutletResource;
+};
+VirtualSensor.prototype.getSettingResource = function () {
+  return this.mSettingResource;
+};
+
+VirtualSensor.prototype.getObserverHandler = function () {
+  return this.mObserverHandler;
+};
+VirtualSensor.prototype.getGeneratorHandler = function () {
+  return this.mGeneratorHandler;
+};
+VirtualSensor.prototype.getSettingHandler = function () {
+  return this.mSettingHandler;
 };
 
 VirtualSensor.prototype.getObservers = function () {
@@ -481,8 +527,19 @@ function onGetOutlet(request) {
 
   // Check result
   var isFailed = false;
-  if (typeof result !== 'object' || result instanceof Buffer) {
-    console.error('Invalid result: not buffer');
+  if (typeof result !== 'object') {
+    console.error('Invalid result: not object');
+    isFailed = true;
+  }
+  if (result.jsObject === undefined) {
+    onsole.error('Invalid result.jsObject: not defined');
+    isFailed = true;
+  } else if (typeof result.jsObject !== 'string') {
+    console.error('Invalid result.jsObject: not object');
+    isFailed = true;
+  }
+  if (result.buffer !== undefined && result.buffer instanceof Buffer) {
+    console.error('Invalid result.buffer: not Buffer');
     isFailed = true;
   }
 
@@ -490,7 +547,14 @@ function onGetOutlet(request) {
   if (!isFailed) {
     var oa = gVSAdapter.mOCFAdapter;
     oa.repStartRootObject();
-    oa.repSetBufferAndString(result.byteValue, result.stringValue);
+    if (result.buffer !== undefined) {
+      var jsonObject = JSON.stringify(result.jsObject);
+      var buffer = result.buffer;
+      oa.repSetBufferAndString(jsonObject, buffer);
+    } else {
+      var jsonObject = JSON.stringify(result.jsObject);
+      oa.repSet('jsObject', jsonObject);
+    }
     oa.repEndRootObject();
     oa.sendResponse(request, ocf.OC_STATUS_OK);
   }
@@ -528,7 +592,17 @@ function DFE(modelName, numFragments) {
   this.modelName = modelName;
   this.numFragments = numFragments;
   this.interpreters = undefined;
+  this.recentInputData = undefined;
+  this.presentFragNum = numFragments - 1;
+  this.averageLatencyMS = 0.0;
 }
+
+DFE.prototype.updateAverageLatency = function (latency) {
+  // Exponential moving average
+  var kMomentum = 0.9;
+  this.averageLatencyMS =
+    this.averageLatencyMS * kMomentum + latency * (1 - kMomentum);
+};
 
 DFE.prototype.load = function () {
   this.interpreters = native.ant_ml_dfeLoad(this.modelName, this.numFragments);
@@ -556,19 +630,64 @@ DFE.prototype.execute = function (inputBuffer, startLayerNum, endLayerNum) {
 };
 
 DFE.prototype.getObserverHandler = function () {
-  // TODO:
+  var self = this;
+  function dfeObserverHandler(inputData) {
+    // TODO: custom DFE observer handler
+    self.recentInputData = inputData;
+  }
+  return dfeObserverHandler;
 };
 
 DFE.prototype.getGeneratorHandler = function () {
-  // TODO:
-  function dfeGeneratorHandler() {}
+  var self = this;
+  function dfeGeneratorHandler() {
+    var inputData = self.recentInputData;
+    var jsObject = inputData.jsObject;
+    var buffer = inputData.buffer;
+    if (jsObject === undefined) {
+      console.error('DFE generator error: no jsObject');
+      return;
+    }
+    if (buffer === undefined) {
+      console.error('DFE generator error: no buffer');
+      return;
+    }
+
+    var dfeFlag = jsObject.dfeFlag;
+    var fragNum = jsObject.jsObject;
+    if (dfeFlag === undefined || typeof dfeFlag !== 'boolean') {
+      console.error('DFE generator error: invalid dfeFlag');
+      return;
+    }
+    if (fragNum === undefined || typeof fragNum !== 'number') {
+      console.error('DFE generator error: invalid fragNum');
+      return;
+    }
+
+    // Execute DNN fragment
+    var startTimeMS = Date.now();
+    self.execute(buffer, fragNum, self.numFragments);
+    var endTimeMS = Date.now();
+
+    // Update average latency
+    var latencyMS = endTimeMS - startTimeMS;
+    self.updateAverageLatency(latencyMS);
+  }
   return dfeGeneratorHandler;
 };
 
-DFE.prototype.getSettingHandler = function () {
-  // TODO:
+DFE.prototype.getSettingHandler = function (fragNum) {
+  var self = this;
   function dfeSettingHandler(setting) {
-    var fragNum = setting.fragNum;
+    // Set fragment number
+    self.presentFragNum = setting.fragNum;
+
+    // Return status
+    var latencyMS = self.averageLatencyMS;
+    var load = undefined; // TODO: computing load
+
+    var result = {latencyMS: latencyMS, load: load};
+    return result;
   }
   return dfeSettingHandler;
 };
