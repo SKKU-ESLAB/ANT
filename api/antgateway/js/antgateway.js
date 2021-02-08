@@ -15,6 +15,7 @@
 
 var MLAPI = undefined;
 var OCFAPI = undefined;
+var fs = require('fs');
 
 try {
   MLAPI = require('antml');
@@ -96,7 +97,11 @@ function VirtualSensorAdapter() {
     );
   }
 
-  function onPrepareOCFClient() {}
+  function onPrepareOCFClient() {
+    // TODO: Virtual Sensor Manager
+    // TODO: DFE coordinator
+    // TODO: get virtual sensor output
+  }
 
   function onPrepareOCFServer() {
     self.mResources = [];
@@ -137,15 +142,35 @@ VirtualSensorAdapter.prototype.stop = function () {
 /* Create a new virtual sensor */
 VirtualSensorAdapter.prototype.createSensor = function (
   sensorName,
-  hObserver,
-  hGenerator,
-  hSetting
+  observerHandler,
+  generatorHandler,
+  settingHandler
 ) {
+  // Check arguments
+  if (sensorName === undefined || typeof sensorName !== 'string') {
+    throw 'VSA createSensor error: Invalid sensorName ' + sensorName;
+  }
+  if (observerHandler !== undefined && typeof observerHandler !== 'function') {
+    // Observer is optional.
+    throw 'VSA observer error: Invalid observerHandler';
+  }
+  if (
+    generatorHandler === undefined ||
+    typeof generatorHandler !== 'function'
+  ) {
+    // Generator is mandatory.
+    throw 'VSA observer error: Invalid generatorHandler';
+  }
+  if (settingHandler !== undefined && typeof settingHandler !== 'function') {
+    // Setting is optional.
+    throw 'VSA observer error: Invalid settingHandler';
+  }
+
   var virtualSensor = new VirtualSensor(
     sensorName,
-    hObserver,
-    hGenerator,
-    hSetting
+    observerHandler,
+    generatorHandler,
+    settingHandler
   );
   this.mVirtualSensors.push(virtualSensor);
   return virtualSensor;
@@ -157,6 +182,17 @@ VirtualSensorAdapter.prototype.createDeepSensor = function (
   modelName,
   numFragments
 ) {
+  // Check arguments
+  if (sensorName === undefined || typeof sensorName !== 'string') {
+    throw 'VSA createDeepSensor error: Invalid sensorName ' + sensorName;
+  }
+  if (modelName === undefined || typeof modelName !== 'string') {
+    throw 'VSA createDeepSensor error: Invalid modelName ' + modelName;
+  }
+  if (numFragments === undefined || typeof numFragments !== 'number') {
+    throw 'VSA createDeepSensor error: Invalid numFragments ' + numFragments;
+  }
+
   var dfe = this.createDFE(modelName, numFragments);
   var hObserver = dfe.getObserverHandler();
   var hGenerator = dfe.getGeneratorHandler();
@@ -589,6 +625,8 @@ function onPostSetting(request) {
  * DFE: DNN Fragment Engine for the deep sensors running on gateway
  */
 function DFE(modelName, numFragments) {
+  // TODO: pre-processing handler
+  // TODO: post-processing handler
   this.modelName = modelName;
   this.numFragments = numFragments;
   this.interpreters = undefined;
@@ -658,10 +696,11 @@ DFE.prototype.getGeneratorHandler = function () {
     if (dfeFlag === undefined || typeof dfeFlag !== 'boolean') {
       console.error('DFE generator error: invalid dfeFlag');
       return;
-    }
-    if (fragNum === undefined || typeof fragNum !== 'number') {
-      console.error('DFE generator error: invalid fragNum');
-      return;
+    } else if (dfeFlag) {
+      if (fragNum === undefined || typeof fragNum !== 'number') {
+        console.error('DFE generator error: invalid fragNum');
+        return;
+      }
     }
 
     // Execute DNN fragment
@@ -676,6 +715,12 @@ DFE.prototype.getGeneratorHandler = function () {
   return dfeGeneratorHandler;
 };
 
+DFE.prototype.getLoad = function () {
+  var loadavg = fs.readFileSync('/proc/loadavg').toString();
+  var avgLoad1min = parseFloat(loadavg.substring(0, loadavg.indexOf(' ')));
+  return avgLoad1min;
+};
+
 DFE.prototype.getSettingHandler = function (fragNum) {
   var self = this;
   function dfeSettingHandler(setting) {
@@ -684,7 +729,7 @@ DFE.prototype.getSettingHandler = function (fragNum) {
 
     // Return status
     var latencyMS = self.averageLatencyMS;
-    var load = undefined; // TODO: computing load
+    var load = self.getLoad();
 
     var result = {latencyMS: latencyMS, load: load};
     return result;
@@ -693,7 +738,15 @@ DFE.prototype.getSettingHandler = function (fragNum) {
 };
 
 function DFECoordinator() {
-  // TODO: implement DFE coordinator
+  // TODO: implement
+}
+
+function GatewayManager() {
+  // TODO: implement
+}
+
+function GatewayManager() {
+  // TODO: 
 }
 
 module.exports = new ANTGateway();
