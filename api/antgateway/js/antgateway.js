@@ -28,30 +28,44 @@ try {
   throw new Error('Gateway API Dependency Error: not found OCF API');
 }
 
-/* OCF Resource Types of Virtual Sensor Resources */
-var ORType_VSInlet = 'ant.r.vs.inlet';
-var ORType_VSOutlet = 'ant.r.vs.outlet';
-var ORType_VSSetting = 'ant.r.vs.setting';
-
-/* URIs of Virtual Sensor Resources */
-function ORURI_VSInlet(name) {
-  return '/vs/' + name + '/inlet';
-}
-function ORURI_VSOutlet(name) {
-  return '/vs/' + name + '/outlet';
-}
-function ORURI_VSSetting(name) {
-  return '/vs/' + name + '/setting';
-}
-
 /**
  * ANT Gateway API
+ * 
+ * In ANT framework, gateway provides sensor virtualization and DNN
+ * partitioning. Sensor virtualization means unifying interfaces to access
+ * physical sensors, soft sensors, local sensors, and remote sensors.
+ * DNN partitioning means executing a DNN on multiple heterogeneous devices.
+ * In real IoT systems, there are heterogeneous devices including gateway,
+ * but the single device among them cannot provide sufficient computational
+ * resources to DNNs. Therefore, DNN partitioning is required.
+ * 
+ * There are two ways to implement gateway in ANT framework.
+ * 1. ML fragment element (Based on gstreamer)
+ * 2. Virtual sensor (Based on OCF standard)
+ * 
+ * ML fragment element is an approach to extend the gstreamer to DNN
+ * partitioning. In this way, to associate a DNN with a physical sensor, the
+ * app developer must implement their own sensor sampling element that can be
+ * compatible to gstreamer.
+ * 
+ * Actually, many IoT devices does not use gstreamer-based approach, but use
+ * OCF standard. Therefore, we additionally provide virtual sensor, an approach
+ * based on OCF standard.
+ * 
+ * Virtual sensor is an abstract layer that provide unified interface of
+ * physical sensors, rule-based soft sensors, and DNN-based soft sensors
+ * (a.k.a. deep sensors). It also supports DNN partitioning on the deep
+ * sensors. To support that, ANT additionally provides DNN fragment engine
+ * and gateway manager.
  */
 
 var gVSAdapter = undefined;
 function ANTGateway() {}
 
-/* Gateway API 1: ML Fragment Element */
+/* 
+ * Gateway API 1. ML fragment element (Based on gstreamer)
+ */
+
 ANTGateway.prototype.createImgClsImagenetElement = function (
   modelPath,
   numFragments,
@@ -69,7 +83,28 @@ ANTGateway.prototype.createImgClsImagenetElement = function (
   return mlFragmentElement;
 };
 
-/* Gateway API 2: Virtual Sensor Adapter */
+/* 
+ * Gateway API 2. Virtual sensor (Based on OCF standard)
+ *
+ * There are many modules related to virtual sensor.
+ * 
+ * - VirtualSensorAdapter : module to arbitrate user and OCF thread and to
+ *                          organize virtual sensor system.
+ *   - VirtualSensor : module to service virtual sensor through OCF resources
+ *                     and several JavaScript handlers.
+ *   - DFE (DNN Fragment Engine) : module to perform partitioned DNN inference
+ *                                 (as now, it uses Tensorflow Lite.)
+ *   - GatewayManager : module to manage virtual sensors and DNN partitioning.
+ *                      This module must run on gateway device.
+ *     - DFECoordinator : module to manage DNN partitioning. It monitors
+ *                        the current status of DFEs running on several
+ *                        devices and make commands to control DFE's
+ *                        partitioning points.
+ *     - VirtualSensorManager : module to manage virtual sensors. It discovers
+ *                              virtual sensors via OCF discovery message and
+ *                              associate the virtual sensors to form a sensor
+ *                              data pipeline for the IoT applications.
+ */
 ANTGateway.prototype.getVSAdapter = function () {
   if (gVSAdapter === undefined) {
     gVSAdapter = new VirtualSensorAdapter();
@@ -253,7 +288,23 @@ VirtualSensorAdapter.prototype.addResource = function (resource) {
   }
 };
 
-/* Gateway API 2-1-1: Virtual Sensor */
+/* OCF Resource Types of Virtual Sensor Resources */
+var ORType_VSInlet = 'ant.r.vs.inlet';
+var ORType_VSOutlet = 'ant.r.vs.outlet';
+var ORType_VSSetting = 'ant.r.vs.setting';
+
+/* URIs of Virtual Sensor Resources */
+function ORURI_VSInlet(name) {
+  return '/vs/' + name + '/inlet';
+}
+function ORURI_VSOutlet(name) {
+  return '/vs/' + name + '/outlet';
+}
+function ORURI_VSSetting(name) {
+  return '/vs/' + name + '/setting';
+}
+
+/* Gateway API 2-1: Virtual Sensor */
 function VirtualSensor(
   name,
   observerHandler,
@@ -621,7 +672,7 @@ function onPostSetting(request) {
 }
 
 /*
- * Gateway API 2-2: DFE
+ * Gateway API 3: DFE
  * DFE: DNN Fragment Engine for the deep sensors running on gateway
  */
 function DFE(modelName, numFragments) {
@@ -737,16 +788,16 @@ DFE.prototype.getSettingHandler = function (fragNum) {
   return dfeSettingHandler;
 };
 
+function GatewayManager() {
+  // TODO: 
+}
+
 function DFECoordinator() {
   // TODO: implement
 }
 
-function GatewayManager() {
+function VirtualSensorManager() {
   // TODO: implement
-}
-
-function GatewayManager() {
-  // TODO: 
 }
 
 module.exports = new ANTGateway();
