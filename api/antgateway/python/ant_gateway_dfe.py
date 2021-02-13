@@ -1,11 +1,11 @@
 # Copyright (c) 2017-2021 SKKU ESLAB, and contributors. All rights reserved.
-# 
+#
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
-# 
+#
 #  http://www.apache.org/licenses/LICENSE-2.0
-# 
+#
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS,
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -17,6 +17,18 @@
 import tensorflow as tf
 import numpy as np
 
+from keras.preprocessing import image
+from keras.applications import imagenet_utils, mobilenet
+
+
+def dfe_load_and_preprocess_image(img_path):
+    img = image.load_img(img_path, target_size=(224, 224))
+    img_array = image.img_to_array(img)
+    img_array = np.expand_dims(img_array, axis=0)
+    inputTensor = mobilenet.preprocess_input(img_array)
+    return inputTensor
+
+
 def dfe_load(model_name, num_fragments):
     # load model fragments
     fragment_files = []
@@ -26,11 +38,13 @@ def dfe_load(model_name, num_fragments):
     # Load the TFLite model and allocate tensors.
     interpreters = []
     for fragment_file in fragment_files:
-        interpreter = tf.lite.Interpreter(model_path=fragment_file, num_threads=4)
+        interpreter = tf.lite.Interpreter(
+            model_path=fragment_file, num_threads=4)
         interpreter.allocate_tensors()
         interpreters.append(interpreter)
 
     return interpreters
+
 
 def dfe_execute(interpreters, input_tensor, start_layer_num, end_layer_num):
     # Input tensor conversion (bytes -> ndarray)

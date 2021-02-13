@@ -226,6 +226,7 @@ VirtualSensorAdapter.prototype.createSensor = function (
 };
 
 /* Create a new deep sensor */
+// TODO: add pre-processing handler, post-processing handler
 VirtualSensorAdapter.prototype.createDeepSensor = function (
   sensorName,
   sensorType,
@@ -255,6 +256,7 @@ VirtualSensorAdapter.prototype.createDeepSensor = function (
   );
 };
 
+// TODO: add pre-processing handler, post-processing handler
 VirtualSensorAdapter.prototype.createDFE = function (modelName, numFragments) {
   if (typeof modelName !== 'string') {
     throw 'Invalid modelName: ' + modelName;
@@ -758,8 +760,16 @@ DFE.prototype.updateAverageLatency = function (latency) {
     this.averageLatencyMS * kMomentum + latency * (1 - kMomentum);
 };
 
+// TODO: hard-coding input
+DFE.prototype.loadAndPreprocessImage = function (imgPath) {
+  return native.ant_gateway_dfeLoadAndPreprocessImage(imgPath);
+};
+
 DFE.prototype.load = function () {
-  this.interpreters = native.ant_ml_dfeLoad(this.modelName, this.numFragments);
+  this.interpreters = native.ant_gateway_dfeLoad(
+    this.modelName,
+    this.numFragments
+  );
 };
 
 DFE.prototype.execute = function (inputBuffer, startLayerNum, endLayerNum) {
@@ -775,7 +785,7 @@ DFE.prototype.execute = function (inputBuffer, startLayerNum, endLayerNum) {
   if (typeof endLayerNum !== 'number' || parseInt(endLayerNum) != endLayerNum) {
     throw 'Invalid endLayerNum ' + endLayerNum;
   }
-  return native.ant_ml_dfeExecute(
+  return native.ant_gateway_dfeExecute(
     this.interpreters,
     inputBuffer,
     startLayerNum,
