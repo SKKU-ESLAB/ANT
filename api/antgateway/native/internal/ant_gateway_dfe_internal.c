@@ -41,6 +41,62 @@ void ant_gateway_dfe_initOnce(void) {
   }
 }
 
+// TODO: hard-coding input
+void *ant_gateway_dfeLoadAndPreprocessImage_internal(const char *imgPath) {
+  ant_gateway_dfe_initOnce();
+
+  if (gPyModule == NULL) {
+    fprintf(stderr, "ERROR: ant_gateway_dfeLoadAndPreprocessImage_internal - "
+                    "Module not imported\n");
+    return NULL;
+  }
+
+  PyObject *pyFunc =
+      PyObject_GetAttrString(gPyModule, "dfe_load_and_preprocess_image");
+  if (pyFunc == NULL) {
+    fprintf(stderr, "ERROR: ant_gateway_dfeLoadAndPreprocessImage_internal - "
+                    "Null function\n");
+    return NULL;
+  } else if (!PyCallable_Check(pyFunc)) {
+    fprintf(stderr, "ERROR: ant_gateway_dfeLoadAndPreprocessImage_internal - "
+                    "Function not callable\n");
+    Py_DECREF(pyFunc);
+    return NULL;
+  }
+
+  PyObject *pyArgs = PyTuple_New(1);
+  int ret;
+  // Arg 0: string img_path
+  PyObject *pyImgPath = Py_BuildValue("s#", modelName, strlen(modelName));
+  assert(pyImgPath != NULL);
+  ret = PyTuple_SetItem(pyArgs, 0, pyImgPath);
+  assert(ret == 0);
+  Py_DECREF(pyImgPath);
+
+  // Call inner python function
+  PyObject *pyInputTensor = PyObject_CallObject(pyFunc, pyArgs);
+  assert(pyInputTensor != NULL);
+  Py_DECREF(pyFunc);
+  Py_DECREF(pyArgs);
+
+  // Return: bytebuffer inputTensor
+  void *inputTensor = (void *)pyInputTensor;
+  return inputTensor;
+}
+void *ant_gateway_dfeLoadAndPreprocessImage_getOutputBufferWithLength(
+    void *inputTensor, size_t *pInputTensorLength) {
+  PyObject *pyInputTensor = (PyObject *)inputTensor;
+  char *inputTensorBuffer = NULL;
+  int ret = PyBytes_AsStringAndSize(pyInputTensor, &inputTensorBuffer,
+                                    (Py_ssize_t *)pInputTensorLength);
+  assert(ret >= 0);
+  return (void *)inputTensorBuffer;
+}
+void ant_gateway_dfeLoadAndPreprocessImage_releaseOutput(void *inputTensor) {
+  PyObject *pyInputTensor = (PyObject *)inputTensor;
+  Py_DECREF(pyInputTensor);
+}
+
 void *ant_gateway_dfeLoad_internal(const char *modelName, int numFragments) {
   ant_gateway_dfe_initOnce();
 

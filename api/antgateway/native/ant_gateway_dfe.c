@@ -32,6 +32,33 @@ const jerry_object_native_info_t interpreters_native_info = {
     .free_cb = (jerry_object_native_free_callback_t)interpreters_destroy,
 };
 
+// TODO: hard-coding input
+JS_FUNCTION(dfeLoadAndPreprocessImage) {
+  iotjs_string_t argImgPath;
+  DJS_CHECK_ARGS(1, string);
+  argImgPath = JS_GET_ARG(0, string);
+  const char *imgPath = iotjs_string_data(&argImgPath);
+
+  void *inputTensor = ant_gateway_dfeLoadAndPreprocessImage_internal(imgPath);
+
+  size_t inputTensorLength;
+  void *inputTensorNativeBuffer =
+      ant_gateway_dfeLoadAndPreprocessImage_getOutputBufferWithLength(
+          inputTensor, &inputTensorLength);
+
+  jerry_value_t js_inputTensor =
+      iotjs_bufferwrap_create_buffer(inputTensorLength);
+  iotjs_bufferwrap_t *inputTensorBuffer =
+      iotjs_bufferwrap_from_jbuffer(js_inputTensor);
+  iotjs_bufferwrap_copy(inputTensorBuffer,
+                        (const char *)inputTensorNativeBuffer,
+                        inputTensorLength);
+  ant_gateway_dfeLoadAndPreprocessImage_releaseOutput(inputTensor);
+
+  iotjs_string_destroy(&argImgPath);
+  return js_inputTensor;
+}
+
 JS_FUNCTION(ant_gateway_dfeLoad) {
   iotjs_string_t argModelName;
   int argNumFragments;
@@ -74,8 +101,9 @@ JS_FUNCTION(ant_gateway_dfeExecute) {
       argStartLayerNum, argEndLayerNum);
 
   size_t outputTensorLength;
-  void *outputTensorNativeBuffer = ant_gateway_dfeExecute_getOutputBufferWithLength(
-      outputTensor, &outputTensorLength);
+  void *outputTensorNativeBuffer =
+      ant_gateway_dfeExecute_getOutputBufferWithLength(outputTensor,
+                                                       &outputTensorLength);
 
   jerry_value_t js_outputTensor =
       iotjs_bufferwrap_create_buffer(outputTensorLength);
@@ -90,6 +118,9 @@ JS_FUNCTION(ant_gateway_dfeExecute) {
 }
 
 void InitANTGatewayDFE(jerry_value_t nativeObj) {
+  // TODO: hard-coding input
+  REGISTER_ANT_API(nativeObj, ant_gateway, dfeLoadAndPreprocessImage);
+
   REGISTER_ANT_API(nativeObj, ant_gateway, dfeLoad);
   REGISTER_ANT_API(nativeObj, ant_gateway, dfeExecute);
 }
