@@ -152,7 +152,7 @@ void unlock_ocf_thread(void);
       char *payload_string;                                                    \
       size_t payload_string_length;                                            \
       oc_rep_get_string(data->payload, KEY_STRING_VALUE, &payload_string,      \
-                        payload_string_length);                                \
+                        &payload_string_length);                               \
       event_data->payload_string = (char *)malloc(payload_string_length + 1);  \
       memcpy(event_data->payload_string, payload_string,                       \
              payload_string_length);                                           \
