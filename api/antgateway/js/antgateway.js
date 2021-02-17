@@ -16,7 +16,6 @@
 var MLAPI = undefined;
 var OCFAPI = undefined;
 var fs = require('fs');
-const {types} = require('util');
 
 try {
   MLAPI = require('antml');

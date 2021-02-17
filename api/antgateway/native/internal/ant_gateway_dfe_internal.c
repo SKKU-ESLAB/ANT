@@ -67,7 +67,7 @@ void *ant_gateway_dfeLoadAndPreprocessImage_internal(const char *imgPath) {
   PyObject *pyArgs = PyTuple_New(1);
   int ret;
   // Arg 0: string img_path
-  PyObject *pyImgPath = Py_BuildValue("s#", modelName, strlen(modelName));
+  PyObject *pyImgPath = Py_BuildValue("s#", imgPath, strlen(imgPath));
   assert(pyImgPath != NULL);
   ret = PyTuple_SetItem(pyArgs, 0, pyImgPath);
   assert(ret == 0);

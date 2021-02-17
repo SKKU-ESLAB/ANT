@@ -33,7 +33,7 @@ const jerry_object_native_info_t interpreters_native_info = {
 };
 
 // TODO: hard-coding input
-JS_FUNCTION(dfeLoadAndPreprocessImage) {
+JS_FUNCTION(ant_gateway_dfeLoadAndPreprocessImage) {
   iotjs_string_t argImgPath;
   DJS_CHECK_ARGS(1, string);
   argImgPath = JS_GET_ARG(0, string);
