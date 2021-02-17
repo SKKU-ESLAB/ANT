@@ -24,7 +24,9 @@ var gOA = undefined;
 function onGetCamera(request) {
   gOA.repStartRootObject();
   var buffer = new Buffer(1024);
-  gOA.repSetByteBuffer(buffer);
+  var dataObject = {data: 'OCF API test'};
+  var dataString = JSON.stringify(dataObject);
+  gOA.repSetBufferAndString(buffer, dataString);
   gOA.repEndRootObject();
   gOA.sendResponse(request, ocf.OC_STATUS_OK);
 }

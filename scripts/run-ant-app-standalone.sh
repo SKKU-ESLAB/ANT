@@ -8,6 +8,6 @@ fi
 
 if [ $2 == "--run" ]; then
   ${ANT_ROOT}/iotjs ${ANT_ROOT}/app-core/main.js ${1} ${ANT_ROOT}/apps/${1}.js 0
-elif [ $2 == "--debug"]; then
+elif [ $2 == "--debug" ]; then
   gdb --args ${ANT_ROOT}/iotjs ${ANT_ROOT}/app-core/main.js ${1} ${ANT_ROOT}/apps/${1}.js 0
 fi

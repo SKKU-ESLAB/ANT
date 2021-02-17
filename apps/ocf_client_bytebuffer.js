@@ -35,10 +35,18 @@ function onDiscovery(endpoint, uri, types) {
 }
 
 function onGetCamera(response) {
-  var payload = response.payload;
+  var payloadBuffer = response.payloadBuffer;
+  var payloadString = response.payloadString;
   var uri = gFoundURI;
 
-  console.log('GET from ' + uri + ': buffer length=' + payload.length);
+  console.log(
+    'GET from ' +
+      uri +
+      ': buffer length=' +
+      payloadBuffer.length +
+      ' / string=' +
+      payloadString
+  );
 }
 
 /* OCF lifecycle handlers */

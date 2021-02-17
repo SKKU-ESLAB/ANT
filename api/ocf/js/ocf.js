@@ -298,7 +298,7 @@ OCFAdapter.prototype.repSetBufferAndString = function (bufferValue, stringValue)
   var KEY_BUFFER_VALUE = 'bufferValue';
   var KEY_STRING_VALUE = 'stringValue';
   native.ocf_adapter_repSetByteArray(KEY_BUFFER_VALUE, bufferValue);
-  native.ocf_adapter_repSet(KEY_STRING_VALUE, stringValue);
+  this.repSet(KEY_STRING_VALUE, stringValue);
 };
 
 /**
