@@ -140,7 +140,7 @@ UIController.prototype.refreshAppList = function (onFinish) {
   // TODO: apply deleted app entry that is removed by another controlpad
 };
 
-UIController.prototype.selectApp = function (appName) {
+UIController.prototype.selectApp = function (appName, isSkipPrevApp) {
   // It will be handled after app save
   var self = this;
   function internalHandler(appName) {
@@ -162,13 +162,12 @@ UIController.prototype.selectApp = function (appName) {
   var prevAppName = this.mContext.currentAppName;
   if (prevAppName !== undefined) {
     if (this.mContext.currentNavItem.getId() === 'navitem-codeeditor') {
-      this.mCodeEditor.saveAppCode(internalHandler, appName);
-    } else {
-      internalHandler(appName);
+      if(isSkipPrevApp === undefined || !isSkipPrevApp) {
+        this.mCodeEditor.saveAppCode(internalHandler, appName);
+      }
     }
-  } else {
-    internalHandler(appName);
   }
+  internalHandler(appName);
 };
 
 UIController.prototype.onSelectPrevApp = function () {
@@ -223,7 +222,7 @@ UIController.prototype.removeAppFromUI = function (appName) {
     nextIndex = index > 0 ? index - 1 : 0;
   }
   this.mAppSelectorMenu.removeApp(appName);
-  this.selectApp(this.mAppSelectorMenu.getAppNameAt(nextIndex), false);
+  this.selectApp(this.mAppSelectorMenu.getAppNameAt(nextIndex), true);
 
   // TODO: Update app list card when dashboard is opened
 };

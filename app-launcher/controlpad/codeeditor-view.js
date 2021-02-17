@@ -81,6 +81,7 @@ CodeEditorView.prototype.onAddedDom = function () {
 };
 
 CodeEditorView.prototype.onRemovedDom = function () {
+  this.stopPeriodicUpdate();
   this.saveAppCode();
 };
 
@@ -90,7 +91,7 @@ CodeEditorView.prototype.startPeriodicUpdate = function () {
     self.mOnRefresh();
   }, this.mUpdatePeriodMS);
 };
-CodeEditorView.prototype.endPeriodicUpdate = function () {
+CodeEditorView.prototype.stopPeriodicUpdate = function () {
   if (this.mPeriodicUpdate !== undefined) clearInterval(this.mPeriodicUpdate);
 };
 
