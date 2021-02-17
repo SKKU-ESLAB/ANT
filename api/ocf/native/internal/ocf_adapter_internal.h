@@ -99,7 +99,7 @@ void initOCFAdapter(void);
 void lock_ocf_thread(void);
 void unlock_ocf_thread(void);
 
-#define KEY_BYTE_VALUE "byteValue"
+#define KEY_BUFFER_VALUE "bufferValue"
 #define KEY_STRING_VALUE "stringValue"
 
 /* (Native) JS_FUNCTION(type)
@@ -142,7 +142,7 @@ void unlock_ocf_thread(void);
     if (event_data->is_payload_buffer) {                                       \
       char *payload_buffer;                                                    \
       size_t payload_buffer_length;                                            \
-      oc_rep_get_byte_string(data->payload, KEY_BYTE_VALUE, &payload_buffer,   \
+      oc_rep_get_byte_string(data->payload, KEY_BUFFER_VALUE, &payload_buffer,   \
                              &payload_buffer_length);                          \
       event_data->payload_buffer = (char *)malloc(payload_buffer_length);      \
       memcpy(event_data->payload_buffer, payload_buffer,                       \
