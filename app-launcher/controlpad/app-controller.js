@@ -123,4 +123,3 @@ AppController.prototype.getAppState = function (onSuccess, onFailure) {
     gUIController.showErrorMessage(e);
   }
 };
-
