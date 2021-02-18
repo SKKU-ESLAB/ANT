@@ -13,22 +13,19 @@
  * limitations under the License.
  */
 
-// Gateway Virtual Sensor API: deep sensor example
+// Gateway Virtual Sensor API: gateway client
 
 var ant = require('ant');
 var console = require('console');
-var gateway = require('gateway');
-var fs = require('fs');
+var gateway = ant.gateway;
 
 // VSA: virtual sensor adapter
 var gVSA = undefined;
 
-// Config
-var kFilename = 'image.jpg';
- 
-/* Deep sensor handlers */
-// TODO: pre-processing handler
-// TODO: post-processing handler
+/* Gateway client lifecycle */
+function onPrepareGatewayClient() {
+  
+}
 
 /* ANT lifecycle handlers */
 function onInitialize() {
@@ -37,7 +34,7 @@ function onInitialize() {
 
 function onStart() {
   gVSA = gateway.getVSAdapter();
-  gVSA.createDeepSensor('d1', 'mobilenetv1', 13);
+  gVSA.createGWClient(onPrepareGatewayClient); // gateway client
   gVSA.start();
 }
 
