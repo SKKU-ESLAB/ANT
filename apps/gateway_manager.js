@@ -17,14 +17,10 @@
 
 var ant = require('ant');
 var console = require('console');
-var gateway = require('gateway');
+var gateway = ant.gateway;
 
 // VSA: virtual sensor adapter
 var gVSA = undefined;
-
-/* Deep sensor handlers */
-// TODO: pre-processing handler
-// TODO: post-processing handler
 
 /* ANT lifecycle handlers */
 function onInitialize() {
@@ -33,7 +29,7 @@ function onInitialize() {
 
 function onStart() {
   gVSA = gateway.getVSAdapter();
-  gVSA.createDeepSensor('d1', 'mobilenetv1', 13);
+  gVSA.createGWManager(); // gateway manager
   gVSA.start();
 }
 
