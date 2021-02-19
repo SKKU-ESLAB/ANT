@@ -28,8 +28,10 @@ try {
   throw new Error('Gateway API Dependency Error: not found OCF API');
 }
 
+var gVSAdapter = undefined;
+
 /**
- * ANT Gateway API
+ * ANT Gateway API's main object.
  *
  * In ANT framework, gateway provides sensor virtualization and DNN
  * partitioning. Sensor virtualization means unifying interfaces to access
@@ -58,14 +60,15 @@ try {
  * sensors. To support that, ANT additionally provides DNN fragment engine
  * and gateway manager.
  */
-
-var gVSAdapter = undefined;
 function ANTGateway() {}
 
-/*
- * Gateway API 1. ML fragment element (Based on gstreamer)
+/**
+ * ANTGateway.createImgClsImageNetElement
+ * @param {String} modelPath the path of image classification model
+ * @param {Number} numFragments the number of fragments
+ * @param {String} targetUri the URI of target device that will be used for DNN partitioning
+ * Create a ML fragment element that runs a image classificaiton model trained with ImageNet dataset. It is the first way to perform gateway-centric DNN partitioning. It internally uses gstreamer.
  */
-
 ANTGateway.prototype.createImgClsImagenetElement = function (
   modelPath,
   numFragments,
@@ -84,7 +87,7 @@ ANTGateway.prototype.createImgClsImagenetElement = function (
 };
 
 /*
- * Gateway API 2. Virtual sensor (Based on OCF standard)
+ * Virtual sensor (Based on OCF standard)
  *
  * There are many modules related to virtual sensor.
  *
@@ -105,6 +108,11 @@ ANTGateway.prototype.createImgClsImagenetElement = function (
  *                              associate the virtual sensors to form a sensor
  *                              data pipeline for the IoT applications.
  */
+
+/**
+ * ANTGateway.getVSAdapter()
+ * Create a virtual sensor adapter. It is the second way to perform gateway-centric DNN partitioning. It internally uses OCF standard.
+ */
 ANTGateway.prototype.getVSAdapter = function () {
   if (gVSAdapter === undefined) {
     gVSAdapter = new VirtualSensorAdapter();
@@ -120,7 +128,7 @@ function VirtualSensorAdapter() {
   this.mVirtualSensors = [];
   this.mResources = [];
   this.mGatewayManager = undefined;
-  this.mGateayClient = undefined;
+  this.mGatewayClient = undefined;
 
   /* OCF lifecycle handlers */
   function onPrepareOCFEventLoop() {
@@ -290,7 +298,7 @@ VirtualSensorAdapter.prototype.createGWClient = function (onPrepared) {
     this.mGatewayClient = new GatewayClient();
   }
   var gwClient = this.getGWClient();
-  gwClient.setOnClientPrepared(onPrepared);
+  gwClient.setOnPrepared(onPrepared);
   return gwClient;
 };
 
@@ -630,11 +638,8 @@ function onPostInlet(request) {
 
   // Send response
   var oa = gVSAdapter.mOCFAdapter;
-  oa.repStartRootObject();
-  oa.repSet('result', response.result);
-  oa.repSet('reason', response.reason);
-  oa.repEndRootObject();
-  oa.sendResponse(request, ocf.OC_STATUS_OK);
+  var responsePayload = response;
+  oa.sendResponse(request, ocf.OC_STATUS_OK, responsePayload);
 }
 
 function _onPostInlet_internal(
@@ -686,10 +691,13 @@ function onGetInlet(request) {
 
   // Send response
   var oa = gVSAdapter.mOCFAdapter;
-  oa.repStartRootObject();
-  oa.repSet('observersJSON', JSON.stringify(observers));
-  oa.repEndRootObject();
-  oa.sendResponse(request, ocf.OC_STATUS_OK);
+  var responsePayload = {
+    name: virtualSensor.getName(),
+    sensorType: virtualSensor.getSensorType(),
+    deviceType: virtualSensor.getDeviceType(),
+    observersJSON: JSON.stringify(observers)
+  };
+  oa.sendResponse(request, ocf.OC_STATUS_OK, responsePayload);
 }
 
 function onGetOutlet(request) {
@@ -749,10 +757,10 @@ function onPostSetting(request) {
   // Send response
   if (!isFailed) {
     var oa = gVSAdapter.mOCFAdapter;
-    oa.repStartRootObject();
-    oa.repSet('result', resultJSONString);
-    oa.repEndRootObject();
-    oa.sendResponse(request, ocf.OC_STATUS_OK);
+    var responsePayload = {
+      result: resultJSONString
+    };
+    oa.sendResponse(request, ocf.OC_STATUS_OK, responsePayload);
   }
 }
 
@@ -881,6 +889,7 @@ DFE.prototype.getSettingHandler = function (fragNum) {
   return dfeSettingHandler;
 };
 
+// TODO: GatewayManager: Add submodule for the proxy access to virtual sensors
 /* Gateway Manager */
 function GatewayManager() {
   this.mVirtualSensorManager = new VirtualSensorManager();
@@ -923,10 +932,43 @@ GatewayManager.prototype.onOCFClientPrepared = function (vsAdapter) {
 /* Virtual Sensor Manager */
 function VirtualSensorManager() {
   this.mResource = undefined;
-  this.mFoundInlets = [];
-  this.mFoundOutlets = [];
-  this.mFoundSettings = [];
+  this.mInletList = [];
+  this.mOutletList = [];
+  this.mSettingList = [];
 }
+
+VirtualSensorManager.prototype.findInlet = function (sensorType, deviceType) {
+  this.findVSResource(this.mInletList, sensorType, deviceType);
+};
+
+VirtualSensorManager.prototype.findOutlet = function (sensorType, deviceType) {
+  this.findVSResource(this.mOutletList, sensorType, deviceType);
+};
+
+VirtualSensorManager.prototype.findSetting = function (sensorType, deviceType) {
+  this.findVSResource(this.mSettingList, sensorType, deviceType);
+};
+
+VirtualSensorManager.prototype.findVSResource = function (
+  list,
+  sensorType,
+  deviceType
+) {
+  for (var i in list) {
+    var entry = list[i];
+    var isSensorTypeFound = false;
+    var isDeviceTypeFound = false;
+    for (var j in entry.types) {
+      var type = entry.types[j];
+      if (type === sensorType) isSensorTypeFound = true;
+      if (type === deviceType) isDeviceTypeFound = true;
+    }
+    if (isSensorTypeFound && isDeviceTypeFound) {
+      return entry;
+    }
+  }
+  return undefined;
+};
 
 VirtualSensorManager.prototype.setup = function (oa) {
   var device = oa.getDevice(0);
@@ -963,12 +1005,13 @@ VirtualSensorManager.prototype.startDiscovery = function (vsAdapter) {
   oa.discoveryAll(onDiscovery);
 };
 
+// TODO: delete association
 // Virtual sensor manager (OCF-server-side): POST association command
 function onPostVirtualSensorManager(request) {
   // POST association command
   var response = {result: 'None', reason: 'None'};
 
-  // Parse OCF request
+  // Parse and check OCF request
   var requestPayload = JSON.parse(request.payload_string);
   var intervalMS = requestPayload.intervalMS;
   var sourceOutletJSON = requestPayload.sourceOutletJSON;
@@ -987,9 +1030,8 @@ function onPostVirtualSensorManager(request) {
   }
   var sourceOutlet = JSON.parse(sourceOutletJSON);
   var sinkInlet = JSON.parse(sinkInletJSON);
-
-  // Check OCF request
   if (
+    typeof sinkInlet !== 'object' ||
     sinkInlet.sensorType === undefined ||
     sinkInlet.deviceType === undefined ||
     typeof sinkInlet.sensorType !== 'string' ||
@@ -997,10 +1039,11 @@ function onPostVirtualSensorManager(request) {
   ) {
     response = {
       result: 'Failure',
-      reason: 'Invalid sinkIlet: ' + JSON.stringify(sinkInlet)
+      reason: 'Invalid sinkInlet: ' + JSON.stringify(sinkInlet)
     };
   }
   if (
+    typeof sourceOutlet !== 'object' ||
     sourceOutlet.sensorType === undefined ||
     sourceOutlet.deviceType === undefined ||
     typeof sourceOutlet.sensorType !== 'string' ||
@@ -1011,7 +1054,7 @@ function onPostVirtualSensorManager(request) {
       reason: 'Invalid sourceOutlet: ' + JSON.stringify(sourceOutlet)
     };
   }
-  if (intervalMS !== undefined && typeof intervalMS !== 'number') {
+  if (intervalMS === undefined || typeof intervalMS !== 'number') {
     response = {
       result: 'Failure',
       reason: 'Invalid intervalMS: ' + JSON.stringify(intervalMS)
@@ -1022,7 +1065,7 @@ function onPostVirtualSensorManager(request) {
   var foundSinkInlet = undefined;
   if (response.result !== 'Failure') {
     var vsManager = gVSAdapter.getGWManager().getVSManager();
-    var foundInlets = vsManager.mFoundInlets();
+    var foundInlets = vsManager.mInletList();
     for (var i in foundInlets) {
       var foundInlet = foundInlets[i];
       var types = foundInlet.types;
@@ -1046,35 +1089,42 @@ function onPostVirtualSensorManager(request) {
       reason: 'Cannot find inlet resource ' + JSON.stringify(sinkInlet)
     };
   }
+  if (response.result !== 'Failure') {
+    response = {
+      result: 'Success',
+      reason: 'None',
+      intervalMS: intervalMS,
+      sourceOutletJSON: sourceOutletJSON,
+      sinkInletJSON: sinkInletJSON
+    };
+  }
 
   // Send response
   var oa = gVSAdapter.mOCFAdapter;
-  oa.repStartRootObject();
-  oa.repSet('result', response.result);
-  oa.repSet('reason', response.reason);
-  oa.repEndRootObject();
-  oa.sendResponse(request, ocf.OC_STATUS_OK);
+  var responsePayload = response;
+  oa.sendResponse(request, ocf.OC_STATUS_OK, responsePayload);
 
   // Send association command to sink inlet
   if (response.result !== 'Failure') {
     setTimeout(function () {
-      var res = oa.initPost(
+      var requestPayload = {
+        sensorType: sourceOutlet.sensorType,
+        deviceType: sourceOutlet.deviceType,
+        intervalMS: intervalMS
+      };
+      var res = oa.post(
         foundSinkInlet.endpoint,
         foundSinkInlet.uri,
         undefined,
         '',
-        ocf.OC_LOW_QOS
+        ocf.OC_LOW_QOS,
+        requestPayload
       );
-      if (res) {
-        oa.repStartRootObject();
-        oa.repSet('commandType', 'add');
-        oa.repSet('sensorType', sourceOutlet.sensorType);
-        oa.repSet('deviceType', sourceOutlet.deviceType);
-        if (intervalMS !== undefined) {
-          oa.repSet('intervalMS', intervalMS);
-        }
-        oa.repEndRootObject();
-        oa.post();
+      if (!res) {
+        console.error(
+          'Failed to post association message: ' +
+            JSON.stringify(requestPayload)
+        );
       }
     }, 100);
   }
@@ -1084,17 +1134,20 @@ function onPostVirtualSensorManager(request) {
 function onGetVirtualSensorManager(request) {
   // GET found virtual sensor resources
   var inlets = [];
-  var foundInlets = this.mFoundInlets;
+  var foundInlets = this.mInletList;
   for (var i in foundInlets) {
     var entry = {
       types: foundInlets[i].types,
       uri: foundInlets[i].uri
     };
+    if (foundInlets[i].observers !== undefined) {
+      entry.observers = foundInlets[i].observers;
+    }
     inlets.push(entry);
   }
 
   var outlets = [];
-  var foundOutlets = this.mFoundOutlets;
+  var foundOutlets = this.mOutletList;
   for (var i in foundOutlets) {
     var entry = {
       types: foundOutlets[i].types,
@@ -1104,7 +1157,7 @@ function onGetVirtualSensorManager(request) {
   }
 
   var settings = [];
-  var foundSettings = this.mFoundSettings;
+  var foundSettings = this.mSettingList;
   for (var i in foundSettings) {
     var entry = {
       types: foundSettings[i].types,
@@ -1115,12 +1168,12 @@ function onGetVirtualSensorManager(request) {
 
   // Send response
   var oa = gVSAdapter.mOCFAdapter;
-  oa.repStartRootObject();
-  oa.repSet('inletsJSON', JSON.stringify(inlets));
-  oa.repSet('outletsJSON', JSON.stringify(outlets));
-  oa.repSet('settingsJSON', JSON.stringify(settings));
-  oa.repEndRootObject();
-  oa.sendResponse(request, ocf.OC_STATUS_OK);
+  var responsePayload = {
+    inletsJSON: JSON.stringify(inlets),
+    outletsJSON: JSON.stringify(outlets),
+    settingsJSON: JSON.stringify(settings)
+  };
+  oa.sendResponse(request, ocf.OC_STATUS_OK, responsePayload);
 }
 
 VirtualSensorManager.prototype.addResource = function (endpoint, uri, types) {
@@ -1138,15 +1191,43 @@ VirtualSensorManager.prototype.addResource = function (endpoint, uri, types) {
   }
   var foundEntry = {endpoint: endpoint, uri: uri, types: vsTypes};
   if (letType == ORType_VSInlet) {
-    this.mFoundInlets.push(foundEntry);
+    this.mInletList.push(foundEntry);
   } else if (letType == ORType_VSOutlet) {
-    this.mFoundOutlets.push(foundEntry);
+    this.mOutletList.push(foundEntry);
   } else if (letType == ORType_VSSetting) {
-    this.mFoundSettings.push(foundEntry);
+    this.mSettingList.push(foundEntry);
   } else {
     console.error('Cannot identify resource: ' + uri);
     console.error('\tTypes: ' + JSON.stringify(types));
   }
+};
+
+VirtualSensorManager.prototype.observeInlet = function (inletEntry) {
+  var self = this;
+  function _onObserve(response) {
+    var payload = response.payload;
+    if (payload === undefined) {
+      console.error('Undefined response from observing inlet');
+      return;
+    }
+    var sensorType = payload.sensorType;
+    var deviceType = payload.deviceType;
+    var observers = JSON.parse(payload.observersJSON);
+
+    var inlet = self.findInlet(sensorType, deviceType);
+    inlet.observers = observers;
+  }
+
+  // Send observe request to inlet
+  var oa = gVSAdapter.mOCFAdapter;
+  oa.observe(
+    inletEntry.endpoint,
+    inletEntry.uri,
+    _onObserve,
+    '',
+    ocf.OC_LOW_QOS,
+    false
+  );
 };
 
 /* DFE Scheduler */
@@ -1158,6 +1239,7 @@ DFEScheduler.prototype.start = function (vsAdapter) {
   // TODO: DFEScheduler: client - GET setting resource
 };
 
+// TODO: GatewayClient: Add proxy access to virtual sensors
 /* Gateway Client */
 function GatewayClient() {
   this.mOnPrepared = undefined;
@@ -1238,9 +1320,13 @@ GatewayClient.prototype.getVirtualSensors = function (onResult) {
   }
 };
 
+// Default sampling interval of virtual sensors
+var kVSDefaultIntervalMS = 100;
+
 GatewayClient.prototype.associateVirtualSensors = function (
   sourceOutlet,
   sinkInlet,
+  intervalMS,
   onResult
 ) {
   function _onPost(response) {
@@ -1248,12 +1334,24 @@ GatewayClient.prototype.associateVirtualSensors = function (
     var result = payloadObj.result;
     var reason = payloadObj.reason;
 
-    if(result === 'Failure') {
-      console.error("Associate virtual sensor failure: " + reason);
-      return;
+    if (result === undefined) {
+      onResult('Failure', 'Result from virtual sensor is undefined');
+    } else if (result === 'Failure') {
+      onResult(result, reason);
+    } else if (result === 'Success') {
+      var sourceOutlet = JSON.parse(payloadObj.sourceOutletJSON);
+      var sinkInlet = JSON.parse(payloadObj.sinkInletJSON);
+      onResult(result, reason, sourceOutlet, sinkInlet);
+    } else {
+      onResult(
+        'Failure',
+        'Result from virtual sensor is invalid: ' + response.payload
+      );
     }
+  }
 
-    if (onResult !== undefined) onResult();
+  if (intervalMS === undefined) {
+    intervalMS = kVSDefaultIntervalMS;
   }
 
   if (!this.isPrepared()) {
@@ -1265,18 +1363,20 @@ GatewayClient.prototype.associateVirtualSensors = function (
     throw 'getVirtualSensors(): Cannot get OCF Adapter';
   }
   if (this.mFoundVSM !== undefined) {
-    oa.initPost(
+    var requestPayload = {
+      intervalMS: intervalMS,
+      sourceOutletJSON: JSON.stringify(sourceOutlet),
+      sinkInletJSON: JSON.stringify(sinkInlet)
+    };
+    oa.post(
       this.mVSAdapter.endpoint,
       this.mVSAdapter.uri,
       _onPost,
       undefined,
       undefined,
-      false
+      false,
+      requestPayload
     );
-    oa.repSet('sourceOutletJSON', JSON.stringify(sourceOutlet));
-    oa.repSet('sinkInletJSON', JSON.stringify(sinkInlet));
-    oa.repSet('intervalMS', intervalMS);
-    oa.post();
     return true;
   } else {
     // Virtual sensor manager is not found yet
