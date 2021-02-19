@@ -13,41 +13,32 @@
  * limitations under the License.
  */
 
-// Gateway Virtual Sensor API: physical sensor example
+// Gateway Virtual Sensor API: deep sensor example (on user device)
 
 var ant = require('ant');
 var console = require('console');
 var gateway = ant.gateway;
-var fs = require('fs');
 
 // VSA: virtual sensor adapter
 var gVSA = undefined;
 
-// Config
-var kFilename = 'image.jpg';
-
-/* Virtual sensor handlers */
-function generator() {
-  var jsObject = {dfeFlag: false};
-  var buffer = fs.readFileSync(kFilename);
-  return {jsObject: jsObject, buffer: buffer};
-}
+/* Deep sensor handlers */
 
 /* ANT lifecycle handlers */
 function onInitialize() {
   // Empty function
 }
 
-var deviceType = 'ant.d.sensordev';
+var deviceType = 'ant.d.userdev';
 
 function onStart() {
   gVSA = gateway.getVSAdapter();
-  gVSA.createSensor(
-    'cam',
-    'ant.s.camera',
+  gVSA.createDeepSensor(
+    'imgcls',
+    'ant.s.imgcls',
     deviceType,
-    generator,
-    undefined
+    'mobilenetv1',
+    13
   );
   gVSA.start();
 }

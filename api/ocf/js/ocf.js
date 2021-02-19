@@ -290,7 +290,10 @@ OCFAdapter.prototype.repSet = function (key, value) {
  * The special case of repSet() method.
  * The data can include both byte buffer and string.
  */
-OCFAdapter.prototype.repSetBufferAndString = function (bufferValue, stringValue) {
+OCFAdapter.prototype.repSetBufferAndString = function (
+  bufferValue,
+  stringValue
+) {
   if (typeof bufferValue !== 'object' || !(bufferValue instanceof Buffer)) {
     console.log('repSet(): Not supported type (' + typeof bufferValue + ')');
   }
@@ -312,9 +315,21 @@ OCFAdapter.prototype.repEndRootObject = function () {
  * OCFAdapter.sendResponse
  * @param {OCFRequest} ocfRequest target of response
  * @param {Number} statusCode Response status code value
+ * @param {Object} responsePayload Payload of response
  * Sends a response with a specific status code to a request from another device.
  */
-OCFAdapter.prototype.sendResponse = function (ocfRequest, statusCode) {
+OCFAdapter.prototype.sendResponse = function (ocfRequest, statusCode, responsePayload) {
+  if(responsePayload !== undefined) {
+    if(typeof responsePayload !== 'object') {
+      throw "Invalid responsePayload: " + responsePayload;
+    }
+    this.repStartRootObject();
+    for(var key in responsePayload) {
+      var value = responsePayload[key];
+      this.repSet(key, value);
+    }
+    this.repEndRootObject();
+  }
   native.ocf_adapter_sendResponse(ocfRequest, statusCode);
 };
 /**
@@ -428,7 +443,7 @@ var oaStopRequestListCleaner = function () {
  * @param {Function} userHandler
  * @param {String} query
  * @param {Integer} qos
- * @param {Boolean} isPayloadBuffer
+ * @param {Boolean} isResponsePayloadBuffer
  * @return {Boolean} isSuccess
  */
 OCFAdapter.prototype.observe = function (
@@ -437,7 +452,7 @@ OCFAdapter.prototype.observe = function (
   userHandler,
   query,
   qos,
-  isPayloadBuffer
+  isResponsePayloadBuffer
 ) {
   if (query === undefined) {
     query = '';
@@ -445,8 +460,8 @@ OCFAdapter.prototype.observe = function (
   if (qos == undefined) {
     qos = 0; // HIGH_QOS
   }
-  if (isPayloadBuffer == undefined) {
-    isPayloadBuffer = false; // payload string
+  if (isResponsePayloadBuffer == undefined) {
+    isResponsePayloadBuffer = false; // payload string
   }
 
   var requestId = gOCFAdapterRequestId++;
@@ -455,7 +470,7 @@ OCFAdapter.prototype.observe = function (
   var result = native.ocf_adapter_observe(
     request,
     oaObserveResponseHandler,
-    isPayloadBuffer
+    isResponsePayloadBuffer
   );
   if (result) {
     gObserveRequestList.push(request);
@@ -494,7 +509,7 @@ OCFAdapter.prototype.stopObserve = function (endpoint, uri) {
  * @param {Function} userHandler
  * @param {String} query
  * @param {Integer} qos
- * @param {Boolean} isPayloadBuffer
+ * @param {Boolean} isResponsePayloadBuffer
  * @returns {Boolean} isSuccess
  */
 OCFAdapter.prototype.get = function (
@@ -503,7 +518,7 @@ OCFAdapter.prototype.get = function (
   userHandler,
   query,
   qos,
-  isPayloadBuffer
+  isResponsePayloadBuffer
 ) {
   if (query === undefined) {
     query = '';
@@ -511,8 +526,8 @@ OCFAdapter.prototype.get = function (
   if (qos == undefined) {
     qos = 0; // HIGH_QOS
   }
-  if (isPayloadBuffer == undefined) {
-    isPayloadBuffer = false; // payload string
+  if (isResponsePayloadBuffer == undefined) {
+    isResponsePayloadBuffer = false; // payload string
   }
 
   var requestId = gOCFAdapterRequestId++;
@@ -520,7 +535,7 @@ OCFAdapter.prototype.get = function (
   var result = native.ocf_adapter_get(
     request,
     oaGetResponseHandler,
-    isPayloadBuffer
+    isResponsePayloadBuffer
   );
   if (result) {
     gGetRequestList.push(request);
@@ -534,7 +549,7 @@ OCFAdapter.prototype.get = function (
  * @param {Function} userHandler
  * @param {String} query
  * @param {Integer} qos
- * @param {Boolean} isPayloadBuffer
+ * @param {Boolean} isResponsePayloadBuffer
  * @returns {Boolean} isSuccess
  */
 OCFAdapter.prototype.delete = function (
@@ -543,7 +558,7 @@ OCFAdapter.prototype.delete = function (
   userHandler,
   query,
   qos,
-  isPayloadBuffer
+  isResponsePayloadBuffer
 ) {
   if (query === undefined) {
     query = '';
@@ -551,8 +566,8 @@ OCFAdapter.prototype.delete = function (
   if (qos == undefined) {
     qos = 0; // HIGH_QOS
   }
-  if (isPayloadBuffer == undefined) {
-    isPayloadBuffer = false; // payload string
+  if (isResponsePayloadBuffer == undefined) {
+    isResponsePayloadBuffer = false; // payload string
   }
 
   var requestId = gOCFAdapterRequestId++;
@@ -560,13 +575,14 @@ OCFAdapter.prototype.delete = function (
   var result = native.ocf_adapter_delete(
     request,
     oaDeleteResponseHandler,
-    isPayloadBuffer
+    isResponsePayloadBuffer
   );
   if (result) {
     gDeleteRequestList.push(request);
   }
   return result;
 };
+
 /**
  * OCFAdapter.initPost
  * @param {OCFEndpoint} endpoint
@@ -574,7 +590,7 @@ OCFAdapter.prototype.delete = function (
  * @param {Function} userHandler
  * @param {String} query
  * @param {Integer} qos
- * @param {Boolean} isPayloadBuffer
+ * @param {Boolean} isResponsePayloadBuffer
  * @returns {Boolean} isSuccess
  */
 OCFAdapter.prototype.initPost = function (
@@ -583,7 +599,7 @@ OCFAdapter.prototype.initPost = function (
   userHandler,
   query,
   qos,
-  isPayloadBuffer
+  isResponsePayloadBuffer
 ) {
   if (query === undefined) {
     query = '';
@@ -591,8 +607,8 @@ OCFAdapter.prototype.initPost = function (
   if (qos == undefined) {
     qos = 0; // HIGH_QOS
   }
-  if (isPayloadBuffer == undefined) {
-    isPayloadBuffer = false; // payload string
+  if (isResponsePayloadBuffer == undefined) {
+    isResponsePayloadBuffer = false; // payload string
   }
 
   var requestId = gOCFAdapterRequestId++;
@@ -600,13 +616,14 @@ OCFAdapter.prototype.initPost = function (
   var result = native.ocf_adapter_initPost(
     request,
     oaPostResponseHandler,
-    isPayloadBuffer
+    isResponsePayloadBuffer
   );
   if (result) {
     gPostRequestList.push(request);
   }
   return result;
 };
+
 /**
  * OCFAdapter.initPut
  * @param {OCFEndpoint} endpoint
@@ -614,7 +631,7 @@ OCFAdapter.prototype.initPost = function (
  * @param {Function} userHandler
  * @param {String} query
  * @param {Integer} qos
- * @param {Boolean} isPayloadBuffer
+ * @param {Boolean} isResponsePayloadBuffer
  * @returns {Boolean} isSuccess
  */
 OCFAdapter.prototype.initPut = function (
@@ -623,7 +640,7 @@ OCFAdapter.prototype.initPut = function (
   userHandler,
   query,
   qos,
-  isPayloadBuffer
+  isResponsePayloadBuffer
 ) {
   if (query === undefined) {
     query = '';
@@ -631,8 +648,8 @@ OCFAdapter.prototype.initPut = function (
   if (qos == undefined) {
     qos = 0; // HIGH_QOS
   }
-  if (isPayloadBuffer == undefined) {
-    isPayloadBuffer = false; // payload string
+  if (isResponsePayloadBuffer == undefined) {
+    isResponsePayloadBuffer = false; // payload string
   }
 
   var requestId = gOCFAdapterRequestId++;
@@ -640,28 +657,139 @@ OCFAdapter.prototype.initPut = function (
   var result = native.ocf_adapter_initPut(
     request,
     oaPutResponseHandler,
-    isPayloadBuffer
+    isResponsePayloadBuffer
   );
   if (result) {
     gPutRequestList.push(request);
   }
   return result;
 };
+
+// TODO: change old-style post() and put() usage in sample apps
+
 /**
- * OCFAdapter.post
+ * OCFAdapter.finishPost
  * @returns {Boolean} isSuccess
  */
-OCFAdapter.prototype.post = function () {
+OCFAdapter.prototype.finishPost = function () {
   var result = native.ocf_adapter_post();
   return result;
 };
 /**
- * OCFAdapter.put
+ * OCFAdapter.finishPut
  * @returns {Boolean} isSuccess
  */
-OCFAdapter.prototype.put = function () {
+OCFAdapter.prototype.finishPut = function () {
   var result = native.ocf_adapter_put();
   return result;
+};
+
+/**
+ * OCFAdapter.post
+ * @param {OCFEndpoint} endpoint
+ * @param {String} uri
+ * @param {Function} userHandler
+ * @param {String} query
+ * @param {Integer} qos
+ * @param {Boolean} isResponsePayloadBuffer
+ * @param {Object} requestPayload
+ * @returns {Boolean} isSuccess
+ */
+OCFAdapter.prototype.post = function (
+  endpoint,
+  uri,
+  userHandler,
+  query,
+  qos,
+  isResponsePayloadBuffer,
+  requestPayload
+) {
+  // Legacy API adaptation (the case of no arguments)
+  if (endpoint === undefined) {
+    return this.finishPost();
+  }
+
+  // Check arguments
+  if (requestPayload !== undefined && typeof requestPayload !== 'object') {
+    throw 'Invalid request payload: ' + JSON.stringify(requestPayload);
+  }
+
+  var isSuccess;
+  isSuccess = this.initPost(
+    endpoint,
+    uri,
+    userHandler,
+    query,
+    qos,
+    isResponsePayloadBuffer
+  );
+  if (isSuccess) {
+    if (requestPayload !== undefined) {
+      this.repStartRootObject();
+      for (var key in requestPayload) {
+        var value = requestPayload[key];
+        this.repSet(key, value);
+      }
+      this.repEndRootObject();
+    }
+    isSuccess &= this.finishPost();
+  }
+
+  return isSuccess;
+};
+
+/**
+ * OCFAdapter.put
+ * @param {OCFEndpoint} endpoint
+ * @param {String} uri
+ * @param {Function} userHandler
+ * @param {String} query
+ * @param {Integer} qos
+ * @param {Boolean} isResponsePayloadBuffer
+ * @param {Object} requestPayload
+ * @returns {Boolean} isSuccess
+ */
+OCFAdapter.prototype.put = function (
+  endpoint,
+  uri,
+  userHandler,
+  query,
+  qos,
+  isResponsePayloadBuffer,
+  requestPayload
+) {
+  // Legacy API adaptation (the case of no arguments)
+  if (endpoint === undefined) {
+    return this.finishPut();
+  }
+
+  // Check arguments
+  if (requestPayload !== undefined && typeof requestPayload !== 'object') {
+    throw 'Invalid request payload: ' + JSON.stringify(requestPayload);
+  }
+
+  var isSuccess;
+  isSuccess = this.initPut(
+    endpoint,
+    uri,
+    userHandler,
+    query,
+    qos,
+    isResponsePayloadBuffer
+  );
+  if (isSuccess) {
+    if (requestPayload !== undefined) {
+      this.repStartRootObject();
+      for (var key in requestPayload) {
+        var value = requestPayload[key];
+        this.repSet(key, value);
+      }
+      this.repEndRootObject();
+    }
+    isSuccess &= this.finishPut();
+  }
+
+  return isSuccess;
 };
 
 /**
