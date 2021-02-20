@@ -318,16 +318,44 @@ OCFAdapter.prototype.repEndRootObject = function () {
  * @param {Object} responsePayload Payload of response
  * Sends a response with a specific status code to a request from another device.
  */
-OCFAdapter.prototype.sendResponse = function (ocfRequest, statusCode, responsePayload) {
-  if(responsePayload !== undefined) {
-    if(typeof responsePayload !== 'object') {
-      throw "Invalid responsePayload: " + responsePayload;
+OCFAdapter.prototype.sendResponse = function (
+  ocfRequest,
+  statusCode,
+  responsePayload
+) {
+  if (responsePayload !== undefined) {
+    if (typeof responsePayload !== 'object') {
+      throw 'Invalid responsePayload: ' + responsePayload;
     }
     this.repStartRootObject();
-    for(var key in responsePayload) {
+    for (var key in responsePayload) {
       var value = responsePayload[key];
       this.repSet(key, value);
     }
+    this.repEndRootObject();
+  }
+  native.ocf_adapter_sendResponse(ocfRequest, statusCode);
+};
+/**
+ * OCFAdapter.sendResponseBuffer
+ * @param {OCFRequest} ocfRequest target of response
+ * @param {Number} statusCode Response status code value
+ * @param {Buffer} responsePayloadBuffer Buffer payload of response
+ * @param {String} responsePayloadString String payload of response
+ * Sends a response with a specific status code to a request from another device.
+ */
+OCFAdapter.prototype.sendResponseBuffer = function (
+  ocfRequest,
+  statusCode,
+  responsePayloadBuffer,
+  responsePayloadString
+) {
+  if (responsePayload !== undefined) {
+    if (typeof responsePayload !== 'object') {
+      throw 'Invalid responsePayload: ' + responsePayload;
+    }
+    this.repStartRootObject();
+    this.repSetBufferAndString(responsePayloadBuffer, responsePayloadString)
     this.repEndRootObject();
   }
   native.ocf_adapter_sendResponse(ocfRequest, statusCode);
