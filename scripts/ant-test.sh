@@ -11,9 +11,10 @@ else
   export APP_ROOT="$ANT_ROOT/apps"
 fi
 echo "ANT_ROOT: $ANT_ROOT"
+export PYTHONPATH=$ANT_ROOT/python:$PYTHONPATH
 
 if [ $2 == "--run" ]; then
-  ${ANT_ROOT}/iotjs ${ANT_ROOT}/app-core/main.js ${1} ${APP_ROOT}/${1}.js 0
+  ${ANT_ROOT}/iotjs ${ANT_ROOT}/app-core/main.js $1 ${APP_ROOT}/$1.js 0
 elif [ $2 == "--debug" ]; then
-  gdb --args ${ANT_ROOT}/iotjs ${ANT_ROOT}/app-core/main.js ${1} ${APP_ROOT}/${1}.js 0
+  gdb --args ${ANT_ROOT}/iotjs ${ANT_ROOT}/app-core/main.js $1 ${APP_ROOT}/$1.js 0
 fi

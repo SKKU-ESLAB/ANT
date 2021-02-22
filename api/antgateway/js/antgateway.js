@@ -117,6 +117,23 @@ ANTGateway.prototype.createImgClsImagenetElement = function (
   return mlFragmentElement;
 };
 
+// TODO: add pre-processing handler, post-processing handler
+/* DNN fragment engine (DFE) */
+ANTGateway.prototype.createDFE = function (modelName, numFragments) {
+  if (typeof modelName !== 'string') {
+    throw 'Invalid modelName: ' + modelName;
+  }
+  if (
+    typeof numFragments !== 'number' ||
+    parseInt(numFragments) != numFragments
+  ) {
+    throw 'Invalid numFragments: ' + numFragments;
+  }
+  var dfe = new DFE(modelName, numFragments);
+  dfe.load();
+  return dfe;
+};
+
 /*
  * Virtual sensor (Based on OCF standard)
  *
@@ -285,7 +302,7 @@ VirtualSensorAdapter.prototype.createDeepSensor = function (
     throw 'VSA createDeepSensor error: Invalid numFragments ' + numFragments;
   }
 
-  var dfe = this.createDFE(modelName, numFragments);
+  var dfe = this.getANTGateway().createDFE(modelName, numFragments);
   var hObserver = dfe.getObserverHandler();
   var hGenerator = dfe.getGeneratorHandler();
   var hSetting = dfe.getSettingHandler();
@@ -297,22 +314,6 @@ VirtualSensorAdapter.prototype.createDeepSensor = function (
     hGenerator,
     hSetting
   );
-};
-
-// TODO: add pre-processing handler, post-processing handler
-VirtualSensorAdapter.prototype.createDFE = function (modelName, numFragments) {
-  if (typeof modelName !== 'string') {
-    throw 'Invalid modelName: ' + modelName;
-  }
-  if (
-    typeof numFragments !== 'number' ||
-    parseInt(numFragments) != numFragments
-  ) {
-    throw 'Invalid numFragments: ' + numFragments;
-  }
-  var dfe = new DFE(modelName, numFragments);
-  dfe.load();
-  return dfe;
 };
 
 /* Gateway manager */
@@ -334,6 +335,9 @@ VirtualSensorAdapter.prototype.createGWClient = function (onPrepared) {
 };
 
 /* Getters */
+VirtualSensorAdapter.prototype.getANTGateway = function () {
+  return this.mANTGateway;
+};
 VirtualSensorAdapter.prototype.getOCFAdapter = function () {
   return this.mOCFAdapter;
 };
@@ -894,7 +898,7 @@ DFE.prototype.getSettingHandler = function (fragNum) {
 // TODO: GatewayManager: Add submodule for the proxy access to virtual sensors
 /* Gateway Manager */
 function GatewayManager() {
-  this.mVirtualSensorManager = new VirtualSensorManager();
+  this.mVirtualSensorManager = new VirtualSensorManager(this);
   this.mDFEScheduler = new DFEScheduler();
 }
 
@@ -932,7 +936,9 @@ GatewayManager.prototype.onOCFClientPrepared = function (vsAdapter) {
 };
 
 /* Virtual Sensor Manager */
-function VirtualSensorManager() {
+function VirtualSensorManager(antGateway) {
+  this.mANTGateway = antGateway;
+
   this.mResource = undefined;
   this.mInletList = [];
   this.mOutletList = [];

@@ -24,6 +24,14 @@
 #include "../../../common/native/ant_common.h"
 #include "./ant_gateway_dfe_internal.h"
 
+#define ANT_PYTHON_ASSERT(expr)                                                \
+  do {                                                                         \
+    if (!(expr)) {                                                             \
+      fprintf(stderr, "Assert: " #expr);                                       \
+      PyErr_Print();                                                           \
+    }                                                                          \
+  } while (false)
+
 void interpreters_destroy(void *interpreters) {
   PyObject *pyInterpreters = (PyObject *)interpreters;
   Py_DECREF(pyInterpreters);
@@ -65,17 +73,15 @@ void *ant_gateway_dfeLoadAndPreprocessImage_internal(const char *imgPath) {
   }
 
   PyObject *pyArgs = PyTuple_New(1);
-  int ret;
   // Arg 0: string img_path
   PyObject *pyImgPath = Py_BuildValue("s#", imgPath, strlen(imgPath));
-  assert(pyImgPath != NULL);
-  ret = PyTuple_SetItem(pyArgs, 0, pyImgPath);
-  assert(ret == 0);
-  Py_DECREF(pyImgPath);
+  ANT_PYTHON_ASSERT(pyImgPath != NULL);
+  PyTuple_SET_ITEM(pyArgs, 0, pyImgPath);
 
   // Call inner python function
   PyObject *pyInputTensor = PyObject_CallObject(pyFunc, pyArgs);
-  assert(pyInputTensor != NULL);
+  ANT_PYTHON_ASSERT(pyInputTensor != NULL);
+  Py_DECREF(pyImgPath);
   Py_DECREF(pyFunc);
   Py_DECREF(pyArgs);
 
@@ -89,7 +95,7 @@ void *ant_gateway_dfeLoadAndPreprocessImage_getOutputBufferWithLength(
   char *inputTensorBuffer = NULL;
   int ret = PyBytes_AsStringAndSize(pyInputTensor, &inputTensorBuffer,
                                     (Py_ssize_t *)pInputTensorLength);
-  assert(ret >= 0);
+  ANT_PYTHON_ASSERT(ret >= 0);
   return (void *)inputTensorBuffer;
 }
 void ant_gateway_dfeLoadAndPreprocessImage_releaseOutput(void *inputTensor) {
@@ -118,23 +124,23 @@ void *ant_gateway_dfeLoad_internal(const char *modelName, int numFragments) {
   }
 
   PyObject *pyArgs = PyTuple_New(2);
-  int ret;
+  ANT_PYTHON_ASSERT(pyArgs != NULL);
+
   // Arg 0: string model_name
   PyObject *pyModelName = Py_BuildValue("s#", modelName, strlen(modelName));
-  assert(pyModelName != NULL);
-  ret = PyTuple_SetItem(pyArgs, 0, pyModelName);
-  assert(ret == 0);
-  Py_DECREF(pyModelName);
+  ANT_PYTHON_ASSERT(pyModelName != NULL);
+  PyTuple_SET_ITEM(pyArgs, 0, pyModelName);
+
   // Arg 1: int num_fragments
   PyObject *pyNumFragments = PyLong_FromLong((long)numFragments);
-  assert(pyNumFragments != NULL);
-  ret = PyTuple_SetItem(pyArgs, 1, pyNumFragments);
-  assert(ret == 0);
-  Py_DECREF(pyNumFragments);
+  ANT_PYTHON_ASSERT(pyNumFragments != NULL);
+  PyTuple_SET_ITEM(pyArgs, 1, pyNumFragments);
 
   // Call inner python function
   PyObject *pyInterpreters = PyObject_CallObject(pyFunc, pyArgs);
-  assert(pyInterpreters != NULL);
+  ANT_PYTHON_ASSERT(pyInterpreters != NULL);
+  Py_DECREF(pyModelName);
+  Py_DECREF(pyNumFragments);
   Py_DECREF(pyFunc);
   Py_DECREF(pyArgs);
 
@@ -167,36 +173,31 @@ void *ant_gateway_dfeExecute_internal(void *interpreters, void *inputTensor,
   }
 
   PyObject *pyArgs = PyTuple_New(2);
-  int ret;
   // Arg 0: object interpreters
   PyObject *pyInterpreters = (PyObject *)interpreters;
-  ret = PyTuple_SetItem(pyArgs, 0, pyInterpreters);
-  assert(ret == 0);
+  PyTuple_SET_ITEM(pyArgs, 0, pyInterpreters);
 
   // Arg 1: bytebuffer input_tensor
   PyObject *pyInputTensor = Py_BuildValue("S", inputTensor, inputTensorLength);
-  assert(pyInputTensor);
-  ret = PyTuple_SetItem(pyArgs, 1, pyInputTensor);
-  assert(ret == 0);
-  Py_DECREF(pyInputTensor);
+  ANT_PYTHON_ASSERT(pyInputTensor);
+  PyTuple_SET_ITEM(pyArgs, 1, pyInputTensor);
 
   // Arg 2: int start_layer_num
   PyObject *pyStartLayerNum = PyLong_FromLong((long)startLayerNum);
-  assert(pyStartLayerNum != NULL);
-  ret = PyTuple_SetItem(pyArgs, 2, pyStartLayerNum);
-  assert(ret == 0);
-  Py_DECREF(pyStartLayerNum);
+  ANT_PYTHON_ASSERT(pyStartLayerNum != NULL);
+  PyTuple_SET_ITEM(pyArgs, 2, pyStartLayerNum);
 
   // Arg 3: int end_layer_num
   PyObject *pyEndLayerNum = PyLong_FromLong((long)endLayerNum);
-  assert(pyEndLayerNum != NULL);
-  ret = PyTuple_SetItem(pyArgs, 2, pyEndLayerNum);
-  assert(ret == 0);
-  Py_DECREF(pyEndLayerNum);
+  ANT_PYTHON_ASSERT(pyEndLayerNum != NULL);
+  PyTuple_SET_ITEM(pyArgs, 2, pyEndLayerNum);
 
   // Call inner python function
   PyObject *pyOutputTensor = PyObject_CallObject(pyFunc, pyArgs);
-  assert(pyOutputTensor != NULL);
+  ANT_PYTHON_ASSERT(pyOutputTensor != NULL);
+  Py_DECREF(pyInputTensor);
+  Py_DECREF(pyStartLayerNum);
+  Py_DECREF(pyEndLayerNum);
   Py_DECREF(pyArgs);
   Py_DECREF(pyFunc);
 
@@ -212,7 +213,7 @@ ant_gateway_dfeExecute_getOutputBufferWithLength(void *outputTensor,
   char *outputTensorBuffer = NULL;
   int ret = PyBytes_AsStringAndSize(pyOutputTensor, &outputTensorBuffer,
                                     (Py_ssize_t *)pOutputTensorLength);
-  assert(ret >= 0);
+  ANT_PYTHON_ASSERT(ret >= 0);
   return (void *)outputTensorBuffer;
 }
 void ant_gateway_dfeExecute_releaseOutput(void *outputTensor) {
