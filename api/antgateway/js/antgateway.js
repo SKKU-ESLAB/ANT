@@ -28,6 +28,37 @@ try {
   throw new Error('Gateway API Dependency Error: not found OCF API');
 }
 
+/* OCF Device */
+var ODURI_Root = '/vs/d';
+var ODType_Root = 'ant.d.virtualsensor';
+var ODName = 'VirtualSensorDevice';
+var ODSpecVersion = 'ant.1.0.0';
+var ODDataModelVersion = 'ant.res.1.0.0';
+
+/* OCF Resource Types of Virtual Sensor Resources */
+var ORType_VSRoot = 'ant.r.vs';
+var ORType_VSMask = 'ant.r.vs.';
+var ORType_VSInlet = 'ant.r.vs.inlet';
+var ORType_VSOutlet = 'ant.r.vs.outlet';
+var ORType_VSSetting = 'ant.r.vs.setting';
+
+/* OCF Resource Types of Gateway Manager Resources */
+var ORType_GWRoot = 'ant.r.gw';
+var ORType_GWMask = 'ant.r.gw.';
+var ORType_GWVSM = 'ant.r.gw.vsm';
+
+/* URIs of Virtual Sensor Resources */
+function ORURI_VSInlet(name) {
+  return '/vs/' + name + '/inlet';
+}
+function ORURI_VSOutlet(name) {
+  return '/vs/' + name + '/outlet';
+}
+function ORURI_VSSetting(name) {
+  return '/vs/' + name + '/setting';
+}
+var ORURI_GWVSM = '/gw/vsm';
+
 var gVSAdapter = undefined;
 
 /**
@@ -134,11 +165,11 @@ function VirtualSensorAdapter() {
   function onPrepareOCFEventLoop() {
     self.mOCFAdapter.setPlatform('ant');
     self.mOCFAdapter.addDevice(
-      '/vs',
-      'ant.d.virtualsensor',
-      'VirtualSensor',
-      'ant.1.0.0',
-      'ant.res.1.0.0'
+      ODURI_Root,
+      ODType_Root,
+      ODName,
+      ODSpecVersion,
+      ODDataModelVersion
     );
   }
 
@@ -354,30 +385,6 @@ VirtualSensorAdapter.prototype.addResource = function (resource) {
     this.mResources.push(resource);
   }
 };
-
-/* OCF Resource Types of Virtual Sensor Resources */
-var ORType_VSRoot = 'ant.r.vs';
-var ORType_VSMask = 'ant.r.vs.';
-var ORType_VSInlet = 'ant.r.vs.inlet';
-var ORType_VSOutlet = 'ant.r.vs.outlet';
-var ORType_VSSetting = 'ant.r.vs.setting';
-
-/* OCF Resource Types of Gateway Manager Resources */
-var ORType_GWRoot = 'ant.r.gw';
-var ORType_GWMask = 'ant.r.gw.';
-var ORType_GWVSM = 'ant.r.gw.vsm';
-
-/* URIs of Virtual Sensor Resources */
-function ORURI_VSInlet(name) {
-  return '/vs/' + name + '/inlet';
-}
-function ORURI_VSOutlet(name) {
-  return '/vs/' + name + '/outlet';
-}
-function ORURI_VSSetting(name) {
-  return '/vs/' + name + '/setting';
-}
-var ORURI_GWVSM = '/gw/vsm';
 
 /* Gateway API 2-1: Virtual Sensor */
 function VirtualSensor(
@@ -732,7 +739,7 @@ function onGetOutlet(request) {
     if (result.buffer !== undefined) {
       var jsonObject = JSON.stringify(result.jsObject);
       var buffer = result.buffer;
-      oa.repSetBufferAndString(jsonObject, buffer);
+      oa.repSetBufferAndString(buffer, jsonObject);
     } else {
       var jsonObject = JSON.stringify(result.jsObject);
       oa.repSet('jsObject', jsonObject);
