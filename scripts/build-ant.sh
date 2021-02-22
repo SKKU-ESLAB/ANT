@@ -53,6 +53,9 @@ cp ${ANT_ROOT}/dep/iotjs/build/${ARCH}-linux/debug/bin/iotjs ${OUT_PATH}/
 cp -r ${ANT_ROOT}/app-launcher ${OUT_PATH}/
 cp -r ${ANT_ROOT}/app-core ${OUT_PATH}/
 
+mkdir -p ${OUT_PATH}/python
+cp ${ANT_ROOT}/api/antgateway/python/* ${OUT_PATH}/python
+
 # Install ANT-ML
 mkdir -p ${OUT_PATH}/ml
 cp -r ${ANT_ROOT}/ml/*.py ${OUT_PATH}/ml/

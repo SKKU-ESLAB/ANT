@@ -42,7 +42,6 @@ def dfe_load(model_name, num_fragments):
             model_path=fragment_file, num_threads=4)
         interpreter.allocate_tensors()
         interpreters.append(interpreter)
-
     return interpreters
 
 
