@@ -350,12 +350,24 @@ OCFAdapter.prototype.sendResponseBuffer = function (
   responsePayloadBuffer,
   responsePayloadString
 ) {
-  if (responsePayload !== undefined) {
-    if (typeof responsePayload !== 'object') {
-      throw 'Invalid responsePayload: ' + responsePayload;
+  if (
+    responsePayloadBuffer !== undefined &&
+    responsePayloadString !== undefined
+  ) {
+    if (typeof responsePayloadBuffer !== 'object') {
+      throw 'Invalid responsePayloadBuffer: ' + typeof responsePayloadBuffer;
+    }
+    if (typeof responsePayloadString !== 'string') {
+      throw (
+        'Invalid responsePayloadString: ' +
+        responsePayloadString +
+        '(' +
+        typeof responsePayloadString +
+        ')'
+      );
     }
     this.repStartRootObject();
-    this.repSetBufferAndString(responsePayloadBuffer, responsePayloadString)
+    this.repSetBufferAndString(responsePayloadBuffer, responsePayloadString);
     this.repEndRootObject();
   }
   native.ocf_adapter_sendResponse(ocfRequest, statusCode);
