@@ -735,17 +735,12 @@ function onGetOutlet(request) {
   // Send response
   if (!isFailed) {
     var oa = gVSAdapter.mOCFAdapter;
-    oa.repStartRootObject();
-    if (result.buffer !== undefined) {
-      var jsonObject = JSON.stringify(result.jsObject);
-      var buffer = result.buffer;
-      oa.repSetBufferAndString(buffer, jsonObject);
-    } else {
-      var jsonObject = JSON.stringify(result.jsObject);
-      oa.repSet('jsObject', jsonObject);
+    if (result.buffer === undefined) {
+      result.buffer = new Buffer(1);
     }
-    oa.repEndRootObject();
-    oa.sendResponse(request, ocf.OC_STATUS_OK);
+    var jsonObject = JSON.stringify(result.jsObject);
+    var buffer = result.buffer;
+    oa.sendResponseBuffer(request, ocf.OC_STATUS_OK, buffer, jsonObject);
   }
 }
 
@@ -1125,6 +1120,7 @@ function onPostVirtualSensorManager(request) {
         undefined,
         '',
         ocf.OC_LOW_QOS,
+        false,
         requestPayload
       );
       if (!res) {
