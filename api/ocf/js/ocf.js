@@ -295,7 +295,18 @@ OCFAdapter.prototype.repSetBufferAndString = function (
   stringValue
 ) {
   if (typeof bufferValue !== 'object' || !(bufferValue instanceof Buffer)) {
-    console.log('repSet(): Not supported type (' + typeof bufferValue + ')');
+    console.log(
+      'repSetBufferAndString(): Invalid bufferValue type (' +
+        typeof bufferValue +
+        ')'
+    );
+  }
+  if (typeof stringValue !== 'string') {
+    console.log(
+      'repSetBufferAndString(): Invalid stringValue type (' +
+        typeof bufferValue +
+        ')'
+    );
   }
 
   var KEY_BUFFER_VALUE = 'bufferValue';
@@ -350,26 +361,28 @@ OCFAdapter.prototype.sendResponseBuffer = function (
   responsePayloadBuffer,
   responsePayloadString
 ) {
-  if (
-    responsePayloadBuffer !== undefined &&
-    responsePayloadString !== undefined
-  ) {
-    if (typeof responsePayloadBuffer !== 'object') {
-      throw 'Invalid responsePayloadBuffer: ' + typeof responsePayloadBuffer;
-    }
-    if (typeof responsePayloadString !== 'string') {
-      throw (
-        'Invalid responsePayloadString: ' +
-        responsePayloadString +
-        '(' +
-        typeof responsePayloadString +
-        ')'
-      );
-    }
-    this.repStartRootObject();
-    this.repSetBufferAndString(responsePayloadBuffer, responsePayloadString);
-    this.repEndRootObject();
+  if (responsePayloadBuffer === undefined) {
+    throw 'Undefined responsePayloadBuffer';
   }
+  if (responsePayloadString === undefined) {
+    throw 'Undefined responsePayloadString';
+  }
+  if (typeof responsePayloadBuffer !== 'object') {
+    throw 'Invalid responsePayloadBuffer: ' + typeof responsePayloadBuffer;
+  }
+  if (typeof responsePayloadString !== 'string') {
+    throw (
+      'Invalid responsePayloadString: ' +
+      responsePayloadString +
+      '(' +
+      typeof responsePayloadString +
+      ')'
+    );
+  }
+  this.repStartRootObject();
+  this.repSetBufferAndString(responsePayloadBuffer, responsePayloadString);
+  this.repEndRootObject();
+
   native.ocf_adapter_sendResponse(ocfRequest, statusCode);
 };
 /**
