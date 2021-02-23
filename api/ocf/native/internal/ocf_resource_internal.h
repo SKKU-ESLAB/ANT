@@ -24,7 +24,6 @@
 struct or_setHandler_event_data_s {
   void *request;
 
-  char *origin_addr;
   int dest_device_id;
   char *dest_uri;
   char *query;
@@ -38,7 +37,6 @@ typedef struct or_setHandler_event_data_s or_setHandler_event_data_t;
 void or_setHandler_event_data_destroyer(void *item) {
   or_setHandler_event_data_t *event;
   event = (or_setHandler_event_data_t *)item;
-  free(event->origin_addr);
   free(event->dest_uri);
   free(event->query);
   free(event->payload_string);

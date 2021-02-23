@@ -231,8 +231,6 @@ ANT_UV_HANDLER_FUNCTION(ocf_resource_setHandler) {
     iotjs_string_t dest_uri_jsstr = iotjs_string_create();
     iotjs_string_t query_jsstr = iotjs_string_create();
     iotjs_string_t payload_string_jsstr = iotjs_string_create();
-    iotjs_string_append(&origin_addr_jsstr, event_data->origin_addr,
-                        strlen(event_data->origin_addr));
     iotjs_string_append(&dest_uri_jsstr, event_data->dest_uri,
                         strlen(event_data->dest_uri));
     iotjs_string_append(&query_jsstr, event_data->query,

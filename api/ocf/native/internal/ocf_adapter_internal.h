@@ -139,11 +139,16 @@ void unlock_ocf_thread(void);
     event_data->request_id = request_id;                                       \
     event_data->is_payload_buffer = is_payload_buffer;                         \
                                                                                \
+    bool result_getstr = false;                                                \
+    assert(data != NULL);                                                      \
+    assert(data->payload != NULL);                                             \
     if (event_data->is_payload_buffer) {                                       \
       char *payload_buffer;                                                    \
       size_t payload_buffer_length;                                            \
-      oc_rep_get_byte_string(data->payload, KEY_BUFFER_VALUE, &payload_buffer,   \
-                             &payload_buffer_length);                          \
+      result_getstr =                                                          \
+          oc_rep_get_byte_string(data->payload, KEY_BUFFER_VALUE,              \
+                                 &payload_buffer, &payload_buffer_length);     \
+      assert(result_getstr);                                                   \
       event_data->payload_buffer = (char *)malloc(payload_buffer_length);      \
       memcpy(event_data->payload_buffer, payload_buffer,                       \
              payload_buffer_length);                                           \
@@ -151,8 +156,10 @@ void unlock_ocf_thread(void);
                                                                                \
       char *payload_string;                                                    \
       size_t payload_string_length;                                            \
-      oc_rep_get_string(data->payload, KEY_STRING_VALUE, &payload_string,      \
-                        &payload_string_length);                               \
+      result_getstr =                                                          \
+          oc_rep_get_string(data->payload, KEY_STRING_VALUE, &payload_string,  \
+                            &payload_string_length);                           \
+      assert(result_getstr);                                                   \
       event_data->payload_string = (char *)malloc(payload_string_length + 1);  \
       memcpy(event_data->payload_string, payload_string,                       \
              payload_string_length);                                           \
