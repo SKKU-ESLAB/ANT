@@ -45,8 +45,7 @@ cd -
 
 # Install ANT Running Script
 mkdir -p ${OUT_PATH}
-cp ${ANT_ROOT}/scripts/ant.sh ${OUT_PATH}/
-cp ${ANT_ROOT}/scripts/ant-test.sh ${OUT_PATH}/
+cp ${ANT_ROOT}/scripts/antd ${OUT_PATH}/
 
 # Install ANT API and App Runtime for IoT.js
 cp ${ANT_ROOT}/dep/iotjs/build/${ARCH}-linux/debug/bin/iotjs ${OUT_PATH}/

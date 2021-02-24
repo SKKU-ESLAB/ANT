@@ -1,0 +1,29 @@
+#!/bin/bash
+function SHOW_USAGE() {
+  echo "usage: $1 [app name] [--run or --debug] [(optional) APP_ROOT]"
+  exit -1
+}
+function EXPORT_ENVS() {
+  export ANT_ROOT="$( cd "$( dirname "$0" )" && pwd -P )"
+  echo "ANT_ROOT: $ANT_ROOT"
+  export PYTHONPATH=$ANT_ROOT/python:$PYTHONPATH
+}
+
+if [ $# -ne 1 ] && [ $# -ne 2 ] && [ $# -ne 3 ]; then
+  SHOW_USAGE
+fi
+
+if [ $# -eq 1 ]; then
+  EXPORT_ENVS
+  n run 10 ${ANT_ROOT}/app-launcher/index.js
+elif [ $# -eq 2 ] || [ $# -eq 3 ]; then
+  if [ $2 == "--run" ]; then
+    EXPORT_ENVS
+    ${ANT_ROOT}/iotjs ${ANT_ROOT}/app-core/main.js $1 ${APP_ROOT}/$1.js 0
+  elif [ $2 == "--debug" ]; then
+    EXPORT_ENVS
+    gdb --args ${ANT_ROOT}/iotjs ${ANT_ROOT}/app-core/main.js $1 ${APP_ROOT}/$1.js 0
+  else
+    SHOW_USAGE
+  fi
+fi

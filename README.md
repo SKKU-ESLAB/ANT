@@ -29,29 +29,13 @@ $ ./download_sample_model.sh
 ```
 $ ./scripts/build-ant.sh
 ```
-<!--
-```
-$ mkdir build && cd build
-$ cmake ..
-$ make -j4
-```
 
-If you changed your build configuration, you should make your ```build``` directory once again.
-
-### How to Install
-```
-$ sudo make install
-```
--->
 ### How to Run
+1. Run ANT daemon
 ```
-$ ./out/ant.sh
+$ ./out/antd
 ```
-<!--
-```
-$ sudo run_ant
-```
--->
+2. Then, open the ANT dashboard website or ANT Android companion app
 
 ## Demo Video
 
