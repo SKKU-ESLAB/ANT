@@ -18,7 +18,7 @@
 
 void interpreters_destroy(void *interpreters);
 
-// TODO: hard-coding input
+// TODO(RedCarrottt): hard-coding input
 void *ant_gateway_dfeLoadAndPreprocessImage_internal(const char *imgPath);
 void *ant_gateway_dfeLoadAndPreprocessImage_getOutputBufferWithLength(
     void *inputTensor, size_t *pInputTensorLength);

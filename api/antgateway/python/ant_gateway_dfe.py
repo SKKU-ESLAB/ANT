@@ -18,15 +18,15 @@ import tensorflow as tf
 import numpy as np
 
 from keras.preprocessing import image
-from keras.applications import imagenet_utils, mobilenet
+from keras.applications import mobilenet
 
 
 def dfe_load_and_preprocess_image(img_path):
     img = image.load_img(img_path, target_size=(224, 224))
     img_array = image.img_to_array(img)
     img_array = np.expand_dims(img_array, axis=0)
-    inputTensor = mobilenet.preprocess_input(img_array)
-    return inputTensor
+    input_tensor = mobilenet.preprocess_input(img_array)
+    return input_tensor
 
 
 def dfe_load(model_name, num_fragments):
