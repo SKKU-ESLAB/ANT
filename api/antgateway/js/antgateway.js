@@ -29,35 +29,53 @@ try {
 }
 
 /* OCF Device */
-var ODURI_Root = '/vs/d';
-var ODType_Root = 'ant.d.virtualsensor';
-var ODName = 'VirtualSensorDevice';
-var ODSpecVersion = 'ant.1.0.0';
-var ODDataModelVersion = 'ant.res.1.0.0';
+var gDeviceUri = '/vs/d';
+var gDeviceType = 'ant.d.virtualsensor';
+var gDeviceName = 'VirtualSensorDevice';
+var gDeviceSpec = 'ant.1.0.0';
+var gDeviceDataModel = 'ant.res.1.0.0';
 
 /* OCF Resource Types of Virtual Sensor Resources */
-var ORType_VSRoot = 'ant.r.vs';
-var ORType_VSMask = 'ant.r.vs.';
-var ORType_VSInlet = 'ant.r.vs.inlet';
-var ORType_VSOutlet = 'ant.r.vs.outlet';
-var ORType_VSSetting = 'ant.r.vs.setting';
+var gVSUriRoot = 'ant.r.vs';
+var gVSUriMask = 'ant.r.vs.';
+var gVSInletUri = 'ant.r.vs.inlet';
+var gVSOutletUri = 'ant.r.vs.outlet';
+var gVSSettingUri = 'ant.r.vs.setting';
 
 /* OCF Resource Types of Gateway Manager Resources */
-var ORType_GWRoot = 'ant.r.gw';
-var ORType_GWMask = 'ant.r.gw.';
-var ORType_GWVSM = 'ant.r.gw.vsm';
+var gGWUriRoot = 'ant.r.gw';
+var gGWUriMask = 'ant.r.gw.';
+var gGWVSMUri = 'ant.r.gw.vsm';
 
 /* URIs of Virtual Sensor Resources */
-function ORURI_VSInlet(name) {
+
+/**
+ * (Internal function) Get inlet resource's URI with given target virtual sensor
+ * @param {String} name the name of target virtual sensor
+ * @returns {String} the name of inlet resource
+ */
+function getVSInletUri(name) {
   return '/vs/' + name + '/inlet';
 }
-function ORURI_VSOutlet(name) {
+
+/**
+ * (Internal function) Get outlet resource's URI with given target virtual sensor
+ * @param {String} name the name of target virtual sensor
+ * @returns {String} the name of outlet resource
+ */
+function getVSOutletUri(name) {
   return '/vs/' + name + '/outlet';
 }
-function ORURI_VSSetting(name) {
+
+/**
+ * (Internal function) Get setting resource's URI with given target virtual sensor
+ * @param {String} name the name of target virtual sensor
+ * @returns {String} the name of setting resource
+ */
+function getVSSettingUri(name) {
   return '/vs/' + name + '/setting';
 }
-var ORURI_GWVSM = '/gw/vsm';
+var gGWVSMUri = '/gw/vsm';
 
 var gVSAdapter = undefined;
 
@@ -97,8 +115,11 @@ function ANTGateway() {}
  * ANTGateway.createImgClsImageNetElement
  * @param {String} modelPath the path of image classification model
  * @param {Number} numFragments the number of fragments
- * @param {String} targetUri the URI of target device that will be used for DNN partitioning
- * Create a ML fragment element that runs a image classificaiton model trained with ImageNet dataset. It is the first way to perform gateway-centric DNN partitioning. It internally uses gstreamer.
+ * @param {String} targetUri the URI of target device that will be used for
+ *                           DNN partitioning
+ * Create a ML fragment element that runs a image classificaiton model
+ * trained with ImageNet dataset. It is the first way to perform
+ * gateway-centric DNN partitioning. It internally uses gstreamer.
  */
 ANTGateway.prototype.createImgClsImagenetElement = function (
   modelPath,
@@ -182,11 +203,11 @@ function VirtualSensorAdapter() {
   function onPrepareOCFEventLoop() {
     self.mOCFAdapter.setPlatform('ant');
     self.mOCFAdapter.addDevice(
-      ODURI_Root,
-      ODType_Root,
-      ODName,
-      ODSpecVersion,
-      ODDataModelVersion
+      gDeviceUri,
+      gDeviceType,
+      gDeviceName,
+      gDeviceSpec,
+      gDeviceDataModel
     );
   }
 
@@ -437,12 +458,12 @@ VirtualSensor.prototype.setup = function (vsAdapter) {
 
 VirtualSensor.prototype.setupInlet = function (oa) {
   var device = oa.getDevice(0);
-  var uri = ORURI_VSInlet(this.mName);
+  var uri = getVSInletUri(this.mName);
   this.mInletResource = OCFAPI.createResource(
     device,
     this.mName,
     uri,
-    [ORType_VSRoot, ORType_VSInlet, this.mDeviceType, this.mSensorType],
+    [gVSUriRoot, gVSInletUri, this.mDeviceType, this.mSensorType],
     [OCFAPI.OC_IF_RW]
   );
   this.mInletResource.setDiscoverable(true);
@@ -455,12 +476,12 @@ VirtualSensor.prototype.setupInlet = function (oa) {
 
 VirtualSensor.prototype.setupOutlet = function (oa) {
   var device = oa.getDevice(0);
-  var uri = ORURI_VSOutlet(this.mName);
+  var uri = getVSOutletUri(this.mName);
   this.mOutletResource = OCFAPI.createResource(
     device,
     this.mName,
     uri,
-    [ORType_VSRoot, ORType_VSOutlet, this.mDeviceType, this.mSensorType],
+    [gVSUriRoot, gVSOutletUri, this.mDeviceType, this.mSensorType],
     [OCFAPI.OC_IF_RW]
   );
   this.mOutletResource.setDiscoverable(true);
@@ -472,12 +493,12 @@ VirtualSensor.prototype.setupOutlet = function (oa) {
 
 VirtualSensor.prototype.setupSetting = function (oa) {
   var device = oa.getDevice(0);
-  var uri = ORURI_VSSetting(this.mName);
+  var uri = getVSSettingUri(this.mName);
   this.mSettingResource = OCFAPI.createResource(
     device,
     this.mName,
     uri,
-    [ORType_VSRoot, ORType_VSSetting, this.mDeviceType, this.mSensorType],
+    [gVSUriRoot, gVSSettingUri, this.mDeviceType, this.mSensorType],
     [OCFAPI.OC_IF_RW]
   );
   this.mSettingResource.setDiscoverable(true);
@@ -689,7 +710,7 @@ function _onPostInlet_internal(
     }
   }
 
-  oa.discovery(ORType_VSOutlet, onDiscoveryAfterPostInlet);
+  oa.discovery(gVSOutletUri, onDiscoveryAfterPostInlet);
   return {result: 'Success', reason: 'None'};
 }
 
@@ -983,8 +1004,8 @@ VirtualSensorManager.prototype.setup = function (oa) {
   this.mInletResource = OCFAPI.createResource(
     device,
     'vsm',
-    ORURI_GWVSM,
-    [ORType_GWRoot, ORType_GWVSM],
+    gGWVSMUri,
+    [gGWUriRoot, gGWVSMUri],
     [OCFAPI.OC_IF_RW]
   );
   this.mInletResource.setDiscoverable(true);
@@ -1000,7 +1021,7 @@ VirtualSensorManager.prototype.startDiscovery = function (vsAdapter) {
   function onDiscovery(endpoint, uri, types, interfaceMask) {
     var isFound = false;
     for (var i in types) {
-      if (types[i] == ORType_VSRoot) {
+      if (types[i] == gVSUriRoot) {
         isFound = true;
       }
     }
@@ -1190,20 +1211,20 @@ VirtualSensorManager.prototype.addResource = function (endpoint, uri, types) {
   var letType = undefined;
   for (var i in types) {
     var type = types[i];
-    if (type.indexOf(ORType_VSMask) >= 0) {
+    if (type.indexOf(gVSUriMask) >= 0) {
       letType = type;
       continue;
-    } else if (type == ORType_VSRoot) {
+    } else if (type == gVSUriRoot) {
       continue;
     }
     vsTypes.push(type);
   }
   var foundEntry = {endpoint: endpoint, uri: uri, types: vsTypes};
-  if (letType == ORType_VSInlet) {
+  if (letType == gVSInletUri) {
     this.mInletList.push(foundEntry);
-  } else if (letType == ORType_VSOutlet) {
+  } else if (letType == gVSOutletUri) {
     this.mOutletList.push(foundEntry);
-  } else if (letType == ORType_VSSetting) {
+  } else if (letType == gVSSettingUri) {
     this.mSettingList.push(foundEntry);
   } else {
     console.error('Cannot identify resource: ' + uri);
@@ -1269,7 +1290,7 @@ GatewayClient.prototype.onOCFClientPrepared = function (vsAdapter) {
     // It allows only one gateway.
     for (var i in types) {
       var type = types[i];
-      if (type == ORType_GWVSM) {
+      if (type == gGWVSMUri) {
         self.mFoundVSM = {endpoint: endpoint, uri: uri};
       }
     }
@@ -1279,7 +1300,7 @@ GatewayClient.prototype.onOCFClientPrepared = function (vsAdapter) {
   // 2. If gateway resource is found, store the endpoint and resource
   // 3. Then any request can be sent to gateway.
   var oa = vsAdapter.getOCFAdapter();
-  oa.discovery(ORType_GWRoot, _onDiscovery);
+  oa.discovery(gGWUriRoot, _onDiscovery);
 
   // Call custom onPrepared callback
   if (this.mOnPrepared !== undefined) {

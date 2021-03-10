@@ -32,7 +32,7 @@ const jerry_object_native_info_t interpreters_native_info = {
     .free_cb = (jerry_object_native_free_callback_t)interpreters_destroy,
 };
 
-// TODO: hard-coding input
+// TODO(RedCarrottt): hard-coding input
 JS_FUNCTION(ant_gateway_dfeLoadAndPreprocessImage) {
   iotjs_string_t argImgPath;
   DJS_CHECK_ARGS(1, string);
@@ -118,7 +118,7 @@ JS_FUNCTION(ant_gateway_dfeExecute) {
 }
 
 void InitANTGatewayDFE(jerry_value_t nativeObj) {
-  // TODO: hard-coding input
+  // TODO(RedCarrottt): hard-coding input
   REGISTER_ANT_API(nativeObj, ant_gateway, dfeLoadAndPreprocessImage);
 
   REGISTER_ANT_API(nativeObj, ant_gateway, dfeLoad);

@@ -49,7 +49,7 @@ void ant_gateway_dfe_initOnce(void) {
   }
 }
 
-// TODO: hard-coding input
+// TODO(RedCarrottt): hard-coding input
 void *ant_gateway_dfeLoadAndPreprocessImage_internal(const char *imgPath) {
   ant_gateway_dfe_initOnce();
 
