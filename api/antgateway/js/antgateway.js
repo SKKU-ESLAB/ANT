@@ -44,33 +44,27 @@ var gVSSettingUri = 'ant.r.vs.setting';
 
 /* OCF Resource Types of Gateway Manager Resources */
 var gGWUriRoot = 'ant.r.gw';
-var gGWUriMask = 'ant.r.gw.';
+// var gGWUriMask = 'ant.r.gw.';
 var gGWVSMUri = 'ant.r.gw.vsm';
 
 /* URIs of Virtual Sensor Resources */
 
 /**
- * (Internal function) Get inlet resource's URI with given target virtual sensor
- * @param {String} name the name of target virtual sensor
- * @returns {String} the name of inlet resource
+ * @ignore
  */
 function getVSInletUri(name) {
   return '/vs/' + name + '/inlet';
 }
 
 /**
- * (Internal function) Get outlet resource's URI with given target virtual sensor
- * @param {String} name the name of target virtual sensor
- * @returns {String} the name of outlet resource
+ * @ignore
  */
 function getVSOutletUri(name) {
   return '/vs/' + name + '/outlet';
 }
 
 /**
- * (Internal function) Get setting resource's URI with given target virtual sensor
- * @param {String} name the name of target virtual sensor
- * @returns {String} the name of setting resource
+ * @ignore
  */
 function getVSSettingUri(name) {
   return '/vs/' + name + '/setting';
@@ -80,10 +74,12 @@ var gGWVSMUri = '/gw/vsm';
 var gVSAdapter = undefined;
 
 /**
- * ANT Gateway API's main object.
- *
- * In ANT framework, gateway provides sensor virtualization and DNN
- * partitioning. Sensor virtualization means unifying interfaces to access
+ * @description The constructor of ANT Gateway API object.
+ * @class
+ * @classdesc ANT Gateway API's main object.
+ * 
+ * In ANT framework, gateway provides sensor virtualization and
+ * DNN partitioning. Sensor virtualization means unifying interfaces to access
  * physical sensors, soft sensors, local sensors, and remote sensors.
  * DNN partitioning means executing a DNN on multiple heterogeneous devices.
  * In real IoT systems, there are heterogeneous devices including gateway,
@@ -112,14 +108,14 @@ var gVSAdapter = undefined;
 function ANTGateway() {}
 
 /**
- * ANTGateway.createImgClsImageNetElement
+ * Create a ML fragment element that runs a image classificaiton model trained
+ * with ImageNet dataset. It is the first way to perform gateway-centric DNN
+ * partitioning. It internally uses gstreamer.
  * @param {String} modelPath the path of image classification model
  * @param {Number} numFragments the number of fragments
  * @param {String} targetUri the URI of target device that will be used for
  *                           DNN partitioning
- * Create a ML fragment element that runs a image classificaiton model
- * trained with ImageNet dataset. It is the first way to perform
- * gateway-centric DNN partitioning. It internally uses gstreamer.
+ * @returns {Object} a new ML fragment element for the ML model
  */
 ANTGateway.prototype.createImgClsImagenetElement = function (
   modelPath,
@@ -138,9 +134,15 @@ ANTGateway.prototype.createImgClsImagenetElement = function (
   return mlFragmentElement;
 };
 
-// TODO: add pre-processing handler, post-processing handler
-/* DNN fragment engine (DFE) */
+/**
+ * Create a DFE (DNN fragment engine) instance for the given model name and
+ * the number of fragments.
+ * @param {String} modelName the name of model to be executed by DFE
+ * @param {String} numFragments the number of the model's fragments
+ * @returns {Object} a new DFE instance
+ */
 ANTGateway.prototype.createDFE = function (modelName, numFragments) {
+  // TODO(RedCarrottt): add pre-processing handler, post-processing handler
   if (typeof modelName !== 'string') {
     throw 'Invalid modelName: ' + modelName;
   }
@@ -179,8 +181,9 @@ ANTGateway.prototype.createDFE = function (modelName, numFragments) {
  */
 
 /**
- * ANTGateway.getVSAdapter()
- * Create a virtual sensor adapter. It is the second way to perform gateway-centric DNN partitioning. It internally uses OCF standard.
+ * Create a virtual sensor adapter. It is the second way to perform
+ * gateway-centric DNN partitioning. It internally uses OCF standard.
+ * @returns {Object} virtual sensor adapter object
  */
 ANTGateway.prototype.getVSAdapter = function () {
   if (gVSAdapter === undefined) {
@@ -190,6 +193,14 @@ ANTGateway.prototype.getVSAdapter = function () {
 };
 
 /* Gateway API 2-1: Virtual Sensor Adapter */
+
+/**
+ * @description The constructor of virtual sensor adapter.
+ * @class
+ * @classdesc Virtual sensor adapter object. It is a module to arbitrate user
+ * and OCF thread and to organize virtual sensor system.
+ * This object can be created by using GatewayAPI.getVSAdapter().
+ */
 function VirtualSensorAdapter() {
   var self = this;
   /* Attributes */
@@ -250,16 +261,42 @@ function VirtualSensorAdapter() {
 }
 
 /* Virtual sensor adapter lifecycle handlers */
+
+/**
+ * Start the virtual sensor adapter. This function starts also OCF adapter
+ * managed by OCF API.
+ */
 VirtualSensorAdapter.prototype.start = function () {
   this.mOCFAdapter.start();
 };
 
+/**
+ * Stop the virtual sensor adapter. This function stops also OCF adapter
+ * managed by OCF API.
+ */
 VirtualSensorAdapter.prototype.stop = function () {
   this.mOCFAdapter.stop();
   this.mOCFAdapter.deinitialize();
 };
 
-/* Create a new virtual sensor */
+/** 
+ * Create a new virtual sensor. Every virtual sensors can be discovered
+ * by using one of three keys; sensorName, sensorType and deviceType.
+ * @param {String} sensorName the name of virtual sensor
+ * @param {String} sensorType the sensor type of virtual sensor
+ * @param {String} deviceType the device type of virtual sensor
+ * @param {Function} observerHandler (Optional) the observer handler function.
+ * It is called when a OCF client sends a request to the inlet of this virtual
+ * sensor. If you will not use observerHandler, you can use undefined
+ * for observerHandler.
+ * @param {Function} generatorHandler the generator handler function.
+ * It is called when a OCF client sends a request to the outlet of this
+ * virtual sensor. This parameter is mandatory.
+ * @param {Function} settingHandler (Optional) the setting handler function.
+ * It is called when a OCF client sends a request to the setting of this
+ * virtual sensor. If you will not use settingHandler, you can use
+ * undefined for settingHandler.
+ */
 VirtualSensorAdapter.prototype.createSensor = function (
   sensorName,
   sensorType,
@@ -306,8 +343,16 @@ VirtualSensorAdapter.prototype.createSensor = function (
   return virtualSensor;
 };
 
-/* Create a new deep sensor */
-// TODO: add pre-processing handler, post-processing handler
+/**
+ * Create a deep sensor for the given DNN model's name and the number of
+ * fragments.
+ * @param {String} sensorName the name of virtual sensor
+ * @param {String} sensorType the sensor type of virtual sensor
+ * @param {String} deviceType the device type of virtual sensor
+ * @param {String} modelName the name of DNN model to be executed by this
+ * virtual sensor
+ * @param {Number} numFragments the number of the DNN model's fragments
+ */
 VirtualSensorAdapter.prototype.createDeepSensor = function (
   sensorName,
   sensorType,
@@ -315,6 +360,8 @@ VirtualSensorAdapter.prototype.createDeepSensor = function (
   modelName,
   numFragments
 ) {
+  // TODO(RedCarrottt): add pre-processing handler, post-processing handler
+
   // Check arguments
   if (modelName === undefined || typeof modelName !== 'string') {
     throw 'VSA createDeepSensor error: Invalid modelName ' + modelName;
@@ -337,7 +384,11 @@ VirtualSensorAdapter.prototype.createDeepSensor = function (
   );
 };
 
-/* Gateway manager */
+/**
+ * It returns the singleton gateway manager. If the gateway manager is not
+ * initialized, the gateway manager will be created.
+ * @returns {Object} the singleton gateway manager
+ */
 VirtualSensorAdapter.prototype.createGWManager = function () {
   if (this.mGatewayManager === undefined) {
     this.mGatewayManager = new GatewayManager();
@@ -345,7 +396,11 @@ VirtualSensorAdapter.prototype.createGWManager = function () {
   return this.getGWManager();
 };
 
-/* Gateway client */
+/**
+ * It returns the singleton gateway client. If the gateway client is not
+ * initialized, the gateway client will be created.
+ * @returns {Object} the singleton gateway client
+ */
 VirtualSensorAdapter.prototype.createGWClient = function (onPrepared) {
   if (this.mGatewayClient === undefined) {
     this.mGatewayClient = new GatewayClient();
@@ -356,20 +411,46 @@ VirtualSensorAdapter.prototype.createGWClient = function (onPrepared) {
 };
 
 /* Getters */
+
+/**
+ * @ignore
+ */
 VirtualSensorAdapter.prototype.getANTGateway = function () {
   return this.mANTGateway;
 };
+/**
+ * It returns the OCF adapter. If the OCF adapter is not initialized, it
+ * returns undefined.
+ * @returns {Object} the OCF adapter managed by the virtual sensor adapter
+ */
 VirtualSensorAdapter.prototype.getOCFAdapter = function () {
   return this.mOCFAdapter;
 };
+/**
+ * It returns the singleton gateway manager. If the gateway manager is not
+ * initialized, it returns undefined.
+ * @returns {Object} the singleton gateway manager
+ */
 VirtualSensorAdapter.prototype.getGWManager = function () {
   return this.mGatewayManager;
 };
+/**
+ * It returns the singleton gateway client. If the gateway client is not
+ * initialized, it returns undefined.
+ * @returns {Object} the singleton gateway client
+ */
 VirtualSensorAdapter.prototype.getGWClient = function () {
   return this.mGatewayClient;
 };
 
 /* Virtual sensor handling methods */
+
+/**
+ * Find the virtual sensor by sensor name.
+ * @param {String} name the name of virtual sensor
+ * @returns {Object} the found virtual sensor object. If any virtual sensor
+ * has not found, this function returns undefined.
+ */
 VirtualSensorAdapter.prototype.findSensorByName = function (name) {
   for (var i in this.mVirtualSensors) {
     var virtualSensor = this.mVirtualSensors[i];
@@ -380,9 +461,17 @@ VirtualSensorAdapter.prototype.findSensorByName = function (name) {
   return undefined;
 };
 
+/**
+ * Find the virtual sensor by URI.
+ * @param {String} name the URI of virtual sensor
+ * @returns {Object} the found virtual sensor object. If any virtual sensor
+ * has not found, this function returns undefined.
+ */
 VirtualSensorAdapter.prototype.findSensorByUri = function (uri) {
-  var nameFrom = uri.indexOf('/', 1) + 1; // offset of the tail of '/vs/'
-  var nameLength = uri.indexOf('/', nameFrom) - nameFrom; // offset of the tail of virtual sensor name
+  // offset of the tail of '/vs/'
+  var nameFrom = uri.indexOf('/', 1) + 1;
+  // offset of the tail of virtual sensor name
+  var nameLength = uri.indexOf('/', nameFrom) - nameFrom;
   if (nameFrom < 0 || nameLength < 0) return undefined;
 
   var name = uri.substring(nameFrom, nameLength);
@@ -391,6 +480,13 @@ VirtualSensorAdapter.prototype.findSensorByUri = function (uri) {
   return this.findSensorByName(name);
 };
 
+/**
+ * Get an OCF resource managed by the virtual sensor adapter. The URI of
+ * the target OCF resource is given.
+ * @param {String} uri the URI of the target OCF resource
+ * @returns {Object} the OCF resource for the given URI. If any resource
+ * for the URI is not found, this function returns undefined.
+ */
 VirtualSensorAdapter.prototype.getResource = function (uri) {
   for (var i in this.mResources) {
     var resource = this.mResources[i];
@@ -401,10 +497,18 @@ VirtualSensorAdapter.prototype.getResource = function (uri) {
   return undefined;
 };
 
+/**
+ * @ignore
+ */
 VirtualSensorAdapter.prototype.clearResources = function () {
   this.mResources = [];
 };
 
+/**
+ * Add an OCF resource to the virtual sensor adapter.
+ * @param {Object} resource OCF resource to be added to the resource list
+ * of virtual sensor adapter.
+ */
 VirtualSensorAdapter.prototype.addResource = function (resource) {
   if (resource !== undefined) {
     this.mResources.push(resource);
@@ -412,6 +516,20 @@ VirtualSensorAdapter.prototype.addResource = function (resource) {
 };
 
 /* Gateway API 2-1: Virtual Sensor */
+
+/**
+ * @description The constructor of virtual sensor.
+ * @class
+ * @classdesc Virtual sensor object. It is a module to service virtual
+ * sensor through OCF resources and several JavaScript handlers. 
+ * This object can be created by using VirtualSensorAdapter.createSensor().
+ * @param {String} sensorName the name of virtual sensor
+ * @param {String} sensorType the sensor type of virtual sensor
+ * @param {String} deviceType the device type of virtual sensor
+ * @param {Function} observerHandler the observer handler function.
+ * @param {Function} generatorHandler the generator handler function.
+ * @param {Function} settingHandler the setting handler function.
+ */
 function VirtualSensor(
   name,
   sensorType,
@@ -433,10 +551,13 @@ function VirtualSensor(
   this.mDFE = undefined;
 }
 
-/*
- * OCF resource setting handlers
- * These handlers must be called after OCF server is prepared.
- * Therefore, calling the handlers are postponed.
+/**
+ * Configure the handlers of virtual sensor adapter. These handlers must be
+ * called after OCF server is prepared. Therefore, calling the handlers are
+ * postponed.
+ */
+/**
+ * @ignore
  */
 VirtualSensor.prototype.setup = function (vsAdapter) {
   var oa = vsAdapter.getOCFAdapter();
@@ -456,6 +577,9 @@ VirtualSensor.prototype.setup = function (vsAdapter) {
   return resources;
 };
 
+/**
+ * @ignore
+ */
 VirtualSensor.prototype.setupInlet = function (oa) {
   var device = oa.getDevice(0);
   var uri = getVSInletUri(this.mName);
@@ -474,6 +598,9 @@ VirtualSensor.prototype.setupInlet = function (oa) {
   return this.mInletResource;
 };
 
+/**
+ * @ignore
+ */
 VirtualSensor.prototype.setupOutlet = function (oa) {
   var device = oa.getDevice(0);
   var uri = getVSOutletUri(this.mName);
@@ -491,6 +618,9 @@ VirtualSensor.prototype.setupOutlet = function (oa) {
   return this.mOutletResource;
 };
 
+/**
+ * @ignore
+ */
 VirtualSensor.prototype.setupSetting = function (oa) {
   var device = oa.getDevice(0);
   var uri = getVSSettingUri(this.mName);
@@ -507,6 +637,9 @@ VirtualSensor.prototype.setupSetting = function (oa) {
   return this.mSettingResource;
 };
 
+/**
+ * @ignore
+ */
 VirtualSensor.prototype.addObserver = function (
   sensorType,
   deviceType,
@@ -556,6 +689,9 @@ VirtualSensor.prototype.addObserver = function (
   this.mObservers.push(observer);
 };
 
+/**
+ * @ignore
+ */
 VirtualSensor.prototype.removeObserver = function (sensorType, deviceType) {
   // Find observer for the given sensor/device type
   var foundObserver = undefined;
@@ -580,39 +716,82 @@ VirtualSensor.prototype.removeObserver = function (sensorType, deviceType) {
 };
 
 /* Getters/setters */
+/**
+ * Get the name of virtual sensor.
+ * @returns {String} the name of virtual sensor
+ */
 VirtualSensor.prototype.getName = function () {
   return this.mName;
 };
 
+/**
+ * Get the URI of virtual sensor.
+ * @returns {String} the URI of virtual sensor
+ */
 VirtualSensor.prototype.getUri = function () {
   return '/vs/' + this.mName;
 };
 
+/**
+ * Get the inlet resource of virtual sensor.
+ * @returns {Object} the inlet resource of virtual sensor
+ */
 VirtualSensor.prototype.getInletResource = function () {
   return this.mInletResource;
 };
+
+/**
+ * Get the outlet resource of virtual sensor.
+ * @returns {Object} the outlet resource of virtual sensor
+ */
 VirtualSensor.prototype.getOutletResource = function () {
   return this.mOutletResource;
 };
+
+/**
+ * Get the setting resource of virtual sensor.
+ * @returns {Object} the setting resource of virtual sensor
+ */
 VirtualSensor.prototype.getSettingResource = function () {
   return this.mSettingResource;
 };
 
+/**
+ * Get the observer handler of virtual sensor.
+ * @returns {Function} the observer handler of virtual sensor
+ */
 VirtualSensor.prototype.getObserverHandler = function () {
   return this.mObserverHandler;
 };
+
+/**
+ * Get the generator handler of virtual sensor.
+ * @returns {Function} the generator handler of virtual sensor
+ */
 VirtualSensor.prototype.getGeneratorHandler = function () {
   return this.mGeneratorHandler;
 };
+
+/**
+ * Get the setting handler of virtual sensor.
+ * @returns {Function} the setting handler of virtual sensor
+ */
 VirtualSensor.prototype.getSettingHandler = function () {
   return this.mSettingHandler;
 };
 
+/**
+ * Get the observer list of virtual sensor.
+ * @returns {Object[]} the observer list of virtual sensor
+ */
 VirtualSensor.prototype.getObservers = function () {
   return this.mObservers;
 };
 
 /* OCF handlers */
+/**
+ * @ignore
+ */
 function onPostInlet(request) {
   // POST inlet: Add observer
 
@@ -674,6 +853,9 @@ function onPostInlet(request) {
   oa.sendResponse(request, ocf.OC_STATUS_OK, responsePayload);
 }
 
+/**
+ * @ignore
+ */
 function _onPostInlet_internal(
   commandType,
   sensorType,
@@ -714,6 +896,9 @@ function _onPostInlet_internal(
   return {result: 'Success', reason: 'None'};
 }
 
+/**
+ * @ignore
+ */
 function onGetInlet(request) {
   // GET inlet: Get observers list
   var virtualSensor = gVSAdapter.findSensorByUri(request.dest_uri);
@@ -732,6 +917,9 @@ function onGetInlet(request) {
   oa.sendResponse(request, ocf.OC_STATUS_OK, responsePayload);
 }
 
+/**
+ * @ignore
+ */
 function onGetOutlet(request) {
   // GET outlet: Get DFE message
   var virtualSensor = gVSAdapter.findSensorByUri(request.dest_uri);
@@ -769,6 +957,9 @@ function onGetOutlet(request) {
   }
 }
 
+/**
+ * @ignore
+ */
 function onPostSetting(request) {
   // POST dfe: control DFE's fragment number and get it's computing status
   var virtualSensor = gVSAdapter.findSensorByUri(request.dest_uri);
@@ -795,9 +986,16 @@ function onPostSetting(request) {
  * Gateway API 3: DFE
  * DFE: DNN Fragment Engine for the deep sensors running on gateway
  */
+/**
+ * @class
+ * @classdesc DFE (DNN Fragment Engine) for the deep sensors running on gateway
+ * @param {String} modelName the name of DNN model to be executed by DFE.
+ * @param {Number} numFragments the number of the DNN model's fragments.
+ * @ignore
+ */
 function DFE(modelName, numFragments) {
-  // TODO: pre-processing handler
-  // TODO: post-processing handler
+  // TODO(RedCarrottt): pre-processing handler
+  // TODO(RedCarrottt): post-processing handler
   this.modelName = modelName;
   this.numFragments = numFragments;
   this.interpreters = undefined;
@@ -806,6 +1004,9 @@ function DFE(modelName, numFragments) {
   this.averageLatencyMS = 0.0;
 }
 
+/**
+ * @ignore
+ */
 DFE.prototype.updateAverageLatency = function (latency) {
   // Exponential moving average
   var kMomentum = 0.9;
@@ -813,11 +1014,19 @@ DFE.prototype.updateAverageLatency = function (latency) {
     this.averageLatencyMS * kMomentum + latency * (1 - kMomentum);
 };
 
-// TODO: hard-coding input
+/**
+ * Load and pre-process an input image file. It loads the image to a buffer.
+ * @param {String} imgPath the path of input image file
+ * @returns {Object} the buffer that contains pre-processed image
+ */
 DFE.prototype.loadAndPreprocessImage = function (imgPath) {
+  // TODO(RedCarrottt): hard-coding input
   return native.ant_gateway_dfeLoadAndPreprocessImage(imgPath);
 };
 
+/**
+ * @ignore
+ */
 DFE.prototype.load = function () {
   this.interpreters = native.ant_gateway_dfeLoad(
     this.modelName,
@@ -825,6 +1034,9 @@ DFE.prototype.load = function () {
   );
 };
 
+/**
+ * @ignore
+ */
 DFE.prototype.execute = function (inputBuffer, startLayerNum, endLayerNum) {
   if (!inputBuffer instanceof Buffer) {
     throw 'Invalid inputBuffer';
@@ -846,6 +1058,9 @@ DFE.prototype.execute = function (inputBuffer, startLayerNum, endLayerNum) {
   );
 };
 
+/**
+ * @ignore
+ */
 DFE.prototype.getObserverHandler = function () {
   var self = this;
   function dfeObserverHandler(inputData) {
@@ -855,6 +1070,9 @@ DFE.prototype.getObserverHandler = function () {
   return dfeObserverHandler;
 };
 
+/**
+ * @ignore
+ */
 DFE.prototype.getGeneratorHandler = function () {
   var self = this;
   function dfeGeneratorHandler() {
@@ -894,12 +1112,18 @@ DFE.prototype.getGeneratorHandler = function () {
   return dfeGeneratorHandler;
 };
 
+/**
+ * @ignore
+ */
 DFE.prototype.getLoad = function () {
   var loadavg = fs.readFileSync('/proc/loadavg').toString();
   var avgLoad1min = parseFloat(loadavg.substring(0, loadavg.indexOf(' ')));
   return avgLoad1min;
 };
 
+/**
+ * @ignore
+ */
 DFE.prototype.getSettingHandler = function (fragNum) {
   var self = this;
   function dfeSettingHandler(setting) {
@@ -916,21 +1140,33 @@ DFE.prototype.getSettingHandler = function (fragNum) {
   return dfeSettingHandler;
 };
 
-// TODO: GatewayManager: Add submodule for the proxy access to virtual sensors
-/* Gateway Manager */
+/**
+ * @class
+ * @classdesc Module to manage virtual sensors and DNN partitioning.
+ * This module must run on gateway device.
+ */
 function GatewayManager() {
   this.mVirtualSensorManager = new VirtualSensorManager(this);
   this.mDFEScheduler = new DFEScheduler();
 }
 
+/**
+ * @ignore
+ */
 GatewayManager.prototype.getVSManager = function () {
   return this.mVirtualSensorManager;
 };
 
+/**
+ * @ignore
+ */
 GatewayManager.prototype.getDFEScheduler = function () {
   return this.mDFEScheduler;
 };
 
+/**
+ * @ignore
+ */
 GatewayManager.prototype.setup = function (vsManager) {
   var resources = [];
   var oa = vsManager.getOCFAdapter();
@@ -942,6 +1178,9 @@ GatewayManager.prototype.setup = function (vsManager) {
   return resources;
 };
 
+/**
+ * @ignore
+ */
 GatewayManager.prototype.onOCFClientPrepared = function (vsAdapter) {
   // Virtual sensor manager: start discovery
   var vsManager = this.getVSManager();
@@ -956,7 +1195,12 @@ GatewayManager.prototype.onOCFClientPrepared = function (vsAdapter) {
   }
 };
 
-/* Virtual Sensor Manager */
+/**
+ * @class
+ * @classdesc module to manage virtual sensors. It discovers virtual sensors
+ * via OCF discovery message and associate the virtual sensors to form a sensor
+ * data pipeline for the IoT applications.
+ */
 function VirtualSensorManager(antGateway) {
   this.mANTGateway = antGateway;
 
@@ -966,18 +1210,30 @@ function VirtualSensorManager(antGateway) {
   this.mSettingList = [];
 }
 
+/**
+ * @ignore
+ */
 VirtualSensorManager.prototype.findInlet = function (sensorType, deviceType) {
   this.findVSResource(this.mInletList, sensorType, deviceType);
 };
 
+/**
+ * @ignore
+ */
 VirtualSensorManager.prototype.findOutlet = function (sensorType, deviceType) {
   this.findVSResource(this.mOutletList, sensorType, deviceType);
 };
 
+/**
+ * @ignore
+ */
 VirtualSensorManager.prototype.findSetting = function (sensorType, deviceType) {
   this.findVSResource(this.mSettingList, sensorType, deviceType);
 };
 
+/**
+ * @ignore
+ */
 VirtualSensorManager.prototype.findVSResource = function (
   list,
   sensorType,
@@ -999,6 +1255,9 @@ VirtualSensorManager.prototype.findVSResource = function (
   return undefined;
 };
 
+/**
+ * @ignore
+ */
 VirtualSensorManager.prototype.setup = function (oa) {
   var device = oa.getDevice(0);
   this.mInletResource = OCFAPI.createResource(
@@ -1015,8 +1274,11 @@ VirtualSensorManager.prototype.setup = function (oa) {
   return this.mInletResource;
 };
 
-// Virtual sensor manager (OCF-client-side): background discovery
+/**
+ * @ignore
+ */
 VirtualSensorManager.prototype.startDiscovery = function (vsAdapter) {
+  // Virtual sensor manager (OCF-client-side): background discovery
   var self = this;
   function onDiscovery(endpoint, uri, types, interfaceMask) {
     var isFound = false;
@@ -1034,9 +1296,13 @@ VirtualSensorManager.prototype.startDiscovery = function (vsAdapter) {
   oa.discoveryAll(onDiscovery);
 };
 
-// TODO: delete association
-// Virtual sensor manager (OCF-server-side): POST association command
+/**
+ * @ignore
+ */
 function onPostVirtualSensorManager(request) {
+  // Virtual sensor manager (OCF-server-side): POST association command
+  // TODO(RedCarrottt): delete association
+
   // POST association command
   var response = {result: 'None', reason: 'None'};
 
@@ -1160,8 +1426,12 @@ function onPostVirtualSensorManager(request) {
   }
 }
 
-// Virtual sensor manager (OCF-server-side): GET found virtual sensor resources
+/**
+ * @ignore
+ */
 function onGetVirtualSensorManager(request) {
+  // Virtual sensor manager (OCF-server-side): GET found virtual sensor resources
+  
   // GET found virtual sensor resources
   var inlets = [];
   var foundInlets = this.mInletList;
@@ -1206,6 +1476,9 @@ function onGetVirtualSensorManager(request) {
   oa.sendResponse(request, ocf.OC_STATUS_OK, responsePayload);
 }
 
+/**
+ * @ignore
+ */
 VirtualSensorManager.prototype.addResource = function (endpoint, uri, types) {
   var vsTypes = [];
   var letType = undefined;
@@ -1232,6 +1505,9 @@ VirtualSensorManager.prototype.addResource = function (endpoint, uri, types) {
   }
 };
 
+/**
+ * @ignore
+ */
 VirtualSensorManager.prototype.observeInlet = function (inletEntry) {
   var self = this;
   function _onObserve(response) {
@@ -1260,17 +1536,28 @@ VirtualSensorManager.prototype.observeInlet = function (inletEntry) {
   );
 };
 
-/* DFE Scheduler */
+/**
+ * @class
+ * @classdesc DFE Scheduler object. It is a module to manage DNN partitioning.
+ * It monitors the current status of DFEs running on several devices and make
+ * commands to control DFE's partitioning points. (Not yet implemented)
+ */
 function DFEScheduler() {
   this.mResource = undefined;
 }
 
+/**
+ * @ignore
+ */
 DFEScheduler.prototype.start = function (vsAdapter) {
-  // TODO: DFEScheduler: client - GET setting resource
+  // TODO(RedCarrottt): DFEScheduler: client - GET setting resource
+  // Not yet implemented
 };
 
-// TODO: GatewayClient: Add proxy access to virtual sensors
-/* Gateway Client */
+/**
+ * @class
+ * @classdesc Gateway client.
+ */
 function GatewayClient() {
   this.mOnPrepared = undefined;
   this.mFoundVSM = undefined;
@@ -1278,10 +1565,16 @@ function GatewayClient() {
   this.mVSAdapter = undefined;
 }
 
+/**
+ * @ignore
+ */
 GatewayClient.prototype.setOnPrepared = function (onPrepared) {
   this.mOnPrepared = onPrepared;
 };
 
+/**
+ * @ignore
+ */
 GatewayClient.prototype.onOCFClientPrepared = function (vsAdapter) {
   var self = this;
   this.mVSAdapter = vsAdapter;
@@ -1308,14 +1601,22 @@ GatewayClient.prototype.onOCFClientPrepared = function (vsAdapter) {
   }
 };
 
+/**
+ * @ignore
+ */
 GatewayClient.prototype.isPrepared = function () {
   return this.mOnPrepared !== undefined && this.mVSAdapter !== undefined;
 };
 
-GatewayClient.prototype.isVSMAvailable = function () {
-  return this.mFoundVSM !== undefined;
-};
+// GatewayClient.prototype.isVSMAvailable = function () {
+//   return this.mFoundVSM !== undefined;
+// };
 
+/**
+ * Send a request to gateway to retreive virtual sensor list
+ * @param {Function} onResult callback function when the response came
+ * @returns {Boolean} the result of sending the request
+ */
 GatewayClient.prototype.getVirtualSensors = function (onResult) {
   function _onGet(response) {
     var payloadObj = JSON.parse(response.payload);
@@ -1353,6 +1654,15 @@ GatewayClient.prototype.getVirtualSensors = function (onResult) {
 // Default sampling interval of virtual sensors
 var kVSDefaultIntervalMS = 100;
 
+/**
+ * Send a request to gateway to associate two virtual sensors
+ * @param {Object} sourceOutlet the information about source outlet resource
+ * @param {Object} sinkInlet the information about sink inlet resource
+ * @param {Number} intervalMS the interval of sending GET request to the outlet
+ * Its unit is milliseconds.
+ * @param {Function} onResult callback function when the response came
+ * @returns {Boolean} the result of sending the request
+ */
 GatewayClient.prototype.associateVirtualSensors = function (
   sourceOutlet,
   sinkInlet,
