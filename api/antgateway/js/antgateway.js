@@ -50,21 +50,21 @@ var gGWVSMUri = 'ant.r.gw.vsm';
 /* URIs of Virtual Sensor Resources */
 
 /**
- * @ignore
+ * @private
  */
 function getVSInletUri(name) {
   return '/vs/' + name + '/inlet';
 }
 
 /**
- * @ignore
+ * @private
  */
 function getVSOutletUri(name) {
   return '/vs/' + name + '/outlet';
 }
 
 /**
- * @ignore
+ * @private
  */
 function getVSSettingUri(name) {
   return '/vs/' + name + '/setting';
@@ -413,7 +413,7 @@ VirtualSensorAdapter.prototype.createGWClient = function (onPrepared) {
 /* Getters */
 
 /**
- * @ignore
+ * @private
  */
 VirtualSensorAdapter.prototype.getANTGateway = function () {
   return this.mANTGateway;
@@ -498,7 +498,7 @@ VirtualSensorAdapter.prototype.getResource = function (uri) {
 };
 
 /**
- * @ignore
+ * @private
  */
 VirtualSensorAdapter.prototype.clearResources = function () {
   this.mResources = [];
@@ -557,7 +557,7 @@ function VirtualSensor(
  * postponed.
  */
 /**
- * @ignore
+ * @private
  */
 VirtualSensor.prototype.setup = function (vsAdapter) {
   var oa = vsAdapter.getOCFAdapter();
@@ -578,7 +578,7 @@ VirtualSensor.prototype.setup = function (vsAdapter) {
 };
 
 /**
- * @ignore
+ * @private
  */
 VirtualSensor.prototype.setupInlet = function (oa) {
   var device = oa.getDevice(0);
@@ -599,7 +599,7 @@ VirtualSensor.prototype.setupInlet = function (oa) {
 };
 
 /**
- * @ignore
+ * @private
  */
 VirtualSensor.prototype.setupOutlet = function (oa) {
   var device = oa.getDevice(0);
@@ -619,7 +619,7 @@ VirtualSensor.prototype.setupOutlet = function (oa) {
 };
 
 /**
- * @ignore
+ * @private
  */
 VirtualSensor.prototype.setupSetting = function (oa) {
   var device = oa.getDevice(0);
@@ -638,7 +638,7 @@ VirtualSensor.prototype.setupSetting = function (oa) {
 };
 
 /**
- * @ignore
+ * @private
  */
 VirtualSensor.prototype.addObserver = function (
   sensorType,
@@ -690,7 +690,7 @@ VirtualSensor.prototype.addObserver = function (
 };
 
 /**
- * @ignore
+ * @private
  */
 VirtualSensor.prototype.removeObserver = function (sensorType, deviceType) {
   // Find observer for the given sensor/device type
@@ -790,7 +790,7 @@ VirtualSensor.prototype.getObservers = function () {
 
 /* OCF handlers */
 /**
- * @ignore
+ * @private
  */
 function onPostInlet(request) {
   // POST inlet: Add observer
@@ -854,7 +854,7 @@ function onPostInlet(request) {
 }
 
 /**
- * @ignore
+ * @private
  */
 function _onPostInlet_internal(
   commandType,
@@ -897,7 +897,7 @@ function _onPostInlet_internal(
 }
 
 /**
- * @ignore
+ * @private
  */
 function onGetInlet(request) {
   // GET inlet: Get observers list
@@ -918,7 +918,7 @@ function onGetInlet(request) {
 }
 
 /**
- * @ignore
+ * @private
  */
 function onGetOutlet(request) {
   // GET outlet: Get DFE message
@@ -958,7 +958,7 @@ function onGetOutlet(request) {
 }
 
 /**
- * @ignore
+ * @private
  */
 function onPostSetting(request) {
   // POST dfe: control DFE's fragment number and get it's computing status
@@ -991,7 +991,7 @@ function onPostSetting(request) {
  * @classdesc DFE (DNN Fragment Engine) for the deep sensors running on gateway
  * @param {String} modelName the name of DNN model to be executed by DFE.
  * @param {Number} numFragments the number of the DNN model's fragments.
- * @ignore
+ * @private
  */
 function DFE(modelName, numFragments) {
   // TODO(RedCarrottt): pre-processing handler
@@ -1005,7 +1005,7 @@ function DFE(modelName, numFragments) {
 }
 
 /**
- * @ignore
+ * @private
  */
 DFE.prototype.updateAverageLatency = function (latency) {
   // Exponential moving average
@@ -1025,7 +1025,7 @@ DFE.prototype.loadAndPreprocessImage = function (imgPath) {
 };
 
 /**
- * @ignore
+ * @private
  */
 DFE.prototype.load = function () {
   this.interpreters = native.ant_gateway_dfeLoad(
@@ -1035,7 +1035,7 @@ DFE.prototype.load = function () {
 };
 
 /**
- * @ignore
+ * @private
  */
 DFE.prototype.execute = function (inputBuffer, startLayerNum, endLayerNum) {
   if (!inputBuffer instanceof Buffer) {
@@ -1059,7 +1059,7 @@ DFE.prototype.execute = function (inputBuffer, startLayerNum, endLayerNum) {
 };
 
 /**
- * @ignore
+ * @private
  */
 DFE.prototype.getObserverHandler = function () {
   var self = this;
@@ -1071,7 +1071,7 @@ DFE.prototype.getObserverHandler = function () {
 };
 
 /**
- * @ignore
+ * @private
  */
 DFE.prototype.getGeneratorHandler = function () {
   var self = this;
@@ -1113,7 +1113,7 @@ DFE.prototype.getGeneratorHandler = function () {
 };
 
 /**
- * @ignore
+ * @private
  */
 DFE.prototype.getLoad = function () {
   var loadavg = fs.readFileSync('/proc/loadavg').toString();
@@ -1122,7 +1122,7 @@ DFE.prototype.getLoad = function () {
 };
 
 /**
- * @ignore
+ * @private
  */
 DFE.prototype.getSettingHandler = function (fragNum) {
   var self = this;
@@ -1151,21 +1151,21 @@ function GatewayManager() {
 }
 
 /**
- * @ignore
+ * @private
  */
 GatewayManager.prototype.getVSManager = function () {
   return this.mVirtualSensorManager;
 };
 
 /**
- * @ignore
+ * @private
  */
 GatewayManager.prototype.getDFEScheduler = function () {
   return this.mDFEScheduler;
 };
 
 /**
- * @ignore
+ * @private
  */
 GatewayManager.prototype.setup = function (vsManager) {
   var resources = [];
@@ -1179,7 +1179,7 @@ GatewayManager.prototype.setup = function (vsManager) {
 };
 
 /**
- * @ignore
+ * @private
  */
 GatewayManager.prototype.onOCFClientPrepared = function (vsAdapter) {
   // Virtual sensor manager: start discovery
@@ -1211,28 +1211,28 @@ function VirtualSensorManager(antGateway) {
 }
 
 /**
- * @ignore
+ * @private
  */
 VirtualSensorManager.prototype.findInlet = function (sensorType, deviceType) {
   this.findVSResource(this.mInletList, sensorType, deviceType);
 };
 
 /**
- * @ignore
+ * @private
  */
 VirtualSensorManager.prototype.findOutlet = function (sensorType, deviceType) {
   this.findVSResource(this.mOutletList, sensorType, deviceType);
 };
 
 /**
- * @ignore
+ * @private
  */
 VirtualSensorManager.prototype.findSetting = function (sensorType, deviceType) {
   this.findVSResource(this.mSettingList, sensorType, deviceType);
 };
 
 /**
- * @ignore
+ * @private
  */
 VirtualSensorManager.prototype.findVSResource = function (
   list,
@@ -1256,7 +1256,7 @@ VirtualSensorManager.prototype.findVSResource = function (
 };
 
 /**
- * @ignore
+ * @private
  */
 VirtualSensorManager.prototype.setup = function (oa) {
   var device = oa.getDevice(0);
@@ -1275,7 +1275,7 @@ VirtualSensorManager.prototype.setup = function (oa) {
 };
 
 /**
- * @ignore
+ * @private
  */
 VirtualSensorManager.prototype.startDiscovery = function (vsAdapter) {
   // Virtual sensor manager (OCF-client-side): background discovery
@@ -1297,7 +1297,7 @@ VirtualSensorManager.prototype.startDiscovery = function (vsAdapter) {
 };
 
 /**
- * @ignore
+ * @private
  */
 function onPostVirtualSensorManager(request) {
   // Virtual sensor manager (OCF-server-side): POST association command
@@ -1427,7 +1427,7 @@ function onPostVirtualSensorManager(request) {
 }
 
 /**
- * @ignore
+ * @private
  */
 function onGetVirtualSensorManager(request) {
   // Virtual sensor manager (OCF-server-side): GET found virtual sensor resources
@@ -1477,7 +1477,7 @@ function onGetVirtualSensorManager(request) {
 }
 
 /**
- * @ignore
+ * @private
  */
 VirtualSensorManager.prototype.addResource = function (endpoint, uri, types) {
   var vsTypes = [];
@@ -1506,7 +1506,7 @@ VirtualSensorManager.prototype.addResource = function (endpoint, uri, types) {
 };
 
 /**
- * @ignore
+ * @private
  */
 VirtualSensorManager.prototype.observeInlet = function (inletEntry) {
   var self = this;
@@ -1547,7 +1547,7 @@ function DFEScheduler() {
 }
 
 /**
- * @ignore
+ * @private
  */
 DFEScheduler.prototype.start = function (vsAdapter) {
   // TODO(RedCarrottt): DFEScheduler: client - GET setting resource
@@ -1566,14 +1566,14 @@ function GatewayClient() {
 }
 
 /**
- * @ignore
+ * @private
  */
 GatewayClient.prototype.setOnPrepared = function (onPrepared) {
   this.mOnPrepared = onPrepared;
 };
 
 /**
- * @ignore
+ * @private
  */
 GatewayClient.prototype.onOCFClientPrepared = function (vsAdapter) {
   var self = this;
@@ -1602,7 +1602,7 @@ GatewayClient.prototype.onOCFClientPrepared = function (vsAdapter) {
 };
 
 /**
- * @ignore
+ * @private
  */
 GatewayClient.prototype.isPrepared = function () {
   return this.mOnPrepared !== undefined && this.mVSAdapter !== undefined;
