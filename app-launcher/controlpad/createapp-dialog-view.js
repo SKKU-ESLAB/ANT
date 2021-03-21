@@ -67,7 +67,8 @@ CreateAppDialogView.prototype.confirm = function () {
     alert(
       'Invalid app name: ' +
         appName +
-        "\nApp name cannot include newline('\\n'), space(' '), and period ('.') characters."
+        '\nApp name cannot include newline(\'\\n\'), space(\' \'),' +
+        ' and period (\'.\') characters.'
     );
     return;
   }

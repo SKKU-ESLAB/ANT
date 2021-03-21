@@ -31,7 +31,7 @@ function AppManager(onAppAdded, onAppRemoved) {
   var fileNames = fs.readdirSync(antAppsDir);
 
   // Add all the already-installed apps to the list
-  for (var i in fileNames) {
+  for (var i = 0; i < fileNames.length; i++) {
     var fileName = fileNames[i];
     var filePath = path.join(antAppsDir, fileName);
     if (fileName.endsWith('.js')) {
@@ -43,7 +43,7 @@ function AppManager(onAppAdded, onAppRemoved) {
 
 AppManager.prototype.getAppList = function () {
   var appList = [];
-  for (var i in this.mApps) {
+  for (var i = 0; i < this.mApps.length; i++) {
     var app = this.mApps[i];
     var appListEntry = {name: app.getName(), state: app.getState()};
     appList.push(appListEntry);
@@ -52,7 +52,7 @@ AppManager.prototype.getAppList = function () {
 };
 
 AppManager.prototype.getApp = function (appName) {
-  for (var i in this.mApps) {
+  for (var i = 0; i < this.mApps.length; i++) {
     var app = this.mApps[i];
     if (app.getName() == appName) {
       return app;

@@ -40,9 +40,11 @@ function getAppNameFromId(id) {
 
 AppSelectorMenuView.prototype.getIndex = function (appName) {
   for (var i in this.mRootDom.children) {
-    var childView = this.mRootDom.children[i];
-    if (childView.id == getAppSelectorId(appName)) {
-      return i;
+    if (this.mRootDom.children.hasOwnProperty(i)) {
+      var childView = this.mRootDom.children[i];
+      if (childView.id == getAppSelectorId(appName)) {
+        return i;
+      }
     }
   }
   return -1;
@@ -51,12 +53,14 @@ AppSelectorMenuView.prototype.getIndex = function (appName) {
 AppSelectorMenuView.prototype.getCount = function (appName) {
   var count = 0;
   for (var i in this.mRootDom.children) {
-    var childView = this.mRootDom.children[i];
-    if (
-      childView.id !== undefined &&
-      childView.id.indexOf('app-selector-menu-entry-app-') >= 0
-    ) {
-      count++;
+    if (this.mRootDom.children.hasOwnProperty(i)) {
+      var childView = this.mRootDom.children[i];
+      if (
+        childView.id !== undefined &&
+        childView.id.indexOf('app-selector-menu-entry-app-') >= 0
+      ) {
+        count++;
+      }
     }
   }
   return count;
@@ -74,12 +78,13 @@ AppSelectorMenuView.prototype.getAppsCount = function () {
 };
 
 AppSelectorMenuView.prototype.addApp = function (appName) {
-  var self = this;
   // Check duplicated entry
   for (var i in this.mRootDom.children) {
-    var childView = this.mRootDom.children[i];
-    if (childView.id == getAppSelectorId(appName)) {
-      return;
+    if (this.mRootDom.children.hasOwnProperty(i)) {
+      var childView = this.mRootDom.children[i];
+      if (childView.id == getAppSelectorId(appName)) {
+        return;
+      }
     }
   }
 
@@ -95,10 +100,12 @@ AppSelectorMenuView.prototype.addApp = function (appName) {
 
 AppSelectorMenuView.prototype.removeApp = function (appName) {
   for (var i in this.mRootDom.children) {
-    var childView = this.mRootDom.children[i];
-    if (childView.id == getAppSelectorId(appName)) {
-      childView.remove();
-      return;
+    if (this.mRootDom.children.hasOwnProperty(i)) {
+      var childView = this.mRootDom.children[i];
+      if (childView.id == getAppSelectorId(appName)) {
+        childView.remove();
+        return;
+      }
     }
   }
 };

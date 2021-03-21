@@ -77,7 +77,7 @@ var gVSAdapter = undefined;
  * @description The constructor of ANT Gateway API object.
  * @class
  * @classdesc ANT Gateway API's main object.
- * 
+ *
  * In ANT framework, gateway provides sensor virtualization and
  * DNN partitioning. Sensor virtualization means unifying interfaces to access
  * physical sensors, soft sensors, local sensors, and remote sensors.
@@ -236,10 +236,10 @@ function VirtualSensorAdapter() {
   function onPrepareOCFServer() {
     self.clearResources();
     // Add OCF resources of all the virtual sensors
-    for (var i in self.mVirtualSensors) {
+    for (var i = 0; i < self.mVirtualSensors.length; i++) {
       var virtualSensor = self.mVirtualSensors[i];
       var resources = virtualSensor.setup(self);
-      for (var j in resources) {
+      for (var j = 0; j < resources.length; j++) {
         self.addResource(resources[j]);
       }
     }
@@ -248,7 +248,7 @@ function VirtualSensorAdapter() {
     var gwManager = self.getGWManager();
     if (gwManager !== undefined) {
       var resources = gwManager.setup(self);
-      for (var i in resources) {
+      for (var i = 0; i < resources.length; i++) {
         self.addResource(resources[j]);
       }
     }
@@ -279,7 +279,7 @@ VirtualSensorAdapter.prototype.stop = function () {
   this.mOCFAdapter.deinitialize();
 };
 
-/** 
+/**
  * Create a new virtual sensor. Every virtual sensors can be discovered
  * by using one of three keys; sensorName, sensorType and deviceType.
  * @param {String} sensorName the name of virtual sensor
@@ -452,7 +452,7 @@ VirtualSensorAdapter.prototype.getGWClient = function () {
  * has not found, this function returns undefined.
  */
 VirtualSensorAdapter.prototype.findSensorByName = function (name) {
-  for (var i in this.mVirtualSensors) {
+  for (var i = 0; i < this.mVirtualSensors.length; i++) {
     var virtualSensor = this.mVirtualSensors[i];
     if (virtualSensor.getName() === name) {
       return virtualSensor;
@@ -488,7 +488,7 @@ VirtualSensorAdapter.prototype.findSensorByUri = function (uri) {
  * for the URI is not found, this function returns undefined.
  */
 VirtualSensorAdapter.prototype.getResource = function (uri) {
-  for (var i in this.mResources) {
+  for (var i = 0; i < this.mResources.length; i++) {
     var resource = this.mResources[i];
     if (resource.uri() === uri) {
       return resource;
@@ -521,7 +521,7 @@ VirtualSensorAdapter.prototype.addResource = function (resource) {
  * @description The constructor of virtual sensor.
  * @class
  * @classdesc Virtual sensor object. It is a module to service virtual
- * sensor through OCF resources and several JavaScript handlers. 
+ * sensor through OCF resources and several JavaScript handlers.
  * This object can be created by using VirtualSensorAdapter.createSensor().
  * @param {String} sensorName the name of virtual sensor
  * @param {String} sensorType the sensor type of virtual sensor
@@ -696,7 +696,7 @@ VirtualSensor.prototype.removeObserver = function (sensorType, deviceType) {
   // Find observer for the given sensor/device type
   var foundObserver = undefined;
   var foundObserverIndex = -1;
-  for (var i in this.mObservers) {
+  for (var i = 0; i < this.mObservers.length; i++) {
     var observer = this.mObservers[i];
     if (
       observer.sensorType == sensorType &&
@@ -798,54 +798,72 @@ function onPostInlet(request) {
   // Parse OCF request
   var requestPayloadString = request.payload_string;
   var requestPayload = JSON.parse(requestPayloadString);
-  var commandType = requestPayload.commandType; // command's type (add or remove)
-  var sensorType = requestPayload.sensorType; // sensor's type (OCF resource type)
-  var deviceType = requestPayload.deviceType; // device's type (OCF resource type)
-  var intervalMS = requestPayload.intervalMS; // observation interval (milliseconds)
-  var defaultIntervalMS = 1000; // default observation interval: 1 sec
+
+  // command's type (add or remove)
+  var commandType = requestPayload.commandType;
+
+  // sensor's type (OCF resource type)
+  var sensorType = requestPayload.sensorType;
+
+  // device's type (OCF resource type)
+  var deviceType = requestPayload.deviceType;
+
+  // observation interval (milliseconds)
+  var intervalMS = requestPayload.intervalMS;
+
+  // default observation interval: 1 sec
+  var defaultIntervalMS = 1000;
 
   // Check OCF request
   var response = {result: 'None', reason: 'None'};
-  if (commandType === undefined || typeof commandType !== 'string')
+  if (commandType === undefined || typeof commandType !== 'string') {
     response = {
       result: 'Failure',
       reason: 'Invalid commandType (' + commandType + ')'
     };
-  if (sensorType === undefined || typeof sensorType !== 'string')
+  }
+  if (sensorType === undefined || typeof sensorType !== 'string') {
     response = {
       result: 'Failure',
       reason: 'Invalid sensorType (' + sensorType + ')'
     };
-  if (deviceType === undefined || typeof deviceType !== 'string')
+  }
+  if (deviceType === undefined || typeof deviceType !== 'string') {
     response = {
       result: 'Failure',
       reason: 'Invalid deviceType (' + deviceType + ')'
     };
-  if (sensorType == deviceType)
+  }
+  if (sensorType == deviceType) {
     response = {
       result: 'Failure',
       reason: 'sensorType == deviceType (' + sensorType + ')'
     };
-  if (intervalMS === undefined) intervalMS = defaultIntervalMS;
-  else if (typeof intervalMS !== 'number')
+  }
+  if (intervalMS === undefined) {
+    intervalMS = defaultIntervalMS;
+  } else if (typeof intervalMS !== 'number') {
     response = {
       result: 'Failure',
       reason: 'Invalid intervalMS (' + intervalMS + ')'
     };
+  }
 
-  if (commandType !== 'add' && commandType !== 'remove')
+  if (commandType !== 'add' && commandType !== 'remove') {
     response = {
       result: 'Failure',
       reason: 'Invalid commandType (' + commandType + ')'
     };
+  }
 
-  if (response.result !== 'Failure')
-    response = _onPostInlet_internal(
+  if (response.result !== 'Failure') {
+    response = onPostInletInternal(
       commandType,
       sensorType,
       deviceType,
       intervalMS
     );
+  }
 
   // Send response
   var oa = gVSAdapter.mOCFAdapter;
@@ -856,19 +874,14 @@ function onPostInlet(request) {
 /**
  * @private
  */
-function _onPostInlet_internal(
-  commandType,
-  sensorType,
-  deviceType,
-  intervalMS
-) {
+function onPostInletInternal(commandType, sensorType, deviceType, intervalMS) {
   // Step 1. Discover outlet resource
   var oa = gVSAdapter.mOCFAdapter;
   function onDiscoveryAfterPostInlet(endpoint, uri, types, interfaceMask) {
     // Step 2. On discover outlet resource
     var isFoundSensorType = false;
     var isFoundDeviceType = false;
-    for (var i in types) {
+    for (var i = 0; i < types.length; i++) {
       if (types[i] == sensorType) {
         isFoundSensorType = true;
       } else if (types[i] == deviceType) {
@@ -1239,11 +1252,11 @@ VirtualSensorManager.prototype.findVSResource = function (
   sensorType,
   deviceType
 ) {
-  for (var i in list) {
+  for (var i = 0; i < list.length; i++) {
     var entry = list[i];
     var isSensorTypeFound = false;
     var isDeviceTypeFound = false;
-    for (var j in entry.types) {
+    for (var j = 0; j < entry.types.length; j++) {
       var type = entry.types[j];
       if (type === sensorType) isSensorTypeFound = true;
       if (type === deviceType) isDeviceTypeFound = true;
@@ -1282,7 +1295,7 @@ VirtualSensorManager.prototype.startDiscovery = function (vsAdapter) {
   var self = this;
   function onDiscovery(endpoint, uri, types, interfaceMask) {
     var isFound = false;
-    for (var i in types) {
+    for (var i = 0; i < types.length; i++) {
       if (types[i] == gVSUriRoot) {
         isFound = true;
       }
@@ -1361,12 +1374,12 @@ function onPostVirtualSensorManager(request) {
   if (response.result !== 'Failure') {
     var vsManager = gVSAdapter.getGWManager().getVSManager();
     var foundInlets = vsManager.mInletList();
-    for (var i in foundInlets) {
+    for (var i = 0; i < foundInlets.length; i++) {
       var foundInlet = foundInlets[i];
       var types = foundInlet.types;
       var isFoundSensorType = false;
       var isFoundDeviceType = false;
-      for (var j in types) {
+      for (var j = 0; j < types.length; j++) {
         var type = types[j];
         if (type == sinkInlet.sensorType) isFoundSensorType = true;
         if (type == sinkInlet.deviceType) isFoundDeviceType = true;
@@ -1431,11 +1444,11 @@ function onPostVirtualSensorManager(request) {
  */
 function onGetVirtualSensorManager(request) {
   // Virtual sensor manager (OCF-server-side): GET found virtual sensor resources
-  
+
   // GET found virtual sensor resources
   var inlets = [];
   var foundInlets = this.mInletList;
-  for (var i in foundInlets) {
+  for (var i = 0; i < foundInlets.length; i++) {
     var entry = {
       types: foundInlets[i].types,
       uri: foundInlets[i].uri
@@ -1448,7 +1461,7 @@ function onGetVirtualSensorManager(request) {
 
   var outlets = [];
   var foundOutlets = this.mOutletList;
-  for (var i in foundOutlets) {
+  for (var i = 0; i < foundOutlets.length; i++) {
     var entry = {
       types: foundOutlets[i].types,
       uri: foundOutlets[i].uri
@@ -1458,7 +1471,7 @@ function onGetVirtualSensorManager(request) {
 
   var settings = [];
   var foundSettings = this.mSettingList;
-  for (var i in foundSettings) {
+  for (var i = 0; i < foundSettings.length; i++) {
     var entry = {
       types: foundSettings[i].types,
       uri: foundSettings[i].uri
@@ -1482,7 +1495,7 @@ function onGetVirtualSensorManager(request) {
 VirtualSensorManager.prototype.addResource = function (endpoint, uri, types) {
   var vsTypes = [];
   var letType = undefined;
-  for (var i in types) {
+  for (var i = 0; i < types.length; i++) {
     var type = types[i];
     if (type.indexOf(gVSUriMask) >= 0) {
       letType = type;
@@ -1581,7 +1594,7 @@ GatewayClient.prototype.onOCFClientPrepared = function (vsAdapter) {
   function _onDiscovery(endpoint, uri, types, interfaceMask) {
     // Store the endpoint and resource
     // It allows only one gateway.
-    for (var i in types) {
+    for (var i = 0; i < types.length; i++) {
       var type = types[i];
       if (type == gGWVSMUri) {
         self.mFoundVSM = {endpoint: endpoint, uri: uri};

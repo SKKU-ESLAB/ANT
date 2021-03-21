@@ -13,6 +13,7 @@
  * limitations under the License.
  */
 
+/*ignore jslint start*/
 var initialCode =
   '/* {APP_NAME} */ \n\
 var ant = require("ant"); \n\
@@ -36,3 +37,4 @@ ant.runtime.setCurrentApp(onInitialize, onStart, onStop);\n';
 var Config = {
   initialCode: initialCode
 };
+/*ignore jslint end*/

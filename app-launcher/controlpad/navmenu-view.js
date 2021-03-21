@@ -28,7 +28,7 @@ NavMenuView.prototype.getItem = function (key) {
   if (typeof key === 'number') {
     return this.mNavItems[key];
   } else if (typeof key === 'string') {
-    for (var i in this.mNavItems) {
+    for (var i = 0; i < this.mNavItems.length; i++) {
       var item = this.mNavItems[i];
       if (item.getId() === key) {
         return item;
@@ -55,24 +55,26 @@ NavMenuView.prototype.selectItem = function (navItemView) {
   if (
     prevNavItemView !== undefined &&
     prevNavItemView.getView().onRemovedDom !== undefined
-  )
+  ) {
     prevNavItemView.getView().onRemovedDom();
-  if (navItemView.getView().onAddedDom !== undefined)
+  }
+  if (navItemView.getView().onAddedDom !== undefined) {
     navItemView.getView().onAddedDom();
+  }
 };
 
 NavMenuView.prototype.addItem = function (id, iconType, title, view) {
   var self = this;
   var onClickNavItem = function (e) {
-    var _nav_item = undefined;
+    var navItem = undefined;
     for (var j in self.mNavItems) {
       if (self.mNavItems[j].getId() == e.target.id) {
-        _nav_item = self.mNavItems[j];
+        navItem = self.mNavItems[j];
         break;
       }
     }
-    if (_nav_item !== undefined) {
-      self.selectItem(_nav_item);
+    if (navItem !== undefined) {
+      self.selectItem(navItem);
     }
   };
 

@@ -16,7 +16,7 @@
 // Gateway Virtual Sensor API: deep sensor example (on gateway)
 
 var ant = require('ant');
-var console = require('console');
+// var console = require('console');
 var gateway = ant.gateway;
 
 // VSA: virtual sensor adapter

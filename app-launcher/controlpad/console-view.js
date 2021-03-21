@@ -54,10 +54,12 @@ ConsoleView.prototype.updateOutputs = function (appName, outputBuffers) {
   var maxTs = consoleData.maxTs;
   var newOutputBuffers = [];
   for (var i in outputBuffers) {
-    var outputBuffer = outputBuffers[i];
-    if (maxTs < outputBuffer.ts) {
-      maxTs = outputBuffer.ts;
-      newOutputBuffers.push(outputBuffer);
+    if (outputBuffers.hasOwnProperty(i)) {
+      var outputBuffer = outputBuffers[i];
+      if (maxTs < outputBuffer.ts) {
+        maxTs = outputBuffer.ts;
+        newOutputBuffers.push(outputBuffer);
+      }
     }
   }
   outputBuffer = newOutputBuffers;
@@ -68,22 +70,34 @@ ConsoleView.prototype.updateOutputs = function (appName, outputBuffers) {
   // Update text lines based on the output buffers
   var commands = [];
   for (var i in outputBuffers) {
-    var outputBuffer = outputBuffers[i];
-    var tokens = outputBuffer.d.split('\n');
-    for (var j in tokens) {
-      var token = tokens[j];
-      var command;
-      if (j == 0) {
-        // append text
-        commands.push({cmdType: 'A', dataType: outputBuffer.t, data: token});
-      } else {
-        // append text + newline
-        commands.push({cmdType: 'N'});
-        commands.push({cmdType: 'A', dataType: outputBuffer.t, data: token});
+    if (outputBuffers.hasOwnProperty(i)) {
+      var outputBuffer = outputBuffers[i];
+      var tokens = outputBuffer.d.split('\n');
+      for (var j in tokens) {
+        if (tokens.hasOwnProperty(j)) {
+          var token = tokens[j];
+          var command;
+          if (j == 0) {
+            // append text
+            commands.push({
+              cmdType: 'A',
+              dataType: outputBuffer.t,
+              data: token
+            });
+          } else {
+            // append text + newline
+            commands.push({cmdType: 'N'});
+            commands.push({
+              cmdType: 'A',
+              dataType: outputBuffer.t,
+              data: token
+            });
+          }
+        }
       }
     }
   }
-  for (var i in commands) {
+  for (var i = 0; i < commands.length; i++) {
     var command = commands[i];
     if (command.cmdType == 'N') {
       var textLine = document.createElement('div');
@@ -100,9 +114,11 @@ ConsoleView.prototype.updateOutputs = function (appName, outputBuffers) {
       }
 
       var textSpan = document.createElement('span');
-      if (command.dataType == 'E')
+      if (command.dataType == 'E') {
         textSpan.setAttribute('class', 'console-text-span stderr');
-      else textSpan.setAttribute('class', 'console-text-span stdout');
+      } else {
+        textSpan.setAttribute('class', 'console-text-span stdout');
+      }
       textSpan.innerHTML = command.data;
       textLine.append(textSpan);
 
@@ -119,10 +135,12 @@ ConsoleView.prototype.updateOutputs = function (appName, outputBuffers) {
     this.removeTextLines();
   }
   for (var i in consoleData.textLines) {
-    var textLine = consoleData.textLines[i];
-    if (!textLine.isDisplayed) {
-      textLine.isDisplayed = true;
-      this.append(textLine);
+    if (consoleData.textLines.hasOwnProperty(i)) {
+      var textLine = consoleData.textLines[i];
+      if (!textLine.isDisplayed) {
+        textLine.isDisplayed = true;
+        this.append(textLine);
+      }
     }
   }
 };

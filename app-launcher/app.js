@@ -200,8 +200,10 @@ App.prototype.readCode = function () {
 App.prototype.getOutputs = function (fromTs) {
   var outputs = [];
   for (var i in this.mOutputBuffer) {
-    var entry = this.mOutputBuffer[i];
-    if (fromTs < 0 || entry.ts >= fromTs) outputs.push(entry);
+    if (this.mOutputBuffer.hasOwnProperty(i)) {
+      var entry = this.mOutputBuffer[i];
+      if (fromTs < 0 || entry.ts >= fromTs) outputs.push(entry);
+    }
   }
   return outputs;
 };

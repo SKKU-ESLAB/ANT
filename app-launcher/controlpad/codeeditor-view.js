@@ -110,8 +110,9 @@ CodeEditorView.prototype.saveAppCode = function (
   afterSaveAppCodeHandlerArgs
 ) {
   this.mCommandBar.saveAppCode();
-  if (afterSaveAppCodeHandler !== undefined)
+  if (afterSaveAppCodeHandler !== undefined) {
     afterSaveAppCodeHandler(afterSaveAppCodeHandlerArgs);
+  }
 };
 
 CodeEditorView.prototype.toggleRunApp = function () {
