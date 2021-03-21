@@ -57,7 +57,7 @@ HTTPServer.prototype._onHTTPRequest = function (request, response, data) {
   response.setHeader('Content-Type', this._getContentType(request.url));
   var responseParams = {message: 'Entry not found', code: 404};
   var entryFound = false;
-  for (var i in this.mEntries) {
+  for (var i = 0; i < this.mEntries.length; i++) {
     var entry = this.mEntries[i];
 
     if (entry.u == request.url && entry.m == request.method) {

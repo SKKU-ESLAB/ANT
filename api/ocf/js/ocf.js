@@ -19,7 +19,9 @@ var assert = require('assert');
 var Buffer = require('buffer');
 
 /**
- * ANT OCF API's main object. OCF only generates OCF adapter, and the OCF adapter takes charge of the main role of OCF API.
+ * ANT OCF API's main object.
+ * OCF only generates OCF adapter, and the OCF adapter takes charge of
+ * the main role of OCF API.
  */
 function OCF() {
   // Interface constants
@@ -194,7 +196,8 @@ OCFAdapter.prototype.onPrepareEventLoop = function (handler) {
 /**
  * OCFAdapter.onPrepareClient
  * @param {Function} handler
- * called when all preparations for executing client functions in the OCF thread are complete
+ * called when all preparations for executing client functions in the OCF
+ * thread are complete
  */
 OCFAdapter.prototype.onPrepareClient = function (handler) {
   // Handler: void function(void)
@@ -203,7 +206,8 @@ OCFAdapter.prototype.onPrepareClient = function (handler) {
 /**
  * OCFAdapter.onPrepareServer
  * @param {Function} handler
- * called when all preparations for executing server functions in OCF thread are complete
+ * called when all preparations for executing server functions in OCF thread
+ * are complete
  */
 OCFAdapter.prototype.onPrepareServer = function (handler) {
   // Handler: void function(void)
@@ -211,10 +215,13 @@ OCFAdapter.prototype.onPrepareServer = function (handler) {
 };
 /**
  * OCFAdapter.start
- * Run the OCF thread. This function must be called after OCFAdapter.initialize() is called.
- * You can use the OCF Server API and OCF Client API only while the OCF thread is running.
- * If you need to know exactly when you can use OCF Server API and OCF Client API,
- * you can use the handlers of OCFAdapter.onPrepareServer() and OCFAdapter.onPrepareClient().
+ * Run the OCF thread. This function must be called after
+ * OCFAdapter.initialize() is called.
+ * You can use the OCF Server API and OCF Client API only while the OCF thread
+ * is running.
+ * If you need to know exactly when you can use OCF Server API and OCF Client
+ * API, you can use the handlers of OCFAdapter.onPrepareServer() and
+ * OCFAdapter.onPrepareClient().
  */
 OCFAdapter.prototype.start = function () {
   oaStartRequestListCleaner();
@@ -263,8 +270,9 @@ OCFAdapter.prototype.repStartRootObject = function () {
  * OCFAdapter.repSet
  * @param {String} key
  * @param {Boolean|Number|String} value
- * The value is stored in a specific key among OCRepresentations being created by OCF thread.
- * In this function, various types of data including Boolean, Number, and String can be used as value.
+ * The value is stored in a specific key among OCRepresentations being
+ * created by OCF thread. In this function, various types of data including
+ * Boolean, Number, and String can be used as value.
  */
 OCFAdapter.prototype.repSet = function (key, value) {
   if (typeof value === 'boolean') {
@@ -340,8 +348,10 @@ OCFAdapter.prototype.sendResponse = function (
     }
     this.repStartRootObject();
     for (var key in responsePayload) {
-      var value = responsePayload[key];
-      this.repSet(key, value);
+      if (responsePayload.hasOwnProperty(key)) {
+        var value = responsePayload[key];
+        this.repSet(key, value);
+      }
     }
     this.repEndRootObject();
   }
@@ -353,7 +363,8 @@ OCFAdapter.prototype.sendResponse = function (
  * @param {Number} statusCode Response status code value
  * @param {Buffer} responsePayloadBuffer Buffer payload of response
  * @param {String} responsePayloadString String payload of response
- * Sends a response with a specific status code to a request from another device.
+ * Sends a response with a specific status code to a request from another
+ * device.
  */
 OCFAdapter.prototype.sendResponseBuffer = function (
   ocfRequest,
@@ -402,7 +413,8 @@ OCFAdapter.prototype.isDiscovering = function () {
 /**
  * OCFAdapter.discovery
  * @param {String} resourceType Type of resource to find on the network
- * @param {Function} discoveryHandler called whenever one OCFResource is discovered
+ * @param {Function} discoveryHandler called whenever one OCFResource is
+ * discovered
  * @returns {Boolean} isSuccess
  */
 OCFAdapter.prototype.discovery = function (resourceType, discoveryHandler) {
@@ -780,8 +792,10 @@ OCFAdapter.prototype.post = function (
     if (requestPayload !== undefined) {
       this.repStartRootObject();
       for (var key in requestPayload) {
-        var value = requestPayload[key];
-        this.repSet(key, value);
+        if (requestPayload.hasOwnProperty(key)) {
+          var value = requestPayload[key];
+          this.repSet(key, value);
+        }
       }
       this.repEndRootObject();
     }
@@ -834,8 +848,10 @@ OCFAdapter.prototype.put = function (
     if (requestPayload !== undefined) {
       this.repStartRootObject();
       for (var key in requestPayload) {
-        var value = requestPayload[key];
-        this.repSet(key, value);
+        if (requestPayload.hasOwnProperty(key)) {
+          var value = requestPayload[key];
+          this.repSet(key, value);
+        }
       }
       this.repEndRootObject();
     }

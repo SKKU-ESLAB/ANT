@@ -21,12 +21,11 @@ var net = require('net');
 var ant = require('ant');
 
 var RESULT_SUCCESS = 'Success';
-var RESULT_FAILED = 'Failed';
+// var RESULT_FAILED = 'Failed';
 
 /**
  * Application's main loop
  */
-var gAppObject = undefined;
 var gSocket = undefined;
 var gPid = undefined;
 var gIsUseAppLauncher = false;

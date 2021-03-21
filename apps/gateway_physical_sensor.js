@@ -16,7 +16,7 @@
 // Gateway Virtual Sensor API: physical sensor example
 
 var ant = require('ant');
-var console = require('console');
+// var console = require('console');
 var gateway = ant.gateway;
 var fs = require('fs');
 

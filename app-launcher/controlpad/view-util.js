@@ -61,7 +61,8 @@ function ButtonView(id, iconType, text) {
 
   this.mRootDom.setAttribute(
     'class',
-    'mdl-button mdl-js-button mdl-button--raised mdl-js-ripple-effect mdl-button--accent'
+    'mdl-button mdl-js-button mdl-button--raised mdl-js-ripple-effect' +
+      ' mdl-button--accent'
   );
   this.mRootDom.setAttribute('style', 'margin-left:5px; margin-right:5px;');
   if (this.mIconType !== undefined) {
@@ -115,7 +116,7 @@ function CardView(
 ) {
   // Check parameters
   if (widthColumns > 12 || widthColumns <= 0) {
-    console.error("card's widthColumns must be 1~12: " + widthColumns);
+    console.error('card\'s widthColumns must be 1~12: ' + widthColumns);
     return undefined;
   }
 
@@ -155,11 +156,11 @@ CardView.prototype._initTitle = function () {
   );
   this.append(this.mTitleView);
   {
-    var title_text = document.createElement('h2');
-    title_text.setAttribute('class', 'mdl-card__title-text');
-    title_text.setAttribute('style', 'color: ' + this.mTitleColor + ';');
-    title_text.innerHTML = this.mTitleText;
-    this.mTitleView.append(title_text);
+    var titleText = document.createElement('h2');
+    titleText.setAttribute('class', 'mdl-card__title-text');
+    titleText.setAttribute('style', 'color: ' + this.mTitleColor + ';');
+    titleText.innerHTML = this.mTitleText;
+    this.mTitleView.append(titleText);
   }
   this.append(this.mTitleView);
   return this.mTitleView;
@@ -202,9 +203,11 @@ CardView.prototype.addListItem = function (iconType, text) {
 
 CardView.prototype.clearListItems = function () {
   for (var i in this.mListView.children) {
-    var childView = this.mListView.children[i];
-    if (childView.id !== undefined && childView.id.indexOf('--list-') >= 0) {
-      childView.remove();
+    if(this.mListView.children.hasOwnProperty(i)) {
+      var childView = this.mListView.children[i];
+      if (childView.id !== undefined && childView.id.indexOf('--list-') >= 0) {
+        childView.remove();
+      }
     }
   }
 };

@@ -111,15 +111,17 @@ UIController.prototype.showSuccessMessage = function (
   text,
   useSnackbar = true
 ) {
-  if (useSnackbar)
+  if (useSnackbar) {
     this.mSnackbar.showShort(text, undefined, undefined, 'SUCCESS');
+  }
   console.log(text);
 };
 
 UIController.prototype.showErrorMessage = function (text, useSnackbar = true) {
   var errorMsg = 'Error: ' + text;
-  if (useSnackbar)
+  if (useSnackbar) {
     this.mSnackbar.showLong(errorMsg, undefined, undefined, 'ERROR');
+  }
   console.error(errorMsg);
 };
 
@@ -129,8 +131,10 @@ UIController.prototype.refreshAppList = function (onFinish) {
   this.mANTClient.getAppList(function (isSuccess, appList) {
     if (isSuccess) {
       for (var i in appList) {
-        var app = appList[i];
-        self.addAppToUI(app.name);
+        if (appList.hasOwnProperty(i)) {
+          var app = appList[i];
+          self.addAppToUI(app.name);
+        }
       }
       onFinish(appList);
     } else {
@@ -162,7 +166,7 @@ UIController.prototype.selectApp = function (appName, isSkipPrevApp) {
   var prevAppName = this.mContext.currentAppName;
   if (prevAppName !== undefined) {
     if (this.mContext.currentNavItem.getId() === 'navitem-codeeditor') {
-      if(isSkipPrevApp === undefined || !isSkipPrevApp) {
+      if (isSkipPrevApp === undefined || !isSkipPrevApp) {
         this.mCodeEditor.saveAppCode(internalHandler, appName);
       }
     }
@@ -286,8 +290,10 @@ UIController.prototype.refreshConsole = function () {
           // Update ts pointer of the app
           var maxTs = -1;
           for (var i in outputs) {
-            var entry = outputs[i];
-            if (maxTs < entry.ts) maxTs = entry.ts;
+            if (outputs.hasOwnProperty(i)) {
+              var entry = outputs[i];
+              if (maxTs < entry.ts) maxTs = entry.ts;
+            }
           }
           if (maxTs >= 0) {
             if (
@@ -350,7 +356,7 @@ function onKeyDown(event) {
     console.log('prev app');
     gUIController.onSelectPrevApp();
     event.preventDefault();
-  } else if ((event.metaKey || event.ctrlKey) && event.key == "'") {
+  } else if ((event.metaKey || event.ctrlKey) && event.key == '\'') {
     console.log('next app');
     gUIController.onSelectNextApp();
     event.preventDefault();

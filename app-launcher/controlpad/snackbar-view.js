@@ -55,10 +55,12 @@ SnackbarView.prototype.show = function (
   };
 
   if (this.mRootDom.MaterialSnackbar !== undefined) {
-    if (this.mRootDom.classList.contains('snackbar-error'))
+    if (this.mRootDom.classList.contains('snackbar-error')) {
       this.mRootDom.classList.remove('snackbar-error');
-    if (this.mRootDom.classList.contains('snackbar-success'))
+    }
+    if (this.mRootDom.classList.contains('snackbar-success')) {
       this.mRootDom.classList.remove('snackbar-success');
+    }
 
     if (type == 'ERROR') {
       this.mRootDom.classList.add('snackbar-error');

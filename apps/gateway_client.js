@@ -24,9 +24,9 @@ var ocf = require('ocf');
 var gVSA = undefined;
 var gGWC = undefined;
 
-var gInlets = undefined;
-var gOutlets = undefined;
-var gSettings = undefined;
+// var gInlets = undefined;
+// var gOutlets = undefined;
+// var gSettings = undefined;
 
 var kDeviceType = 'ant.d.userdev';
 var kSensorType = 'ant.s.imgcls';
@@ -35,12 +35,14 @@ var kSensorType = 'ant.s.imgcls';
 function vsResourcesToString(vsResources) {
   var str = '';
   for (var i in vsResources) {
-    var vsResource = vsResources[i];
-    if (i > 0) str += '\n';
-    str += '  - ' + vsResource.uri + ': ';
-    for (var j in vsResource.types) {
-      if (j > 0) str += ', ';
-      str += vsResource.types[j];
+    if (vsResources.hasOwnProperty(i)) {
+      var vsResource = vsResources[i];
+      if (i > 0) str += '\n';
+      str += '  - ' + vsResource.uri + ': ';
+      for (var j = 0; j < vsResource.types.length; j++) {
+        if (j > 0) str += ', ';
+        str += vsResource.types[j];
+      }
     }
   }
   return str;
@@ -59,9 +61,9 @@ function onPrepareGatewayClient() {
 
 /* Step 2. Get virtual sensor list */
 function onGetVirtualSensors(inlets, outlets, settings) {
-  gInlets = inlets;
-  gOutlets = outlets;
-  gSettings = settings;
+  // gInlets = inlets;
+  // gOutlets = outlets;
+  // gSettings = settings;
 
   console.log('* Received virtual sensor list');
   console.log(' - Inlets: ' + JSON.stringify(inlets));
@@ -74,25 +76,25 @@ function onGetVirtualSensors(inlets, outlets, settings) {
   associateVirtualSensors();
 }
 
-var ST_Camera = 'ant.s.camera';
-var ST_ImgCls = 'ant.s.imgcls';
-var DT_SensorDev = 'ant.d.sensordev';
-var DT_Gateway = 'ant.d.gateway';
-var DT_UserDev = 'ant.d.userdev';
+var kSTCamera = 'ant.s.camera';
+var kSTImgCls = 'ant.s.imgcls';
+var kDTSensorDev = 'ant.d.sensordev';
+var kDTGateway = 'ant.d.gateway';
+var kDTUserDev = 'ant.d.userdev';
 
 /* Step 3. Associate virtual sensors */
 function associateVirtualSensors() {
   console.log('* Send association commands to virtual sensors');
   var intervalMS = 100;
   gGWC.associateVirtualSensors(
-    {sensorType: ST_Camera, deviceType: DT_SensorDev},
-    {sensorType: ST_ImgCls, deviceType: DT_Gateway},
+    {sensorType: kSTCamera, deviceType: kDTSensorDev},
+    {sensorType: kSTImgCls, deviceType: kDTGateway},
     intervalMS,
     undefined
   );
   gGWC.associateVirtualSensors(
-    {sensorType: ST_ImgCls, deviceType: DT_Gateway},
-    {sensorType: ST_ImgCls, deviceType: DT_UserDev},
+    {sensorType: kSTImgCls, deviceType: kDTGateway},
+    {sensorType: kSTImgCls, deviceType: kDTUserDev},
     intervalMS,
     undefined
   );
@@ -104,15 +106,15 @@ function associateVirtualSensors() {
 function discoverLocalDeepSensor() {
   setTimeout(function () {
     var oa = gVSA.getOCFAdapter();
-    var ORType_VSOutlet = 'ant.r.vs.outlet';
-    oa.discovery(ORType_VSOutlet, onDiscoverOutlet);
+    var kORTypeVSOutlet = 'ant.r.vs.outlet';
+    oa.discovery(kORTypeVSOutlet, onDiscoverOutlet);
   }, 2000);
 }
 
 function onDiscoverOutlet(endpoint, uri, types, interfaceMask) {
   var isDeviceTypeFound = false;
   var isSensorTypeFound = false;
-  for (var i in types) {
+  for (var i = 0; i < types.length; i++) {
     var type = types[i];
     if (type === kDeviceType) isDeviceTypeFound = true;
     if (type === kSensorType) isSensorTypeFound = true;
@@ -137,7 +139,7 @@ function onGetDeepSensor(response) {
   var inputObject = JSON.stringify(response.payloadString);
   var inputBuffer = response.payloadBuffer;
   console.log(
-    "* Get deep sensor's output: " + inputObject + ', ' + inputBuffer.length
+    '* Get deep sensor\'s output: ' + inputObject + ', ' + inputBuffer.length
   );
 }
 

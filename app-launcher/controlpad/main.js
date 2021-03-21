@@ -13,6 +13,7 @@
  * limitations under the License.
  */
 
+/*ignore jslint start*/
 var gANTClient = undefined;
 var gUIController = undefined;
 var gAppController = undefined;
@@ -34,3 +35,4 @@ function onReadyControlpad() {
 $(document).ready(function () {
   setTimeout(onReadyControlpad, 100);
 });
+/*ignore jslint end*/
