@@ -358,10 +358,565 @@
     
                                 <section class="normal markdown-section">
                                 
-                                <p><a name="ANTGateway"></a></p>
-<h2 id="antgateway">ANTGateway()</h2>
-<p>ANT Gateway API</p>
-<p><strong>Kind</strong>: global function  </p>
+                                <h2 id="classes">Classes</h2>
+<dl>
+<dt><a href="#ANTGateway">ANTGateway</a></dt>
+<dd><p>ANT Gateway API&apos;s main object.</p>
+<p>In ANT framework, gateway provides sensor virtualization and
+DNN partitioning. Sensor virtualization means unifying interfaces to access
+physical sensors, soft sensors, local sensors, and remote sensors.
+DNN partitioning means executing a DNN on multiple heterogeneous devices.
+In real IoT systems, there are heterogeneous devices including gateway,
+but the single device among them cannot provide sufficient computational
+resources to DNNs. Therefore, DNN partitioning is required.</p>
+<p>There are two ways to implement gateway in ANT framework.</p>
+<ol>
+<li>ML fragment element (Based on gstreamer)</li>
+<li>Virtual sensor (Based on OCF standard)</li>
+</ol>
+<p>ML fragment element is an approach to extend the gstreamer to DNN
+partitioning. In this way, to associate a DNN with a physical sensor, the
+app developer must implement their own sensor sampling element that can be
+compatible to gstreamer.</p>
+<p>Actually, many IoT devices does not use gstreamer-based approach, but use
+OCF standard. Therefore, we additionally provide virtual sensor, an approach
+based on OCF standard.</p>
+<p>Virtual sensor is an abstract layer that provide unified interface of
+physical sensors, rule-based soft sensors, and DNN-based soft sensors
+(a.k.a. deep sensors). It also supports DNN partitioning on the deep
+sensors. To support that, ANT additionally provides DNN fragment engine
+and gateway manager.</p>
+</dd>
+<dt><a href="#VirtualSensorAdapter">VirtualSensorAdapter</a></dt>
+<dd><p>Virtual sensor adapter object. It is a module to arbitrate user
+and OCF thread and to organize virtual sensor system.
+This object can be created by using GatewayAPI.getVSAdapter().</p>
+</dd>
+<dt><a href="#VirtualSensor">VirtualSensor</a></dt>
+<dd><p>Virtual sensor object. It is a module to service virtual
+sensor through OCF resources and several JavaScript handlers.
+This object can be created by using VirtualSensorAdapter.createSensor().</p>
+</dd>
+<dt><a href="#GatewayManager">GatewayManager</a></dt>
+<dd><p>Module to manage virtual sensors and DNN partitioning.
+This module must run on gateway device.</p>
+</dd>
+<dt><a href="#VirtualSensorManager">VirtualSensorManager</a></dt>
+<dd><p>module to manage virtual sensors. It discovers virtual sensors
+via OCF discovery message and associate the virtual sensors to form a sensor
+data pipeline for the IoT applications.</p>
+</dd>
+<dt><a href="#DFEScheduler">DFEScheduler</a></dt>
+<dd><p>DFE Scheduler object. It is a module to manage DNN partitioning.
+It monitors the current status of DFEs running on several devices and make
+commands to control DFE&apos;s partitioning points. (Not yet implemented)</p>
+</dd>
+<dt><a href="#GatewayClient">GatewayClient</a></dt>
+<dd><p>Gateway client.</p>
+</dd>
+</dl>
+
+<p><a name="ANTGateway"></a></p>
+<h2 id="antgateway">ANTGateway</h2>
+<p>ANT Gateway API&apos;s main object.</p>
+<p>In ANT framework, gateway provides sensor virtualization and
+DNN partitioning. Sensor virtualization means unifying interfaces to access
+physical sensors, soft sensors, local sensors, and remote sensors.
+DNN partitioning means executing a DNN on multiple heterogeneous devices.
+In real IoT systems, there are heterogeneous devices including gateway,
+but the single device among them cannot provide sufficient computational
+resources to DNNs. Therefore, DNN partitioning is required.</p>
+<p>There are two ways to implement gateway in ANT framework.</p>
+<ol>
+<li>ML fragment element (Based on gstreamer)</li>
+<li>Virtual sensor (Based on OCF standard)</li>
+</ol>
+<p>ML fragment element is an approach to extend the gstreamer to DNN
+partitioning. In this way, to associate a DNN with a physical sensor, the
+app developer must implement their own sensor sampling element that can be
+compatible to gstreamer.</p>
+<p>Actually, many IoT devices does not use gstreamer-based approach, but use
+OCF standard. Therefore, we additionally provide virtual sensor, an approach
+based on OCF standard.</p>
+<p>Virtual sensor is an abstract layer that provide unified interface of
+physical sensors, rule-based soft sensors, and DNN-based soft sensors
+(a.k.a. deep sensors). It also supports DNN partitioning on the deep
+sensors. To support that, ANT additionally provides DNN fragment engine
+and gateway manager.</p>
+<p><strong>Kind</strong>: global class  </p>
+<ul>
+<li><a href="#ANTGateway">ANTGateway</a><ul>
+<li><a href="#new_ANTGateway_new">new ANTGateway()</a></li>
+<li><a href="#ANTGateway+createImgClsImagenetElement">.createImgClsImagenetElement(modelPath, numFragments, targetUri)</a> &#x21D2; <code>Object</code></li>
+<li><a href="#ANTGateway+createDFE">.createDFE(modelName, numFragments)</a> &#x21D2; <code>Object</code></li>
+<li><a href="#ANTGateway+getVSAdapter">.getVSAdapter()</a> &#x21D2; <code>Object</code></li>
+</ul>
+</li>
+</ul>
+<p><a name="new_ANTGateway_new"></a></p>
+<h3 id="new-antgateway">new ANTGateway()</h3>
+<p>The constructor of ANT Gateway API object.</p>
+<p><a name="ANTGateway+createImgClsImagenetElement"></a></p>
+<h3 id="antgatewaycreateimgclsimagenetelementmodelpath-numfragments-targeturi-&#x21D2;-object">antGateway.createImgClsImagenetElement(modelPath, numFragments, targetUri) &#x21D2; <code>Object</code></h3>
+<p>Create a ML fragment element that runs a image classificaiton model trained
+with ImageNet dataset. It is the first way to perform gateway-centric DNN
+partitioning. It internally uses gstreamer.</p>
+<p><strong>Kind</strong>: instance method of <a href="#ANTGateway"><code>ANTGateway</code></a><br><strong>Returns</strong>: <code>Object</code> - a new ML fragment element for the ML model  </p>
+<table>
+<thead>
+<tr>
+<th>Param</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>modelPath</td>
+<td><code>String</code></td>
+<td>the path of image classification model</td>
+</tr>
+<tr>
+<td>numFragments</td>
+<td><code>Number</code></td>
+<td>the number of fragments</td>
+</tr>
+<tr>
+<td>targetUri</td>
+<td><code>String</code></td>
+<td>the URI of target device that will be used for                           DNN partitioning</td>
+</tr>
+</tbody>
+</table>
+<p><a name="ANTGateway+createDFE"></a></p>
+<h3 id="antgatewaycreatedfemodelname-numfragments-&#x21D2;-object">antGateway.createDFE(modelName, numFragments) &#x21D2; <code>Object</code></h3>
+<p>Create a DFE (DNN fragment engine) instance for the given model name and
+the number of fragments.</p>
+<p><strong>Kind</strong>: instance method of <a href="#ANTGateway"><code>ANTGateway</code></a><br><strong>Returns</strong>: <code>Object</code> - a new DFE instance  </p>
+<table>
+<thead>
+<tr>
+<th>Param</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>modelName</td>
+<td><code>String</code></td>
+<td>the name of model to be executed by DFE</td>
+</tr>
+<tr>
+<td>numFragments</td>
+<td><code>String</code></td>
+<td>the number of the model&apos;s fragments</td>
+</tr>
+</tbody>
+</table>
+<p><a name="ANTGateway+getVSAdapter"></a></p>
+<h3 id="antgatewaygetvsadapter-&#x21D2;-object">antGateway.getVSAdapter() &#x21D2; <code>Object</code></h3>
+<p>Create a virtual sensor adapter. It is the second way to perform
+gateway-centric DNN partitioning. It internally uses OCF standard.</p>
+<p><strong>Kind</strong>: instance method of <a href="#ANTGateway"><code>ANTGateway</code></a><br><strong>Returns</strong>: <code>Object</code> - virtual sensor adapter object<br><a name="VirtualSensorAdapter"></a></p>
+<h2 id="virtualsensoradapter">VirtualSensorAdapter</h2>
+<p>Virtual sensor adapter object. It is a module to arbitrate user
+and OCF thread and to organize virtual sensor system.
+This object can be created by using GatewayAPI.getVSAdapter().</p>
+<p><strong>Kind</strong>: global class  </p>
+<ul>
+<li><a href="#VirtualSensorAdapter">VirtualSensorAdapter</a><ul>
+<li><a href="#new_VirtualSensorAdapter_new">new VirtualSensorAdapter()</a></li>
+<li><a href="#VirtualSensorAdapter+start">.start()</a></li>
+<li><a href="#VirtualSensorAdapter+stop">.stop()</a></li>
+<li><a href="#VirtualSensorAdapter+createSensor">.createSensor(sensorName, sensorType, deviceType, observerHandler, generatorHandler, settingHandler)</a></li>
+<li><a href="#VirtualSensorAdapter+createDeepSensor">.createDeepSensor(sensorName, sensorType, deviceType, modelName, numFragments)</a></li>
+<li><a href="#VirtualSensorAdapter+createGWManager">.createGWManager()</a> &#x21D2; <code>Object</code></li>
+<li><a href="#VirtualSensorAdapter+createGWClient">.createGWClient()</a> &#x21D2; <code>Object</code></li>
+<li><a href="#VirtualSensorAdapter+getOCFAdapter">.getOCFAdapter()</a> &#x21D2; <code>Object</code></li>
+<li><a href="#VirtualSensorAdapter+getGWManager">.getGWManager()</a> &#x21D2; <code>Object</code></li>
+<li><a href="#VirtualSensorAdapter+getGWClient">.getGWClient()</a> &#x21D2; <code>Object</code></li>
+<li><a href="#VirtualSensorAdapter+findSensorByName">.findSensorByName(name)</a> &#x21D2; <code>Object</code></li>
+<li><a href="#VirtualSensorAdapter+findSensorByUri">.findSensorByUri(name)</a> &#x21D2; <code>Object</code></li>
+<li><a href="#VirtualSensorAdapter+getResource">.getResource(uri)</a> &#x21D2; <code>Object</code></li>
+<li><a href="#VirtualSensorAdapter+addResource">.addResource(resource)</a></li>
+</ul>
+</li>
+</ul>
+<p><a name="new_VirtualSensorAdapter_new"></a></p>
+<h3 id="new-virtualsensoradapter">new VirtualSensorAdapter()</h3>
+<p>The constructor of virtual sensor adapter.</p>
+<p><a name="VirtualSensorAdapter+start"></a></p>
+<h3 id="virtualsensoradapterstart">virtualSensorAdapter.start()</h3>
+<p>Start the virtual sensor adapter. This function starts also OCF adapter
+managed by OCF API.</p>
+<p><strong>Kind</strong>: instance method of <a href="#VirtualSensorAdapter"><code>VirtualSensorAdapter</code></a><br><a name="VirtualSensorAdapter+stop"></a></p>
+<h3 id="virtualsensoradapterstop">virtualSensorAdapter.stop()</h3>
+<p>Stop the virtual sensor adapter. This function stops also OCF adapter
+managed by OCF API.</p>
+<p><strong>Kind</strong>: instance method of <a href="#VirtualSensorAdapter"><code>VirtualSensorAdapter</code></a><br><a name="VirtualSensorAdapter+createSensor"></a></p>
+<h3 id="virtualsensoradaptercreatesensorsensorname-sensortype-devicetype-observerhandler-generatorhandler-settinghandler">virtualSensorAdapter.createSensor(sensorName, sensorType, deviceType, observerHandler, generatorHandler, settingHandler)</h3>
+<p>Create a new virtual sensor. Every virtual sensors can be discovered
+by using one of three keys; sensorName, sensorType and deviceType.</p>
+<p><strong>Kind</strong>: instance method of <a href="#VirtualSensorAdapter"><code>VirtualSensorAdapter</code></a>  </p>
+<table>
+<thead>
+<tr>
+<th>Param</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>sensorName</td>
+<td><code>String</code></td>
+<td>the name of virtual sensor</td>
+</tr>
+<tr>
+<td>sensorType</td>
+<td><code>String</code></td>
+<td>the sensor type of virtual sensor</td>
+</tr>
+<tr>
+<td>deviceType</td>
+<td><code>String</code></td>
+<td>the device type of virtual sensor</td>
+</tr>
+<tr>
+<td>observerHandler</td>
+<td><code>function</code></td>
+<td>(Optional) the observer handler function. It is called when a OCF client sends a request to the inlet of this virtual sensor. If you will not use observerHandler, you can use undefined for observerHandler.</td>
+</tr>
+<tr>
+<td>generatorHandler</td>
+<td><code>function</code></td>
+<td>the generator handler function. It is called when a OCF client sends a request to the outlet of this virtual sensor. This parameter is mandatory.</td>
+</tr>
+<tr>
+<td>settingHandler</td>
+<td><code>function</code></td>
+<td>(Optional) the setting handler function. It is called when a OCF client sends a request to the setting of this virtual sensor. If you will not use settingHandler, you can use undefined for settingHandler.</td>
+</tr>
+</tbody>
+</table>
+<p><a name="VirtualSensorAdapter+createDeepSensor"></a></p>
+<h3 id="virtualsensoradaptercreatedeepsensorsensorname-sensortype-devicetype-modelname-numfragments">virtualSensorAdapter.createDeepSensor(sensorName, sensorType, deviceType, modelName, numFragments)</h3>
+<p>Create a deep sensor for the given DNN model&apos;s name and the number of
+fragments.</p>
+<p><strong>Kind</strong>: instance method of <a href="#VirtualSensorAdapter"><code>VirtualSensorAdapter</code></a>  </p>
+<table>
+<thead>
+<tr>
+<th>Param</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>sensorName</td>
+<td><code>String</code></td>
+<td>the name of virtual sensor</td>
+</tr>
+<tr>
+<td>sensorType</td>
+<td><code>String</code></td>
+<td>the sensor type of virtual sensor</td>
+</tr>
+<tr>
+<td>deviceType</td>
+<td><code>String</code></td>
+<td>the device type of virtual sensor</td>
+</tr>
+<tr>
+<td>modelName</td>
+<td><code>String</code></td>
+<td>the name of DNN model to be executed by this virtual sensor</td>
+</tr>
+<tr>
+<td>numFragments</td>
+<td><code>Number</code></td>
+<td>the number of the DNN model&apos;s fragments</td>
+</tr>
+</tbody>
+</table>
+<p><a name="VirtualSensorAdapter+createGWManager"></a></p>
+<h3 id="virtualsensoradaptercreategwmanager-&#x21D2;-object">virtualSensorAdapter.createGWManager() &#x21D2; <code>Object</code></h3>
+<p>It returns the singleton gateway manager. If the gateway manager is not
+initialized, the gateway manager will be created.</p>
+<p><strong>Kind</strong>: instance method of <a href="#VirtualSensorAdapter"><code>VirtualSensorAdapter</code></a><br><strong>Returns</strong>: <code>Object</code> - the singleton gateway manager<br><a name="VirtualSensorAdapter+createGWClient"></a></p>
+<h3 id="virtualsensoradaptercreategwclient-&#x21D2;-object">virtualSensorAdapter.createGWClient() &#x21D2; <code>Object</code></h3>
+<p>It returns the singleton gateway client. If the gateway client is not
+initialized, the gateway client will be created.</p>
+<p><strong>Kind</strong>: instance method of <a href="#VirtualSensorAdapter"><code>VirtualSensorAdapter</code></a><br><strong>Returns</strong>: <code>Object</code> - the singleton gateway client<br><a name="VirtualSensorAdapter+getOCFAdapter"></a></p>
+<h3 id="virtualsensoradaptergetocfadapter-&#x21D2;-object">virtualSensorAdapter.getOCFAdapter() &#x21D2; <code>Object</code></h3>
+<p>It returns the OCF adapter. If the OCF adapter is not initialized, it
+returns undefined.</p>
+<p><strong>Kind</strong>: instance method of <a href="#VirtualSensorAdapter"><code>VirtualSensorAdapter</code></a><br><strong>Returns</strong>: <code>Object</code> - the OCF adapter managed by the virtual sensor adapter<br><a name="VirtualSensorAdapter+getGWManager"></a></p>
+<h3 id="virtualsensoradaptergetgwmanager-&#x21D2;-object">virtualSensorAdapter.getGWManager() &#x21D2; <code>Object</code></h3>
+<p>It returns the singleton gateway manager. If the gateway manager is not
+initialized, it returns undefined.</p>
+<p><strong>Kind</strong>: instance method of <a href="#VirtualSensorAdapter"><code>VirtualSensorAdapter</code></a><br><strong>Returns</strong>: <code>Object</code> - the singleton gateway manager<br><a name="VirtualSensorAdapter+getGWClient"></a></p>
+<h3 id="virtualsensoradaptergetgwclient-&#x21D2;-object">virtualSensorAdapter.getGWClient() &#x21D2; <code>Object</code></h3>
+<p>It returns the singleton gateway client. If the gateway client is not
+initialized, it returns undefined.</p>
+<p><strong>Kind</strong>: instance method of <a href="#VirtualSensorAdapter"><code>VirtualSensorAdapter</code></a><br><strong>Returns</strong>: <code>Object</code> - the singleton gateway client<br><a name="VirtualSensorAdapter+findSensorByName"></a></p>
+<h3 id="virtualsensoradapterfindsensorbynamename-&#x21D2;-object">virtualSensorAdapter.findSensorByName(name) &#x21D2; <code>Object</code></h3>
+<p>Find the virtual sensor by sensor name.</p>
+<p><strong>Kind</strong>: instance method of <a href="#VirtualSensorAdapter"><code>VirtualSensorAdapter</code></a><br><strong>Returns</strong>: <code>Object</code> - the found virtual sensor object. If any virtual sensor
+has not found, this function returns undefined.  </p>
+<table>
+<thead>
+<tr>
+<th>Param</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>name</td>
+<td><code>String</code></td>
+<td>the name of virtual sensor</td>
+</tr>
+</tbody>
+</table>
+<p><a name="VirtualSensorAdapter+findSensorByUri"></a></p>
+<h3 id="virtualsensoradapterfindsensorbyuriname-&#x21D2;-object">virtualSensorAdapter.findSensorByUri(name) &#x21D2; <code>Object</code></h3>
+<p>Find the virtual sensor by URI.</p>
+<p><strong>Kind</strong>: instance method of <a href="#VirtualSensorAdapter"><code>VirtualSensorAdapter</code></a><br><strong>Returns</strong>: <code>Object</code> - the found virtual sensor object. If any virtual sensor
+has not found, this function returns undefined.  </p>
+<table>
+<thead>
+<tr>
+<th>Param</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>name</td>
+<td><code>String</code></td>
+<td>the URI of virtual sensor</td>
+</tr>
+</tbody>
+</table>
+<p><a name="VirtualSensorAdapter+getResource"></a></p>
+<h3 id="virtualsensoradaptergetresourceuri-&#x21D2;-object">virtualSensorAdapter.getResource(uri) &#x21D2; <code>Object</code></h3>
+<p>Get an OCF resource managed by the virtual sensor adapter. The URI of
+the target OCF resource is given.</p>
+<p><strong>Kind</strong>: instance method of <a href="#VirtualSensorAdapter"><code>VirtualSensorAdapter</code></a><br><strong>Returns</strong>: <code>Object</code> - the OCF resource for the given URI. If any resource
+for the URI is not found, this function returns undefined.  </p>
+<table>
+<thead>
+<tr>
+<th>Param</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>uri</td>
+<td><code>String</code></td>
+<td>the URI of the target OCF resource</td>
+</tr>
+</tbody>
+</table>
+<p><a name="VirtualSensorAdapter+addResource"></a></p>
+<h3 id="virtualsensoradapteraddresourceresource">virtualSensorAdapter.addResource(resource)</h3>
+<p>Add an OCF resource to the virtual sensor adapter.</p>
+<p><strong>Kind</strong>: instance method of <a href="#VirtualSensorAdapter"><code>VirtualSensorAdapter</code></a>  </p>
+<table>
+<thead>
+<tr>
+<th>Param</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>resource</td>
+<td><code>Object</code></td>
+<td>OCF resource to be added to the resource list of virtual sensor adapter.</td>
+</tr>
+</tbody>
+</table>
+<p><a name="VirtualSensor"></a></p>
+<h2 id="virtualsensor">VirtualSensor</h2>
+<p>Virtual sensor object. It is a module to service virtual
+sensor through OCF resources and several JavaScript handlers.
+This object can be created by using VirtualSensorAdapter.createSensor().</p>
+<p><strong>Kind</strong>: global class  </p>
+<ul>
+<li><a href="#VirtualSensor">VirtualSensor</a><ul>
+<li><a href="#new_VirtualSensor_new">new VirtualSensor(sensorName, sensorType, deviceType, observerHandler, generatorHandler, settingHandler)</a></li>
+<li><a href="#VirtualSensor+getName">.getName()</a> &#x21D2; <code>String</code></li>
+<li><a href="#VirtualSensor+getUri">.getUri()</a> &#x21D2; <code>String</code></li>
+<li><a href="#VirtualSensor+getInletResource">.getInletResource()</a> &#x21D2; <code>Object</code></li>
+<li><a href="#VirtualSensor+getOutletResource">.getOutletResource()</a> &#x21D2; <code>Object</code></li>
+<li><a href="#VirtualSensor+getSettingResource">.getSettingResource()</a> &#x21D2; <code>Object</code></li>
+<li><a href="#VirtualSensor+getObserverHandler">.getObserverHandler()</a> &#x21D2; <code>function</code></li>
+<li><a href="#VirtualSensor+getGeneratorHandler">.getGeneratorHandler()</a> &#x21D2; <code>function</code></li>
+<li><a href="#VirtualSensor+getSettingHandler">.getSettingHandler()</a> &#x21D2; <code>function</code></li>
+<li><a href="#VirtualSensor+getObservers">.getObservers()</a> &#x21D2; <code>Array.&lt;Object&gt;</code></li>
+</ul>
+</li>
+</ul>
+<p><a name="new_VirtualSensor_new"></a></p>
+<h3 id="new-virtualsensorsensorname-sensortype-devicetype-observerhandler-generatorhandler-settinghandler">new VirtualSensor(sensorName, sensorType, deviceType, observerHandler, generatorHandler, settingHandler)</h3>
+<p>The constructor of virtual sensor.</p>
+<table>
+<thead>
+<tr>
+<th>Param</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>sensorName</td>
+<td><code>String</code></td>
+<td>the name of virtual sensor</td>
+</tr>
+<tr>
+<td>sensorType</td>
+<td><code>String</code></td>
+<td>the sensor type of virtual sensor</td>
+</tr>
+<tr>
+<td>deviceType</td>
+<td><code>String</code></td>
+<td>the device type of virtual sensor</td>
+</tr>
+<tr>
+<td>observerHandler</td>
+<td><code>function</code></td>
+<td>the observer handler function.</td>
+</tr>
+<tr>
+<td>generatorHandler</td>
+<td><code>function</code></td>
+<td>the generator handler function.</td>
+</tr>
+<tr>
+<td>settingHandler</td>
+<td><code>function</code></td>
+<td>the setting handler function.</td>
+</tr>
+</tbody>
+</table>
+<p><a name="VirtualSensor+getName"></a></p>
+<h3 id="virtualsensorgetname-&#x21D2;-string">virtualSensor.getName() &#x21D2; <code>String</code></h3>
+<p>Get the name of virtual sensor.</p>
+<p><strong>Kind</strong>: instance method of <a href="#VirtualSensor"><code>VirtualSensor</code></a><br><strong>Returns</strong>: <code>String</code> - the name of virtual sensor<br><a name="VirtualSensor+getUri"></a></p>
+<h3 id="virtualsensorgeturi-&#x21D2;-string">virtualSensor.getUri() &#x21D2; <code>String</code></h3>
+<p>Get the URI of virtual sensor.</p>
+<p><strong>Kind</strong>: instance method of <a href="#VirtualSensor"><code>VirtualSensor</code></a><br><strong>Returns</strong>: <code>String</code> - the URI of virtual sensor<br><a name="VirtualSensor+getInletResource"></a></p>
+<h3 id="virtualsensorgetinletresource-&#x21D2;-object">virtualSensor.getInletResource() &#x21D2; <code>Object</code></h3>
+<p>Get the inlet resource of virtual sensor.</p>
+<p><strong>Kind</strong>: instance method of <a href="#VirtualSensor"><code>VirtualSensor</code></a><br><strong>Returns</strong>: <code>Object</code> - the inlet resource of virtual sensor<br><a name="VirtualSensor+getOutletResource"></a></p>
+<h3 id="virtualsensorgetoutletresource-&#x21D2;-object">virtualSensor.getOutletResource() &#x21D2; <code>Object</code></h3>
+<p>Get the outlet resource of virtual sensor.</p>
+<p><strong>Kind</strong>: instance method of <a href="#VirtualSensor"><code>VirtualSensor</code></a><br><strong>Returns</strong>: <code>Object</code> - the outlet resource of virtual sensor<br><a name="VirtualSensor+getSettingResource"></a></p>
+<h3 id="virtualsensorgetsettingresource-&#x21D2;-object">virtualSensor.getSettingResource() &#x21D2; <code>Object</code></h3>
+<p>Get the setting resource of virtual sensor.</p>
+<p><strong>Kind</strong>: instance method of <a href="#VirtualSensor"><code>VirtualSensor</code></a><br><strong>Returns</strong>: <code>Object</code> - the setting resource of virtual sensor<br><a name="VirtualSensor+getObserverHandler"></a></p>
+<h3 id="virtualsensorgetobserverhandler-&#x21D2;-function">virtualSensor.getObserverHandler() &#x21D2; <code>function</code></h3>
+<p>Get the observer handler of virtual sensor.</p>
+<p><strong>Kind</strong>: instance method of <a href="#VirtualSensor"><code>VirtualSensor</code></a><br><strong>Returns</strong>: <code>function</code> - the observer handler of virtual sensor<br><a name="VirtualSensor+getGeneratorHandler"></a></p>
+<h3 id="virtualsensorgetgeneratorhandler-&#x21D2;-function">virtualSensor.getGeneratorHandler() &#x21D2; <code>function</code></h3>
+<p>Get the generator handler of virtual sensor.</p>
+<p><strong>Kind</strong>: instance method of <a href="#VirtualSensor"><code>VirtualSensor</code></a><br><strong>Returns</strong>: <code>function</code> - the generator handler of virtual sensor<br><a name="VirtualSensor+getSettingHandler"></a></p>
+<h3 id="virtualsensorgetsettinghandler-&#x21D2;-function">virtualSensor.getSettingHandler() &#x21D2; <code>function</code></h3>
+<p>Get the setting handler of virtual sensor.</p>
+<p><strong>Kind</strong>: instance method of <a href="#VirtualSensor"><code>VirtualSensor</code></a><br><strong>Returns</strong>: <code>function</code> - the setting handler of virtual sensor<br><a name="VirtualSensor+getObservers"></a></p>
+<h3 id="virtualsensorgetobservers-&#x21D2;-arrayobject">virtualSensor.getObservers() &#x21D2; <code>Array.&lt;Object&gt;</code></h3>
+<p>Get the observer list of virtual sensor.</p>
+<p><strong>Kind</strong>: instance method of <a href="#VirtualSensor"><code>VirtualSensor</code></a><br><strong>Returns</strong>: <code>Array.&lt;Object&gt;</code> - the observer list of virtual sensor<br><a name="GatewayManager"></a></p>
+<h2 id="gatewaymanager">GatewayManager</h2>
+<p>Module to manage virtual sensors and DNN partitioning.
+This module must run on gateway device.</p>
+<p><strong>Kind</strong>: global class<br><a name="VirtualSensorManager"></a></p>
+<h2 id="virtualsensormanager">VirtualSensorManager</h2>
+<p>module to manage virtual sensors. It discovers virtual sensors
+via OCF discovery message and associate the virtual sensors to form a sensor
+data pipeline for the IoT applications.</p>
+<p><strong>Kind</strong>: global class<br><a name="DFEScheduler"></a></p>
+<h2 id="dfescheduler">DFEScheduler</h2>
+<p>DFE Scheduler object. It is a module to manage DNN partitioning.
+It monitors the current status of DFEs running on several devices and make
+commands to control DFE&apos;s partitioning points. (Not yet implemented)</p>
+<p><strong>Kind</strong>: global class<br><a name="GatewayClient"></a></p>
+<h2 id="gatewayclient">GatewayClient</h2>
+<p>Gateway client.</p>
+<p><strong>Kind</strong>: global class  </p>
+<ul>
+<li><a href="#GatewayClient">GatewayClient</a><ul>
+<li><a href="#GatewayClient+getVirtualSensors">.getVirtualSensors(onResult)</a> &#x21D2; <code>Boolean</code></li>
+<li><a href="#GatewayClient+associateVirtualSensors">.associateVirtualSensors(sourceOutlet, sinkInlet, intervalMS, onResult)</a> &#x21D2; <code>Boolean</code></li>
+</ul>
+</li>
+</ul>
+<p><a name="GatewayClient+getVirtualSensors"></a></p>
+<h3 id="gatewayclientgetvirtualsensorsonresult-&#x21D2;-boolean">gatewayClient.getVirtualSensors(onResult) &#x21D2; <code>Boolean</code></h3>
+<p>Send a request to gateway to retreive virtual sensor list</p>
+<p><strong>Kind</strong>: instance method of <a href="#GatewayClient"><code>GatewayClient</code></a><br><strong>Returns</strong>: <code>Boolean</code> - the result of sending the request  </p>
+<table>
+<thead>
+<tr>
+<th>Param</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>onResult</td>
+<td><code>function</code></td>
+<td>callback function when the response came</td>
+</tr>
+</tbody>
+</table>
+<p><a name="GatewayClient+associateVirtualSensors"></a></p>
+<h3 id="gatewayclientassociatevirtualsensorssourceoutlet-sinkinlet-intervalms-onresult-&#x21D2;-boolean">gatewayClient.associateVirtualSensors(sourceOutlet, sinkInlet, intervalMS, onResult) &#x21D2; <code>Boolean</code></h3>
+<p>Send a request to gateway to associate two virtual sensors</p>
+<p><strong>Kind</strong>: instance method of <a href="#GatewayClient"><code>GatewayClient</code></a><br><strong>Returns</strong>: <code>Boolean</code> - the result of sending the request  </p>
+<table>
+<thead>
+<tr>
+<th>Param</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>sourceOutlet</td>
+<td><code>Object</code></td>
+<td>the information about source outlet resource</td>
+</tr>
+<tr>
+<td>sinkInlet</td>
+<td><code>Object</code></td>
+<td>the information about sink inlet resource</td>
+</tr>
+<tr>
+<td>intervalMS</td>
+<td><code>Number</code></td>
+<td>the interval of sending GET request to the outlet Its unit is milliseconds.</td>
+</tr>
+<tr>
+<td>onResult</td>
+<td><code>function</code></td>
+<td>callback function when the response came</td>
+</tr>
+</tbody>
+</table>
 
                                 
                                 </section>
@@ -405,7 +960,7 @@
     <script>
         var gitbook = gitbook || [];
         gitbook.push(function() {
-            gitbook.page.hasChanged({"page":{"title":"Gateway API","level":"3.4","depth":1,"next":{"title":"ANT Classic Guide","level":"4.1","depth":1,"path":"ANT-Classic-Guide.md","ref":"ANT-Classic-Guide.md","articles":[]},"previous":{"title":"ML API","level":"3.3","depth":1,"path":"api/ML-API.md","ref":"api/ML-API.md","articles":[]},"dir":"ltr"},"config":{"plugins":["insert-logo","page-toc"],"root":"./docs","styles":{"website":"styles/website.css","pdf":"styles/pdf.css","epub":"styles/epub.css","mobi":"styles/mobi.css","ebook":"styles/ebook.css","print":"styles/print.css"},"pluginsConfig":{"insert-logo":{"url":"https://raw.githubusercontent.com/SKKU-ESLAB/ANT/master/docs/logo.png","style":"background: none; height: 150px;"},"page-toc":{"selector":".markdown-section h1, .markdown-section h2, .markdown-section h3, .markdown-section h4","position":"before-first","showByDefault":true},"highlight":{},"search":{},"lunr":{"maxIndexSize":1000000,"ignoreSpecialCharacters":false},"sharing":{"facebook":true,"twitter":true,"google":false,"weibo":false,"instapaper":false,"vk":false,"all":["facebook","google","twitter","weibo","instapaper"]},"fontsettings":{"theme":"white","family":"sans","size":2},"theme-default":{"styles":{"website":"styles/website.css","pdf":"styles/pdf.css","epub":"styles/epub.css","mobi":"styles/mobi.css","ebook":"styles/ebook.css","print":"styles/print.css"},"showLevel":false}},"theme":"default","pdf":{"pageNumbers":true,"fontSize":12,"fontFamily":"Arial","paperSize":"a4","chapterMark":"pagebreak","pageBreaksBefore":"/","margin":{"right":62,"left":62,"top":56,"bottom":56}},"structure":{"langs":"LANGS.md","readme":"intro.md","glossary":"GLOSSARY.md","summary":"toc.md"},"variables":{},"title":"ANT Framework","gitbook":"3.2.2"},"file":{"path":"api/Gateway-API.md","mtime":"2021-01-07T16:56:51.520Z","type":"markdown"},"gitbook":{"version":"3.2.2","time":"2021-01-07T16:56:56.116Z"},"basePath":"..","book":{"language":""}});
+            gitbook.page.hasChanged({"page":{"title":"Gateway API","level":"3.4","depth":1,"next":{"title":"ANT Classic Guide","level":"4.1","depth":1,"path":"ANT-Classic-Guide.md","ref":"ANT-Classic-Guide.md","articles":[]},"previous":{"title":"ML API","level":"3.3","depth":1,"path":"api/ML-API.md","ref":"api/ML-API.md","articles":[]},"dir":"ltr"},"config":{"plugins":["insert-logo","page-toc"],"root":"./docs","styles":{"website":"styles/website.css","pdf":"styles/pdf.css","epub":"styles/epub.css","mobi":"styles/mobi.css","ebook":"styles/ebook.css","print":"styles/print.css"},"pluginsConfig":{"insert-logo":{"url":"https://raw.githubusercontent.com/SKKU-ESLAB/ANT/master/docs/logo.png","style":"background: none; height: 150px;"},"page-toc":{"selector":".markdown-section h1, .markdown-section h2, .markdown-section h3, .markdown-section h4","position":"before-first","showByDefault":true},"highlight":{},"search":{},"lunr":{"maxIndexSize":1000000,"ignoreSpecialCharacters":false},"sharing":{"facebook":true,"twitter":true,"google":false,"weibo":false,"instapaper":false,"vk":false,"all":["facebook","google","twitter","weibo","instapaper"]},"fontsettings":{"theme":"white","family":"sans","size":2},"theme-default":{"styles":{"website":"styles/website.css","pdf":"styles/pdf.css","epub":"styles/epub.css","mobi":"styles/mobi.css","ebook":"styles/ebook.css","print":"styles/print.css"},"showLevel":false}},"theme":"default","pdf":{"pageNumbers":true,"fontSize":12,"fontFamily":"Arial","paperSize":"a4","chapterMark":"pagebreak","pageBreaksBefore":"/","margin":{"right":62,"left":62,"top":56,"bottom":56}},"structure":{"langs":"LANGS.md","readme":"intro.md","glossary":"GLOSSARY.md","summary":"toc.md"},"variables":{},"title":"ANT Framework","gitbook":"3.2.2"},"file":{"path":"api/Gateway-API.md","mtime":"2021-03-21T13:07:48.787Z","type":"markdown"},"gitbook":{"version":"3.2.2","time":"2021-03-21T13:07:53.597Z"},"basePath":"..","book":{"language":""}});
         });
     </script>
 </div>

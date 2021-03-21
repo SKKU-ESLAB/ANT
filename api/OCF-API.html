@@ -361,7 +361,9 @@
                                 <h2 id="functions">Functions</h2>
 <dl>
 <dt><a href="#OCF">OCF()</a></dt>
-<dd><p>ANT OCF API&apos;s main object. OCF only generates OCF adapter, and the OCF adapter takes charge of the main role of OCF API.</p>
+<dd><p>ANT OCF API&apos;s main object.
+OCF only generates OCF adapter, and the OCF adapter takes charge of
+the main role of OCF API.</p>
 </dd>
 <dt><a href="#OCFAdapter">OCFAdapter()</a></dt>
 <dd><p>OCF Adapter. It manages OCF thread&apos;s lifecycle.</p>
@@ -376,7 +378,9 @@
 
 <p><a name="OCF"></a></p>
 <h2 id="ocf">OCF()</h2>
-<p>ANT OCF API&apos;s main object. OCF only generates OCF adapter, and the OCF adapter takes charge of the main role of OCF API.</p>
+<p>ANT OCF API&apos;s main object.
+OCF only generates OCF adapter, and the OCF adapter takes charge of
+the main role of OCF API.</p>
 <p><strong>Kind</strong>: global function<br><a name="OCFAdapter"></a></p>
 <h2 id="ocfadapter">OCFAdapter()</h2>
 <p>OCF Adapter. It manages OCF thread&apos;s lifecycle.</p>
@@ -398,20 +402,24 @@
 <li><a href="#OCFAdapter+getResources">.getResources()</a> &#x21D2; <a href="#OCFResource"><code>OCFResource</code></a></li>
 <li><a href="#OCFAdapter+repStartRootObject">.repStartRootObject()</a></li>
 <li><a href="#OCFAdapter+repSet">.repSet(key, value)</a></li>
+<li><a href="#OCFAdapter+repSetBufferAndString">.repSetBufferAndString(value)</a></li>
 <li><a href="#OCFAdapter+repEndRootObject">.repEndRootObject()</a></li>
-<li><a href="#OCFAdapter+sendResponse">.sendResponse(ocfRequest, statusCode)</a></li>
+<li><a href="#OCFAdapter+sendResponse">.sendResponse(ocfRequest, statusCode, responsePayload)</a></li>
+<li><a href="#OCFAdapter+sendResponseBuffer">.sendResponseBuffer(ocfRequest, statusCode, responsePayloadBuffer, responsePayloadString)</a></li>
 <li><a href="#OCFAdapter+stopDiscovery">.stopDiscovery()</a> &#x21D2; <code>Boolean</code></li>
 <li><a href="#OCFAdapter+isDiscovering">.isDiscovering()</a> &#x21D2; <code>Boolean</code></li>
 <li><a href="#OCFAdapter+discovery">.discovery(resourceType, discoveryHandler)</a> &#x21D2; <code>Boolean</code></li>
 <li><a href="#OCFAdapter+discoveryAll">.discoveryAll(discoveryHandler)</a> &#x21D2; <code>Boolean</code></li>
-<li><a href="#OCFAdapter+observe">.observe(endpoint, uri, userHandler, query, qos)</a> &#x21D2; <code>Boolean</code></li>
+<li><a href="#OCFAdapter+observe">.observe(endpoint, uri, userHandler, query, qos, isResponsePayloadBuffer)</a> &#x21D2; <code>Boolean</code></li>
 <li><a href="#OCFAdapter+stopObserve">.stopObserve(endpoint, uri)</a> &#x21D2; <code>Boolean</code></li>
-<li><a href="#OCFAdapter+get">.get(endpoint, uri, userHandler, query, qos)</a> &#x21D2; <code>Boolean</code></li>
-<li><a href="#OCFAdapter+delete">.delete(endpoint, uri, userHandler, query, qos)</a> &#x21D2; <code>Boolean</code></li>
-<li><a href="#OCFAdapter+initPost">.initPost(endpoint, uri, userHandler, query, qos)</a> &#x21D2; <code>Boolean</code></li>
-<li><a href="#OCFAdapter+initPut">.initPut(endpoint, uri, userHandler, query, qos)</a> &#x21D2; <code>Boolean</code></li>
-<li><a href="#OCFAdapter+post">.post()</a> &#x21D2; <code>Boolean</code></li>
-<li><a href="#OCFAdapter+put">.put()</a> &#x21D2; <code>Boolean</code></li>
+<li><a href="#OCFAdapter+get">.get(endpoint, uri, userHandler, query, qos, isResponsePayloadBuffer)</a> &#x21D2; <code>Boolean</code></li>
+<li><a href="#OCFAdapter+delete">.delete(endpoint, uri, userHandler, query, qos, isResponsePayloadBuffer)</a> &#x21D2; <code>Boolean</code></li>
+<li><a href="#OCFAdapter+initPost">.initPost(endpoint, uri, userHandler, query, qos, isResponsePayloadBuffer)</a> &#x21D2; <code>Boolean</code></li>
+<li><a href="#OCFAdapter+initPut">.initPut(endpoint, uri, userHandler, query, qos, isResponsePayloadBuffer)</a> &#x21D2; <code>Boolean</code></li>
+<li><a href="#OCFAdapter+finishPost">.finishPost()</a> &#x21D2; <code>Boolean</code></li>
+<li><a href="#OCFAdapter+finishPut">.finishPut()</a> &#x21D2; <code>Boolean</code></li>
+<li><a href="#OCFAdapter+post">.post(endpoint, uri, userHandler, query, qos, isResponsePayloadBuffer, requestPayload)</a> &#x21D2; <code>Boolean</code></li>
+<li><a href="#OCFAdapter+put">.put(endpoint, uri, userHandler, query, qos, isResponsePayloadBuffer, requestPayload)</a> &#x21D2; <code>Boolean</code></li>
 </ul>
 </li>
 </ul>
@@ -560,10 +568,13 @@
 <p><a name="OCFAdapter+start"></a></p>
 <h3 id="ocfadapterstart">ocfAdapter.start()</h3>
 <p>OCFAdapter.start
-Run the OCF thread. This function must be called after OCFAdapter.initialize() is called.
-You can use the OCF Server API and OCF Client API only while the OCF thread is running.
-If you need to know exactly when you can use OCF Server API and OCF Client API,
-you can use the handlers of OCFAdapter.onPrepareServer() and OCFAdapter.onPrepareClient().</p>
+Run the OCF thread. This function must be called after
+OCFAdapter.initialize() is called.
+You can use the OCF Server API and OCF Client API only while the OCF thread
+is running.
+If you need to know exactly when you can use OCF Server API and OCF Client
+API, you can use the handlers of OCFAdapter.onPrepareServer() and
+OCFAdapter.onPrepareClient().</p>
 <p><strong>Kind</strong>: instance method of <a href="#OCFAdapter"><code>OCFAdapter</code></a><br><a name="OCFAdapter+stop"></a></p>
 <h3 id="ocfadapterstop">ocfAdapter.stop()</h3>
 <p>OCFAdapter.stop
@@ -638,12 +649,32 @@ Let the OCF thread start writing the OCRepresentation.</p>
 </tr>
 </tbody>
 </table>
+<p><a name="OCFAdapter+repSetBufferAndString"></a></p>
+<h3 id="ocfadapterrepsetbufferandstringvalue">ocfAdapter.repSetBufferAndString(value)</h3>
+<p>OCFAdapter.repSetBufferAndString</p>
+<p><strong>Kind</strong>: instance method of <a href="#OCFAdapter"><code>OCFAdapter</code></a>  </p>
+<table>
+<thead>
+<tr>
+<th>Param</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>value</td>
+<td><code>Object</code></td>
+<td>The special case of repSet() method. The data can include both byte buffer and string.</td>
+</tr>
+</tbody>
+</table>
 <p><a name="OCFAdapter+repEndRootObject"></a></p>
 <h3 id="ocfadapterrependrootobject">ocfAdapter.repEndRootObject()</h3>
 <p>OCFAdapter.repEndRootObject
 Finish writing OCRepresentation of OCF thread.</p>
 <p><strong>Kind</strong>: instance method of <a href="#OCFAdapter"><code>OCFAdapter</code></a><br><a name="OCFAdapter+sendResponse"></a></p>
-<h3 id="ocfadaptersendresponseocfrequest-statuscode">ocfAdapter.sendResponse(ocfRequest, statusCode)</h3>
+<h3 id="ocfadaptersendresponseocfrequest-statuscode-responsepayload">ocfAdapter.sendResponse(ocfRequest, statusCode, responsePayload)</h3>
 <p>OCFAdapter.sendResponse</p>
 <p><strong>Kind</strong>: instance method of <a href="#OCFAdapter"><code>OCFAdapter</code></a>  </p>
 <table>
@@ -663,7 +694,47 @@ Finish writing OCRepresentation of OCF thread.</p>
 <tr>
 <td>statusCode</td>
 <td><code>Number</code></td>
-<td>Response status code value Sends a response with a specific status code to a request from another device.</td>
+<td>Response status code value</td>
+</tr>
+<tr>
+<td>responsePayload</td>
+<td><code>Object</code></td>
+<td>Payload of response Sends a response with a specific status code to a request from another device.</td>
+</tr>
+</tbody>
+</table>
+<p><a name="OCFAdapter+sendResponseBuffer"></a></p>
+<h3 id="ocfadaptersendresponsebufferocfrequest-statuscode-responsepayloadbuffer-responsepayloadstring">ocfAdapter.sendResponseBuffer(ocfRequest, statusCode, responsePayloadBuffer, responsePayloadString)</h3>
+<p>OCFAdapter.sendResponseBuffer</p>
+<p><strong>Kind</strong>: instance method of <a href="#OCFAdapter"><code>OCFAdapter</code></a>  </p>
+<table>
+<thead>
+<tr>
+<th>Param</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>ocfRequest</td>
+<td><code>OCFRequest</code></td>
+<td>target of response</td>
+</tr>
+<tr>
+<td>statusCode</td>
+<td><code>Number</code></td>
+<td>Response status code value</td>
+</tr>
+<tr>
+<td>responsePayloadBuffer</td>
+<td><code>Buffer</code></td>
+<td>Buffer payload of response</td>
+</tr>
+<tr>
+<td>responsePayloadString</td>
+<td><code>String</code></td>
+<td>String payload of response Sends a response with a specific status code to a request from another device.</td>
 </tr>
 </tbody>
 </table>
@@ -720,7 +791,7 @@ Search all resources regardless of any type on the network.  </p>
 </tbody>
 </table>
 <p><a name="OCFAdapter+observe"></a></p>
-<h3 id="ocfadapterobserveendpoint-uri-userhandler-query-qos-&#x21D2;-boolean">ocfAdapter.observe(endpoint, uri, userHandler, query, qos) &#x21D2; <code>Boolean</code></h3>
+<h3 id="ocfadapterobserveendpoint-uri-userhandler-query-qos-isresponsepayloadbuffer-&#x21D2;-boolean">ocfAdapter.observe(endpoint, uri, userHandler, query, qos, isResponsePayloadBuffer) &#x21D2; <code>Boolean</code></h3>
 <p>OCFAdapter.observe</p>
 <p><strong>Kind</strong>: instance method of <a href="#OCFAdapter"><code>OCFAdapter</code></a><br><strong>Returns</strong>: <code>Boolean</code> - isSuccess  </p>
 <table>
@@ -751,6 +822,10 @@ Search all resources regardless of any type on the network.  </p>
 <td>qos</td>
 <td><code>Integer</code></td>
 </tr>
+<tr>
+<td>isResponsePayloadBuffer</td>
+<td><code>Boolean</code></td>
+</tr>
 </tbody>
 </table>
 <p><a name="OCFAdapter+stopObserve"></a></p>
@@ -776,7 +851,7 @@ Search all resources regardless of any type on the network.  </p>
 </tbody>
 </table>
 <p><a name="OCFAdapter+get"></a></p>
-<h3 id="ocfadaptergetendpoint-uri-userhandler-query-qos-&#x21D2;-boolean">ocfAdapter.get(endpoint, uri, userHandler, query, qos) &#x21D2; <code>Boolean</code></h3>
+<h3 id="ocfadaptergetendpoint-uri-userhandler-query-qos-isresponsepayloadbuffer-&#x21D2;-boolean">ocfAdapter.get(endpoint, uri, userHandler, query, qos, isResponsePayloadBuffer) &#x21D2; <code>Boolean</code></h3>
 <p>OCFAdapter.get</p>
 <p><strong>Kind</strong>: instance method of <a href="#OCFAdapter"><code>OCFAdapter</code></a><br><strong>Returns</strong>: <code>Boolean</code> - isSuccess  </p>
 <table>
@@ -807,10 +882,14 @@ Search all resources regardless of any type on the network.  </p>
 <td>qos</td>
 <td><code>Integer</code></td>
 </tr>
+<tr>
+<td>isResponsePayloadBuffer</td>
+<td><code>Boolean</code></td>
+</tr>
 </tbody>
 </table>
 <p><a name="OCFAdapter+delete"></a></p>
-<h3 id="ocfadapterdeleteendpoint-uri-userhandler-query-qos-&#x21D2;-boolean">ocfAdapter.delete(endpoint, uri, userHandler, query, qos) &#x21D2; <code>Boolean</code></h3>
+<h3 id="ocfadapterdeleteendpoint-uri-userhandler-query-qos-isresponsepayloadbuffer-&#x21D2;-boolean">ocfAdapter.delete(endpoint, uri, userHandler, query, qos, isResponsePayloadBuffer) &#x21D2; <code>Boolean</code></h3>
 <p>OCFAdapter.delete</p>
 <p><strong>Kind</strong>: instance method of <a href="#OCFAdapter"><code>OCFAdapter</code></a><br><strong>Returns</strong>: <code>Boolean</code> - isSuccess  </p>
 <table>
@@ -841,10 +920,14 @@ Search all resources regardless of any type on the network.  </p>
 <td>qos</td>
 <td><code>Integer</code></td>
 </tr>
+<tr>
+<td>isResponsePayloadBuffer</td>
+<td><code>Boolean</code></td>
+</tr>
 </tbody>
 </table>
 <p><a name="OCFAdapter+initPost"></a></p>
-<h3 id="ocfadapterinitpostendpoint-uri-userhandler-query-qos-&#x21D2;-boolean">ocfAdapter.initPost(endpoint, uri, userHandler, query, qos) &#x21D2; <code>Boolean</code></h3>
+<h3 id="ocfadapterinitpostendpoint-uri-userhandler-query-qos-isresponsepayloadbuffer-&#x21D2;-boolean">ocfAdapter.initPost(endpoint, uri, userHandler, query, qos, isResponsePayloadBuffer) &#x21D2; <code>Boolean</code></h3>
 <p>OCFAdapter.initPost</p>
 <p><strong>Kind</strong>: instance method of <a href="#OCFAdapter"><code>OCFAdapter</code></a><br><strong>Returns</strong>: <code>Boolean</code> - isSuccess  </p>
 <table>
@@ -875,10 +958,14 @@ Search all resources regardless of any type on the network.  </p>
 <td>qos</td>
 <td><code>Integer</code></td>
 </tr>
+<tr>
+<td>isResponsePayloadBuffer</td>
+<td><code>Boolean</code></td>
+</tr>
 </tbody>
 </table>
 <p><a name="OCFAdapter+initPut"></a></p>
-<h3 id="ocfadapterinitputendpoint-uri-userhandler-query-qos-&#x21D2;-boolean">ocfAdapter.initPut(endpoint, uri, userHandler, query, qos) &#x21D2; <code>Boolean</code></h3>
+<h3 id="ocfadapterinitputendpoint-uri-userhandler-query-qos-isresponsepayloadbuffer-&#x21D2;-boolean">ocfAdapter.initPut(endpoint, uri, userHandler, query, qos, isResponsePayloadBuffer) &#x21D2; <code>Boolean</code></h3>
 <p>OCFAdapter.initPut</p>
 <p><strong>Kind</strong>: instance method of <a href="#OCFAdapter"><code>OCFAdapter</code></a><br><strong>Returns</strong>: <code>Boolean</code> - isSuccess  </p>
 <table>
@@ -909,15 +996,103 @@ Search all resources regardless of any type on the network.  </p>
 <td>qos</td>
 <td><code>Integer</code></td>
 </tr>
+<tr>
+<td>isResponsePayloadBuffer</td>
+<td><code>Boolean</code></td>
+</tr>
 </tbody>
 </table>
-<p><a name="OCFAdapter+post"></a></p>
-<h3 id="ocfadapterpost-&#x21D2;-boolean">ocfAdapter.post() &#x21D2; <code>Boolean</code></h3>
+<p><a name="OCFAdapter+finishPost"></a></p>
+<h3 id="ocfadapterfinishpost-&#x21D2;-boolean">ocfAdapter.finishPost() &#x21D2; <code>Boolean</code></h3>
+<p>OCFAdapter.finishPost</p>
+<p><strong>Kind</strong>: instance method of <a href="#OCFAdapter"><code>OCFAdapter</code></a><br><strong>Returns</strong>: <code>Boolean</code> - isSuccess<br><a name="OCFAdapter+finishPut"></a></p>
+<h3 id="ocfadapterfinishput-&#x21D2;-boolean">ocfAdapter.finishPut() &#x21D2; <code>Boolean</code></h3>
+<p>OCFAdapter.finishPut</p>
+<p><strong>Kind</strong>: instance method of <a href="#OCFAdapter"><code>OCFAdapter</code></a><br><strong>Returns</strong>: <code>Boolean</code> - isSuccess<br><a name="OCFAdapter+post"></a></p>
+<h3 id="ocfadapterpostendpoint-uri-userhandler-query-qos-isresponsepayloadbuffer-requestpayload-&#x21D2;-boolean">ocfAdapter.post(endpoint, uri, userHandler, query, qos, isResponsePayloadBuffer, requestPayload) &#x21D2; <code>Boolean</code></h3>
 <p>OCFAdapter.post</p>
-<p><strong>Kind</strong>: instance method of <a href="#OCFAdapter"><code>OCFAdapter</code></a><br><strong>Returns</strong>: <code>Boolean</code> - isSuccess<br><a name="OCFAdapter+put"></a></p>
-<h3 id="ocfadapterput-&#x21D2;-boolean">ocfAdapter.put() &#x21D2; <code>Boolean</code></h3>
+<p><strong>Kind</strong>: instance method of <a href="#OCFAdapter"><code>OCFAdapter</code></a><br><strong>Returns</strong>: <code>Boolean</code> - isSuccess  </p>
+<table>
+<thead>
+<tr>
+<th>Param</th>
+<th>Type</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>endpoint</td>
+<td><code>OCFEndpoint</code></td>
+</tr>
+<tr>
+<td>uri</td>
+<td><code>String</code></td>
+</tr>
+<tr>
+<td>userHandler</td>
+<td><code>function</code></td>
+</tr>
+<tr>
+<td>query</td>
+<td><code>String</code></td>
+</tr>
+<tr>
+<td>qos</td>
+<td><code>Integer</code></td>
+</tr>
+<tr>
+<td>isResponsePayloadBuffer</td>
+<td><code>Boolean</code></td>
+</tr>
+<tr>
+<td>requestPayload</td>
+<td><code>Object</code></td>
+</tr>
+</tbody>
+</table>
+<p><a name="OCFAdapter+put"></a></p>
+<h3 id="ocfadapterputendpoint-uri-userhandler-query-qos-isresponsepayloadbuffer-requestpayload-&#x21D2;-boolean">ocfAdapter.put(endpoint, uri, userHandler, query, qos, isResponsePayloadBuffer, requestPayload) &#x21D2; <code>Boolean</code></h3>
 <p>OCFAdapter.put</p>
-<p><strong>Kind</strong>: instance method of <a href="#OCFAdapter"><code>OCFAdapter</code></a><br><strong>Returns</strong>: <code>Boolean</code> - isSuccess<br><a name="OCFDevice"></a></p>
+<p><strong>Kind</strong>: instance method of <a href="#OCFAdapter"><code>OCFAdapter</code></a><br><strong>Returns</strong>: <code>Boolean</code> - isSuccess  </p>
+<table>
+<thead>
+<tr>
+<th>Param</th>
+<th>Type</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>endpoint</td>
+<td><code>OCFEndpoint</code></td>
+</tr>
+<tr>
+<td>uri</td>
+<td><code>String</code></td>
+</tr>
+<tr>
+<td>userHandler</td>
+<td><code>function</code></td>
+</tr>
+<tr>
+<td>query</td>
+<td><code>String</code></td>
+</tr>
+<tr>
+<td>qos</td>
+<td><code>Integer</code></td>
+</tr>
+<tr>
+<td>isResponsePayloadBuffer</td>
+<td><code>Boolean</code></td>
+</tr>
+<tr>
+<td>requestPayload</td>
+<td><code>Object</code></td>
+</tr>
+</tbody>
+</table>
+<p><a name="OCFDevice"></a></p>
 <h2 id="ocfdeviceid-uri-resourcetype-name-specversion-datamodelversion">OCFDevice(id, uri, resourceType, name, specVersion, dataModelVersion)</h2>
 <p>OCF Device</p>
 <p><strong>Kind</strong>: global function  </p>
@@ -1115,7 +1290,7 @@ Search all resources regardless of any type on the network.  </p>
     <script>
         var gitbook = gitbook || [];
         gitbook.push(function() {
-            gitbook.page.hasChanged({"page":{"title":"OCF API","level":"2.5","depth":1,"next":{"title":"Stream API","level":"3.1","depth":1,"path":"api/Stream-API.md","ref":"api/Stream-API.md","articles":[]},"previous":{"title":"Resource API","level":"2.4","depth":1,"path":"api/Resource-API.md","ref":"api/Resource-API.md","articles":[]},"dir":"ltr"},"config":{"plugins":["insert-logo","page-toc"],"root":"./docs","styles":{"website":"styles/website.css","pdf":"styles/pdf.css","epub":"styles/epub.css","mobi":"styles/mobi.css","ebook":"styles/ebook.css","print":"styles/print.css"},"pluginsConfig":{"insert-logo":{"url":"https://raw.githubusercontent.com/SKKU-ESLAB/ANT/master/docs/logo.png","style":"background: none; height: 150px;"},"page-toc":{"selector":".markdown-section h1, .markdown-section h2, .markdown-section h3, .markdown-section h4","position":"before-first","showByDefault":true},"highlight":{},"search":{},"lunr":{"maxIndexSize":1000000,"ignoreSpecialCharacters":false},"sharing":{"facebook":true,"twitter":true,"google":false,"weibo":false,"instapaper":false,"vk":false,"all":["facebook","google","twitter","weibo","instapaper"]},"fontsettings":{"theme":"white","family":"sans","size":2},"theme-default":{"styles":{"website":"styles/website.css","pdf":"styles/pdf.css","epub":"styles/epub.css","mobi":"styles/mobi.css","ebook":"styles/ebook.css","print":"styles/print.css"},"showLevel":false}},"theme":"default","pdf":{"pageNumbers":true,"fontSize":12,"fontFamily":"Arial","paperSize":"a4","chapterMark":"pagebreak","pageBreaksBefore":"/","margin":{"right":62,"left":62,"top":56,"bottom":56}},"structure":{"langs":"LANGS.md","readme":"intro.md","glossary":"GLOSSARY.md","summary":"toc.md"},"variables":{},"title":"ANT Framework","gitbook":"3.2.2"},"file":{"path":"api/OCF-API.md","mtime":"2021-01-07T16:56:55.172Z","type":"markdown"},"gitbook":{"version":"3.2.2","time":"2021-01-07T16:56:56.116Z"},"basePath":"..","book":{"language":""}});
+            gitbook.page.hasChanged({"page":{"title":"OCF API","level":"2.5","depth":1,"next":{"title":"Stream API","level":"3.1","depth":1,"path":"api/Stream-API.md","ref":"api/Stream-API.md","articles":[]},"previous":{"title":"Resource API","level":"2.4","depth":1,"path":"api/Resource-API.md","ref":"api/Resource-API.md","articles":[]},"dir":"ltr"},"config":{"plugins":["insert-logo","page-toc"],"root":"./docs","styles":{"website":"styles/website.css","pdf":"styles/pdf.css","epub":"styles/epub.css","mobi":"styles/mobi.css","ebook":"styles/ebook.css","print":"styles/print.css"},"pluginsConfig":{"insert-logo":{"url":"https://raw.githubusercontent.com/SKKU-ESLAB/ANT/master/docs/logo.png","style":"background: none; height: 150px;"},"page-toc":{"selector":".markdown-section h1, .markdown-section h2, .markdown-section h3, .markdown-section h4","position":"before-first","showByDefault":true},"highlight":{},"search":{},"lunr":{"maxIndexSize":1000000,"ignoreSpecialCharacters":false},"sharing":{"facebook":true,"twitter":true,"google":false,"weibo":false,"instapaper":false,"vk":false,"all":["facebook","google","twitter","weibo","instapaper"]},"fontsettings":{"theme":"white","family":"sans","size":2},"theme-default":{"styles":{"website":"styles/website.css","pdf":"styles/pdf.css","epub":"styles/epub.css","mobi":"styles/mobi.css","ebook":"styles/ebook.css","print":"styles/print.css"},"showLevel":false}},"theme":"default","pdf":{"pageNumbers":true,"fontSize":12,"fontFamily":"Arial","paperSize":"a4","chapterMark":"pagebreak","pageBreaksBefore":"/","margin":{"right":62,"left":62,"top":56,"bottom":56}},"structure":{"langs":"LANGS.md","readme":"intro.md","glossary":"GLOSSARY.md","summary":"toc.md"},"variables":{},"title":"ANT Framework","gitbook":"3.2.2"},"file":{"path":"api/OCF-API.md","mtime":"2021-03-21T13:07:52.639Z","type":"markdown"},"gitbook":{"version":"3.2.2","time":"2021-03-21T13:07:53.597Z"},"basePath":"..","book":{"language":""}});
         });
     </script>
 </div>
