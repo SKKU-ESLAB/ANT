@@ -13,61 +13,67 @@
  * limitations under the License.
  */
 
+var ant = require('ant');
 var ocf = require('ocf');
-console.log('OCF server example app');
 
-var oa = ocf.getAdapter();
-oa.onPrepareEventLoop(function () {
-  oa.setPlatform('ant');
-  oa.addDevice('/oic/d', 'oic.d.light', 'Light', 'ocf.1.0.0', 'ocf.res.1.0.0');
-});
-
+var gOA = undefined;
 var gLightState = false;
-oa.onPrepareServer(function () {
+
+/* OCF response handlers */
+function onGetLight(request) {
+  gOA.repStartRootObject();
+  gOA.repSet('state', gLightState);
+  gOA.repEndRootObject();
+  gOA.sendResponse(request, ocf.OC_STATUS_OK);
+}
+
+function onPostLight(request) {
+  var requestPayloadString = request.payload_string;
+  var requestPayload = JSON.parse(requestPayloadString);
+  console.log('POST Request: state=' + requestPayload.state);
+
+  gLightState = requestPayload.state;
+  gOA.sendResponse(request, ocf.OC_STATUS_OK);
+}
+
+/* OCF lifecycle handlers */
+function onPrepareOCFEventLoop() {
+  gOA.setPlatform('ant');
+  gOA.addDevice('/oic/d', 'oic.d.light', 'Light', 'ocf.1.0.0', 'ocf.res.1.0.0');
+}
+
+function onPrepareOCFServer() {
   console.log('onPrepareServer()');
-  device = oa.getDevice(0);
-  var lightRes = ocf.createResource(
+  var device = gOA.getDevice(0);
+  var rLight = ocf.createResource(
     device,
     'lightbulb',
     '/light/1',
     ['oic.r.light'],
     [ocf.OC_IF_RW]
   );
-  lightRes.setDiscoverable(true);
-  lightRes.setPeriodicObservable(1);
-  lightRes.setHandler(ocf.OC_GET, getLightHandler);
-  lightRes.setHandler(ocf.OC_POST, postLightHandler);
-  oa.addResource(lightRes);
-});
-
-function getLightHandler(request) {
-  oa.repStartRootObject();
-  oa.repSet('state', gLightState);
-  oa.repEndRootObject();
-  oa.sendResponse(request, ocf.OC_STATUS_OK);
+  rLight.setDiscoverable(true);
+  rLight.setPeriodicObservable(1);
+  rLight.setHandler(ocf.OC_GET, onGetLight);
+  rLight.setHandler(ocf.OC_POST, onPostLight);
+  gOA.addResource(rLight);
 }
 
-var i = 0;
-function postLightHandler(request) {
-  var requestPayloadString = request.requestPayloadString;
-  var requestPayload = JSON.parse(requestPayloadString);
-  console.log(
-    '(' +
-      i++ +
-      ') POST Request: state=' +
-      requestPayload.state +
-      ' (present:' +
-      gLightState +
-      ')'
-  );
-
-  gLightState = requestPayload.state;
-  oa.sendResponse(request, ocf.OC_STATUS_OK);
+/* ANT lifecycle handlers */
+function onInitialize() {
+  console.log('OCF server example app');
+  gOA = ocf.getAdapter();
+  gOA.onPrepareEventLoop(onPrepareOCFEventLoop);
+  gOA.onPrepareServer(onPrepareOCFServer);
 }
 
-oa.start();
-setTimeout(function () {
-  console.log('150s elapsed');
-  oa.stop();
-  oa.deinitialize();
-}, 150000);
+function onStart() {
+  gOA.start();
+}
+
+function onStop() {
+  gOA.stop();
+  gOA.deinitialize();
+}
+
+ant.runtime.setCurrentApp(onInitialize, onStart, onStop);

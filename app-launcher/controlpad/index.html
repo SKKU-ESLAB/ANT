@@ -1,0 +1,122 @@
+<!--
+  Copyright (c) 2017-2021 SKKU ESLAB, and contributors. All rights erved.
+  Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at
+   http://www.apache.org/licenses/LICENSE-2.0
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or lied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+-->
+
+<html>
+
+<head>
+  <title>ANT Controlpad</title>
+  <meta charset="utf-8" />
+
+  <!-- jQuery -->
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
+
+  <!-- Material Lite -->
+  <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons" />
+  <link rel="stylesheet" href="https://code.getmdl.io/1.3.0/material.indigo-pink.min.css" />
+  <link rel="stylesheet" href="styles.css" />
+  <script defer src="https://code.getmdl.io/1.3.0/material.min.js"></script>
+</head>
+
+<body>
+  <!-- Monaco editor -->
+  <script type="text/javascript" src="./vs/loader.js"></script>
+
+  <!-- Main -->
+  <script type="text/javascript" src="./view-util.js"></script>
+
+  <script type="text/javascript" src="./createapp-dialog-view.js"></script>
+  <script type="text/javascript" src="./snackbar-view.js"></script>
+  <script type="text/javascript" src="./createapp-fabbutton-view.js"></script>
+
+  <script type="text/javascript" src="./navmenu-view.js"></script>
+  <script type="text/javascript" src="./appselector-view.js"></script>
+  <script type="text/javascript" src="./appselector-menu-view.js"></script>
+  <script type="text/javascript" src="./console-view.js"></script>
+  <script type="text/javascript" src="./dashboard-view.js"></script>
+  <script type="text/javascript" src="./codeeditor-view.js"></script>
+
+  <script type="text/javascript" src="./ant-client.js"></script>
+  <script type="text/javascript" src="./config.js"></script>
+  <script type="text/javascript" src="./app-controller.js"></script>
+  <script type="text/javascript" src="./ui-controller.js"></script>
+  <script type="text/javascript" src="./main.js"></script>
+
+  <div class="demo-layout mdl-layout mdl-js-layout mdl-layout--fixed-drawer mdl-layout--fixed-header">
+    <header class="demo-header mdl-layout__header mdl-color--grey-100 mdl-color-text--grey-600">
+      <div class="mdl-layout__header-row">
+        <span id="header_title" class="mdl-layout-title"></span>
+        <div class="mdl-layout-spacer"></div>
+      </div>
+    </header>
+    <div class="demo-drawer mdl-layout__drawer mdl-color--blue-grey-900 mdl-color-text--blue-grey-50">
+      <header class="demo-drawer-header">
+        <img src="images/app_icon.png" class="demo-avatar" style="width: 50px" />
+        <div id="app-selector" class="demo-avatar-dropdown">
+          <span id="app-selector-label"></span>
+          <div id="app-selector-spacer" class="mdl-layout-spacer" style="height:20px;"></div>
+          <button id="app-selctor-button" class="mdl-button mdl-js-button mdl-js-ripple-effect mdl-button--icon">
+            <i class="material-icons" role="presentation">arrow_drop_down</i>
+            <span class="visuallyhidden">Apps</span>
+          </button>
+          <ul id="app-selector-menu" class="mdl-menu mdl-menu--bottom-right mdl-js-menu mdl-js-ripple-effect"
+            for="app-selctor-button">
+          </ul>
+        </div>
+      </header>
+      <nav id="nav-menu" class="demo-navigation mdl-navigation mdl-color--blue-grey-800">
+      </nav>
+    </div>
+    <main class="mdl-layout__content mdl-color--grey-100">
+      <div id="content_root">
+        <!-- <div
+            id="code_editor"
+            style="width: 800px; height: 600px; border: 1px solid grey"
+          ></div> -->
+      </div>
+    </main>
+  </div>
+
+  <!-- Create app fab button -->
+  <button id="create-app-fabbutton"
+    class="mdl-button mdl-js-button mdl-button--colored mdl-button--fab mdl-js-ripple-effect"
+    style="position: fixed; display: block; right: 0; bottom: 0; margin-right: 40px; margin-bottom: 40px; z-index: 900;">
+    <i class="material-icons">add</i>
+  </button>
+
+  <!-- Create app dialog -->
+  <dialog id="create-app-dialog" class="mdl-dialog">
+    <h4 class="mdl-dialog__title">Create app</h4>
+    <div class="mdl-dialog__content">
+      <p>
+      <form id="create-app-dialog-form">
+        <div class="mdl-textfield mdl-js-textfield mdl-textfield--floating-label">
+          <input class="mdl-textfield__input" type="text" id="create-app-dialog-appname-textfield">
+          <label class="mdl-textfield__label" for="create-app-dialog-appname-textfield">App name</label>
+        </div>
+      </form>
+      </p>
+    </div>
+    <div class="mdl-dialog__actions">
+      <button type="button" class="mdl-button" id="create-app-dialog-confirm-button">Confirm</button>
+      <button type="button" class="mdl-button close" id="create-app-dialog-dismiss-button">Dismiss</button>
+    </div>
+  </dialog>
+
+  <!-- Snack bar-->
+  <div id="snack-bar" class="mdl-js-snackbar mdl-snackbar">
+    <div class="mdl-snackbar__text"></div>
+    <button class="mdl-snackbar__action" type="button"></button>
+  </div>
+</body>
+
+</html>

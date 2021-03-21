@@ -46,96 +46,96 @@ function LWM2MClient() {}
 
 LWM2MClient.prototype.register = function (ip, port, opts, callback) {
   var ssid = this.configure(ip, port, opts);
-  this._register(ip, port, ssid, callback);
+  // this._register(ip, port, ssid, callback);
 };
 
 LWM2MClient.prototype.on = function () {};
 
-LWM2MClient.prototype._register = function (ip, port, ssid, callback) {
-  var self = this,
-    reqObj = {
-      hostname: ip,
-      port: port,
-      pathname: '/rd',
-      payload: helper.checkAndBuildObjList(this, false, {
-        ct: 'application/json',
-        hb: true
-      }),
-      method: 'POST',
-      options: {'Content-Format': 'application/link-format'}
-    },
-    agent = this._createAgent(),
-    resetCount = 0,
-    msg;
+// LWM2MClient.prototype._register = function (ip, port, ssid, callback) {
+//   var self = this,
+//     reqObj = {
+//       hostname: ip,
+//       port: port,
+//       pathname: '/rd',
+//       payload: helper.checkAndBuildObjList(this, false, {
+//         ct: 'application/json',
+//         hb: true
+//       }),
+//       method: 'POST',
+//       options: {'Content-Format': 'application/link-format'}
+//     },
+//     agent = this._createAgent(),
+//     resetCount = 0,
+//     msg;
 
-  function setListenerStart(port, msg) {
-    if (!agent._sock) {
-      startListener(self, port, function (err) {
-        if (err) {
-          invokeCbNextTick(err, null, callback);
-        } else {
-          self._sleep = false;
-          invokeCbNextTick(null, msg, callback);
-          self.emit('registered');
-        }
-      });
-    } else {
-      if (resetCount < 10) {
-        resetCount += 1;
-        setTimeout(function () {
-          return setListenerStart(port, msg);
-        }, 10);
-      } else {
-        invokeCbNextTick(
-          new Error('Socket can not be create.'),
-          null,
-          callback
-        );
-      }
-    }
-  }
+//   function setListenerStart(port, msg) {
+//     if (!agent._sock) {
+//       startListener(self, port, function (err) {
+//         if (err) {
+//           invokeCbNextTick(err, null, callback);
+//         } else {
+//           self._sleep = false;
+//           invokeCbNextTick(null, msg, callback);
+//           self.emit('registered');
+//         }
+//       });
+//     } else {
+//       if (resetCount < 10) {
+//         resetCount += 1;
+//         setTimeout(function () {
+//           return setListenerStart(port, msg);
+//         }, 10);
+//       } else {
+//         invokeCbNextTick(
+//           new Error('Socket can not be create.'),
+//           null,
+//           callback
+//         );
+//       }
+//     }
+//   }
 
-  // [TODO] server is exist
-  this._updateNetInfo(function () {
-    reqObj.query =
-      'ep=' +
-      self.clientName +
-      '&lt=' +
-      self.lifetime +
-      '&lwm2m=' +
-      self.version +
-      '&mac=' +
-      self.mac;
-    self.request(reqObj, agent, function (err, rsp) {
-      if (err) {
-        invokeCbNextTick(err, null, callback);
-      } else {
-        msg = {status: rsp.code};
+//   // [TODO] server is exist
+//   this._updateNetInfo(function () {
+//     reqObj.query =
+//       'ep=' +
+//       self.clientName +
+//       '&lt=' +
+//       self.lifetime +
+//       '&lwm2m=' +
+//       self.version +
+//       '&mac=' +
+//       self.mac;
+//     self.request(reqObj, agent, function (err, rsp) {
+//       if (err) {
+//         invokeCbNextTick(err, null, callback);
+//       } else {
+//         msg = {status: rsp.code};
 
-        if (rsp.code === RSP.created) {
-          self.serversInfo[ssid] = {
-            shortServerId: ssid,
-            ip: rsp.rsinfo.address,
-            port: rsp.rsinfo.port,
-            locationPath: '/rd/' + rsp.headers['Location-Path'],
-            registered: true,
-            lfsecs: 0,
-            repAttrs: {},
-            reporters: {},
-            hbPacemaker: null,
-            hbStream: {stream: null, port: null, finishCb: null}
-          };
+//         if (rsp.code === RSP.created) {
+//           self.serversInfo[ssid] = {
+//             shortServerId: ssid,
+//             ip: rsp.rsinfo.address,
+//             port: rsp.rsinfo.port,
+//             locationPath: '/rd/' + rsp.headers['Location-Path'],
+//             registered: true,
+//             lfsecs: 0,
+//             repAttrs: {},
+//             reporters: {},
+//             hbPacemaker: null,
+//             hbStream: {stream: null, port: null, finishCb: null}
+//           };
 
-          self.ip = rsp.outSocket.ip;
-          self.port = rsp.outSocket.port;
-          setListenerStart(rsp.outSocket.port, msg);
-        } else {
-          invokeCbNextTick(null, msg, callback);
-        }
-      }
-    });
-  });
-};
+//           self.ip = rsp.outSocket.ip;
+//           self.port = rsp.outSocket.port;
+//           setListenerStart(rsp.outSocket.port, msg);
+//         } else {
+//           invokeCbNextTick(null, msg, callback);
+//         }
+//       }
+//     });
+//   });
+// };
 
 /**
  * Smart Object: IPSO smart objects that are provided by LWM2M client
