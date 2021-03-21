@@ -14,14 +14,15 @@ fi
 if [[ ! $2 = "--skip-packages" ]];
 then
   # ANT dependenies
-  echo "** Install git, dbus, gtk, python2.x..."
+  echo "** Install git, dbus, gtk, python..."
   ${SUDO} apt-get update
   ${SUDO} apt-get install -y cmake git glib-2.0 \
     libdbus-1-dev libdbus-glib-1-2 libdbus-glib-1-dev python
+  ${SUDO} apt-get install -y python3 python3-dev python3-pip python3-setuptools gcc
   ${SUDO} apt-get install -y software-properties-common
+#  ${SUDO} apt-get install -y libcurl3
   ${SUDO} apt-get install -y libcurl4-openssl-dev
   ${SUDO} apt-get install -y libtar-dev
-  ${SUDO} apt-get install -y
   if [[ $ARCH == *"arm"* ]];
   then
     ${SUDO} apt-get install -y libraspberrypi-dev
@@ -36,8 +37,7 @@ then
   
   # TVM
   echo "** Install tvm dependencies..."
-  ${SUDO} apt-get install -y python3 python3-dev python3-pip python3-setuptools gcc \
-    libtinfo-dev zlib1g-dev build-essential cmake libedit-dev libxml2-dev libtinfo-dev
+  ${SUDO} apt-get install -y libtinfo-dev zlib1g-dev build-essential cmake libedit-dev libxml2-dev libtinfo-dev
   ${SUDO} apt-get install -y python3-opencv
   #pip3 install opencv-python
   
@@ -47,6 +47,13 @@ then
   ${SUDO} apt-add-repository -y ppa:nnstreamer
   ${SUDO} apt-get update
   ${SUDO} apt-get install -y nnstreamer-python3 nnstreamer-dev
+
+  # nodejs
+  echo "** Install node.js"
+  ${SUDO} apt-get install -y nodejs-dev node-gyp libssl1.0-dev
+  ${SUDO} apt-get install -y npm
+  ${SUDO} npm install -g n
+  ${SUDO} n 10
 fi
   
 if [[ ! $2 = "--only-packages" ]];

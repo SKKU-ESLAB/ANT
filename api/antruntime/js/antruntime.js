@@ -69,6 +69,10 @@ ANTRuntime.prototype.unarchive = function (archiveFilePath, targetDirPath) {
   return native.ant_runtime_unarchive(archiveFilePath, targetDirPath);
 };
 
+ANTRuntime.prototype.disableStdoutBuffering = function() {
+  return native.ant_runtime_disableStdoutBuffering();
+};
+
 /**
  * Application
  * @param {function} onInitialize callback handler invoked on application's

@@ -98,12 +98,6 @@ void ocf_resource_handler(oc_request_t *request,
     return;
   }
 
-  event_data->origin_addr =
-      (char *)malloc(sizeof(char) * (strlen(origin_addr) + 1));
-  strncpy(event_data->origin_addr, origin_addr, strlen(origin_addr) + 1);
-
-  // printf("origin_addr: %x/%s\n", origin_addr, origin_addr);
-
   event_data->dest_device_id = (int)request->resource->device;
 
   dest_uri = oc_string(request->resource->uri);
@@ -121,12 +115,12 @@ void ocf_resource_handler(oc_request_t *request,
     event_data->query_len = 0;
   }
 
-  event_data->request_payload_string_len =
+  event_data->payload_string_len =
       oc_rep_to_json(request->request_payload, NULL, 0, true);
-  event_data->request_payload_string =
-      (char *)malloc(event_data->request_payload_string_len + 1);
-  oc_rep_to_json(request->request_payload, event_data->request_payload_string,
-                 event_data->request_payload_string_len + 1, true);
+  event_data->payload_string =
+      (char *)malloc(event_data->payload_string_len + 1);
+  oc_rep_to_json(request->request_payload, event_data->payload_string,
+                 event_data->payload_string_len + 1, true);
 
   event_data->interface_mask = (int)interface_mask;
 
@@ -137,8 +131,4 @@ void ocf_resource_handler(oc_request_t *request,
 
   EMIT_ANT_ASYNC_EVENT(ocf_resource_setHandler, handler_id, (void *)event_data,
                        true);
-}
-
-void initOCFResource(void) {
-  // Empty function
 }
