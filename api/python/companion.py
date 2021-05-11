@@ -1,0 +1,2 @@
+def ANTCompanion():
+    raise NotImplemented
