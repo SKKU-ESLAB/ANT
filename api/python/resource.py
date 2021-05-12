@@ -1,0 +1,2 @@
+def ANTResource():
+    raise NotImplemented
