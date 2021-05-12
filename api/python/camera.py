@@ -1,0 +1,2 @@
+def ANTCamera():
+    raise NotImplemented
