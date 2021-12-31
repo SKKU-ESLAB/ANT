@@ -28,5 +28,6 @@ If a device passes the compatibility test, the device is compatible with ANT fra
   * Odroid-XU4
   * Jetson TX1
   * Jetson TX2
+  * AGX Xavier
   
 ![Testing on Odroid-XU4](https://github.com/RedCarrottt/ANT/blob/master/test/Test-Odroid-XU4.jpg)
