@@ -1,2 +1,0 @@
-def ANTML():
-    raise NotImplemented
