@@ -1,0 +1,5 @@
+network_lib0.c:12:17:tvmgen_default_fused_nn_dense_add	64	static
+network_lib0.c:58:17:tvmgen_default_fused_nn_dense_add_nn_relu	536	static
+network_lib0.c:108:17:tvmgen_default_fused_nn_softmax	72	static
+network_lib0.c:149:17:tvmgen_default_fused_reshape	20	static
+network_lib0.c:177:17:tvmgen_default_fused_reshape_1	20	static

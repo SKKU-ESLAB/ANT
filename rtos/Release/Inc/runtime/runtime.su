@@ -1,0 +1,7 @@
+runtime.c:41:17:TVMPlatformMemoryAllocate	16	static
+runtime.c:53:17:TVMPlatformMemoryFree	16	static
+runtime.c:61:5:TVMFuncRegisterGlobal	0	static
+runtime.c:66:32:TVMPlatformAbort	0	static
+runtime.c:74:6:TVMLogf	0	static
+runtime.c:79:6:TVMAPISetLastError	16	static
+runtime.c:91:13:TVMGetLastError	8	static
