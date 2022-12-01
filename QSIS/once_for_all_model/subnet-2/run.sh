@@ -1,0 +1,1 @@
+python3 main.py --path /dataset/imagenet --gpu all --batch-size 100 --workers 20
