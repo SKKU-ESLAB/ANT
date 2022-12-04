@@ -1,0 +1,762 @@
+
+<!DOCTYPE HTML>
+<html lang="" >
+    <head>
+        <meta charset="UTF-8">
+        <meta content="text/html; charset=utf-8" http-equiv="Content-Type">
+        <title>Runtime API · ANT Framework</title>
+        <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+        <meta name="description" content="">
+        <meta name="generator" content="GitBook 3.2.2">
+        
+        
+        
+    
+    <link rel="stylesheet" href="../../gitbook/style.css">
+
+    
+            
+                
+                <link rel="stylesheet" href="../../gitbook/gitbook-plugin-insert-logo/plugin.css">
+                
+            
+                
+                <link rel="stylesheet" href="../../gitbook/gitbook-plugin-page-toc/page-toc.css">
+                
+            
+                
+                <link rel="stylesheet" href="../../gitbook/gitbook-plugin-highlight/website.css">
+                
+            
+                
+                <link rel="stylesheet" href="../../gitbook/gitbook-plugin-search/search.css">
+                
+            
+                
+                <link rel="stylesheet" href="../../gitbook/gitbook-plugin-fontsettings/website.css">
+                
+            
+        
+
+    
+
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+
+        
+    
+    
+    <meta name="HandheldFriendly" content="true"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black">
+    <link rel="apple-touch-icon-precomposed" sizes="152x152" href="../../gitbook/images/apple-touch-icon-precomposed-152.png">
+    <link rel="shortcut icon" href="../../gitbook/images/favicon.ico" type="image/x-icon">
+
+    
+    <link rel="next" href="Companion-API.html" />
+    
+    
+    <link rel="prev" href="../Gateway-API.html" />
+    
+
+    </head>
+    <body>
+        
+<div class="book">
+    <div class="book-summary">
+        
+            
+<div id="book-search-input" role="search">
+    <input type="text" placeholder="Type to search" />
+</div>
+
+            
+                <nav role="navigation">
+                
+
+
+<ul class="summary">
+    
+    
+
+    
+
+    
+        
+        
+    
+        <li class="chapter " data-level="1.1" data-path="../../">
+            
+                <a href="../../">
+            
+                    
+                    Introduction
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.2" data-path="../../Getting-Started.html">
+            
+                <a href="../../Getting-Started.html">
+            
+                    
+                    Getting Started
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.3" data-path="../../Architecture.html">
+            
+                <a href="../../Architecture.html">
+            
+                    
+                    Architecture
+            
+                </a>
+            
+
+            
+        </li>
+    
+
+    
+        
+        <li class="header">Basic APIs</li>
+        
+        
+    
+        <li class="chapter " data-level="2.1" data-path="../Runtime-API.html">
+            
+                <a href="../Runtime-API.html">
+            
+                    
+                    Runtime API
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="2.2" data-path="../Companion-API.html">
+            
+                <a href="../Companion-API.html">
+            
+                    
+                    Companion API
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="2.3" data-path="../Remote-UI-API.html">
+            
+                <a href="../Remote-UI-API.html">
+            
+                    
+                    Remote UI API
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="2.4" data-path="../Resource-API.html">
+            
+                <a href="../Resource-API.html">
+            
+                    
+                    Resource API
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="2.5" data-path="../OCF-API.html">
+            
+                <a href="../OCF-API.html">
+            
+                    
+                    OCF API
+            
+                </a>
+            
+
+            
+        </li>
+    
+
+    
+        
+        <li class="header">Stream-related APIs</li>
+        
+        
+    
+        <li class="chapter " data-level="3.1" data-path="../Stream-API.html">
+            
+                <a href="../Stream-API.html">
+            
+                    
+                    Stream API
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="3.2" data-path="../Camera-API.html">
+            
+                <a href="../Camera-API.html">
+            
+                    
+                    Camera API
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="3.3" data-path="../ML-API.html">
+            
+                <a href="../ML-API.html">
+            
+                    
+                    ML API
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="3.4" data-path="../Gateway-API.html">
+            
+                <a href="../Gateway-API.html">
+            
+                    
+                    Gateway API
+            
+                </a>
+            
+
+            
+        </li>
+    
+
+    
+        
+        <li class="header">ANT Python API</li>
+        
+        
+    
+
+    
+        
+        <li class="header">Basic APIs</li>
+        
+        
+    
+        <li class="chapter active" data-level="5.1" data-path="Runtime-API.html">
+            
+                <a href="Runtime-API.html">
+            
+                    
+                    Runtime API
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="5.2" data-path="Companion-API.html">
+            
+                <a href="Companion-API.html">
+            
+                    
+                    Companion API
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="5.3" data-path="../Remote-python/UI-API.md">
+            
+                <span>
+            
+                    
+                    Remote UI API
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="5.4" data-path="Resource-API.html">
+            
+                <a href="Resource-API.html">
+            
+                    
+                    Resource API
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="5.5" data-path="OCF-API.html">
+            
+                <a href="OCF-API.html">
+            
+                    
+                    OCF API
+            
+                </a>
+            
+
+            
+        </li>
+    
+
+    
+        
+        <li class="header">Stream-related APIs</li>
+        
+        
+    
+        <li class="chapter " data-level="6.1" data-path="Stream-API.html">
+            
+                <a href="Stream-API.html">
+            
+                    
+                    Stream API
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="6.2" data-path="Camera-API.html">
+            
+                <a href="Camera-API.html">
+            
+                    
+                    Camera API
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="6.3" data-path="ML-API.html">
+            
+                <a href="ML-API.html">
+            
+                    
+                    ML API
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="6.4" data-path="Gateway-API.html">
+            
+                <a href="Gateway-API.html">
+            
+                    
+                    Gateway API
+            
+                </a>
+            
+
+            
+        </li>
+    
+
+    
+        
+        <li class="header">Others</li>
+        
+        
+    
+        <li class="chapter " data-level="7.1" data-path="../../ANT-Classic-Guide.html">
+            
+                <a href="../../ANT-Classic-Guide.html">
+            
+                    
+                    ANT Classic Guide
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="7.2" data-path="../../License.html">
+            
+                <a href="../../License.html">
+            
+                    
+                    License
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="7.3" data-path="../../Release-Note.html">
+            
+                <a href="../../Release-Note.html">
+            
+                    
+                    Release Note
+            
+                </a>
+            
+
+            
+        </li>
+    
+
+    
+
+    <li class="divider"></li>
+
+    <li>
+        <a href="https://www.gitbook.com" target="blank" class="gitbook-link">
+            Published with GitBook
+        </a>
+    </li>
+</ul>
+
+
+                </nav>
+            
+        
+    </div>
+
+    <div class="book-body">
+        
+            <div class="body-inner">
+                
+                    
+
+<div class="book-header" role="navigation">
+    
+
+    <!-- Title -->
+    <h1>
+        <i class="fa fa-circle-o-notch fa-spin"></i>
+        <a href="../.." >Runtime API</a>
+    </h1>
+</div>
+
+
+
+
+                    <div class="page-wrapper" tabindex="-1" role="main">
+                        <div class="page-inner">
+                            
+<div id="book-search-results">
+    <div class="search-noresults">
+    
+                                <section class="normal markdown-section">
+                                
+                                <h1 id="antruntime">ANTRuntime</h1>
+<h2 id="class">Class</h2>
+<p>ANTRuntime(m_current_app)</p>
+<p><strong>Kind</strong>: class</p>
+<table>
+<thead>
+<tr>
+<th>Param</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>m_current_app</td>
+<td>method</td>
+<td>get application</td>
+</tr>
+</tbody>
+</table>
+<h2 id="method">Method</h2>
+<h3 id="setcurrentapponinitialize-onstart-onstop">set_current_app(onInitialize, onStart, onStop)</h3>
+<p>Application</p>
+<p><strong>Kind</strong>: class method</p>
+<table>
+<thead>
+<tr>
+<th>Param</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>onInitialize</td>
+<td>method</td>
+<td>callback handler invoked on application&apos;s initialization.</td>
+</tr>
+<tr>
+<td>onStart</td>
+<td>method</td>
+<td>callback handler invoked when application starts.</td>
+</tr>
+<tr>
+<td>onStop</td>
+<td>method</td>
+<td>callback handler invoked when application stops.</td>
+</tr>
+</tbody>
+</table>
+<h3 id="removecurrentapp">remove_current_app()</h3>
+<p>Application</p>
+<p><strong>Kind</strong>: class method</p>
+<table>
+<thead>
+<tr>
+<th>Param</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>onInitialize</td>
+<td>method</td>
+<td>callback handler invoked on application&apos;s initialization.</td>
+</tr>
+<tr>
+<td>onStart</td>
+<td>method</td>
+<td>callback handler invoked when application starts.</td>
+</tr>
+<tr>
+<td>onStop</td>
+<td>method</td>
+<td>callback handler invoked when application stops.</td>
+</tr>
+</tbody>
+</table>
+<h3 id="getcurrentapp">get_current_app()</h3>
+<p>this method return current app</p>
+<p><strong>Kind</strong>: class method</p>
+<h3 id="downloadfileviahttpurl-downloadpath">download_file_via_http(url, downloadPath)</h3>
+<p>this method use ant_runtime_downloadFileViaHTTP function in native.</p>
+<p><strong>Kind</strong>: class method</p>
+<table>
+<thead>
+<tr>
+<th>Param</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>url</td>
+<td>string</td>
+<td>url</td>
+</tr>
+<tr>
+<td>downloadPath</td>
+<td>string</td>
+<td>source code path for download</td>
+</tr>
+</tbody>
+</table>
+<h3 id="unarchivearchivefilepath-targetdirpath">unarchive(archiveFilePath, targetDirPath)</h3>
+<p>this method use native function ant_runtime_unarchive to archiveFile to target path</p>
+<p><strong>Kind</strong>: class method</p>
+<table>
+<thead>
+<tr>
+<th>Param</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>archiveFilePath</td>
+<td>string</td>
+<td>archive File Path</td>
+</tr>
+<tr>
+<td>targetDirPath</td>
+<td>string</td>
+<td>target Dirtory Path</td>
+</tr>
+</tbody>
+</table>
+<h2 id="class">Class</h2>
+<p>APP(onInitialize,onStart,onStop)</p>
+<p>class</p>
+<p><strong>Kind</strong>: class</p>
+<table>
+<thead>
+<tr>
+<th>Param</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>onInitialize</td>
+<td>method</td>
+<td>callback handler invoked on application&apos;s initialization.</td>
+</tr>
+<tr>
+<td>onStart</td>
+<td>method</td>
+<td>callback handler invoked when application starts.</td>
+</tr>
+<tr>
+<td>onStop</td>
+<td>method</td>
+<td>callback handler invoked when application stops.</td>
+</tr>
+</tbody>
+</table>
+<h3 id="start">start()</h3>
+<p>start target app</p>
+<p><strong>Kind</strong>: class method</p>
+<h3 id="stop">stop()</h3>
+<p>stop target app</p>
+<p><strong>Kind</strong>: class method</p>
+<h3 id="getstate">getState()</h3>
+<p>get state target app. return state string date</p>
+<p><strong>Kind</strong>: class method</p>
+<h3 id="getinfo">getInfo()</h3>
+<p>getInfo target app</p>
+<p><strong>Kind</strong>: class method</p>
+
+                                
+                                </section>
+                            
+    </div>
+    <div class="search-results">
+        <div class="has-results">
+            
+            <h1 class="search-results-title"><span class='search-results-count'></span> results matching "<span class='search-query'></span>"</h1>
+            <ul class="search-results-list"></ul>
+            
+        </div>
+        <div class="no-results">
+            
+            <h1 class="search-results-title">No results matching "<span class='search-query'></span>"</h1>
+            
+        </div>
+    </div>
+</div>
+
+                        </div>
+                    </div>
+                
+            </div>
+
+            
+                
+                <a href="../Gateway-API.html" class="navigation navigation-prev " aria-label="Previous page: Gateway API">
+                    <i class="fa fa-angle-left"></i>
+                </a>
+                
+                
+                <a href="Companion-API.html" class="navigation navigation-next " aria-label="Next page: Companion API">
+                    <i class="fa fa-angle-right"></i>
+                </a>
+                
+            
+        
+    </div>
+
+    <script>
+        var gitbook = gitbook || [];
+        gitbook.push(function() {
+            gitbook.page.hasChanged({"page":{"title":"Runtime API","level":"5.1","depth":1,"next":{"title":"Companion API","level":"5.2","depth":1,"path":"api/python/Companion-API.md","ref":"api/python/Companion-API.md","articles":[]},"previous":{"title":"Gateway API","level":"3.4","depth":1,"path":"api/Gateway-API.md","ref":"api/Gateway-API.md","articles":[]},"dir":"ltr"},"config":{"plugins":["insert-logo","page-toc"],"root":"./docs","styles":{"website":"styles/website.css","pdf":"styles/pdf.css","epub":"styles/epub.css","mobi":"styles/mobi.css","ebook":"styles/ebook.css","print":"styles/print.css"},"pluginsConfig":{"insert-logo":{"url":"https://raw.githubusercontent.com/SKKU-ESLAB/ANT/master/docs/logo.png","style":"background: none; height: 150px;"},"page-toc":{"selector":".markdown-section h1, .markdown-section h2, .markdown-section h3, .markdown-section h4","position":"before-first","showByDefault":true},"highlight":{},"search":{},"lunr":{"maxIndexSize":1000000,"ignoreSpecialCharacters":false},"sharing":{"facebook":true,"twitter":true,"google":false,"weibo":false,"instapaper":false,"vk":false,"all":["facebook","google","twitter","weibo","instapaper"]},"fontsettings":{"theme":"white","family":"sans","size":2},"theme-default":{"styles":{"website":"styles/website.css","pdf":"styles/pdf.css","epub":"styles/epub.css","mobi":"styles/mobi.css","ebook":"styles/ebook.css","print":"styles/print.css"},"showLevel":false}},"theme":"default","pdf":{"pageNumbers":true,"fontSize":12,"fontFamily":"Arial","paperSize":"a4","chapterMark":"pagebreak","pageBreaksBefore":"/","margin":{"right":62,"left":62,"top":56,"bottom":56}},"structure":{"langs":"LANGS.md","readme":"intro.md","glossary":"GLOSSARY.md","summary":"toc.md"},"variables":{},"title":"ANT Framework","gitbook":"3.2.2"},"file":{"path":"api/python/Runtime-API.md","mtime":"2022-12-04T07:11:56.809Z","type":"markdown"},"gitbook":{"version":"3.2.2","time":"2022-12-04T07:12:52.818Z"},"basePath":"../..","book":{"language":""}});
+        });
+    </script>
+</div>
+
+        
+    <script src="../../gitbook/gitbook.js"></script>
+    <script src="../../gitbook/theme.js"></script>
+    
+        
+        <script src="../../gitbook/gitbook-plugin-insert-logo/plugin.js"></script>
+        
+    
+        
+        <script src="../../gitbook/gitbook-plugin-page-toc/anchor-3.1.1.min.js"></script>
+        
+    
+        
+        <script src="../../gitbook/gitbook-plugin-page-toc/page-toc.js"></script>
+        
+    
+        
+        <script src="../../gitbook/gitbook-plugin-search/search-engine.js"></script>
+        
+    
+        
+        <script src="../../gitbook/gitbook-plugin-search/search.js"></script>
+        
+    
+        
+        <script src="../../gitbook/gitbook-plugin-lunr/lunr.min.js"></script>
+        
+    
+        
+        <script src="../../gitbook/gitbook-plugin-lunr/search-lunr.js"></script>
+        
+    
+        
+        <script src="../../gitbook/gitbook-plugin-sharing/buttons.js"></script>
+        
+    
+        
+        <script src="../../gitbook/gitbook-plugin-fontsettings/fontsettings.js"></script>
+        
+    
+
+    </body>
+</html>
+

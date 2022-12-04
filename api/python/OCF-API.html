@@ -1,0 +1,1571 @@
+
+<!DOCTYPE HTML>
+<html lang="" >
+    <head>
+        <meta charset="UTF-8">
+        <meta content="text/html; charset=utf-8" http-equiv="Content-Type">
+        <title>OCF API · ANT Framework</title>
+        <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+        <meta name="description" content="">
+        <meta name="generator" content="GitBook 3.2.2">
+        
+        
+        
+    
+    <link rel="stylesheet" href="../../gitbook/style.css">
+
+    
+            
+                
+                <link rel="stylesheet" href="../../gitbook/gitbook-plugin-insert-logo/plugin.css">
+                
+            
+                
+                <link rel="stylesheet" href="../../gitbook/gitbook-plugin-page-toc/page-toc.css">
+                
+            
+                
+                <link rel="stylesheet" href="../../gitbook/gitbook-plugin-highlight/website.css">
+                
+            
+                
+                <link rel="stylesheet" href="../../gitbook/gitbook-plugin-search/search.css">
+                
+            
+                
+                <link rel="stylesheet" href="../../gitbook/gitbook-plugin-fontsettings/website.css">
+                
+            
+        
+
+    
+
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+
+        
+    
+    
+    <meta name="HandheldFriendly" content="true"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black">
+    <link rel="apple-touch-icon-precomposed" sizes="152x152" href="../../gitbook/images/apple-touch-icon-precomposed-152.png">
+    <link rel="shortcut icon" href="../../gitbook/images/favicon.ico" type="image/x-icon">
+
+    
+    <link rel="next" href="Stream-API.html" />
+    
+    
+    <link rel="prev" href="Resource-API.html" />
+    
+
+    </head>
+    <body>
+        
+<div class="book">
+    <div class="book-summary">
+        
+            
+<div id="book-search-input" role="search">
+    <input type="text" placeholder="Type to search" />
+</div>
+
+            
+                <nav role="navigation">
+                
+
+
+<ul class="summary">
+    
+    
+
+    
+
+    
+        
+        
+    
+        <li class="chapter " data-level="1.1" data-path="../../">
+            
+                <a href="../../">
+            
+                    
+                    Introduction
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.2" data-path="../../Getting-Started.html">
+            
+                <a href="../../Getting-Started.html">
+            
+                    
+                    Getting Started
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.3" data-path="../../Architecture.html">
+            
+                <a href="../../Architecture.html">
+            
+                    
+                    Architecture
+            
+                </a>
+            
+
+            
+        </li>
+    
+
+    
+        
+        <li class="header">Basic APIs</li>
+        
+        
+    
+        <li class="chapter " data-level="2.1" data-path="../Runtime-API.html">
+            
+                <a href="../Runtime-API.html">
+            
+                    
+                    Runtime API
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="2.2" data-path="../Companion-API.html">
+            
+                <a href="../Companion-API.html">
+            
+                    
+                    Companion API
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="2.3" data-path="../Remote-UI-API.html">
+            
+                <a href="../Remote-UI-API.html">
+            
+                    
+                    Remote UI API
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="2.4" data-path="../Resource-API.html">
+            
+                <a href="../Resource-API.html">
+            
+                    
+                    Resource API
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="2.5" data-path="../OCF-API.html">
+            
+                <a href="../OCF-API.html">
+            
+                    
+                    OCF API
+            
+                </a>
+            
+
+            
+        </li>
+    
+
+    
+        
+        <li class="header">Stream-related APIs</li>
+        
+        
+    
+        <li class="chapter " data-level="3.1" data-path="../Stream-API.html">
+            
+                <a href="../Stream-API.html">
+            
+                    
+                    Stream API
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="3.2" data-path="../Camera-API.html">
+            
+                <a href="../Camera-API.html">
+            
+                    
+                    Camera API
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="3.3" data-path="../ML-API.html">
+            
+                <a href="../ML-API.html">
+            
+                    
+                    ML API
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="3.4" data-path="../Gateway-API.html">
+            
+                <a href="../Gateway-API.html">
+            
+                    
+                    Gateway API
+            
+                </a>
+            
+
+            
+        </li>
+    
+
+    
+        
+        <li class="header">ANT Python API</li>
+        
+        
+    
+
+    
+        
+        <li class="header">Basic APIs</li>
+        
+        
+    
+        <li class="chapter " data-level="5.1" data-path="Runtime-API.html">
+            
+                <a href="Runtime-API.html">
+            
+                    
+                    Runtime API
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="5.2" data-path="Companion-API.html">
+            
+                <a href="Companion-API.html">
+            
+                    
+                    Companion API
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="5.3" data-path="../Remote-python/UI-API.md">
+            
+                <span>
+            
+                    
+                    Remote UI API
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="5.4" data-path="Resource-API.html">
+            
+                <a href="Resource-API.html">
+            
+                    
+                    Resource API
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter active" data-level="5.5" data-path="OCF-API.html">
+            
+                <a href="OCF-API.html">
+            
+                    
+                    OCF API
+            
+                </a>
+            
+
+            
+        </li>
+    
+
+    
+        
+        <li class="header">Stream-related APIs</li>
+        
+        
+    
+        <li class="chapter " data-level="6.1" data-path="Stream-API.html">
+            
+                <a href="Stream-API.html">
+            
+                    
+                    Stream API
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="6.2" data-path="Camera-API.html">
+            
+                <a href="Camera-API.html">
+            
+                    
+                    Camera API
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="6.3" data-path="ML-API.html">
+            
+                <a href="ML-API.html">
+            
+                    
+                    ML API
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="6.4" data-path="Gateway-API.html">
+            
+                <a href="Gateway-API.html">
+            
+                    
+                    Gateway API
+            
+                </a>
+            
+
+            
+        </li>
+    
+
+    
+        
+        <li class="header">Others</li>
+        
+        
+    
+        <li class="chapter " data-level="7.1" data-path="../../ANT-Classic-Guide.html">
+            
+                <a href="../../ANT-Classic-Guide.html">
+            
+                    
+                    ANT Classic Guide
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="7.2" data-path="../../License.html">
+            
+                <a href="../../License.html">
+            
+                    
+                    License
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="7.3" data-path="../../Release-Note.html">
+            
+                <a href="../../Release-Note.html">
+            
+                    
+                    Release Note
+            
+                </a>
+            
+
+            
+        </li>
+    
+
+    
+
+    <li class="divider"></li>
+
+    <li>
+        <a href="https://www.gitbook.com" target="blank" class="gitbook-link">
+            Published with GitBook
+        </a>
+    </li>
+</ul>
+
+
+                </nav>
+            
+        
+    </div>
+
+    <div class="book-body">
+        
+            <div class="body-inner">
+                
+                    
+
+<div class="book-header" role="navigation">
+    
+
+    <!-- Title -->
+    <h1>
+        <i class="fa fa-circle-o-notch fa-spin"></i>
+        <a href="../.." >OCF API</a>
+    </h1>
+</div>
+
+
+
+
+                    <div class="page-wrapper" tabindex="-1" role="main">
+                        <div class="page-inner">
+                            
+<div id="book-search-results">
+    <div class="search-noresults">
+    
+                                <section class="normal markdown-section">
+                                
+                                <h1 id="ant-ocf-api">ANT-OCF API</h1>
+<h2 id="functions">Functions</h2>
+<h3 id="makerequestrequestid-query-qos-endpoint-uri-userhandler">make_request(requestId, query, qos, endpoint, uri, userHandler)</h3>
+<p>make request for end-point </p>
+<p><strong>Kind</strong>:function
+<strong>Return</strong>:dict - dictionary contains Request for end-point</p>
+<table>
+<thead>
+<tr>
+<th>Param</th>
+<th>Type</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>requestId</td>
+<td>int</td>
+</tr>
+<tr>
+<td>query</td>
+<td>string</td>
+</tr>
+<tr>
+<td>qos</td>
+<td>int</td>
+</tr>
+<tr>
+<td>endpoint</td>
+<td>OCFEndpoint</td>
+</tr>
+<tr>
+<td>uri</td>
+<td>string</td>
+</tr>
+<tr>
+<td>userHandler</td>
+<td>function</td>
+</tr>
+</tbody>
+</table>
+<h3 id="oaobserveresponsehandlerrequestid-response">oaObserveResponseHandler(request_id, response)</h3>
+<p>observe respones hanlder</p>
+<p><strong>Kind</strong>:function
+<strong>Return</strong>:handler - function for handler to observe request </p>
+<table>
+<thead>
+<tr>
+<th>Param</th>
+<th>Type</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>request_id</td>
+<td>int</td>
+</tr>
+<tr>
+<td>response</td>
+<td>int</td>
+</tr>
+</tbody>
+</table>
+<h3 id="oagetresponsehandlerrequestid-response">oaGetResponseHandler(request_id, response)</h3>
+<p>get handler to response</p>
+<p><strong>Kind</strong>:function
+<strong>Return</strong>:handler - function for handler to response request_id</p>
+<table>
+<thead>
+<tr>
+<th>Param</th>
+<th>Type</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>request_id</td>
+<td>int</td>
+</tr>
+<tr>
+<td>response</td>
+<td>int</td>
+</tr>
+</tbody>
+</table>
+<h3 id="ondeleteresponsehandlerrequestid-response">onDeleteResponseHandler(request_id, response)</h3>
+<p>delete handler about request_id</p>
+<p><strong>Kind</strong>:function
+<strong>Return</strong>:bool - isSuccess</p>
+<table>
+<thead>
+<tr>
+<th>Param</th>
+<th>Type</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>request_id</td>
+<td>int</td>
+</tr>
+<tr>
+<td>response</td>
+<td>int</td>
+</tr>
+</tbody>
+</table>
+<h3 id="oapostresponsehandlerrequestid-response">oaPostResponseHandler(request_id, response:</h3>
+<p>post handler to responce </p>
+<p><strong>Kind</strong>:function
+<strong>Return</strong>:bool - isSuccess</p>
+<table>
+<thead>
+<tr>
+<th>Param</th>
+<th>Type</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>request_id</td>
+<td>int</td>
+</tr>
+<tr>
+<td>response</td>
+<td>int</td>
+</tr>
+</tbody>
+</table>
+<h3 id="oaputresponsehandlerrequestid-response">oaPutResponseHandler(request_id, response)</h3>
+<p>put response handler</p>
+<p><strong>Kind</strong>:function
+<strong>Return</strong>:bool - isSuccess</p>
+<table>
+<thead>
+<tr>
+<th>Param</th>
+<th>Type</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>request_id</td>
+<td>int</td>
+</tr>
+<tr>
+<td>response</td>
+<td>int</td>
+</tr>
+</tbody>
+</table>
+<h3 id="oaresponsehandlerrequestid-reponse-requestlist-isoneway">oaResponseHandler(requestId, reponse, requestList, isOneway)</h3>
+<p>add response handler</p>
+<p><strong>Kind</strong>:function
+<strong>Return</strong>:bool - isSuccess</p>
+<table>
+<thead>
+<tr>
+<th>Param</th>
+<th>Type</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>requestId</td>
+<td>int</td>
+</tr>
+<tr>
+<td>response</td>
+<td>int</td>
+</tr>
+<tr>
+<td>requestList</td>
+<td>list</td>
+</tr>
+<tr>
+<td>isOneway</td>
+<td>bool</td>
+</tr>
+</tbody>
+</table>
+<h1 id="class">Class</h1>
+<p>OCF()</p>
+<p><strong>Kind</strong>: class</p>
+<h2 id="method">Method</h2>
+<h1 id="class">Class</h1>
+<p>OCF Adapter</p>
+<p>It manages OCF thread&apos;s lifecycle.</p>
+<p><strong>Kind</strong>: class</p>
+<h2 id="method">Method</h2>
+<h3 id="init"><strong>init</strong>()</h3>
+<p>create OCF Element</p>
+<p><strong>Kind</strong>:class method</p>
+<h3 id="initialize">initialize()</h3>
+<p>initialize OCF Element</p>
+<p><strong>Kind</strong>:class method</p>
+<h3 id="deinitialize">deinitialize()</h3>
+<p>de-initilaize OCF Element</p>
+<p><strong>Kind</strong>:class method</p>
+<h3 id="setplaformmfgname">setPlaform(mfgName)</h3>
+<p><strong>Kind</strong>:class method</p>
+<table>
+<thead>
+<tr>
+<th>Param</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>mfgName</td>
+<td>string</td>
+<td>Manufacturer&apos;s name</td>
+</tr>
+</tbody>
+</table>
+<h3 id="getplaform">getPlaform()</h3>
+<p>get Plaform</p>
+<p><strong>Kind</strong>:class method
+<strong>Return</strong>:string-platformName</p>
+<h3 id="adddeviceuri-resourcetype-name-specversion-datamodelversion">addDevice(uri, resourceType, name, specVersion, dataModelVersion)</h3>
+<p>add device</p>
+<p><strong>Kind</strong>:class method</p>
+<table>
+<thead>
+<tr>
+<th>Param</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>uri</td>
+<td>string</td>
+<td>id of device to be serviced</td>
+</tr>
+<tr>
+<td>resourceType</td>
+<td>string</td>
+<td>resource type of device to be serviced</td>
+</tr>
+<tr>
+<td>name</td>
+<td>string</td>
+<td>name of device to be serviced</td>
+</tr>
+<tr>
+<td>specVersion</td>
+<td>string</td>
+<td>specification of device to be serviced</td>
+</tr>
+<tr>
+<td>dataModelVersion</td>
+<td>string</td>
+<td>data model version of device to be serviced Set the device to be serviced by the OCFAdapter. One OCFAdapter can service multiple devices.</td>
+</tr>
+</tbody>
+</table>
+<h3 id="onprepareeventloophandler">onPrepareEventLoop(handler)</h3>
+<p>prepare Event Loop</p>
+<p><strong>Kind</strong>:class method</p>
+<table>
+<thead>
+<tr>
+<th>Param</th>
+<th>Type</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>handler</td>
+<td>function</td>
+</tr>
+</tbody>
+</table>
+<h3 id="onprepareclienthandler">onPrepareClient(handler):</h3>
+<p>prepare Cilent</p>
+<p><strong>Kind</strong>:class method</p>
+<table>
+<thead>
+<tr>
+<th>Param</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>handler</td>
+<td>function</td>
+<td>called when all preparations for executing client functions in the OCF thread are complete</td>
+</tr>
+</tbody>
+</table>
+<h3 id="onprepareserverhandler">onPrepareServer(handler)</h3>
+<p>prepare Server</p>
+<p><strong>Kind</strong>:class method</p>
+<table>
+<thead>
+<tr>
+<th>Param</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>handler</td>
+<td>function</td>
+<td>called when all preparations for executing server functions in OCF thread are complete</td>
+</tr>
+</tbody>
+</table>
+<h3 id="start">start()</h3>
+<p>OCFAdapter.start Run the OCF thread. This function must be called after OCFAdapter.initialize() is called. You can use the OCF Server API and OCF Client API only while the OCF thread is running. If you need to know exactly when you can use OCF Server API and OCF Client API, you can use the handlers of OCFAdapter.onPrepareServer() and OCFAdapter.onPrepareClient().</p>
+<p><strong>Kind</strong>:class method</p>
+<h3 id="stop">stop()</h3>
+<p>OCFAdapter.stop Stop the OCF thread</p>
+<p><strong>Kind</strong>:class method</p>
+<h3 id="addresource">addResource()</h3>
+<p>add Resource</p>
+<p><strong>Kind</strong>:class method</p>
+<table>
+<thead>
+<tr>
+<th>Param</th>
+<th>Type</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>resource</td>
+<td>OCFResource</td>
+</tr>
+</tbody>
+</table>
+<h3 id="deleteresourceresource">deleteResource(resource)</h3>
+<p>delete Resource</p>
+<p><strong>Kind</strong>:class method</p>
+<table>
+<thead>
+<tr>
+<th>Param</th>
+<th>Type</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>resource</td>
+<td>OCFResource</td>
+</tr>
+</tbody>
+</table>
+<h3 id="getresource">getResource()</h3>
+<p>get Resource</p>
+<p><strong>Kind</strong>:class method
+<strong>Return</strong>:Resource</p>
+<h3 id="repstartrootobject">repStartRootObject()</h3>
+<p>OCFAdapter.repStartRootObject Let the OCF thread start writing the OCRepresentation.</p>
+<p><strong>Kind</strong>:class method</p>
+<h3 id="repsetkey-value">repSet(key, value)</h3>
+<p>OCFAdapter.repSet</p>
+<p><strong>Kind</strong>:class method</p>
+<table>
+<thead>
+<tr>
+<th>Param</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>resource</td>
+<td>OCFResource</td>
+</tr>
+<tr>
+<td>value</td>
+<td>Boolean \</td>
+<td>Number \</td>
+<td>string</td>
+<td>The value is stored in a specific key among OCRepresentations being created by OCF thread. In this function, various types of data including Boolean, Number, and string can be used as value.</td>
+</tr>
+</tbody>
+</table>
+<h3 id="repsetbufferandstringbuffervalue-stringvalue">repSetBufferAndstring(bufferValue, stringValue)</h3>
+<p>set Buffer and string for repset</p>
+<table>
+<thead>
+<tr>
+<th>Param</th>
+<th>Type</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>bufferValue</td>
+<td>buffer</td>
+</tr>
+<tr>
+<td>stringValue</td>
+<td>string</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Kind</strong>:class method</p>
+<h3 id="ocfadapterrependrootobject">ocfAdapter.repEndRootObject()</h3>
+<p>OCFAdapter.repEndRootObject Finish writing OCRepresentation of OCF thread.</p>
+<p><strong>Kind</strong>:class method
+<strong>Return</strong>:OCFAdapter</p>
+<h3 id="sendresponseocfrequest-statuscode-responsepayload">sendResponse(ocfRequest, statusCode, responsePayload)</h3>
+<p>send Response</p>
+<p><strong>Kind</strong>:class method</p>
+<table>
+<thead>
+<tr>
+<th>Param</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>ocfRequest</td>
+<td>OCFRequest</td>
+<td>target of response</td>
+</tr>
+<tr>
+<td>statusCode</td>
+<td>int</td>
+<td>Response status code value Sends a response with a specific status code to a request from another device.</td>
+</tr>
+<tr>
+<td>responsePayload</td>
+<td>Dict</td>
+<td>payload for Response</td>
+</tr>
+</tbody>
+</table>
+<h3 id="sendresponsebufferocfrequest-statuscode-responsepayloadbufferresponsepayloadstring">sendResponseBuffer(ocfRequest, statusCode, responsePayloadBuffer,responsePayloadstring)</h3>
+<p>send Response Buffer</p>
+<p><strong>Kind</strong>:class method</p>
+<table>
+<thead>
+<tr>
+<th>Param</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>ocfRequest</td>
+<td>OCFRequest</td>
+<td>target of response</td>
+</tr>
+<tr>
+<td>statusCode</td>
+<td>int</td>
+<td>Response status code value Sends a response with a specific status code to a request from another device.</td>
+</tr>
+<tr>
+<td>responsePayloadBuffer</td>
+<td>Buffer</td>
+<td>response for Buffer to payload</td>
+</tr>
+<tr>
+<td>responsePayloadstring</td>
+<td>string</td>
+<td>playload name to response</td>
+</tr>
+</tbody>
+</table>
+<h3 id="stopdiscovery">stopDiscovery()</h3>
+<p>stop discovery</p>
+<p><strong>Kind</strong>:class method
+<strong>Return</strong>:bool - status</p>
+<h3 id="isdiscovering">isDiscovering()</h3>
+<p>check the enability to discovery</p>
+<p><strong>Kind</strong>:class method
+<strong>Return</strong>:bool - status</p>
+<h3 id="discoveryresourcetype-discoveryhandler">discovery(resourceType, discoveryHandler)</h3>
+<p>discovery depends on ResourceType</p>
+<p><strong>Kind</strong>:class method
+<strong>Return</strong>:bool - isSuccess</p>
+<table>
+<thead>
+<tr>
+<th>Param</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>resourceType</td>
+<td>string</td>
+<td>Type of resource to find on the network</td>
+</tr>
+<tr>
+<td>discoveryHandler</td>
+<td>function</td>
+<td>called whenever one OCFResource is discovered</td>
+</tr>
+</tbody>
+</table>
+<h3 id="discoveryalldiscoveryhandler">discoveryAll(discoveryHandler)</h3>
+<p>discovery all ResourceType</p>
+<p><strong>Kind</strong>:class method
+<strong>Return</strong>:bool - isSuccess Search all resources regardless of any type on the networks.</p>
+<h3 id="observeendpointuriuserhandlerqueryqosisresponsepayloadbuffer">observe(endpoint,uri,userHandler,query,qos,isResponsePayloadBuffer)</h3>
+<p>observe endpoint</p>
+<p><strong>Kind</strong>:class method
+<strong>Return</strong>:bool - isSuccess</p>
+<table>
+<thead>
+<tr>
+<th>Param</th>
+<th>Type</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>endpoint</td>
+<td>OCFEndpoint</td>
+</tr>
+<tr>
+<td>uri</td>
+<td>string</td>
+</tr>
+<tr>
+<td>userHandler</td>
+<td>function</td>
+</tr>
+<tr>
+<td>query</td>
+<td>string</td>
+</tr>
+<tr>
+<td>qos</td>
+<td>int</td>
+</tr>
+<tr>
+<td>isResponsePayloadBuffer</td>
+<td>Buffer</td>
+</tr>
+</tbody>
+</table>
+<h3 id="stopobserveendpoint-uri">stopObserve(endpoint, uri)</h3>
+<p>stop observe end-point</p>
+<p><strong>Kind</strong>:class method
+<strong>Return</strong>:bool - isSuccess</p>
+<table>
+<thead>
+<tr>
+<th>Param</th>
+<th>Type</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>endpoint</td>
+<td>OCFEndpoint</td>
+</tr>
+<tr>
+<td>uri</td>
+<td>string</td>
+</tr>
+<tr>
+<td>isResponsePayloadBuffer</td>
+<td>Buffer</td>
+</tr>
+</tbody>
+</table>
+<h3 id="getendpointuriuserhandlerqueryqosisresponsepayloadbuffer">get(endpoint,uri,userHandler,query,qos,isResponsePayloadBuffer)</h3>
+<p>get information of end-point</p>
+<p><strong>Kind</strong>:class method
+<strong>Return</strong>:bool - isSuccess</p>
+<table>
+<thead>
+<tr>
+<th>Param</th>
+<th>Type</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>endpoint</td>
+<td>OCFEndpoint</td>
+</tr>
+<tr>
+<td>uri</td>
+<td>string</td>
+</tr>
+<tr>
+<td>userHandler</td>
+<td>function</td>
+</tr>
+<tr>
+<td>query</td>
+<td>string</td>
+</tr>
+<tr>
+<td>qos</td>
+<td>int</td>
+</tr>
+<tr>
+<td>isResponsePayloadBuffer</td>
+<td>Buffer</td>
+</tr>
+</tbody>
+</table>
+<h3 id="deleteendpoint-uri-userhandler-query-qos-isresponsepayloadbuffer">delete(endpoint, uri, userHandler, query, qos, isResponsePayloadBuffer)</h3>
+<p>delete endpoint</p>
+<p><strong>Kind</strong>:class method
+<strong>Return</strong>:bool - isSuccess</p>
+<table>
+<thead>
+<tr>
+<th>Param</th>
+<th>Type</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>endpoint</td>
+<td>OCFEndpoint</td>
+</tr>
+<tr>
+<td>uri</td>
+<td>string</td>
+</tr>
+<tr>
+<td>userHandler</td>
+<td>function</td>
+</tr>
+<tr>
+<td>query</td>
+<td>string</td>
+</tr>
+<tr>
+<td>qos</td>
+<td>int</td>
+</tr>
+<tr>
+<td>isResponsePayloadBuffer</td>
+<td>Buffer</td>
+</tr>
+</tbody>
+</table>
+<h3 id="initpostendpointuriuserhandlerqueryqosisresponsepayloadbuffer">initPost(endpoint,uri,userHandler,query,qos,isResponsePayloadBuffer)</h3>
+<p>initialize post for end-point</p>
+<p><strong>Kind</strong>:class method
+<strong>Return</strong>:bool - isSuccess</p>
+<table>
+<thead>
+<tr>
+<th>Param</th>
+<th>Type</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>endpoint</td>
+<td>OCFEndpoint</td>
+</tr>
+<tr>
+<td>uri</td>
+<td>string</td>
+</tr>
+<tr>
+<td>userHandler</td>
+<td>function</td>
+</tr>
+<tr>
+<td>query</td>
+<td>string</td>
+</tr>
+<tr>
+<td>qos</td>
+<td>int</td>
+</tr>
+<tr>
+<td>isResponsePayloadBuffer</td>
+<td>Buffer</td>
+</tr>
+</tbody>
+</table>
+<h3 id="initputselfendpointuriuserhandlerqueryqosisresponsepayloadbuffer">initPut(self,endpoint,uri,userHandler,query,qos,isResponsePayloadBuffer)</h3>
+<p>initialize put for end-point</p>
+<p><strong>Kind</strong>:class method
+<strong>Return</strong>:bool - isSuccess</p>
+<table>
+<thead>
+<tr>
+<th>Param</th>
+<th>Type</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>endpoint</td>
+<td>OCFEndpoint</td>
+</tr>
+<tr>
+<td>uri</td>
+<td>string</td>
+</tr>
+<tr>
+<td>userHandler</td>
+<td>function</td>
+</tr>
+<tr>
+<td>query</td>
+<td>string</td>
+</tr>
+<tr>
+<td>qos</td>
+<td>int</td>
+</tr>
+<tr>
+<td>isResponsePayloadBuffer</td>
+<td>Buffer</td>
+</tr>
+</tbody>
+</table>
+<h3 id="finishpost">finishPost()</h3>
+<p>finish post</p>
+<p><strong>Kind</strong>:class method</p>
+<h3 id="finishput">finishPut()</h3>
+<p>finish put</p>
+<p><strong>Kind</strong>:class method</p>
+<h3 id="postendpoint-uri-userhandler-query-qos-isresponsepayloadbufferrequestpayload">post(endpoint, uri, userHandler, query, qos, isResponsePayloadBuffer,requestPayload)</h3>
+<p>post end-point</p>
+<p><strong>Kind</strong>:class method
+<strong>Return</strong>:bool - isSuccess</p>
+<table>
+<thead>
+<tr>
+<th>Param</th>
+<th>Type</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>endpoint</td>
+<td>OCFEndpoint</td>
+</tr>
+<tr>
+<td>uri</td>
+<td>string</td>
+</tr>
+<tr>
+<td>userHandler</td>
+<td>function</td>
+</tr>
+<tr>
+<td>query</td>
+<td>string</td>
+</tr>
+<tr>
+<td>qos</td>
+<td>int</td>
+</tr>
+<tr>
+<td>isResponsePayloadBuffer</td>
+<td>Buffer</td>
+</tr>
+</tbody>
+</table>
+<h3 id="putendpoint-uri-userhandler-query-qos-isresponsepayloadbufferrequestpayload">put(endpoint, uri, userHandler, query, qos, isResponsePayloadBuffer,requestPayload)</h3>
+<p>put end-point</p>
+<p><strong>Kind</strong>:class method
+<strong>Return</strong>:bool - isSuccess</p>
+<table>
+<thead>
+<tr>
+<th>Param</th>
+<th>Type</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>endpoint</td>
+<td>OCFEndpoint</td>
+</tr>
+<tr>
+<td>uri</td>
+<td>string</td>
+</tr>
+<tr>
+<td>userHandler</td>
+<td>function</td>
+</tr>
+<tr>
+<td>query</td>
+<td>string</td>
+</tr>
+<tr>
+<td>qos</td>
+<td>int</td>
+</tr>
+<tr>
+<td>isResponsePayloadBuffer</td>
+<td>Buffer</td>
+</tr>
+</tbody>
+</table>
+<h1 id="class">Class</h1>
+<p>OCFResource()</p>
+<p><strong>Kind</strong>:Class</p>
+<h2 id="method">Method</h2>
+<h3 id="initdevice-name-uri-types-interfacemasks"><strong>init</strong>(device, name, uri, types, interfaceMasks)</h3>
+<p>initialize OCFResource Element</p>
+<p><strong>Kind</strong>:class method</p>
+<table>
+<thead>
+<tr>
+<th>Param</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>device</td>
+<td>object</td>
+<td>OCF device that serves this resource</td>
+</tr>
+<tr>
+<td>name</td>
+<td>string</td>
+<td>the resource&apos;s name</td>
+</tr>
+<tr>
+<td>uri</td>
+<td>string</td>
+<td>URI of the resource</td>
+</tr>
+<tr>
+<td>types</td>
+<td>array</td>
+<td>the array of resource&apos;s types. each element&apos;s type is string.</td>
+</tr>
+<tr>
+<td>interfaceMasks</td>
+<td>interfaceMasks</td>
+<td>the array of interface masks. each element&apos;s type is string.</td>
+</tr>
+</tbody>
+</table>
+<h3 id="destroyer">destroyer():</h3>
+<p>destory OCFResource</p>
+<p><strong>Kind</strong>:class method</p>
+<h3 id="setdiscoverableisdiscoverable">setDiscoverable(isDiscoverable)</h3>
+<p>set discoverability on OCF Resource</p>
+<p><strong>Kind</strong>:class method</p>
+<table>
+<thead>
+<tr>
+<th>Param</th>
+<th>Type</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>isDiscoverable</td>
+<td>bool</td>
+</tr>
+</tbody>
+</table>
+<h3 id="setperiodicobservableperiodsec">setPeriodicObservable(periodSec)</h3>
+<p>set period time (seconds) to observe OCF Resource</p>
+<p><strong>Kind</strong>:class method</p>
+<table>
+<thead>
+<tr>
+<th>Param</th>
+<th>Type</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>periodSec</td>
+<td>int</td>
+</tr>
+</tbody>
+</table>
+<h1 id="class">Class</h1>
+<p>OCFDevice()</p>
+<p><strong>Kind</strong>:Class</p>
+<h2 id="method">Method</h2>
+<h3 id="initid-uri-resourcetype-name-specversion-datamodelversion"><strong>init</strong>(id, uri, resourceType, name, specVersion, dataModelVersion)</h3>
+<p>initialize OCF Device</p>
+<p><strong>Kind</strong>:class method</p>
+<table>
+<thead>
+<tr>
+<th>Param</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>id</td>
+<td>int</td>
+<td>OCF device&apos;s ID that is internally managed.</td>
+</tr>
+<tr>
+<td>uri</td>
+<td>string</td>
+<td>URI of the OCF device</td>
+</tr>
+<tr>
+<td>resourceType</td>
+<td>string</td>
+<td>OCF device&apos;s resource type</td>
+</tr>
+<tr>
+<td>name</td>
+<td>string</td>
+<td>the OCF device&apos;s name</td>
+</tr>
+<tr>
+<td>specVersion</td>
+<td>string</td>
+<td>version of the device&apos;s spec</td>
+</tr>
+<tr>
+<td>dataModeVersion</td>
+<td>string</td>
+<td>version of the device&apos;s data model</td>
+</tr>
+</tbody>
+</table>
+<h3 id="getadapter">getAdapter()</h3>
+<p>get adapter attached on OCF Device</p>
+<p><strong>Kind</strong>:class method
+<strong>Return</strong>:OCFAdapter - OCFAdapter on attached on OCF Device</p>
+<h3 id="createresourcedevice-name-uri-types-interfacemasks">createResource(device, name, uri, types, interfaceMasks)</h3>
+<p>create Resource</p>
+<p><strong>Kind</strong>:class method
+<strong>Return</strong>:OCFDevice - OCFDevice named given parameters</p>
+<table>
+<thead>
+<tr>
+<th>Param</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>device</td>
+<td>object</td>
+<td>OCF device that serves this resource</td>
+</tr>
+<tr>
+<td>name</td>
+<td>string</td>
+<td>the resource&apos;s name</td>
+</tr>
+<tr>
+<td>uri</td>
+<td>string</td>
+<td>URI of the resource</td>
+</tr>
+<tr>
+<td>types</td>
+<td>array</td>
+<td>the array of resource&apos;s types. each element&apos;s type is string.</td>
+</tr>
+<tr>
+<td>interfaceMasks</td>
+<td>interfaceMasks</td>
+<td>the array of interface masks. each element&apos;s type is string.</td>
+</tr>
+</tbody>
+</table>
+
+                                
+                                </section>
+                            
+    </div>
+    <div class="search-results">
+        <div class="has-results">
+            
+            <h1 class="search-results-title"><span class='search-results-count'></span> results matching "<span class='search-query'></span>"</h1>
+            <ul class="search-results-list"></ul>
+            
+        </div>
+        <div class="no-results">
+            
+            <h1 class="search-results-title">No results matching "<span class='search-query'></span>"</h1>
+            
+        </div>
+    </div>
+</div>
+
+                        </div>
+                    </div>
+                
+            </div>
+
+            
+                
+                <a href="Resource-API.html" class="navigation navigation-prev " aria-label="Previous page: Resource API">
+                    <i class="fa fa-angle-left"></i>
+                </a>
+                
+                
+                <a href="Stream-API.html" class="navigation navigation-next " aria-label="Next page: Stream API">
+                    <i class="fa fa-angle-right"></i>
+                </a>
+                
+            
+        
+    </div>
+
+    <script>
+        var gitbook = gitbook || [];
+        gitbook.push(function() {
+            gitbook.page.hasChanged({"page":{"title":"OCF API","level":"5.5","depth":1,"next":{"title":"Stream API","level":"6.1","depth":1,"path":"api/python/Stream-API.md","ref":"api/python/Stream-API.md","articles":[]},"previous":{"title":"Resource API","level":"5.4","depth":1,"path":"api/python/Resource-API.md","ref":"api/python/Resource-API.md","articles":[]},"dir":"ltr"},"config":{"plugins":["insert-logo","page-toc"],"root":"./docs","styles":{"website":"styles/website.css","pdf":"styles/pdf.css","epub":"styles/epub.css","mobi":"styles/mobi.css","ebook":"styles/ebook.css","print":"styles/print.css"},"pluginsConfig":{"insert-logo":{"url":"https://raw.githubusercontent.com/SKKU-ESLAB/ANT/master/docs/logo.png","style":"background: none; height: 150px;"},"page-toc":{"selector":".markdown-section h1, .markdown-section h2, .markdown-section h3, .markdown-section h4","position":"before-first","showByDefault":true},"highlight":{},"search":{},"lunr":{"maxIndexSize":1000000,"ignoreSpecialCharacters":false},"sharing":{"facebook":true,"twitter":true,"google":false,"weibo":false,"instapaper":false,"vk":false,"all":["facebook","google","twitter","weibo","instapaper"]},"fontsettings":{"theme":"white","family":"sans","size":2},"theme-default":{"styles":{"website":"styles/website.css","pdf":"styles/pdf.css","epub":"styles/epub.css","mobi":"styles/mobi.css","ebook":"styles/ebook.css","print":"styles/print.css"},"showLevel":false}},"theme":"default","pdf":{"pageNumbers":true,"fontSize":12,"fontFamily":"Arial","paperSize":"a4","chapterMark":"pagebreak","pageBreaksBefore":"/","margin":{"right":62,"left":62,"top":56,"bottom":56}},"structure":{"langs":"LANGS.md","readme":"intro.md","glossary":"GLOSSARY.md","summary":"toc.md"},"variables":{},"title":"ANT Framework","gitbook":"3.2.2"},"file":{"path":"api/python/OCF-API.md","mtime":"2022-12-04T07:11:56.809Z","type":"markdown"},"gitbook":{"version":"3.2.2","time":"2022-12-04T07:12:52.818Z"},"basePath":"../..","book":{"language":""}});
+        });
+    </script>
+</div>
+
+        
+    <script src="../../gitbook/gitbook.js"></script>
+    <script src="../../gitbook/theme.js"></script>
+    
+        
+        <script src="../../gitbook/gitbook-plugin-insert-logo/plugin.js"></script>
+        
+    
+        
+        <script src="../../gitbook/gitbook-plugin-page-toc/anchor-3.1.1.min.js"></script>
+        
+    
+        
+        <script src="../../gitbook/gitbook-plugin-page-toc/page-toc.js"></script>
+        
+    
+        
+        <script src="../../gitbook/gitbook-plugin-search/search-engine.js"></script>
+        
+    
+        
+        <script src="../../gitbook/gitbook-plugin-search/search.js"></script>
+        
+    
+        
+        <script src="../../gitbook/gitbook-plugin-lunr/lunr.min.js"></script>
+        
+    
+        
+        <script src="../../gitbook/gitbook-plugin-lunr/search-lunr.js"></script>
+        
+    
+        
+        <script src="../../gitbook/gitbook-plugin-sharing/buttons.js"></script>
+        
+    
+        
+        <script src="../../gitbook/gitbook-plugin-fontsettings/fontsettings.js"></script>
+        
+    
+
+    </body>
+</html>
+
