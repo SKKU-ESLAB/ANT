@@ -25,3 +25,9 @@
 [submodule "dep/libcoap"]
 	path = dep/libcoap
 	url = https://github.com/obgm/libcoap
+[submodule "subprojects/ANT-Model-DB"]
+	path = subprojects/ANT-Model-DB
+	url = https://github.com/SKKU-ESLAB/ANT-Model-DB
+[submodule "subprojects/IoTJS-Plus-TizenRT"]
+	path = subprojects/IoTJS-Plus-TizenRT
+	url = https://github.com/SKKU-ESLAB/IoTJS-Plus-TizenRT
