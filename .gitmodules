@@ -5,13 +5,13 @@
 	path = subprojects/ACL-lowp
 	url = https://github.com/SKKU-ESLAB/ACL-lowp
 [submodule "subprojects/auto-compression"]
-	path = subprojects/auto-compression
+	path = subprojects/Auto-Compression
 	url = https://github.com/SKKU-ESLAB/Auto-Compression.git
 [submodule "subprojects/CNN-on-flash"]
 	path = subprojects/CNN-on-flash
 	url = https://github.com/SKKU-ESLAB/CNN-on-flash
 [submodule "subprojects/selective-connection"]
-	path = subprojects/selective-connection
+	path = subprojects/Virtual-Connection
 	url = https://github.com/SKKU-ESLAB/Virtual-Connection
 [submodule "dep/iotjs"]
 	path = dep/iotjs
