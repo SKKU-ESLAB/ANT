@@ -199,4 +199,4 @@ python3 testcase/test_gemmini.py
 아래 링크의 README를 기반으로 Token Packing이 적용된 ViT 모델 학습
 - https://github.com/SKKU-ESLAB/Auto-Compression/tree/master/PackViT
 
-학습된 모델을 ```tflite``` 포맷으로 변화하여 벤치마크 수행행
+학습된 모델을 ```tflite``` 포맷으로 변화하여 벤치마크 수행
